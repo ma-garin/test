@@ -170,13 +170,35 @@
         <span class="card-t">次にやること</span>
         <a class="card-act" href="{% url 'core:screen_map' %}">画面マップ →</a>
       </div>
-      <div class="callout">
-        <p><strong>この画面は実装済みです。</strong>集計はすべて実データから算出しています。</p>
-      </div>
-      <div class="callout w">
-        <p><strong>タスク一覧・リスク管理は未移植です。</strong>詳細への遷移先がまだありません。</p>
-        <p>優先順位は <code>docs/requirements/p0_scope.md</code> を参照してください。</p>
-      </div>
+      {% if overview.proposal_count %}
+        <div class="callout w">
+          <p><strong>AIの介入提案が {{ overview.proposal_count }} 件、人の判断を待っています。</strong></p>
+          <p>判断されるまで採用されません。<a href="{% url 'dashboard:intervention' %}">提案を確認する →</a></p>
+        </div>
+      {% endif %}
+
+      {% if overview.total_blocked_tasks %}
+        <div class="callout d">
+          <p><strong>着手できないタスクが {{ overview.total_blocked_tasks }} 件あります。</strong></p>
+          <p>止まっている理由の解消が最優先です。<a href="{% url 'dashboard:tasks' %}?status=blocked">ブロック中を見る →</a></p>
+        </div>
+      {% endif %}
+
+      {% if overview.total_open_risks or overview.total_open_issues %}
+        <div class="callout">
+          <p>オープンリスク {{ overview.total_open_risks }} 件 ／ 未解決の課題 {{ overview.total_open_issues }} 件</p>
+          <p>
+            <a href="{% url 'dashboard:risk' %}">リスク一覧 →</a>
+            ／ <a href="{% url 'projects:issue_list' %}">課題一覧 →</a>
+          </p>
+        </div>
+      {% endif %}
+
+      {% if not overview.proposal_count and not overview.total_blocked_tasks and not overview.total_open_risks %}
+        <div class="callout ok">
+          <p><strong>判断待ち・ブロック中の項目はありません。</strong></p>
+        </div>
+      {% endif %}
     </div>
   </div>
 

@@ -201,3 +201,54 @@ class GanttViewTests(GanttTestBase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "pages/task_list.html")
+
+
+class GanttTickTests(GanttTestBase):
+    """目盛りの粒度。
+
+    本数を固定にすると、長期の計画で「5/30」のような月日だけが並び、
+    どの年の話か分からなくなる。期間に応じて書式と本数が変わることを確認する。
+    """
+
+    def _ticks_for(self, span_days: int):
+        self._task(
+            wbs_code="1.1",
+            planned_start=self.today,
+            planned_end=self.today + timedelta(days=span_days),
+        )
+
+        return self._chart().ticks
+
+    def test_短期間は月日で表示する(self):
+        labels = [tick.label for tick in self._ticks_for(30)]
+
+        self.assertEqual(len(labels), 5)
+        self.assertNotIn("/", labels[0][3:])  # 年が入っていない（m/d のみ）
+
+    def test_1年を超えると年を含める(self):
+        labels = [tick.label for tick in self._ticks_for(400)]
+
+        self.assertGreater(len(labels), 5)
+        self.assertEqual(labels[0].count("/"), 1)
+        self.assertTrue(labels[0].split("/")[0].isdigit())
+        # 26/7 のように 2 桁の年が入る
+        self.assertEqual(len(labels[0].split("/")[0]), 2)
+
+    def test_2年を超えると4桁の年で表示する(self):
+        labels = [tick.label for tick in self._ticks_for(900)]
+
+        self.assertEqual(len(labels[0].split("/")[0]), 4)
+
+    def test_目盛りは0から100の範囲に収まる(self):
+        for span in (5, 30, 200, 400, 900):
+            with self.subTest(span=span):
+                WbsTask.objects.all().delete()
+
+                for tick in self._ticks_for(span):
+                    self.assertGreaterEqual(tick.left, 0.0)
+                    self.assertLessEqual(tick.left, 100.0)
+
+    def test_目盛りは左から右へ並ぶ(self):
+        positions = [tick.left for tick in self._ticks_for(365)]
+
+        self.assertEqual(positions, sorted(positions))

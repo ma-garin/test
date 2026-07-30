@@ -158,3 +158,67 @@ class DashboardScreenTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "ありません")
+
+
+class OverviewOrderingTests(TestCase):
+    """案件別ヘルスの並び順。
+
+    画面は「ヘルス低い順」と書いているので、危ない案件が上に来ていないと
+    表示と実態が食い違う。危ない案件を見落とすのは、この画面の存在意義に反する。
+    """
+
+    def setUp(self) -> None:
+        from apps.accounts.constants import Role
+        from apps.accounts.models import Tenant, User
+        from apps.projects.models import Project
+
+        self.tenant = Tenant.objects.create(code="ord", name="ORDER")
+        self.user = User.objects.create_user(
+            username="pmo-order",
+            email="pmo-order@example.com",
+            password="test-password",
+            tenant=self.tenant,
+            role=Role.TENANT_ADMIN,
+        )
+        self.healthy = Project.objects.create(tenant=self.tenant, code="ok", name="健全案件")
+        self.burning = Project.objects.create(tenant=self.tenant, code="ng", name="炎上案件")
+
+    def test_ヘルスの低い案件が先頭に来る(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.dashboard.services.overview import build_overview
+        from apps.projects.models import Issue, Project, Risk, Severity, WbsTask
+
+        today = timezone.localdate()
+
+        for index in range(4):
+            Issue.objects.create(
+                project=self.burning,
+                title=f"未解決の課題 {index}",
+                status=Issue.Status.BLOCKED,
+                severity=Severity.CRITICAL,
+            )
+            Risk.objects.create(
+                project=self.burning,
+                title=f"高スコアのリスク {index}",
+                probability=5,
+                impact=5,
+                status=Risk.Status.MONITORING,
+            )
+
+        WbsTask.objects.create(
+            project=self.burning,
+            wbs_code="1.1",
+            name="止まっているタスク",
+            status=WbsTask.Status.BLOCKED,
+            planned_end=today - timedelta(days=20),
+        )
+
+        overview = build_overview(Project.objects.filter(tenant=self.tenant))
+        scores = [summary.health_score for summary in overview.summaries]
+
+        self.assertEqual(scores, sorted(scores))
+        self.assertEqual(overview.summaries[0].project, self.burning)
+        self.assertEqual(overview.lowest.project, self.burning)

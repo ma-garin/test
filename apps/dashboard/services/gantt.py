@@ -195,20 +195,44 @@ def _today_left(today: date, start: date, end: date, days: int) -> float | None:
     return round(_clamp((today - start).days / days * 100), 2)
 
 
+def _tick_plan(days: int) -> tuple[int, str]:
+    """期間の長さから、目盛りの本数と日付の書式を決める。
+
+    本数を固定にすると、1 年を超えた計画で「5/30」のような月日だけが 5 つ並び、
+    どの年の話か分からなくなる。逆に短期間で本数を増やすと日付が重なる。
+    期間に応じて、読める粒度へ落とす。
+    """
+
+    if days > 730:
+        return 6, "%Y/%-m"
+
+    if days > 365:
+        return 6, "%y/%-m"
+
+    if days > 180:
+        return 7, "%-m/%-d"
+
+    if days > 60:
+        return 6, "%-m/%-d"
+
+    return TICK_COUNT, "%-m/%-d"
+
+
 def _build_ticks(start: date, days: int) -> tuple[GanttTick, ...]:
     """期間を等分した目盛り。1 日しかない場合は先頭だけ出す。"""
 
     if days <= 1:
         return (GanttTick(label=start.strftime("%-m/%-d"), left=0.0),)
 
+    count, fmt = _tick_plan(days)
     ticks: list[GanttTick] = []
 
-    for index in range(TICK_COUNT):
-        ratio = index / (TICK_COUNT - 1)
+    for index in range(count):
+        ratio = index / (count - 1)
         offset = round(ratio * (days - 1))
         ticks.append(
             GanttTick(
-                label=(start.fromordinal(start.toordinal() + offset)).strftime("%-m/%-d"),
+                label=(start.fromordinal(start.toordinal() + offset)).strftime(fmt),
                 left=round(_clamp(offset / days * 100), 2),
             )
         )

@@ -196,7 +196,12 @@ def build_overview(projects: QuerySet[Project]) -> Overview:
         ),
     )
 
-    summaries = [_summarize(project) for project in annotated]
+    # 危ない案件から見せる。ヘルスは Python 側で算出するため、DB ではなくここで並べる。
+    # 画面の見出しも「ヘルス低い順」なので、ここが崩れると表示と実態が食い違う。
+    summaries = sorted(
+        (_summarize(project) for project in annotated),
+        key=lambda summary: summary.health_score,
+    )
 
     ranked_alerts = [
         RankedAlert(rank=position, alert=alert)

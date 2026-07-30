@@ -208,17 +208,28 @@ class Command(BaseCommand):
         return project
 
     def _create_pos_tax(self, tenant: Tenant, user: User) -> Project:
-        """計画通りに進んでいる案件。正常時の見え方の比較対象。"""
+        """炎上している案件。
 
-        project, _ = Project.objects.get_or_create(
+        法改正の施行日が動かせないのに、仕様確定の遅れが後工程を押し出している、
+        という典型的な炎上構造を再現する。危険な状態の画面（赤いバッジ、期限超過、
+        判断待ちの滞留）が確認できないと、管制ダッシュボードの意味を評価できない。
+        """
+
+        today = timezone.localdate()
+
+        project, _ = Project.objects.update_or_create(
             tenant=tenant,
             code="pos-tax0",
             defaults={
                 "name": "POS-TAX0 レジシステム 消費税0%対応",
-                "description": "会計IFの最終整合と店舗FAQ承認を残す、計画通りの体験用案件です。",
-                "status": ProjectStatus.ON_SCHEDULE,
-                "rag_status": RagStatus.GREEN,
-                "progress_percent": 87,
+                "description": (
+                    "軽減税率の特例対応。施行日は法令で固定され、後ろへ動かせない。"
+                    "対象品目の判定仕様が確定せず設計をやり直したため、"
+                    "結合試験以降が押し出されている。"
+                ),
+                "status": ProjectStatus.DELAYED,
+                "rag_status": RagStatus.RED,
+                "progress_percent": 48,
                 "project_manager": "田中 一郎",
                 "pmo_manager": "山田 花子",
                 "is_demo": True,
@@ -226,17 +237,41 @@ class Command(BaseCommand):
         )
         ProjectMember.objects.get_or_create(project=project, user=user, defaults={"role_label": "PMO"})
 
+        # 施行日（動かせない期限）を基準に、後工程が押し出されている状態にする。
         self._create_tasks(
             project,
             (
-                ("2.2", "税率マスタ改修", "開発チームB", WbsTask.Status.DONE, Priority.HIGH, -32, -13, 100, ""),
-                ("3.5", "レジ端末結合", "開発チームB", WbsTask.Status.IN_PROGRESS, Priority.HIGH, -13, 3, 60,
-                 "店舗3拠点での実機確認を進める"),
-                ("5.2", "移行リハーサル", "運用チーム", WbsTask.Status.NOT_STARTED, Priority.MEDIUM, 9, 22, 0,
-                 "移行手順書のレビューを依頼する"),
+                ("1.2", "対象品目の判定仕様確定", "業務チーム", WbsTask.Status.DONE,
+                 Priority.URGENT, -70, -30, 100, ""),
+                ("2.2", "税率マスタ改修", "開発チームB", WbsTask.Status.DONE,
+                 Priority.HIGH, -32, -13, 100, ""),
+                ("4.3", "店舗実機テスト", "運用チーム", WbsTask.Status.NOT_STARTED,
+                 Priority.URGENT, -4, 12, 0, "検証端末の確保を情シスへ依頼する"),
+                ("5.2", "移行リハーサル", "運用チーム", WbsTask.Status.NOT_STARTED,
+                 Priority.URGENT, 9, 20, 0, "移行手順書のレビュー日程を確定する"),
+                ("6.1", "本番切替（施行日固定）", "PMO", WbsTask.Status.NOT_STARTED,
+                 Priority.URGENT, 24, 26, 0, "切替判定会の開催を調整する"),
             ),
         )
 
+        # 遅れの震源。ここが止まっているせいで後続が全部動かない。
+        WbsTask.objects.update_or_create(
+            project=project,
+            wbs_code="3.5",
+            defaults={
+                "name": "レジ端末結合（多税率混在）",
+                "owner": "開発チームB",
+                "status": WbsTask.Status.BLOCKED,
+                "priority": Priority.URGENT,
+                "planned_start": today - timedelta(days=28),
+                "planned_end": today - timedelta(days=15),
+                "progress_percent": 40,
+                "is_critical_path": True,
+                "next_action": "端数計算の不具合を修正し、再試験の日程を引き直す",
+                "ball_holder": "ベンダーB",
+                "follow_up_state": WbsTask.FollowUpState.ESCALATED,
+            },
+        )
         WbsTask.objects.update_or_create(
             project=project,
             wbs_code="4.1",
@@ -244,16 +279,187 @@ class Command(BaseCommand):
                 "name": "会計インターフェース整合確認",
                 "owner": "開発チームB",
                 "status": WbsTask.Status.IN_PROGRESS,
-                "priority": Priority.MEDIUM,
-                "planned_start": timezone.localdate() - timedelta(days=10),
-                "planned_end": timezone.localdate() + timedelta(days=6),
-                "progress_percent": 70,
+                "priority": Priority.URGENT,
+                "planned_start": today - timedelta(days=18),
+                "planned_end": today - timedelta(days=8),
+                "progress_percent": 55,
+                "is_critical_path": True,
                 "next_action": "会計側の項目定義レビューを実施する",
                 "ball_holder": "開発チームB",
+                "follow_up_state": WbsTask.FollowUpState.ESCALATED,
+            },
+        )
+
+        self._create_issues(
+            project,
+            (
+                ("軽減税率の対象品目判定が仕様書と実装で食い違う", Issue.Status.BLOCKED,
+                 Severity.CRITICAL, "業務チーム", -2),
+                ("検証用のレジ端末が確保できず実機テストに着手できない", Issue.Status.BLOCKED,
+                 Severity.HIGH, "情報システム部", 1),
+                ("ベンダー間の責任分界が未合意で不具合対応が止まっている", Issue.Status.OPEN,
+                 Severity.HIGH, "調達部", 5),
+            ),
+        )
+
+        self._create_risks(
+            project,
+            (
+                ("施行日までに本番切替が完了せず、法令要件を満たせない", 4, 5,
+                 "範囲を最小構成へ縮小する案を並行検討。切替判定会を2週前倒しで開催する", 10),
+                ("レジ停止により全店舗の会計業務が止まる", 3, 5,
+                 "切替当日の手動運用手順とロールバック手順を用意する", 20),
+                ("税額計算の誤りが会計監査で指摘される", 3, 4, "", 14),
+                ("要員の長時間稼働が続き、離脱により体制が崩れる", 4, 3,
+                 "増員2名の稟議を申請済み。承認待ち", 7),
+            ),
+        )
+
+        self._create_defects(
+            project,
+            (
+                ("複数税率が混在するレシートで合計額が1円ずれる", Defect.Status.FIXING,
+                 Severity.CRITICAL, "結合試験", -12),
+                ("返品処理で税率0%が適用されず旧税率で計算される", Defect.Status.ANALYZING,
+                 Severity.CRITICAL, "結合試験", -6),
+                ("レシートの税率表記が法定様式と異なる", Defect.Status.FIXING,
+                 Severity.HIGH, "結合試験", -9),
+                ("軽減税率対象外の商品に0%が適用される場合がある", Defect.Status.NEW,
+                 Severity.HIGH, "単体試験", -3),
+                ("日跨ぎの取引で税率の切替判定を誤る", Defect.Status.CLOSED,
+                 Severity.MEDIUM, "単体試験", -20),
+            ),
+        )
+
+        ChangeRequest.objects.update_or_create(
+            project=project,
+            title="政令改正に伴う対象品目リストの追加",
+            defaults={
+                "status": ChangeRequest.Status.PENDING_APPROVAL,
+                "requested_by": "経理部",
+                "impact_summary": (
+                    "判定ロジックとマスタの再作成が必要。結合試験のやり直しを含む。"
+                    "施行日は動かせないため、範囲縮小と同時に判断する必要がある。"
+                ),
+                "impact_scope": ["税率判定ロジック", "商品マスタ", "結合試験シナリオ", "店舗向け手順書"],
+                "estimated_effort_days": 15,
+                "schedule_impact_days": 10,
+            },
+        )
+
+        alert, _ = Alert.objects.update_or_create(
+            project=project,
+            title="本番切替まで24日、結合試験が完了していない",
+            defaults={
+                "category": Alert.Category.SCHEDULE,
+                "severity": Alert.Severity.CRITICAL,
+                "detected_at": timezone.now() - timedelta(days=1),
+                "detail": (
+                    "WBS 3.5 が計画終了日を15日超過し、後続の店舗実機テストが着手できていません。"
+                    "施行日は法令で固定されているため、期限側で吸収できません。"
+                ),
+                "evidence": {"wbs_code": "3.5", "delay_days": 15, "days_to_cutover": 24},
+            },
+        )
+
+        Alert.objects.update_or_create(
+            project=project,
+            title="重大不具合が2件未解決のまま滞留",
+            defaults={
+                "category": Alert.Category.QUALITY,
+                "severity": Alert.Severity.CRITICAL,
+                "detected_at": timezone.now() - timedelta(days=3),
+                "detail": "税額計算に関わる重大不具合が未解決です。会計監査上の指摘対象になります。",
+                "evidence": {"critical_defects": 2},
+            },
+        )
+
+        InterventionProposal.objects.update_or_create(
+            project=project,
+            title="施行日に間に合わせるため、初回リリースの範囲を最小構成へ縮小する",
+            defaults={
+                "alert": alert,
+                "rationale": (
+                    "クリティカルパスが15日遅延し、残工期24日では現行範囲を消化できません。"
+                    "施行日は法令で固定のため、期限ではなく範囲で調整する以外に選択肢がありません。"
+                ),
+                "recommended_action": "本部店舗のみ先行切替とし、返品処理は暫定手順で運用する",
+                "expected_effect": "切替対象を絞ることで、施行日までに法令要件を満たせる見込み",
+                "evidence": [
+                    {"type": "alert", "id": str(alert.pk)},
+                    {"type": "wbs", "code": "3.5", "delay_days": 15},
+                ],
+            },
+        )
+
+        InterventionProposal.objects.update_or_create(
+            project=project,
+            title="検証端末の確保を情シス部門長へエスカレーションする",
+            defaults={
+                "rationale": "端末未確保が2週間解消しておらず、担当者間の調整では動いていません。",
+                "recommended_action": "PMO から情シス部門長へ、期日を切って正式に依頼する",
+                "expected_effect": "実機テストの着手を1週間前倒しできる見込み",
+                "evidence": [{"type": "issue", "title": "検証用のレジ端末が確保できず実機テストに着手できない"}],
             },
         )
 
         return project
+
+    def _create_issues(self, project, specs) -> None:
+        """課題をまとめて投入する。期日は今日からの相対日数で受ける。"""
+
+        today = timezone.localdate()
+
+        for title, status, severity, owner, due in specs:
+            Issue.objects.update_or_create(
+                project=project,
+                title=title,
+                defaults={
+                    "status": status,
+                    "severity": severity,
+                    "owner": owner,
+                    "due_date": today + timedelta(days=due),
+                },
+            )
+
+    def _create_risks(self, project, specs) -> None:
+        """リスクをまとめて投入する。
+
+        対策が空のものを1件混ぜている。「対策なし」の件数が画面に出ることを
+        確認できないと、リスク一覧の警告表示を評価できない。
+        """
+
+        today = timezone.localdate()
+
+        for title, probability, impact, mitigation, due in specs:
+            Risk.objects.update_or_create(
+                project=project,
+                title=title,
+                defaults={
+                    "status": Risk.Status.MONITORING,
+                    "probability": probability,
+                    "impact": impact,
+                    "mitigation": mitigation,
+                    "due_date": today + timedelta(days=due),
+                },
+            )
+
+    def _create_defects(self, project, specs) -> None:
+        """不具合をまとめて投入する。"""
+
+        today = timezone.localdate()
+
+        for title, status, severity, phase, detected in specs:
+            Defect.objects.update_or_create(
+                project=project,
+                title=title,
+                defaults={
+                    "status": status,
+                    "severity": severity,
+                    "phase": phase,
+                    "detected_on": today + timedelta(days=detected),
+                },
+            )
 
     def _create_tasks(self, project, specs) -> None:
         """WBS タスクをまとめて投入する。

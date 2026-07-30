@@ -13,6 +13,9 @@ from apps.documents.services import registration, template_mapping
 from apps.documents.services.validation import EXTENSION_TO_FILE_TYPE, MAX_FILE_SIZE_BYTES
 from apps.projects.selectors import projects_for
 
+#: ひな型はカード表示で 1 件が縦に長い。一覧の既定件数では画面に収まらない。
+CARDS_PER_PAGE = 8
+
 
 def _current_tenant(request: HttpRequest):
     """参照中テナント。未選択ならユーザー所属テナントへ落とす。"""
@@ -64,7 +67,8 @@ def template_list(request: HttpRequest) -> HttpResponse:
 
     templates = selectors.templates_for(request.user, request.tenant)
     cards = template_mapping.build_cards(templates)
-    page = paginate(cards, request)
+    # 1 件がカード（項目マッピング表を含む）なので、既定の 50 件では縦に伸びすぎる。
+    page = paginate(cards, request, per_page=CARDS_PER_PAGE)
 
     return render(
         request,
