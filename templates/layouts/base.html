@@ -32,21 +32,30 @@
   </header>
 
   <nav class="sb" id="sidebar">
-    {% for section in nav_sections %}
-      <div class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}">
-        <button class="sb-hd" type="button">
-          {{ section.label }}
-          <span class="sb-caret" aria-hidden="true">▶</span>
-        </button>
-        <div class="sb-sec-body">
-          {% for item in section.items %}
-            <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}" href="{% url item.url_name %}">
-              <span class="sb-label">{{ item.label }}</span>
-            </a>
-          {% endfor %}
+    <div class="sb-scroll">
+      {% for section in nav_sections %}
+        <div class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}">
+          <button class="sb-hd" type="button">
+            {{ section.label }}
+            <span class="sb-caret" aria-hidden="true">▶</span>
+          </button>
+          <div class="sb-sec-body">
+            {% for item in section.items %}
+              <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
+                 href="{% url item.url_name %}" title="{{ item.label }}">
+                <span class="sb-badge" aria-hidden="true">{{ item.code }}</span>
+                <span class="sb-label">{{ item.label }}</span>
+              </a>
+            {% endfor %}
+          </div>
         </div>
-      </div>
-    {% endfor %}
+      {% endfor %}
+    </div>
+
+    <button class="sb-collapse" type="button" id="nav-collapse" aria-expanded="true">
+      <span class="sb-collapse-ico" aria-hidden="true">‹</span>
+      <span class="sb-label">折りたたむ</span>
+    </button>
   </nav>
 
   <main class="main">
@@ -69,6 +78,30 @@
 </div>
 
 <script>
+// サイドバー全体の折りたたみ。畳んだ状態では 2 文字コードだけを残す。
+(function () {
+  var shell = document.querySelector('.shell');
+  var button = document.getElementById('nav-collapse');
+
+  if (!shell || !button) { return; }
+
+  var KEY = 'verirag.nav.collapsed';
+
+  function apply(collapsed) {
+    shell.classList.toggle('nav-collapsed', collapsed);
+    button.setAttribute('aria-expanded', String(!collapsed));
+  }
+
+  try { apply(localStorage.getItem(KEY) === '1'); } catch (e) { /* 保存できなくても動く */ }
+
+  button.addEventListener('click', function () {
+    var collapsed = !shell.classList.contains('nav-collapsed');
+    apply(collapsed);
+
+    try { localStorage.setItem(KEY, collapsed ? '1' : '0'); } catch (e) { /* 同上 */ }
+  });
+})();
+
 // サイドバーのセクション開閉。現在の画面を含むセクションは常に開く。
 (function () {
   var nav = document.getElementById('sidebar');

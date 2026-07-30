@@ -154,8 +154,37 @@ a { color: inherit; text-decoration: none; }
 
 /* ── サイドバー ─────────────────────────────────────────── */
 
-/* ヘッダーより一段暗くして、同色のべた塗りに見えないようにする。 */
-.sb { background: var(--nav-deep); overflow-y: auto; padding: 12px 8px 24px; border-right: 1px solid var(--nav-line); }
+.sb {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--nav-deep);
+  border-right: 1px solid var(--nav-line);
+}
+
+.sb-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 8px 12px; }
+
+/* 折りたたみボタンは最下部に固定する。スクロールで見失うと戻せなくなる。 */
+.sb-collapse {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 11px 14px;
+  border: 0;
+  border-top: 1px solid var(--nav-line);
+  background: transparent;
+  color: var(--nav-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.sb-collapse:hover { background: var(--nav-hover); color: var(--nav-text); }
+.sb-collapse-ico { font-size: 14px; line-height: 1; transition: transform 0.15s; }
+
+/* 通常時、2 文字コードは出さない。畳んだときだけラベルの代わりに使う。 */
+.sb-badge { display: none; }
 
 .sb-gl {
   color: var(--nav-muted);
@@ -261,6 +290,25 @@ a { color: inherit; text-decoration: none; }
 }
 
 .sb-sec.open .sb-sec-body { display: block; }
+
+/* ── サイドバーを畳んだ状態 ─────────────────────────────
+   幅を詰めてラベルを隠し、2 文字コードだけ残す。
+   畳んでいる間はセクションの開閉を無効にする（畳んだうえに閉じていると、
+   どの項目も出ないサイドバーになってしまう）。 */
+
+.shell.nav-collapsed { grid-template-columns: 56px 1fr; }
+.nav-collapsed .hdr-brand { width: 56px; padding: 0 11px; }
+.nav-collapsed .hdr-title { display: none; }
+.nav-collapsed .sb-scroll { padding: 10px 6px; }
+.nav-collapsed .sb-hd { display: none; }
+.nav-collapsed .sb-sec { margin-bottom: 6px; }
+.nav-collapsed .sb-sec + .sb-sec { border-top: 1px solid var(--nav-line); padding-top: 6px; }
+.nav-collapsed .sb-sec-body { display: block; padding: 0; margin: 0; border-left: 0; }
+.nav-collapsed .sb-label { display: none; }
+.nav-collapsed .sb-item { justify-content: center; padding: 8px 0; }
+.nav-collapsed .sb-badge { display: inline-grid; }
+.nav-collapsed .sb-collapse { justify-content: center; padding: 11px 0; }
+.nav-collapsed .sb-collapse-ico { transform: rotate(180deg); }
 
 /* 未実装画面。押せるが、実装済みと同じ重みでは並べない。 */
 .sb-item.dim { color: rgba(255, 255, 255, 0.38); font-weight: 600; }
