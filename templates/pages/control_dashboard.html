@@ -1,0 +1,49 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <section class="kpi-row">
+    <div class="card kpi"><span class="kpi__label">案件数</span><strong>{{ overview.project_count }}</strong></div>
+    <div class="card kpi"><span class="kpi__label">オープン課題</span><strong>{{ overview.total_open_issues }}</strong></div>
+    <div class="card kpi"><span class="kpi__label">オープンリスク</span><strong>{{ overview.total_open_risks }}</strong></div>
+  </section>
+
+  <section class="card">
+    <h2>案件一覧</h2>
+    <table>
+      <thead>
+        <tr><th>案件</th><th>状態</th><th>信号</th><th>進捗</th><th>課題</th><th>リスク</th><th>ブロック</th><th>提案</th></tr>
+      </thead>
+      <tbody>
+        {% for summary in overview.summaries %}
+          <tr>
+            <td><a href="{% url 'projects:detail' summary.project.pk %}">{{ summary.project.name }}</a></td>
+            <td>{{ summary.project.get_status_display }}</td>
+            <td><span class="rag rag--{{ summary.project.rag_status }}">{{ summary.project.get_rag_status_display }}</span></td>
+            <td>{{ summary.project.progress_percent }}%</td>
+            <td>{{ summary.open_issues }}</td>
+            <td>{{ summary.open_risks }}</td>
+            <td>{{ summary.delayed_tasks }}</td>
+            <td>{{ summary.pending_proposals }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8">参照できる案件がありません。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>重要アラート</h2>
+    <ul class="alert-list">
+      {% for alert in overview.critical_alerts %}
+        <li>
+          <span class="tag tag--{{ alert.severity }}">{{ alert.get_severity_display }}</span>
+          <strong>{{ alert.title }}</strong>
+          <span class="muted">{{ alert.project.name }} / {{ alert.detected_at|date:"Y-m-d H:i" }}</span>
+        </li>
+      {% empty %}
+        <li class="muted">未対応のアラートはありません。</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}

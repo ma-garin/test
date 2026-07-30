@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page_title|default:"VeriRAG PMO Agent" }}{% endblock %} | VeriRAG PMO Agent</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <header class="app-header">
+    <a class="app-header__brand" href="{% url 'dashboard:control' %}">VeriRAG PMO Agent</a>
+    <div class="app-header__meta">
+      {% if current_tenant %}<span class="tag">{{ current_tenant.name }}</span>{% endif %}
+      {% if user.is_authenticated %}
+        <span>{{ user }}（{{ user.get_role_display }}）</span>
+        <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+          <button type="submit" class="link-button">ログアウト</button>
+        </form>
+      {% else %}
+        <a href="{% url 'accounts:login' %}">ログイン</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="app-body">
+    {% if user.is_authenticated %}
+      <nav class="app-nav">
+        {% for section in nav_sections %}
+          <div class="app-nav__section">
+            <p class="app-nav__label">{{ section.label }}</p>
+            <ul>
+              {% for item in section.items %}
+                <li>
+                  <a href="{% url item.url_name %}">{{ item.label }}</a>
+                  {% if item.status != "ready" %}<span class="tag tag--muted">未移植</span>{% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      </nav>
+    {% endif %}
+
+    <main class="app-main">
+      <h1>{% block heading %}{{ page_title }}{% endblock %}</h1>
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}<li class="message message--{{ message.tags }}">{{ message }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

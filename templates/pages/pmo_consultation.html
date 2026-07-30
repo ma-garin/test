@@ -1,0 +1,46 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <form method="get" class="card form">
+    <label for="q">相談内容</label>
+    <textarea name="q" id="q" rows="3" placeholder="例: 結合試験が5日遅れています。どう整理すべきですか。">{{ question }}</textarea>
+    <button type="submit">整理する</button>
+  </form>
+
+  {% if result %}
+    <section class="card">
+      <h2>判断サマリ</h2>
+      <p>意図: <strong>{{ result.run.get_intent_display }}</strong>（確信度 {{ result.run.intent_confidence }}）</p>
+      <p>確認観点: {{ result.intent.viewpoints|join:" / " }}</p>
+    </section>
+
+    <section class="card">
+      <h2>根拠評価</h2>
+      {% with evidence=result.evidence %}
+        <p>
+          {{ evidence.get_recommendation_display }}
+          （信頼度 {{ evidence.confidence }} / 関連度 {{ evidence.get_relevance_display }} / 網羅度 {{ evidence.get_coverage_display }}）
+        </p>
+        {% if evidence.blocks_approval %}
+          <p class="notice notice--warning">根拠が不足しています。この結果のまま成果物を承認へ進めることはできません。</p>
+        {% endif %}
+        {% if evidence.missing_information %}
+          <ul>{% for item in evidence.missing_information %}<li>{{ item }}</li>{% endfor %}</ul>
+        {% endif %}
+      {% endwith %}
+    </section>
+
+    <section class="card">
+      <h2>参照根拠</h2>
+      <ul>
+        {% for hit in result.hits %}
+          <li>{{ hit.chunk.document.title }} p.{{ hit.chunk.page_number }} — {{ hit.chunk.text|truncatechars:160 }}</li>
+        {% empty %}
+          <li class="muted">登録文書からは根拠を取得できませんでした。</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <p><a href="{% url 'agents:run_detail' result.run.pk %}">処理トレースを見る</a></p>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <table class="card">
+    <thead><tr><th>日時</th><th>画面</th><th>意図</th><th>状態</th><th>信頼度</th><th>所要</th></tr></thead>
+    <tbody>
+      {% for run in runs %}
+        <tr>
+          <td><a href="{% url 'agents:run_detail' run.pk %}">{{ run.created_at|date:"Y-m-d H:i" }}</a></td>
+          <td>{{ run.get_area_display }}</td>
+          <td>{{ run.get_intent_display }}</td>
+          <td>{{ run.get_status_display }}</td>
+          <td>{{ run.evidence.confidence|default:"-" }}</td>
+          <td>{{ run.elapsed_ms }}ms</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">実行履歴はまだありません。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <table class="card">
+    <thead><tr><th>画面</th><th>URL名</th><th>移植状況</th><th>参照ロール</th></tr></thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.label }}</td>
+          <td><code>{{ item.url_name }}</code></td>
+          <td>{% if item.status == "ready" %}実装済み{% else %}未移植{% endif %}</td>
+          <td>{{ item.roles|join:", "|default:"全員" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

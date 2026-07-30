@@ -1,0 +1,22 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <table class="card">
+    <thead><tr><th>コード</th><th>案件名</th><th>状態</th><th>信号</th><th>進捗</th><th>PM</th><th>PMO</th></tr></thead>
+    <tbody>
+      {% for project in projects %}
+        <tr>
+          <td>{{ project.code }}</td>
+          <td><a href="{% url 'projects:detail' project.pk %}">{{ project.name }}</a></td>
+          <td>{{ project.get_status_display }}</td>
+          <td><span class="rag rag--{{ project.rag_status }}">{{ project.get_rag_status_display }}</span></td>
+          <td>{{ project.progress_percent }}%</td>
+          <td>{{ project.project_manager }}</td>
+          <td>{{ project.pmo_manager }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">参照できる案件がありません。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

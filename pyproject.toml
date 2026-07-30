@@ -1,0 +1,27 @@
+[project]
+name = "verirag-pmo-agent"
+version = "0.1.0"
+description = "根拠追跡可能な PMO 支援システム（Django 再構築版）"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+exclude = [".venv", "var", "*/migrations/*", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "DJ", "C4"]
+ignore = [
+  # Django のモデルは __str__ を必ず定義しているが、抽象モデルでは不要。
+  "DJ008",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.coverage.run]
+source = ["apps"]
+omit = ["*/migrations/*", "*/tests/*"]
+
+[tool.coverage.report]
+skip_empty = true

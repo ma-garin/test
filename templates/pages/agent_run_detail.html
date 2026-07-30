@@ -1,0 +1,41 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <section class="card">
+    <h2>入力</h2>
+    <p>{{ run.user_input }}</p>
+  </section>
+
+  <section class="card">
+    <h2>実行計画</h2>
+    <ul>
+      <li>検索要否: {{ run.plan.search_required }}</li>
+      <li>使用ツール: {{ run.plan.tools|join:", " }}</li>
+      <li>検索クエリ: {{ run.plan.search_queries|join:" / " }}</li>
+      <li>期待する出力: {{ run.plan.expected_output }}</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>処理ステップ</h2>
+    <ol>
+      {% for step in run.steps.all %}
+        <li>
+          <strong>{{ step.tool_name }}</strong>（{{ step.get_status_display }}）
+          {% if step.output_summary %}<span class="muted">— {{ step.output_summary }}</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>人による確認</h2>
+    <ul>
+      {% for review in run.reviews.all %}
+        <li>{{ review.get_decision_display }} / {{ review.reviewer|default:"未設定" }} / {{ review.reviewed_at|date:"Y-m-d H:i"|default:"-" }}</li>
+      {% empty %}
+        <li class="muted">まだ人による確認は記録されていません。</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}

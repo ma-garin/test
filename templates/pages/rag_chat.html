@@ -1,0 +1,12 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <p class="notice">チャットの応答生成は未実装です。過去セッションの参照のみ可能です。</p>
+  <ul class="card">
+    {% for session in sessions %}
+      <li>{{ session.title|default:"（無題）" }} — {{ session.updated_at|date:"Y-m-d H:i" }}</li>
+    {% empty %}
+      <li class="muted">セッションはありません。</li>
+    {% endfor %}
+  </ul>
+{% endblock %}

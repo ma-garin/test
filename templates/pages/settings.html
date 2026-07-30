@@ -1,0 +1,28 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <p class="notice">認証情報は環境変数で設定します。この画面からは変更できません。表示は必ずマスクされます。</p>
+
+  <section class="card">
+    <h2>AI プロバイダ</h2>
+    <dl class="meta-grid">
+      <dt>現在の設定</dt><dd>{{ ai_settings.provider_label }}</dd>
+      <dt>OpenAI APIキー</dt><dd>{{ ai_settings.openai.api_key }}</dd>
+      <dt>OpenAI 回答モデル</dt><dd>{{ ai_settings.openai.model }}</dd>
+      <dt>OpenAI Embedding</dt><dd>{{ ai_settings.openai.embedding_model }}</dd>
+      <dt>Ollama URL</dt><dd>{{ ai_settings.ollama.base_url }}</dd>
+      <dt>ローカルEmbedding</dt><dd>{{ ai_settings.local_hash.model }}（{{ ai_settings.local_hash.dim }}次元）</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>検索・エージェント</h2>
+    <dl class="meta-grid">
+      <dt>既定 Top-K</dt><dd>{{ ai_settings.rag.default_top_k }}</dd>
+      <dt>LLMリランク</dt><dd>{{ ai_settings.rag.use_llm_rerank }}</dd>
+      <dt>クエリ拡張</dt><dd>{{ ai_settings.rag.use_query_expansion }}</dd>
+      <dt>ループ上限</dt><dd>{{ ai_settings.agent.max_loops }}</dd>
+      <dt>タイムアウト</dt><dd>{{ ai_settings.agent.timeout_seconds }}秒</dd>
+    </dl>
+  </section>
+{% endblock %}

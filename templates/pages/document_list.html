@@ -1,0 +1,21 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <table class="card">
+    <thead><tr><th>文書名</th><th>種別</th><th>案件</th><th>状態</th><th>最終インデックス</th><th>要再構築</th></tr></thead>
+    <tbody>
+      {% for document in documents %}
+        <tr>
+          <td>{{ document.title }}</td>
+          <td>{{ document.get_file_type_display }}</td>
+          <td>{{ document.project.name|default:"共通" }}</td>
+          <td>{{ document.get_status_display }}</td>
+          <td>{{ document.last_indexed_at|date:"Y-m-d H:i"|default:"未実施" }}</td>
+          <td>{% if document.needs_reindex %}<span class="tag tag--warning">要</span>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">文書が登録されていません。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

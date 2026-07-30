@@ -1,0 +1,20 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <table class="card">
+    <thead><tr><th>日時</th><th>評価</th><th>事実誤認</th><th>コメント</th><th>投稿者</th></tr></thead>
+    <tbody>
+      {% for feedback in feedbacks %}
+        <tr>
+          <td>{{ feedback.created_at|date:"Y-m-d H:i" }}</td>
+          <td>{{ feedback.get_rating_display }}</td>
+          <td>{% if feedback.has_fact_error %}あり{% else %}なし{% endif %}</td>
+          <td>{{ feedback.comment|truncatechars:120 }}</td>
+          <td>{{ feedback.user|default:"-" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">フィードバックはありません。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

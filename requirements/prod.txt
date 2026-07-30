@@ -1,0 +1,7 @@
+-r base.txt
+-r ai.txt
+-r ingest.txt
+
+gunicorn>=22.0
+psycopg[binary]>=3.2
+whitenoise>=6.7

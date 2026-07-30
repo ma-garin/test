@@ -1,0 +1,31 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <form method="get" class="card form form--inline">
+    <input type="search" name="q" value="{{ question }}" placeholder="登録文書へ質問する" aria-label="検索語">
+    <button type="submit">検索</button>
+  </form>
+
+  {% if not index %}
+    <div class="notice">検索インデックスが未構築です。<code>python manage.py rebuild_index --tenant &lt;code&gt;</code> を実行してください。</div>
+  {% elif question and not hits %}
+    <div class="notice">該当する登録文書が見つかりませんでした。登録状況と語句を確認してください。</div>
+  {% endif %}
+
+  {% for hit in hits %}
+    <article class="card result">
+      <header>
+        <span class="rank">#{{ hit.rank }}</span>
+        <strong>{{ hit.chunk.document.title }}</strong>
+        <span class="muted">p.{{ hit.chunk.page_number }}</span>
+      </header>
+      <p class="result__text">{{ hit.chunk.text|truncatechars:400 }}</p>
+      <footer class="muted">
+        統合スコア {{ hit.final_score|floatformat:4 }}
+        {% if hit.vector_score %}／ ベクトル {{ hit.vector_score|floatformat:3 }}{% endif %}
+        {% if hit.lexical_score %}／ 語彙 {{ hit.lexical_score|floatformat:3 }}{% endif %}
+        {% if hit.matched_terms %}／ 一致語 {{ hit.matched_terms|join:", " }}{% endif %}
+      </footer>
+    </article>
+  {% endfor %}
+{% endblock %}

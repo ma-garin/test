@@ -1,0 +1,15 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <p class="notice">ひな型は RAG 検索の対象に含めません。回答の出力先としてのみ使います。</p>
+  <table class="card">
+    <thead><tr><th>ひな型名</th><th>マッピング状態</th><th>キーワード</th></tr></thead>
+    <tbody>
+      {% for template in templates %}
+        <tr><td>{{ template.name }}</td><td>{{ template.get_mapping_status_display }}</td><td>{{ template.keywords }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3">ひな型が登録されていません。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

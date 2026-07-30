@@ -1,0 +1,36 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <section class="card">
+    <p>{{ project.description }}</p>
+    <dl class="meta-grid">
+      <dt>状態</dt><dd>{{ project.get_status_display }}</dd>
+      <dt>信号</dt><dd>{{ project.get_rag_status_display }}</dd>
+      <dt>進捗</dt><dd>{{ project.progress_percent }}%</dd>
+      <dt>PM</dt><dd>{{ project.project_manager }}</dd>
+      <dt>PMO</dt><dd>{{ project.pmo_manager }}</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>オープン課題</h2>
+    <ul>
+      {% for issue in project.issue_set.all|slice:":20" %}
+        <li>[{{ issue.get_severity_display }}] {{ issue.title }} — {{ issue.get_status_display }}</li>
+      {% empty %}
+        <li class="muted">登録されていません。</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>リスク</h2>
+    <ul>
+      {% for risk in project.risk_set.all|slice:":20" %}
+        <li>{{ risk.title }} — スコア {{ risk.score }} / {{ risk.get_status_display }}</li>
+      {% empty %}
+        <li class="muted">登録されていません。</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}

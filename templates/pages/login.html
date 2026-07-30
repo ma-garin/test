@@ -1,0 +1,10 @@
+{% extends "layouts/base.html" %}
+{% block heading %}ログイン{% endblock %}
+
+{% block content %}
+  <form method="post" class="card form">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">ログイン</button>
+  </form>
+{% endblock %}

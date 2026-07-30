@@ -1,0 +1,6 @@
+# 外部 AI プロバイダを使う場合のみ必要。
+# AI_PROVIDER=local_hash なら入れなくても動く。
+-r base.txt
+
+openai>=1.40
+httpx>=0.27

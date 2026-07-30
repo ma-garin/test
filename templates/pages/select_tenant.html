@@ -1,0 +1,12 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+  <form method="post" class="card form">
+    {% csrf_token %}
+    <label for="tenant">テナント</label>
+    <select name="tenant" id="tenant">
+      {% for tenant in tenants %}<option value="{{ tenant.pk }}">{{ tenant.name }}</option>{% endfor %}
+    </select>
+    <button type="submit">切り替える</button>
+  </form>
+{% endblock %}

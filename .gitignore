@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Django
+var/
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# ベクトルストア・アップロード実体（再生成可能／実データを含む）
+var/vector_store/
+var/media/
+var/staticfiles/
+
+# ツール
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# エディタ・OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
