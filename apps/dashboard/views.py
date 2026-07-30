@@ -29,9 +29,11 @@ from apps.dashboard.services.interventions import (
 from apps.dashboard.services.gantt import build_gantt_chart
 from apps.dashboard.services.kpi import build_derived_rows, build_kpi_report
 from apps.dashboard.services.overview import build_overview
+from apps.dashboard.services.poc_evaluation import BUSINESS_DAY_NOTE, build_poc_evaluation
 from apps.dashboard.services.progress import build_progress_report
 from apps.dashboard.services.quality import build_quality_report
 from apps.dashboard.services.tasks import TaskFilters, build_task_board
+from apps.audit.selectors import feedbacks_for
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.projects.selectors import projects_for
 
@@ -218,6 +220,28 @@ def kpi(request: HttpRequest) -> HttpResponse:
             "report": report,
             "derived_rows": build_derived_rows(projects) if not report.rows else (),
             "page_title": "KPI・効果測定",
+        },
+    )
+
+
+@login_required
+def poc(request: HttpRequest) -> HttpResponse:
+    """PoC 受け入れ条件の合否判定。
+
+    KPI 画面は数値を出すだけで「PoC が成功したか」を言わない。ここでは目標値と
+    突き合わせて合否を出す。テナント分離は案件・フィードバックの両方で必要なので、
+    それぞれの selectors を入口に通したものだけをサービスへ渡す。
+    """
+
+    report = build_poc_evaluation(_projects(request), feedbacks_for(request.user, getattr(request, "tenant", None)))
+
+    return render(
+        request,
+        "pages/poc_evaluation.html",
+        {
+            "report": report,
+            "business_day_note": BUSINESS_DAY_NOTE,
+            "page_title": "PoC評価・合否判定",
         },
     )
 

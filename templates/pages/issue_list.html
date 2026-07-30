@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% load integration_links %}
 {% block kicker %}AIプロジェクト管制{% endblock %}
 {% block subtitle %}参照できる案件の課題です。リスクから転換された課題もここに並びます。{% endblock %}
 
@@ -26,7 +27,7 @@
               <td class="nowrap">{{ issue.get_severity_display }}</td>
               <td class="nowrap">{{ issue.owner|default:"—" }}</td>
               <td class="nowrap">{{ issue.due_date|date:"n/j"|default:"—" }}</td>
-              <td class="nowrap">{{ issue.external_key|default:"—" }}</td>
+              <td class="nowrap">{% external_link issue as issue_link %}{% if issue_link %}{{ issue_link }}{% else %}{{ issue.external_key|default:"—" }}{% endif %}</td>
               <td><span class="badge n">{{ issue.get_status_display }}</span></td>
               <td class="nowrap"><a class="btn-ghost sm" href="{% url 'projects:issue_edit' issue.pk %}">編集</a></td>
             </tr>

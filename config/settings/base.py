@@ -49,6 +49,7 @@ LOCAL_APPS = [
     "apps.pmo",
     "apps.dashboard",
     "apps.audit",
+    "apps.integrations",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -173,6 +174,20 @@ AGENT = {
     # NFR-AG-002 / NFR-AG-004: ループ回数と待ち時間に必ず上限を設ける。
     "MAX_LOOPS": env("AGENT_MAX_LOOPS"),
     "TIMEOUT_SECONDS": env("AGENT_TIMEOUT_SECONDS"),
+}
+
+# PoC の受け入れ条件（合否の基準値）。
+# 判定ロジック側へ数値を埋め込まない。PoC ごとに基準は変わるうえ、コードを直さないと
+# 目標を動かせない状態では「目標を下げて合格にした」ことが設定差分に残らない。
+POC_TARGETS = {
+    # レポート作業時間: 基準値からの削減率がこの値以上なら合格。
+    "REPORT_HOURS_REDUCTION_PERCENT": env.int("POC_TARGET_REPORT_HOURS_REDUCTION_PERCENT", default=50),
+    # 赤字率: AI生成本文に対する人の修正割合がこの値未満なら合格。
+    "CORRECTION_RATE_PERCENT": env.int("POC_TARGET_CORRECTION_RATE_PERCENT", default=20),
+    # 事実誤認: この件数以下なら合格。
+    "FACT_ERROR_COUNT": env.int("POC_TARGET_FACT_ERROR_COUNT", default=0),
+    # 予兆検知: 定例報告に対してこの営業日数以上先行していれば合格（祝日は考慮しない）。
+    "DETECTION_LEAD_BUSINESS_DAYS": env.int("POC_TARGET_DETECTION_LEAD_BUSINESS_DAYS", default=3),
 }
 
 LOGGING = {

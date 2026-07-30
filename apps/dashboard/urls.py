@@ -18,4 +18,5 @@ urlpatterns = [
         name="intervention_decide",
     ),
     path("kpi/", views.kpi, name="kpi"),
+    path("poc/", views.poc, name="poc"),
 ]

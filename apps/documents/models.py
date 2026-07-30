@@ -29,6 +29,10 @@ class FileType(models.TextChoices):
     DOCX = "docx", "Word (.docx)"
     DOC = "doc", "Word (.doc)"
     PPTX = "pptx", "PowerPoint (.pptx)"
+    # テキスト系は外部ライブラリ無しで本文抽出できる。依存が入っていない環境でも
+    # 「抽出 → チャンク化 → 検索」を通せる経路として残す。
+    TXT = "txt", "テキスト (.txt)"
+    MD = "md", "Markdown (.md)"
 
 
 def document_upload_path(instance: Document, filename: str) -> str:

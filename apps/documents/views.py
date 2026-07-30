@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.documents import selectors
-from apps.documents.services import registration, template_mapping
+from apps.documents.services import extractors, registration, template_mapping
 from apps.documents.services.validation import EXTENSION_TO_FILE_TYPE, MAX_FILE_SIZE_BYTES
 from apps.projects.selectors import projects_for
 
@@ -49,12 +52,34 @@ def document_list(request: HttpRequest) -> HttpResponse:
         "pages/document_list.html",
         {
             "documents": page.object_list,
+            # 登録済みでも本文が取れていなければ検索に出ない。台帳で抽出状態まで見せる。
+            "rows": selectors.extraction_rows(page.object_list),
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),
             "page_title": "ドキュメント登録",
         },
     )
+
+
+@login_required
+@require_POST
+def extract_document(request: HttpRequest, pk: UUID) -> HttpResponse:
+    """本文抽出とインデックス構築を実行する。
+
+    抽出の失敗は例外ではなくジョブとして記録されるため、ここでは常に台帳へ戻す。
+    結果（抽出済み / 失敗理由）は台帳の行に出る。
+    """
+
+    document = selectors.documents_for(request.user, request.tenant).filter(pk=pk).first()
+
+    if document is None:
+        # 他テナントの文書 ID を推測されても存在有無を漏らさない。
+        raise Http404("文書が見つかりません。")
+
+    extractors.ingest(document)
+
+    return redirect("documents:list")
 
 
 @login_required

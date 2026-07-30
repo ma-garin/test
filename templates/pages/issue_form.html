@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% load integration_links %}
 {% block kicker %}AIプロジェクト管制{% endblock %}
 {% block subtitle %}{{ form_subtitle }}{% endblock %}
 
@@ -40,6 +41,10 @@
       <div class="card-hdr">
         <span class="card-t">この課題への操作</span>
       </div>
+      {% external_link issue as issue_link %}
+      {% if issue_link %}
+        <div class="ps">外部原文: {{ issue_link }}</div>
+      {% endif %}
       <form method="post" action="{% url 'projects:issue_close' issue.pk %}" class="form">
         {% csrf_token %}
         <button type="submit" class="btn-out">クローズする</button>

@@ -65,6 +65,7 @@ NAVIGATION: tuple[NavSection, ...] = (
             NavItem("change", "変更影響分析", "dashboard:change", "CH", "ready"),
             NavItem("intervention", "AI介入提案", "dashboard:intervention", "AI", "ready", ("ai",)),
             NavItem("kpi", "KPI・効果測定", "dashboard:kpi", "KP", "ready"),
+            NavItem("poc", "PoC合否判定", "dashboard:poc", "PC", "ready"),
         ),
     ),
     NavSection(
@@ -104,6 +105,9 @@ NAVIGATION: tuple[NavSection, ...] = (
         label="管理・設定",
         items=(
             NavItem("projects", "案件管理", "projects:list", "PJ", "ready"),
+            NavItem("integrations", "外部連携", "integrations:list", "IN", "ready"),
+            NavItem("pipeline", "同期パイプライン", "integrations:pipeline", "PP", "ready"),
+            NavItem("sync_jobs", "同期履歴", "integrations:job_list", "SY", "ready"),
             NavItem(
                 "settings",
                 "設定",

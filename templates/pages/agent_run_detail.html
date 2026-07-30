@@ -1,4 +1,5 @@
 {% extends "layouts/base.html" %}
+{% load integration_links %}
 {% block kicker %}監査・トレース{% endblock %}
 {% block heading %}実行トレース{% endblock %}
 {% block subtitle %}{{ run.created_at|date:"Y-m-d H:i:s" }} ／ {{ run.get_area_display }}{% endblock %}
@@ -65,6 +66,33 @@
           {% for item in run.evidence.missing_information %}<p>・{{ item }}</p>{% endfor %}
         </div>
       {% endif %}
+    </div>
+  {% endif %}
+
+  {% external_sources run as external_records %}
+  {% if external_records %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">外部原文（出所候補）</span>
+        <span class="card-act">REQ-AU-002</span>
+      </div>
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>連携先</th><th>外部キー</th><th>種別</th><th>最終同期</th><th>原文</th></tr></thead>
+          <tbody>
+            {% for record in external_records %}
+              <tr>
+                <td class="nowrap">{{ record.connection.get_provider_display }}</td>
+                <td class="nowrap">{{ record.external_key|default:record.external_id }}</td>
+                <td class="nowrap">{{ record.get_entity_type_display }}</td>
+                <td class="nowrap">{{ record.last_synced_at|date:"n/j H:i"|default:"—" }}</td>
+                <td class="nowrap"><a class="btn-ghost sm" href="{{ record.external_url }}" target="_blank" rel="noopener noreferrer">開く →</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="ps">この実行と同じ案件の接続から取り込んだレコードです。実行が実際に参照した保証はないため、出所の候補として示しています。</div>
     </div>
   {% endif %}
 
