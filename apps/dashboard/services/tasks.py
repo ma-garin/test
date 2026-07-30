@@ -7,16 +7,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, timedelta
 
-from django.db.models import QuerySet
+from django.db.models import Count, Q, QuerySet
 from django.utils import timezone
 
 from apps.projects.models import Priority, WbsTask
-
-#: 一覧の最大表示件数。全件描画すると案件が増えたときに画面が壊れる。
-MAX_ROWS = 200
 
 #: 期限接近とみなす日数。
 DUE_SOON_DAYS = 7
@@ -100,31 +98,43 @@ class TaskBoard:
         return [("not_started", "0%"), ("running", "進行中"), ("completed", "100%")]
 
     @property
-    def is_truncated(self) -> bool:
-        return self.total > len(self.rows)
-
-    @property
     def done_percent(self) -> int:
         return round(100 * self.done / self.total) if self.total else 0
 
 
-def build_task_board(tasks: QuerySet[WbsTask], filters: TaskFilters) -> TaskBoard:
-    """絞り込み済みのタスク QuerySet から画面表示用の構造を作る。"""
+def build_task_board(
+    tasks: QuerySet[WbsTask],
+    filters: TaskFilters,
+    display_tasks: Iterable[WbsTask] | None = None,
+) -> TaskBoard:
+    """絞り込み済みのタスクから画面表示用の構造を作る。
+
+    `tasks` は集計用の全件、`display_tasks` は表示する 1 ページ分。
+    集計を表示行から数えると、ページを送るたびに「期限超過 12 件」が
+    「期限超過 0 件」に変わってしまう。同じ絞り込み条件なら何ページ目でも
+    同じ数字が出るよう、件数は必ず全件から取る。
+    """
 
     today = timezone.localdate()
     soon = today + timedelta(days=DUE_SOON_DAYS)
-    materialized = list(tasks[:MAX_ROWS])
+    visible = tasks if display_tasks is None else display_tasks
 
-    rows = tuple(_build_row(task, today, soon) for task in materialized)
+    rows = tuple(_build_row(task, today, soon) for task in visible)
 
-    return TaskBoard(
-        rows=rows,
-        total=tasks.count(),
-        overdue=sum(1 for row in rows if row.is_overdue),
-        blocked=sum(1 for row in rows if row.task.status == WbsTask.Status.BLOCKED),
-        in_progress=sum(1 for row in rows if row.task.status == WbsTask.Status.IN_PROGRESS),
-        done=sum(1 for row in rows if row.task.status == WbsTask.Status.DONE),
-        filters=filters,
+    return TaskBoard(rows=rows, filters=filters, **_summarize(tasks, today))
+
+
+def _summarize(tasks: QuerySet[WbsTask], today: date) -> dict[str, int]:
+    """件数の集計。Python で数えると全件を読み込むことになるので DB 側で数える。"""
+
+    unfinished = ~Q(status__in=(WbsTask.Status.DONE, WbsTask.Status.ARCHIVED))
+
+    return tasks.aggregate(
+        total=Count("pk"),
+        overdue=Count("pk", filter=Q(planned_end__lt=today) & unfinished),
+        blocked=Count("pk", filter=Q(status=WbsTask.Status.BLOCKED)),
+        in_progress=Count("pk", filter=Q(status=WbsTask.Status.IN_PROGRESS)),
+        done=Count("pk", filter=Q(status=WbsTask.Status.DONE)),
     )
 
 

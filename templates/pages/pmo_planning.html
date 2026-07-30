@@ -11,7 +11,7 @@
 
   <div class="project-strip">
     <span>計画ドラフト</span>
-    <strong>{{ drafts|length }}件</strong>
+    <strong>{{ page.paginator.count }}件</strong>
     <em>選択中 {% if selected %}{{ selected.title }}{% else %}なし{% endif %}</em>
   </div>
 
@@ -19,7 +19,7 @@
     <div class="card">
       <div class="card-hdr">
         <span class="card-t">計画ドラフト一覧</span>
-        <span class="card-act">{{ drafts|length }}件</span>
+        <span class="card-act">{{ page.paginator.count }}件</span>
       </div>
       <div class="t-wrap">
         <table class="t">
@@ -38,6 +38,7 @@
           </tbody>
         </table>
       </div>
+      {% include "partials/pager.html" %}
     </div>
 
     <div class="card">

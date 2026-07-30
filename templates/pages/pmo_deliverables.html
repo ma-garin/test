@@ -42,7 +42,7 @@
       <table class="t">
         <thead><tr><th>タイトル</th><th>案件</th><th>種別</th><th>版</th><th>状態</th><th>赤字率</th><th>承認可否</th></tr></thead>
         <tbody>
-          {% for row in report.rows %}
+          {% for row in page.object_list %}
             <tr>
               <td><a href="?deliverable={{ row.deliverable.pk }}" style="color:var(--blue);font-weight:900">{{ row.deliverable.title }}</a></td>
               <td>{{ row.deliverable.project.name }}</td>
@@ -58,6 +58,7 @@
         </tbody>
       </table>
     </div>
+    {% include "partials/pager.html" %}
   </div>
 
   {% if selected %}

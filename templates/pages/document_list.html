@@ -9,7 +9,7 @@
 
 {% block content %}
   <div class="card">
-    <div class="card-hdr"><span class="card-t">文書台帳</span><span class="card-act">{{ documents|length }}件</span></div>
+    <div class="card-hdr"><span class="card-t">文書台帳</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
         <thead><tr><th>文書名</th><th>種別</th><th>参照範囲</th><th>状態</th><th>最終インデックス</th><th>再構築</th></tr></thead>
@@ -29,6 +29,7 @@
         </tbody>
       </table>
     </div>
+    {% include "partials/pager.html" %}
   </div>
 
   <div class="callout">

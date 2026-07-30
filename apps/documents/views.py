@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
+from apps.core.pagination import page_window, paginate, query_without_page
 from apps.documents import selectors
 from apps.documents.services import registration, template_mapping
 from apps.documents.services.validation import EXTENSION_TO_FILE_TYPE, MAX_FILE_SIZE_BYTES
@@ -36,12 +37,20 @@ def _selected_project(projects, raw_value: str | None):
 
 @login_required
 def document_list(request: HttpRequest) -> HttpResponse:
-    documents = selectors.documents_for(request.user, request.tenant)
+    """文書台帳。先頭 200 件で打ち切ると総件数と表示が食い違うため、ページで切る。"""
+
+    page = paginate(selectors.documents_for(request.user, request.tenant), request)
 
     return render(
         request,
         "pages/document_list.html",
-        {"documents": documents[:200], "page_title": "ドキュメント登録"},
+        {
+            "documents": page.object_list,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
+            "page_title": "ドキュメント登録",
+        },
     )
 
 
@@ -55,12 +64,18 @@ def template_list(request: HttpRequest) -> HttpResponse:
 
     templates = selectors.templates_for(request.user, request.tenant)
     cards = template_mapping.build_cards(templates)
+    page = paginate(cards, request)
 
     return render(
         request,
         "pages/template_list.html",
         {
-            "cards": cards,
+            "cards": page.object_list,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
+            # 集計は全件から取る。ページを送るたびに KPI が変わると数字を信用できない。
+            "template_total": len(cards),
             "mapped_total": sum(card.mapped_count for card in cards),
             "page_title": "ひな型管理",
         },

@@ -1,0 +1,31 @@
+{# ページ送り。`page` と `page_window` と `page_query` をコンテキストに入れて使う。
+   1 ページに収まるときは何も出さない（無意味な「1 / 1」を見せない）。 #}
+{% if page.paginator.num_pages > 1 %}
+  <nav class="pager" aria-label="ページ送り">
+    <span class="pager-info">
+      {{ page.start_index }}–{{ page.end_index }} 件 / 全 {{ page.paginator.count }} 件
+    </span>
+
+    <span class="pager-links">
+      {% if page.has_previous %}
+        <a class="pager-btn" href="?{{ page_query }}page={{ page.previous_page_number }}" rel="prev">前へ</a>
+      {% else %}
+        <span class="pager-btn off">前へ</span>
+      {% endif %}
+
+      {% for number in page_window %}
+        {% if number == page.number %}
+          <span class="pager-btn on" aria-current="page">{{ number }}</span>
+        {% else %}
+          <a class="pager-btn" href="?{{ page_query }}page={{ number }}">{{ number }}</a>
+        {% endif %}
+      {% endfor %}
+
+      {% if page.has_next %}
+        <a class="pager-btn" href="?{{ page_query }}page={{ page.next_page_number }}" rel="next">次へ</a>
+      {% else %}
+        <span class="pager-btn off">次へ</span>
+      {% endif %}
+    </span>
+  </nav>
+{% endif %}

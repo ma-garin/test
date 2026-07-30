@@ -29,7 +29,7 @@
       <table class="t">
         <thead><tr><th>成果物</th><th>案件</th><th>状態</th><th>赤字率</th><th>根拠</th><th>操作</th></tr></thead>
         <tbody>
-          {% for row in report.rows %}
+          {% for row in page.object_list %}
             <tr>
               <td>
                 <a href="{% url 'pmo:deliverables' %}?deliverable={{ row.deliverable.pk }}" style="color:var(--blue);font-weight:900">{{ row.deliverable.title }}</a>
@@ -65,6 +65,7 @@
         </tbody>
       </table>
     </div>
+    {% include "partials/pager.html" %}
   </div>
 
   <div class="card">

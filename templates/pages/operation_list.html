@@ -4,7 +4,7 @@
 
 {% block content %}
   <div class="card">
-    <div class="card-hdr"><span class="card-t">操作ログ</span><span class="card-act">{{ logs|length }}件</span></div>
+    <div class="card-hdr"><span class="card-t">操作ログ</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
         <thead><tr><th>日時</th><th>操作</th><th>対象</th><th>成否</th><th>実施者</th><th>案件</th></tr></thead>
@@ -24,5 +24,6 @@
         </tbody>
       </table>
     </div>
+    {% include "partials/pager.html" %}
   </div>
 {% endblock %}

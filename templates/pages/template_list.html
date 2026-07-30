@@ -17,7 +17,7 @@
   <div class="kpi-g">
     <div class="kpi">
       <div class="kpi-l">登録ひな型</div>
-      <div class="kpi-v">{{ cards|length }}</div>
+      <div class="kpi-v">{{ template_total }}</div>
       <div class="kpi-s">RAG検索には含まれません</div>
     </div>
     <div class="kpi">
@@ -69,5 +69,7 @@
       <div class="empty">ひな型が登録されていません。</div>
     </div>
   {% endfor %}
+
+  {% include "partials/pager.html" %}
 
 {% endblock %}

@@ -18,6 +18,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.core.pagination import page_window, paginate, query_without_page
 from apps.projects.forms import IssueForm, RiskForm, RiskPromoteForm, WbsTaskForm
 from apps.projects.models import Issue, Risk, WbsTask
 from apps.projects.forms import ChangeDecisionForm, ChangeRequestForm, DefectForm
@@ -36,10 +37,20 @@ ISSUE_LIST_URL = "projects:issue_list"
 
 @login_required
 def project_list(request: HttpRequest) -> HttpResponse:
+    """案件一覧。総件数はページャに出し、表示だけをページで切る。"""
+
+    page = paginate(projects_for(request.user, request.tenant), request)
+
     return render(
         request,
         "pages/project_list.html",
-        {"projects": projects_for(request.user, request.tenant), "page_title": "案件管理"},
+        {
+            "projects": page.object_list,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
+            "page_title": "案件管理",
+        },
     )
 
 
@@ -150,10 +161,20 @@ def change_decide(request: HttpRequest, pk) -> HttpResponse:
 
 @login_required
 def defect_list(request: HttpRequest) -> HttpResponse:
+    """不具合一覧。件数が増えても 1 画面へ詰め込まない。"""
+
+    page = paginate(_defects_for(request), request)
+
     return render(
         request,
         "pages/defect_list.html",
-        {"defects": _defects_for(request), "page_title": "不具合管理"},
+        {
+            "defects": page.object_list,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
+            "page_title": "不具合管理",
+        },
     )
 
 
@@ -419,10 +440,20 @@ def risk_promote(request: HttpRequest, pk) -> HttpResponse:
 
 @login_required
 def issue_list(request: HttpRequest) -> HttpResponse:
+    """課題一覧。件数が増えても 1 画面へ詰め込まない。"""
+
+    page = paginate(_issues_for(request), request)
+
     return render(
         request,
         "pages/issue_list.html",
-        {"issues": _issues_for(request), "page_title": "課題管理"},
+        {
+            "issues": page.object_list,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
+            "page_title": "課題管理",
+        },
     )
 
 

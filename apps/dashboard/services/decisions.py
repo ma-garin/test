@@ -7,19 +7,32 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import Decimal
 
-from django.db.models import QuerySet
+from django.db.models import Count, F, Max, Q, QuerySet, Sum
+from django.db.models.functions import Trim
 
 from apps.dashboard.models import InterventionProposal
 from apps.projects.models import ChangeRequest, Risk
 
-#: 一覧の最大表示件数。
-MAX_ROWS = 100
-
 #: 高リスクとみなすスコア（確率×影響）。5 段階評価の 4×4 が下限。
 HIGH_RISK_SCORE = 16
+
+#: 未決とみなす変更要求の状態。行の色と集計で基準がずれないよう 1 箇所に置く。
+PENDING_CHANGE_STATUSES = (
+    ChangeRequest.Status.DRAFT,
+    ChangeRequest.Status.UNDER_REVIEW,
+    ChangeRequest.Status.PENDING_APPROVAL,
+)
+
+#: 採用として数える介入提案の状態。修正のうえ実施も「提案が活きた」に含める。
+ADOPTED_INTERVENTION_STATUSES = (
+    InterventionProposal.Status.ACCEPTED,
+    InterventionProposal.Status.MODIFIED,
+    InterventionProposal.Status.DONE,
+)
 
 
 @dataclass(frozen=True)
@@ -49,14 +62,11 @@ class RiskReport:
     high_count: int
     materialized_count: int
     without_mitigation: int
+    max_score: int
 
     @property
     def status_choices(self) -> list[tuple[str, str]]:
         return Risk.Status.choices
-
-    @property
-    def max_score(self) -> int:
-        return max((row.risk.score for row in self.rows), default=0)
 
 
 @dataclass(frozen=True)
@@ -76,11 +86,7 @@ class ChangeRow:
 
     @property
     def is_pending(self) -> bool:
-        return self.change.status in (
-            ChangeRequest.Status.DRAFT,
-            ChangeRequest.Status.UNDER_REVIEW,
-            ChangeRequest.Status.PENDING_APPROVAL,
-        )
+        return self.change.status in PENDING_CHANGE_STATUSES
 
 
 @dataclass(frozen=True)
@@ -151,59 +157,89 @@ class InterventionReport:
         return round(100 * self.adopted_count / decided) if decided else 0
 
 
-def build_risk_report(risks: QuerySet[Risk]) -> RiskReport:
-    """リスク一覧。スコア順の並びは selectors 側で確定している。"""
+def build_risk_report(
+    risks: QuerySet[Risk],
+    display_risks: Iterable[Risk] | None = None,
+) -> RiskReport:
+    """リスク一覧。スコア順の並びは selectors 側で確定している。
 
-    rows = tuple(RiskRow(risk=risk) for risk in risks[:MAX_ROWS])
-    open_rows = [row for row in rows if row.risk.status != Risk.Status.CLOSED]
+    `risks` は集計用の全件、`display_risks` は表示する 1 ページ分。
+    「高リスク 5 件」がページごとに増減しては指標にならないため、件数は
+    全件から数える。スコアはモデルのプロパティなので、同じ式を注釈して
+    DB 側の条件に使う。
+    """
+
+    visible = risks if display_risks is None else display_risks
+    rows = tuple(RiskRow(risk=risk) for risk in visible)
+    open_only = ~Q(status=Risk.Status.CLOSED)
+    summary = risks.annotate(
+        score_value=F("probability") * F("impact"),
+        mitigation_text=Trim("mitigation"),
+    ).aggregate(
+        total=Count("pk"),
+        high_count=Count("pk", filter=Q(score_value__gte=HIGH_RISK_SCORE) & open_only),
+        materialized_count=Count("pk", filter=Q(status=Risk.Status.MATERIALIZED)),
+        without_mitigation=Count("pk", filter=Q(mitigation_text="") & open_only),
+        max_score=Max("score_value"),
+    )
 
     return RiskReport(
         rows=rows,
-        total=risks.count(),
-        high_count=sum(1 for row in open_rows if row.risk.score >= HIGH_RISK_SCORE),
-        materialized_count=sum(
-            1 for row in rows if row.risk.status == Risk.Status.MATERIALIZED
-        ),
-        without_mitigation=sum(1 for row in open_rows if not row.has_mitigation),
+        total=summary["total"],
+        high_count=summary["high_count"],
+        materialized_count=summary["materialized_count"],
+        without_mitigation=summary["without_mitigation"],
+        max_score=summary["max_score"] or 0,
     )
 
 
-def build_change_report(changes: QuerySet[ChangeRequest]) -> ChangeReport:
-    """変更要求一覧。工数とスケジュール影響は合計も出す（総量が判断材料になる）。"""
+def build_change_report(
+    changes: QuerySet[ChangeRequest],
+    display_changes: Iterable[ChangeRequest] | None = None,
+) -> ChangeReport:
+    """変更要求一覧。工数とスケジュール影響は合計も出す（総量が判断材料になる）。
 
-    rows = tuple(ChangeRow(change=change) for change in changes[:MAX_ROWS])
+    合計が「いま見えているページの総量」では判断材料にならないため、
+    表示は 1 ページ分（`display_changes`）でも集計は全件（`changes`）から取る。
+    """
+
+    visible = changes if display_changes is None else display_changes
+    rows = tuple(ChangeRow(change=change) for change in visible)
+    summary = changes.aggregate(
+        total=Count("pk"),
+        pending_count=Count("pk", filter=Q(status__in=PENDING_CHANGE_STATUSES)),
+        approved_count=Count("pk", filter=Q(status=ChangeRequest.Status.APPROVED)),
+        effort_days=Sum("estimated_effort_days"),
+        schedule_days=Sum("schedule_impact_days"),
+    )
 
     return ChangeReport(
         rows=rows,
-        total=changes.count(),
-        pending_count=sum(1 for row in rows if row.is_pending),
-        approved_count=sum(
-            1 for row in rows if row.change.status == ChangeRequest.Status.APPROVED
-        ),
-        total_effort_days=sum(
-            (row.change.estimated_effort_days or Decimal(0) for row in rows), Decimal(0)
-        ),
-        total_schedule_days=sum(row.change.schedule_impact_days or 0 for row in rows),
+        total=summary["total"],
+        pending_count=summary["pending_count"],
+        approved_count=summary["approved_count"],
+        total_effort_days=summary["effort_days"] or Decimal(0),
+        total_schedule_days=summary["schedule_days"] or 0,
     )
 
 
 def build_intervention_report(
     proposals: QuerySet[InterventionProposal],
+    display_proposals: Iterable[InterventionProposal] | None = None,
 ) -> InterventionReport:
-    """AI 介入提案一覧。採用・不採用の実績は PoC の効果測定にそのまま使う。"""
+    """AI 介入提案一覧。採用・不採用の実績は PoC の効果測定にそのまま使う。
 
-    rows = tuple(InterventionRow(proposal=proposal) for proposal in proposals[:MAX_ROWS])
-    adopted = (InterventionProposal.Status.ACCEPTED, InterventionProposal.Status.MODIFIED,
-               InterventionProposal.Status.DONE)
+    採用率はそのまま報告に載る数字なので、表示ページに引きずられてはいけない。
+    集計は全件（`proposals`）から取る。
+    """
 
-    return InterventionReport(
-        rows=rows,
-        total=proposals.count(),
-        proposed_count=sum(
-            1 for row in rows if row.proposal.status == InterventionProposal.Status.PROPOSED
-        ),
-        adopted_count=sum(1 for row in rows if row.proposal.status in adopted),
-        rejected_count=sum(
-            1 for row in rows if row.proposal.status == InterventionProposal.Status.REJECTED
-        ),
+    visible = proposals if display_proposals is None else display_proposals
+    rows = tuple(InterventionRow(proposal=proposal) for proposal in visible)
+    summary = proposals.aggregate(
+        total=Count("pk"),
+        proposed_count=Count("pk", filter=Q(status=InterventionProposal.Status.PROPOSED)),
+        adopted_count=Count("pk", filter=Q(status__in=ADOPTED_INTERVENTION_STATUSES)),
+        rejected_count=Count("pk", filter=Q(status=InterventionProposal.Status.REJECTED)),
     )
+
+    return InterventionReport(rows=rows, **summary)

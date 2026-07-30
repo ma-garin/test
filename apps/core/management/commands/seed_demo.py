@@ -100,7 +100,23 @@ class Command(BaseCommand):
 
         today = timezone.localdate()
 
-        WbsTask.objects.get_or_create(
+        # ガント表示が意味を持つよう、完了済みから未着手まで期間の異なる工程を置く。
+        # 計画開始日が無いとガントに棒を描けないため、全タスクに入れる。
+        self._create_tasks(
+            project,
+            (
+                ("1.1", "要件定義", "業務チーム", WbsTask.Status.DONE, Priority.MEDIUM, -62, -44, 100, ""),
+                ("2.1", "基本設計", "開発チームA", WbsTask.Status.DONE, Priority.MEDIUM, -44, -26, 100, ""),
+                ("3.1", "単体試験", "開発チームA", WbsTask.Status.IN_PROGRESS, Priority.HIGH, -20, 2, 80,
+                 "残りの異常系ケースを消化する"),
+                ("4.2", "総合試験", "開発チームA", WbsTask.Status.NOT_STARTED, Priority.HIGH, 6, 26, 0,
+                 "結合試験の完了を待って着手する"),
+                ("5.1", "受入支援", "PMO", WbsTask.Status.NOT_STARTED, Priority.MEDIUM, 27, 40, 0,
+                 "受入観点の合意を取る"),
+            ),
+        )
+
+        WbsTask.objects.update_or_create(
             project=project,
             wbs_code="3.2",
             defaults={
@@ -108,6 +124,7 @@ class Command(BaseCommand):
                 "owner": "開発チームA",
                 "status": WbsTask.Status.BLOCKED,
                 "priority": Priority.URGENT,
+                "planned_start": today - timedelta(days=26),
                 "planned_end": today - timedelta(days=5),
                 "progress_percent": 45,
                 "is_critical_path": True,
@@ -209,7 +226,18 @@ class Command(BaseCommand):
         )
         ProjectMember.objects.get_or_create(project=project, user=user, defaults={"role_label": "PMO"})
 
-        WbsTask.objects.get_or_create(
+        self._create_tasks(
+            project,
+            (
+                ("2.2", "税率マスタ改修", "開発チームB", WbsTask.Status.DONE, Priority.HIGH, -32, -13, 100, ""),
+                ("3.5", "レジ端末結合", "開発チームB", WbsTask.Status.IN_PROGRESS, Priority.HIGH, -13, 3, 60,
+                 "店舗3拠点での実機確認を進める"),
+                ("5.2", "移行リハーサル", "運用チーム", WbsTask.Status.NOT_STARTED, Priority.MEDIUM, 9, 22, 0,
+                 "移行手順書のレビューを依頼する"),
+            ),
+        )
+
+        WbsTask.objects.update_or_create(
             project=project,
             wbs_code="4.1",
             defaults={
@@ -217,6 +245,7 @@ class Command(BaseCommand):
                 "owner": "開発チームB",
                 "status": WbsTask.Status.IN_PROGRESS,
                 "priority": Priority.MEDIUM,
+                "planned_start": timezone.localdate() - timedelta(days=10),
                 "planned_end": timezone.localdate() + timedelta(days=6),
                 "progress_percent": 70,
                 "next_action": "会計側の項目定義レビューを実施する",
@@ -225,6 +254,31 @@ class Command(BaseCommand):
         )
 
         return project
+
+    def _create_tasks(self, project, specs) -> None:
+        """WBS タスクをまとめて投入する。
+
+        日付は「今日からの相対日数」で受ける。絶対日付を書くと、
+        しばらく経ってから seed したときに全部過去のタスクになる。
+        """
+
+        today = timezone.localdate()
+
+        for code, name, owner, status, priority, start, end, progress, action in specs:
+            WbsTask.objects.update_or_create(
+                project=project,
+                wbs_code=code,
+                defaults={
+                    "name": name,
+                    "owner": owner,
+                    "status": status,
+                    "priority": priority,
+                    "planned_start": today + timedelta(days=start),
+                    "planned_end": today + timedelta(days=end),
+                    "progress_percent": progress,
+                    "next_action": action,
+                },
+            )
 
     def _create_documents(self, tenant: Tenant) -> None:
         """検索の動作確認用の社内標準文書。実資料ではなく要約した説明文。"""

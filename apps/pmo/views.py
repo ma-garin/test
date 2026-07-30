@@ -9,15 +9,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.agents.models import AgentRun
 from apps.agents.services import orchestrator
+from apps.core.pagination import page_window, paginate, query_without_page
 from apps.pmo import selectors
 from apps.pmo.models import Deliverable
 from apps.pmo.services import approval as approval_service
 from apps.pmo.services import deliverables as deliverable_service
 from apps.pmo.services import prompt_library as prompt_library_service
 from apps.rag.models import VectorIndex
-
-#: 一覧の表示上限。PoC では絞り込み UI を持たないため、件数で頭打ちにする。
-LIST_LIMIT = 50
 
 
 @login_required
@@ -48,14 +46,21 @@ def consultation(request: HttpRequest) -> HttpResponse:
 def planning(request: HttpRequest) -> HttpResponse:
     """計画策定。ドラフト一覧と、選択した 1 件のレビュー観点を出す。"""
 
-    drafts = list(selectors.plan_drafts_for(request.user, request.tenant)[:LIST_LIMIT])
+    drafts = selectors.plan_drafts_for(request.user, request.tenant)
+    page = paginate(drafts, request)
+    # 選択中の 1 件は全件から解決する。2 ページ目の行を開いたときに
+    # 詳細だけ先頭の計画へ化ける、という壊れ方を防ぐため。
+    all_drafts = list(drafts)
 
     return render(
         request,
         "pages/pmo_planning.html",
         {
-            "drafts": drafts,
-            "selected": _pick(drafts, request.GET.get("draft")),
+            "drafts": page.object_list,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
+            "selected": _pick(all_drafts, request.GET.get("draft")),
             "page_title": "計画策定",
         },
     )
@@ -65,9 +70,12 @@ def planning(request: HttpRequest) -> HttpResponse:
 def deliverables(request: HttpRequest) -> HttpResponse:
     """成果物支援。AI 生成本文と確定本文を並べ、赤字率を示す。"""
 
+    # 集計（件数・平均赤字率）は全件から出す。ページを送るたびに KPI が動くと、
+    # その数字が現状を表していないことになるため。
     report = deliverable_service.build_report(
-        selectors.deliverables_for(request.user, request.tenant)[:LIST_LIMIT]
+        selectors.deliverables_for(request.user, request.tenant)
     )
+    page = paginate(report.rows, request)
     selected = _pick(report.rows, request.GET.get("deliverable"), key=_row_pk)
 
     return render(
@@ -75,6 +83,9 @@ def deliverables(request: HttpRequest) -> HttpResponse:
         "pages/pmo_deliverables.html",
         {
             "report": report,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
             "selected": selected,
             "target_percent": deliverable_service.CORRECTION_RATE_TARGET_PERCENT,
             "page_title": "成果物支援",
@@ -89,15 +100,21 @@ def approvals(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         return _decide(request)
 
+    # 判断待ち件数・ブロック件数は全件から数える。ページ送りで警告の件数が
+    # 減って見えると、対応漏れの原因になる。
     report = deliverable_service.build_report(
-        selectors.deliverables_awaiting_decision_for(request.user, request.tenant)[:LIST_LIMIT]
+        selectors.deliverables_awaiting_decision_for(request.user, request.tenant)
     )
+    page = paginate(report.rows, request)
 
     return render(
         request,
         "pages/pmo_approvals.html",
         {
             "report": report,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
             "history": selectors.approvals_for(request.user, request.tenant)[:20],
             "page_title": "報告生成・承認",
         },
@@ -154,20 +171,21 @@ def education(request: HttpRequest) -> HttpResponse:
     )
 
 
-def _row_pk(row) -> int:
+def _row_pk(row):
     return row.deliverable.pk
 
 
 def _pick(items: list, raw_pk: str | None, key=lambda item: item.pk):
     """一覧から選択中の 1 件を返す。指定が無ければ先頭。
 
+    pk は UUID なので数値として解釈せず、文字列のまま突き合わせる。
     URL に不正な pk が来ても画面を落とさないため、例外にせず先頭へ倒す。
     """
 
     if not items:
         return None
 
-    if raw_pk and raw_pk.isdigit():
-        return next((item for item in items if key(item) == int(raw_pk)), items[0])
+    if raw_pk:
+        return next((item for item in items if str(key(item)) == raw_pk), items[0])
 
     return items[0]

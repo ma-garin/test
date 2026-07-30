@@ -110,6 +110,7 @@
     {% empty %}
       <div class="empty">{% if status %}条件に一致する提案がありません。{% else %}AIの介入提案はまだありません。{% endif %}</div>
     {% endfor %}
+    {% include "partials/pager.html" %}
   </div>
 
 {% endblock %}

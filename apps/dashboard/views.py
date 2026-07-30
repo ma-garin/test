@@ -11,6 +11,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from apps.dashboard import selectors
 from apps.dashboard.forms import InterventionDecisionForm
@@ -25,12 +26,24 @@ from apps.dashboard.services.interventions import (
     decide_intervention,
     is_pending,
 )
+from apps.dashboard.services.gantt import build_gantt_chart
 from apps.dashboard.services.kpi import build_derived_rows, build_kpi_report
 from apps.dashboard.services.overview import build_overview
 from apps.dashboard.services.progress import build_progress_report
 from apps.dashboard.services.quality import build_quality_report
 from apps.dashboard.services.tasks import TaskFilters, build_task_board
+from apps.core.pagination import page_window, paginate, query_without_page
 from apps.projects.selectors import projects_for
+
+
+def _page_context(page, request: HttpRequest) -> dict:
+    """ページャ用のコンテキスト。絞り込み条件を保ったままページを送れるようにする。"""
+
+    return {
+        "page": page,
+        "page_window": page_window(page),
+        "page_query": query_without_page(request),
+    }
 
 
 def _projects(request: HttpRequest):
@@ -66,11 +79,39 @@ def tasks(request: HttpRequest) -> HttpResponse:
         progress=filters.progress,
     )
 
-    return render(
-        request,
-        "pages/task_list.html",
-        {"board": build_task_board(queryset, filters), "page_title": "タスク一覧"},
-    )
+    page = paginate(queryset, request)
+    board = build_task_board(queryset, filters, page.object_list)
+    is_gantt = request.GET.get("view", "") == "gantt"
+    context = {
+        "board": board,
+        **_page_context(page, request),
+        "page_title": "タスク一覧",
+        "view_mode": "gantt" if is_gantt else "table",
+        "view_query": _query_without_view(request),
+    }
+
+    if not is_gantt:
+        return render(request, "pages/task_list.html", context)
+
+    # 表と同じ行（絞り込み済み）をそのまま渡す。ここで別の QuerySet を引くと
+    # 表とガントで見えるタスクが食い違う。
+    context["chart"] = build_gantt_chart(board.rows, timezone.localdate())
+
+    return render(request, "pages/task_gantt.html", context)
+
+
+def _query_without_view(request: HttpRequest) -> str:
+    """表示形式を切り替えるリンク用に、絞り込み条件だけを残した文字列。
+
+    切り替えで条件が消えると、対象が変わったのか表示が変わったのか判別できない。
+    """
+
+    params = request.GET.copy()
+    params.pop("view", None)
+    params.pop("page", None)
+    encoded = params.urlencode()
+
+    return f"{encoded}&" if encoded else ""
 
 
 @login_required
@@ -107,40 +148,54 @@ def quality(request: HttpRequest) -> HttpResponse:
 @login_required
 def risk(request: HttpRequest) -> HttpResponse:
     status = request.GET.get("status", "")
-    report = build_risk_report(selectors.risks_for(_projects(request), status=status))
+    queryset = selectors.risks_for(_projects(request), status=status)
+    page = paginate(queryset, request)
 
     return render(
         request,
         "pages/risk_list.html",
-        {"report": report, "status": status, "page_title": "リスク予測・対策"},
+        {
+            "report": build_risk_report(queryset, page.object_list),
+            "status": status,
+            **_page_context(page, request),
+            "page_title": "リスク予測・対策",
+        },
     )
 
 
 @login_required
 def change(request: HttpRequest) -> HttpResponse:
     status = request.GET.get("status", "")
-    report = build_change_report(
-        selectors.change_requests_for(_projects(request), status=status)
-    )
+    queryset = selectors.change_requests_for(_projects(request), status=status)
+    page = paginate(queryset, request)
 
     return render(
         request,
         "pages/change_list.html",
-        {"report": report, "status": status, "page_title": "変更影響分析"},
+        {
+            "report": build_change_report(queryset, page.object_list),
+            "status": status,
+            **_page_context(page, request),
+            "page_title": "変更影響分析",
+        },
     )
 
 
 @login_required
 def intervention(request: HttpRequest) -> HttpResponse:
     status = request.GET.get("status", "")
-    report = build_intervention_report(
-        selectors.interventions_for(_projects(request), status=status)
-    )
+    queryset = selectors.interventions_for(_projects(request), status=status)
+    page = paginate(queryset, request)
 
     return render(
         request,
         "pages/intervention_list.html",
-        {"report": report, "status": status, "page_title": "AI介入提案"},
+        {
+            "report": build_intervention_report(queryset, page.object_list),
+            "status": status,
+            **_page_context(page, request),
+            "page_title": "AI介入提案",
+        },
     )
 
 

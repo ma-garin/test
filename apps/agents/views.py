@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
+from apps.core.pagination import page_window, paginate, query_without_page
 from apps.agents.models import AgentRun
 
 
@@ -20,10 +21,20 @@ def _runs_for(request: HttpRequest):
 
 @login_required
 def run_list(request: HttpRequest) -> HttpResponse:
+    """実行履歴。先頭 100 件の打ち切りでは古いトレースへ辿り着けないため、ページで送る。"""
+
+    page = paginate(_runs_for(request), request)
+
     return render(
         request,
         "pages/agent_run_list.html",
-        {"runs": _runs_for(request)[:100], "page_title": "Agenticトレース"},
+        {
+            "runs": page.object_list,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
+            "page_title": "Agenticトレース",
+        },
     )
 
 

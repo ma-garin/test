@@ -82,7 +82,7 @@
   </div>
 
   <div class="card">
-    <div class="card-hdr"><span class="card-t">フィードバック明細</span><span class="card-act">{{ feedbacks|length }}件を表示</span></div>
+    <div class="card-hdr"><span class="card-t">フィードバック明細</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <table class="t">
       <thead><tr><th>日時</th><th>評価</th><th>事実誤認</th><th>コメント</th><th>投稿者</th></tr></thead>
       <tbody>
@@ -99,6 +99,7 @@
         {% endfor %}
       </tbody>
     </table>
+    {% include "partials/pager.html" %}
   </div>
 
 {% endblock %}
