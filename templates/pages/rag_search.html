@@ -1,31 +1,62 @@
 {% extends "layouts/base.html" %}
+{% block kicker %}ナレッジ / RAG{% endblock %}
+{% block subtitle %}登録文書をハイブリッド検索します。回答だけでなく、引用元とスコアの内訳を表示します。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'documents:list' %}">ドキュメント登録へ</a>
+{% endblock %}
 
 {% block content %}
-  <form method="get" class="card form form--inline">
-    <input type="search" name="q" value="{{ question }}" placeholder="登録文書へ質問する" aria-label="検索語">
-    <button type="submit">検索</button>
-  </form>
+
+  <div class="card">
+    <form method="get" class="search-row">
+      <input type="search" name="q" value="{{ question }}" placeholder="登録文書へ質問する（例: 結合試験の完了判定）" aria-label="検索語">
+      <button type="submit" class="btn-b">検索</button>
+    </form>
+  </div>
 
   {% if not index %}
-    <div class="notice">検索インデックスが未構築です。<code>python manage.py rebuild_index --tenant &lt;code&gt;</code> を実行してください。</div>
+    <div class="callout w">
+      <p><strong>検索インデックスが未構築です。</strong></p>
+      <p>次のコマンドで構築してください: <code>python manage.py rebuild_index --tenant &lt;テナントコード&gt;</code></p>
+    </div>
   {% elif question and not hits %}
-    <div class="notice">該当する登録文書が見つかりませんでした。登録状況と語句を確認してください。</div>
+    <div class="callout w">
+      <p><strong>該当する登録文書が見つかりませんでした。</strong></p>
+      <p>文書の登録状況（RAG対象になっているか）と、検索語を確認してください。</p>
+    </div>
+  {% elif not question %}
+    <div class="callout">
+      <p>質問を入力すると、ベクトル検索と語彙検索を組み合わせて根拠を探します。</p>
+      <p>スコアは順位合成（Reciprocal Rank Fusion）で算出し、内訳も併せて表示します。</p>
+    </div>
   {% endif %}
 
-  {% for hit in hits %}
-    <article class="card result">
-      <header>
-        <span class="rank">#{{ hit.rank }}</span>
-        <strong>{{ hit.chunk.document.title }}</strong>
-        <span class="muted">p.{{ hit.chunk.page_number }}</span>
-      </header>
-      <p class="result__text">{{ hit.chunk.text|truncatechars:400 }}</p>
-      <footer class="muted">
-        統合スコア {{ hit.final_score|floatformat:4 }}
-        {% if hit.vector_score %}／ ベクトル {{ hit.vector_score|floatformat:3 }}{% endif %}
-        {% if hit.lexical_score %}／ 語彙 {{ hit.lexical_score|floatformat:3 }}{% endif %}
-        {% if hit.matched_terms %}／ 一致語 {{ hit.matched_terms|join:", " }}{% endif %}
-      </footer>
-    </article>
-  {% endfor %}
+  {% if hits %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">検索結果 {{ hits|length }}件</span>
+        <span class="card-act">{{ index.embedding_model }} / {{ index.chunk_count }}チャンク</span>
+      </div>
+
+      {% for hit in hits %}
+        <article class="result">
+          <div class="result-hdr">
+            <span class="result-rank">{{ hit.rank }}</span>
+            <span class="result-src">{{ hit.chunk.document.title }}</span>
+            <span class="result-loc">p.{{ hit.chunk.page_number }}</span>
+            <span class="badge n">{{ hit.chunk.document.get_file_type_display }}</span>
+          </div>
+          <p class="result-text">{{ hit.chunk.text }}</p>
+          <div class="result-scores">
+            <span>統合 <b>{{ hit.final_score|floatformat:4 }}</b></span>
+            <span>ベクトル <b>{% if hit.vector_score %}{{ hit.vector_score|floatformat:3 }}{% else %}—{% endif %}</b></span>
+            <span>語彙 <b>{% if hit.lexical_score %}{{ hit.lexical_score|floatformat:3 }}{% else %}—{% endif %}</b></span>
+            {% if hit.matched_terms %}<span>一致語 <b>{{ hit.matched_terms|join:", " }}</b></span>{% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+
 {% endblock %}

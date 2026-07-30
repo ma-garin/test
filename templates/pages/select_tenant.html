@@ -1,12 +1,18 @@
 {% extends "layouts/base.html" %}
+{% block kicker %}ACCESS{% endblock %}
+{% block subtitle %}参照するテナントを選びます。所属外のテナントは選択できません。{% endblock %}
 
 {% block content %}
-  <form method="post" class="card form">
-    {% csrf_token %}
-    <label for="tenant">テナント</label>
-    <select name="tenant" id="tenant">
-      {% for tenant in tenants %}<option value="{{ tenant.pk }}">{{ tenant.name }}</option>{% endfor %}
-    </select>
-    <button type="submit">切り替える</button>
-  </form>
+  <div class="card" style="max-width:520px">
+    <form method="post" class="form">
+      {% csrf_token %}
+      <div>
+        <label for="tenant">テナント</label>
+        <select name="tenant" id="tenant">
+          {% for tenant in tenants %}<option value="{{ tenant.pk }}">{{ tenant.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="actions"><button type="submit" class="btn-b">切り替える</button></div>
+    </form>
+  </div>
 {% endblock %}

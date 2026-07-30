@@ -1,20 +1,25 @@
 {% extends "layouts/base.html" %}
+{% block kicker %}監査・トレース{% endblock %}
+{% block subtitle %}事実誤認の有無は PoC の受入条件「事実誤認 0 件」の集計に使います。{% endblock %}
 
 {% block content %}
-  <table class="card">
-    <thead><tr><th>日時</th><th>評価</th><th>事実誤認</th><th>コメント</th><th>投稿者</th></tr></thead>
-    <tbody>
-      {% for feedback in feedbacks %}
-        <tr>
-          <td>{{ feedback.created_at|date:"Y-m-d H:i" }}</td>
-          <td>{{ feedback.get_rating_display }}</td>
-          <td>{% if feedback.has_fact_error %}あり{% else %}なし{% endif %}</td>
-          <td>{{ feedback.comment|truncatechars:120 }}</td>
-          <td>{{ feedback.user|default:"-" }}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="5">フィードバックはありません。</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">フィードバック</span><span class="card-act">{{ feedbacks|length }}件</span></div>
+    <table class="t">
+      <thead><tr><th>日時</th><th>評価</th><th>事実誤認</th><th>コメント</th><th>投稿者</th></tr></thead>
+      <tbody>
+        {% for feedback in feedbacks %}
+          <tr>
+            <td class="nowrap">{{ feedback.created_at|date:"m/d H:i" }}</td>
+            <td><span class="badge {% if feedback.rating == 3 %}g{% elif feedback.rating == 1 %}r{% else %}n{% endif %}">{{ feedback.get_rating_display }}</span></td>
+            <td>{% if feedback.has_fact_error %}<span class="badge r">あり</span>{% else %}<span class="muted">なし</span>{% endif %}</td>
+            <td>{{ feedback.comment|truncatechars:80 }}</td>
+            <td class="nowrap">{{ feedback.user|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5"><div class="empty">フィードバックはありません。</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% endblock %}

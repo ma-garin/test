@@ -1,21 +1,37 @@
 {% extends "layouts/base.html" %}
+{% block kicker %}ナレッジ / RAG{% endblock %}
+{% block subtitle %}登録前に形式・サイズ・重複を検証します。除外・削除した文書は検索対象から外れます。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'rag:search' %}">RAG検索へ</a>
+{% endblock %}
 
 {% block content %}
-  <table class="card">
-    <thead><tr><th>文書名</th><th>種別</th><th>案件</th><th>状態</th><th>最終インデックス</th><th>要再構築</th></tr></thead>
-    <tbody>
-      {% for document in documents %}
-        <tr>
-          <td>{{ document.title }}</td>
-          <td>{{ document.get_file_type_display }}</td>
-          <td>{{ document.project.name|default:"共通" }}</td>
-          <td>{{ document.get_status_display }}</td>
-          <td>{{ document.last_indexed_at|date:"Y-m-d H:i"|default:"未実施" }}</td>
-          <td>{% if document.needs_reindex %}<span class="tag tag--warning">要</span>{% endif %}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="6">文書が登録されていません。</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">文書台帳</span><span class="card-act">{{ documents|length }}件</span></div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>文書名</th><th>種別</th><th>参照範囲</th><th>状態</th><th>最終インデックス</th><th>再構築</th></tr></thead>
+        <tbody>
+          {% for document in documents %}
+            <tr>
+              <td>{{ document.title }}</td>
+              <td class="nowrap"><span class="badge n">{{ document.get_file_type_display }}</span></td>
+              <td class="nowrap">{{ document.project.name|default:"テナント共通" }}</td>
+              <td><span class="badge {% if document.status == 'active' %}g{% elif document.status == 'error' %}r{% else %}n{% endif %}">{{ document.get_status_display }}</span></td>
+              <td class="nowrap">{{ document.last_indexed_at|date:"Y-m-d H:i"|default:"未実施" }}</td>
+              <td>{% if document.needs_reindex %}<span class="badge a">要</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="empty">文書が登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout w">
+    <p><strong>アップロード画面は未実装です。</strong>現時点は管理画面と管理コマンドから登録します。</p>
+    <p>検証ロジック（形式・サイズ・空・重複）は <code>apps/documents/services/validation.py</code> に実装済みです。</p>
+  </div>
 {% endblock %}

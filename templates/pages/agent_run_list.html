@@ -1,21 +1,33 @@
 {% extends "layouts/base.html" %}
+{% block kicker %}監査・トレース{% endblock %}
+{% block subtitle %}AI の意図分類・実行計画・使用ツール・根拠評価を後から追跡できます。{% endblock %}
 
 {% block content %}
-  <table class="card">
-    <thead><tr><th>日時</th><th>画面</th><th>意図</th><th>状態</th><th>信頼度</th><th>所要</th></tr></thead>
-    <tbody>
-      {% for run in runs %}
-        <tr>
-          <td><a href="{% url 'agents:run_detail' run.pk %}">{{ run.created_at|date:"Y-m-d H:i" }}</a></td>
-          <td>{{ run.get_area_display }}</td>
-          <td>{{ run.get_intent_display }}</td>
-          <td>{{ run.get_status_display }}</td>
-          <td>{{ run.evidence.confidence|default:"-" }}</td>
-          <td>{{ run.elapsed_ms }}ms</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="6">実行履歴はまだありません。</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">Agentic 実行履歴</span><span class="card-act">{{ runs|length }}件</span></div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>日時</th><th>画面</th><th>入力</th><th>意図</th><th>状態</th><th>信頼度</th><th>所要</th></tr></thead>
+        <tbody>
+          {% for run in runs %}
+            <tr>
+              <td class="nowrap"><a href="{% url 'agents:run_detail' run.pk %}">{{ run.created_at|date:"m/d H:i" }}</a></td>
+              <td class="nowrap">{{ run.get_area_display }}</td>
+              <td>{{ run.user_input|truncatechars:44 }}</td>
+              <td class="nowrap"><span class="badge b">{{ run.get_intent_display }}</span></td>
+              <td class="nowrap"><span class="badge {% if run.status == 'succeeded' %}g{% elif run.status == 'failed' %}r{% else %}n{% endif %}">{{ run.get_status_display }}</span></td>
+              <td class="nowrap">
+                {% if run.evidence %}
+                  <span class="badge {% if run.evidence.blocks_approval %}r{% elif run.evidence.confidence >= 0.75 %}g{% else %}a{% endif %}">{{ run.evidence.confidence }}</span>
+                {% else %}<span class="muted">—</span>{% endif %}
+              </td>
+              <td class="nowrap muted">{{ run.elapsed_ms }}ms</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7"><div class="empty">実行履歴はまだありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 {% endblock %}

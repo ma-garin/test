@@ -1,22 +1,30 @@
 {% extends "layouts/base.html" %}
+{% block kicker %}管理・設定{% endblock %}
+{% block subtitle %}参照権限のある案件のみ表示しています。{% endblock %}
 
 {% block content %}
-  <table class="card">
-    <thead><tr><th>コード</th><th>案件名</th><th>状態</th><th>信号</th><th>進捗</th><th>PM</th><th>PMO</th></tr></thead>
-    <tbody>
-      {% for project in projects %}
-        <tr>
-          <td>{{ project.code }}</td>
-          <td><a href="{% url 'projects:detail' project.pk %}">{{ project.name }}</a></td>
-          <td>{{ project.get_status_display }}</td>
-          <td><span class="rag rag--{{ project.rag_status }}">{{ project.get_rag_status_display }}</span></td>
-          <td>{{ project.progress_percent }}%</td>
-          <td>{{ project.project_manager }}</td>
-          <td>{{ project.pmo_manager }}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="7">参照できる案件がありません。</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">案件一覧</span><span class="card-act">{{ projects|length }}件</span></div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>コード</th><th>案件名</th><th>状態</th><th>信号</th><th>進捗</th><th>PM</th><th>PMO</th><th>区分</th></tr></thead>
+        <tbody>
+          {% for project in projects %}
+            <tr>
+              <td class="nowrap"><code>{{ project.code }}</code></td>
+              <td><a href="{% url 'projects:detail' project.pk %}">{{ project.name }}</a></td>
+              <td class="nowrap">{{ project.get_status_display }}</td>
+              <td><span class="badge {% if project.rag_status == 'red' %}r{% elif project.rag_status == 'yellow' %}a{% elif project.rag_status == 'green' %}g{% else %}n{% endif %}">{{ project.get_rag_status_display }}</span></td>
+              <td class="nowrap">{{ project.progress_percent|floatformat:0 }}%</td>
+              <td class="nowrap">{{ project.project_manager|default:"—" }}</td>
+              <td class="nowrap">{{ project.pmo_manager|default:"—" }}</td>
+              <td>{% if project.is_demo %}<span class="badge p">体験用</span>{% else %}<span class="badge n">実案件</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8"><div class="empty">参照できる案件がありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 {% endblock %}

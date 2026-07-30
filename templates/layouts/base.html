@@ -1,5 +1,4 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8">
@@ -8,49 +7,63 @@
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
-  <header class="app-header">
-    <a class="app-header__brand" href="{% url 'dashboard:control' %}">VeriRAG PMO Agent</a>
-    <div class="app-header__meta">
-      {% if current_tenant %}<span class="tag">{{ current_tenant.name }}</span>{% endif %}
-      {% if user.is_authenticated %}
-        <span>{{ user }}（{{ user.get_role_display }}）</span>
-        <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
-          <button type="submit" class="link-button">ログアウト</button>
-        </form>
-      {% else %}
-        <a href="{% url 'accounts:login' %}">ログイン</a>
+<div class="shell">
+
+  <header class="hdr">
+    <a class="hdr-brand" href="{% url 'dashboard:control' %}">
+      <span class="hdr-mark">VR</span>
+      <span class="hdr-title">
+        <span class="hdr-name">VeriRAG PMO Agent</span>
+        <span class="hdr-sub">AI PROJECT CONTROL</span>
+      </span>
+    </a>
+
+    <div class="hdr-spacer"></div>
+
+    <div class="hdr-chips">
+      {% if current_tenant %}
+        <a class="hdr-project" href="{% url 'accounts:select_tenant' %}" title="テナントを切り替える">{{ current_tenant.name }}</a>
       {% endif %}
+      <span class="hdr-user">{{ user.display_name|default:user.username }} <span>{{ user.get_role_display }}</span></span>
+      <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+        <button type="submit" class="hdr-chip">ログアウト</button>
+      </form>
     </div>
   </header>
 
-  <div class="app-body">
-    {% if user.is_authenticated %}
-      <nav class="app-nav">
-        {% for section in nav_sections %}
-          <div class="app-nav__section">
-            <p class="app-nav__label">{{ section.label }}</p>
-            <ul>
-              {% for item in section.items %}
-                <li>
-                  <a href="{% url item.url_name %}">{{ item.label }}</a>
-                  {% if item.status != "ready" %}<span class="tag tag--muted">未移植</span>{% endif %}
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% endfor %}
-      </nav>
-    {% endif %}
+  <nav class="sb">
+    {% for section in nav_sections %}
+      <p class="sb-gl">{{ section.label }}</p>
+      {% for item in section.items %}
+        <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}" href="{% url item.url_name %}">
+          <span class="sb-badge">{{ item.code }}</span>
+          <span class="sb-label">{{ item.label }}</span>
+          <span class="sb-tags">
+            {% for tag in item.tags %}<span class="sb-tag {{ tag }}">{{ tag|upper }}</span>{% endfor %}
+            {% if not item.is_ready %}<span class="sb-tag wip">WIP</span>{% endif %}
+          </span>
+        </a>
+      {% endfor %}
+    {% endfor %}
+  </nav>
 
-    <main class="app-main">
-      <h1>{% block heading %}{{ page_title }}{% endblock %}</h1>
-      {% if messages %}
-        <ul class="messages">
-          {% for message in messages %}<li class="message message--{{ message.tags }}">{{ message }}</li>{% endfor %}
-        </ul>
-      {% endif %}
-      {% block content %}{% endblock %}
-    </main>
-  </div>
+  <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">{% block kicker %}{{ page_kicker|default:"VERIRAG" }}{% endblock %}</div>
+        <h1 class="pt">{% block heading %}{{ page_title }}{% endblock %}</h1>
+        <p class="ps">{% block subtitle %}{{ page_subtitle }}{% endblock %}</p>
+      </div>
+      <div class="ph-right">{% block header_actions %}{% endblock %}</div>
+    </div>
+
+    {% for message in messages %}
+      <div class="callout{% if message.tags == 'error' %} d{% elif message.tags == 'warning' %} w{% elif message.tags == 'success' %} ok{% endif %}">{{ message }}</div>
+    {% endfor %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
 </body>
 </html>

@@ -50,7 +50,8 @@ class Command(BaseCommand):
 
         user, created = User.objects.get_or_create(
             username="pmo",
-            defaults={"display_name": "体験ユーザー（PMO担当）", "tenant": tenant, "role": Role.PMO},
+            # ロールはヘッダーで別に表示されるので、表示名には含めない。
+            defaults={"display_name": "体験ユーザー", "tenant": tenant, "role": Role.PMO},
         )
 
         if created:

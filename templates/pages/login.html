@@ -1,10 +1,23 @@
-{% extends "layouts/base.html" %}
-{% block heading %}ログイン{% endblock %}
+{% extends "layouts/auth.html" %}
 
 {% block content %}
-  <form method="post" class="card form">
+  <form method="post" class="form">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">ログイン</button>
+    {% if form.errors %}
+      <div class="callout d">ユーザー名またはパスワードが正しくありません。</div>
+    {% endif %}
+    <div>
+      <label for="{{ form.username.id_for_label }}">ユーザー名</label>
+      {{ form.username }}
+    </div>
+    <div>
+      <label for="{{ form.password.id_for_label }}">パスワード</label>
+      {{ form.password }}
+    </div>
+    <button type="submit" class="btn-b">ログイン</button>
   </form>
+  <p class="auth-note">
+    体験用データを投入した環境では <code>pmo</code> でログインできます。<br>
+    認証情報は環境変数で管理し、画面には表示しません。
+  </p>
 {% endblock %}

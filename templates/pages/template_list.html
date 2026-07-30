@@ -1,15 +1,23 @@
 {% extends "layouts/base.html" %}
+{% block kicker %}ナレッジ / RAG{% endblock %}
+{% block subtitle %}ひな型は RAG 検索の対象に含めません。回答の出力先としてのみ使います。{% endblock %}
 
 {% block content %}
-  <p class="notice">ひな型は RAG 検索の対象に含めません。回答の出力先としてのみ使います。</p>
-  <table class="card">
-    <thead><tr><th>ひな型名</th><th>マッピング状態</th><th>キーワード</th></tr></thead>
-    <tbody>
-      {% for template in templates %}
-        <tr><td>{{ template.name }}</td><td>{{ template.get_mapping_status_display }}</td><td>{{ template.keywords }}</td></tr>
-      {% empty %}
-        <tr><td colspan="3">ひな型が登録されていません。</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">ひな型台帳</span><span class="card-act">{{ templates|length }}件</span></div>
+    <table class="t">
+      <thead><tr><th>ひな型名</th><th>マッピング状態</th><th>キーワード</th></tr></thead>
+      <tbody>
+        {% for template in templates %}
+          <tr>
+            <td>{{ template.name }}</td>
+            <td><span class="badge {% if template.mapping_status == 'approved' %}g{% elif template.mapping_status == 'needs_review' %}a{% else %}n{% endif %}">{{ template.get_mapping_status_display }}</span></td>
+            <td class="muted">{{ template.keywords|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3"><div class="empty">ひな型が登録されていません。</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% endblock %}

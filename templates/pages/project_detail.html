@@ -1,36 +1,107 @@
 {% extends "layouts/base.html" %}
+{% block kicker %}案件詳細{% endblock %}
+{% block subtitle %}{{ project.description }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'projects:list' %}">案件一覧へ</a>
+{% endblock %}
 
 {% block content %}
-  <section class="card">
-    <p>{{ project.description }}</p>
-    <dl class="meta-grid">
-      <dt>状態</dt><dd>{{ project.get_status_display }}</dd>
-      <dt>信号</dt><dd>{{ project.get_rag_status_display }}</dd>
-      <dt>進捗</dt><dd>{{ project.progress_percent }}%</dd>
-      <dt>PM</dt><dd>{{ project.project_manager }}</dd>
-      <dt>PMO</dt><dd>{{ project.pmo_manager }}</dd>
-    </dl>
-  </section>
 
-  <section class="card">
-    <h2>オープン課題</h2>
-    <ul>
-      {% for issue in project.issue_set.all|slice:":20" %}
-        <li>[{{ issue.get_severity_display }}] {{ issue.title }} — {{ issue.get_status_display }}</li>
-      {% empty %}
-        <li class="muted">登録されていません。</li>
-      {% endfor %}
-    </ul>
-  </section>
+  <div class="project-strip">
+    <span>{{ project.code }}</span>
+    <strong>{{ project.name }}</strong>
+    <em>{{ project.get_status_display }}</em>
+    <em>{{ project.get_rag_status_display }}</em>
+    <em>進捗 {{ project.progress_percent|floatformat:0 }}%</em>
+  </div>
 
-  <section class="card">
-    <h2>リスク</h2>
-    <ul>
-      {% for risk in project.risk_set.all|slice:":20" %}
-        <li>{{ risk.title }} — スコア {{ risk.score }} / {{ risk.get_status_display }}</li>
-      {% empty %}
-        <li class="muted">登録されていません。</li>
-      {% endfor %}
-    </ul>
-  </section>
+  <div class="kpi-g">
+    <div class="kpi"><div class="kpi-l">進捗率</div><div class="kpi-v">{{ project.progress_percent|floatformat:0 }}<small>%</small></div><div class="kpi-s">計画に対する実績</div><div class="kpi-bar"><div class="kpi-fill b" style="width:{{ project.progress_percent|floatformat:0 }}%"></div></div></div>
+    <div class="kpi"><div class="kpi-l">PM</div><div class="kpi-v" style="font-size:16px">{{ project.project_manager|default:"—" }}</div><div class="kpi-s">プロジェクト責任者</div></div>
+    <div class="kpi"><div class="kpi-l">PMO</div><div class="kpi-v" style="font-size:16px">{{ project.pmo_manager|default:"—" }}</div><div class="kpi-s">PMO担当</div></div>
+    <div class="kpi"><div class="kpi-l">登録文書</div><div class="kpi-v">{{ project.documents.count }}</div><div class="kpi-s">案件別ナレッジ</div></div>
+  </div>
+
+  <div class="sg">
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">課題</span><span class="card-act">{{ project.issue_set.count }}件</span></div>
+      <table class="t">
+        <thead><tr><th>課題</th><th>重大度</th><th>状態</th><th>期限</th></tr></thead>
+        <tbody>
+          {% for issue in project.issue_set.all|slice:":10" %}
+            <tr>
+              <td>{{ issue.title }}</td>
+              <td><span class="badge {% if issue.severity == 'critical' or issue.severity == 'high' %}r{% elif issue.severity == 'medium' %}a{% else %}n{% endif %}">{{ issue.get_severity_display }}</span></td>
+              <td class="nowrap">{{ issue.get_status_display }}</td>
+              <td class="nowrap">{{ issue.due_date|date:"n/j"|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty">登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">リスク</span><span class="card-act">{{ project.risk_set.count }}件</span></div>
+      <table class="t">
+        <thead><tr><th>リスク</th><th>確率</th><th>影響</th><th>スコア</th><th>状態</th></tr></thead>
+        <tbody>
+          {% for risk in project.risk_set.all|slice:":10" %}
+            <tr>
+              <td>{{ risk.title }}</td>
+              <td class="nowrap">{{ risk.probability }}</td>
+              <td class="nowrap">{{ risk.impact }}</td>
+              <td><span class="badge {% if risk.score >= 16 %}r{% elif risk.score >= 9 %}a{% else %}g{% endif %}">{{ risk.score }}</span></td>
+              <td class="nowrap">{{ risk.get_status_display }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty">登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sg">
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">WBSタスク</span><span class="card-act">{{ project.wbstask_set.count }}件</span></div>
+      <table class="t">
+        <thead><tr><th>WBS</th><th>タスク</th><th>状態</th><th>優先度</th><th>ボール保持者</th></tr></thead>
+        <tbody>
+          {% for task in project.wbstask_set.all|slice:":10" %}
+            <tr>
+              <td class="nowrap"><code>{{ task.wbs_code }}</code></td>
+              <td>{{ task.name }}<div class="ps">{{ task.next_action }}</div></td>
+              <td><span class="badge {% if task.status == 'blocked' %}r{% elif task.status == 'in_progress' %}b{% else %}n{% endif %}">{{ task.get_status_display }}</span></td>
+              <td class="nowrap">{{ task.get_priority_display }}</td>
+              <td class="nowrap">{{ task.ball_holder|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty">登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">変更要求 / 不具合</span></div>
+      <table class="t">
+        <thead><tr><th>種別</th><th>内容</th><th>状態</th></tr></thead>
+        <tbody>
+          {% for change in project.changerequest_set.all|slice:":5" %}
+            <tr><td><span class="badge p">変更</span></td><td>{{ change.title }}</td><td class="nowrap">{{ change.get_status_display }}</td></tr>
+          {% endfor %}
+          {% for defect in project.defect_set.all|slice:":5" %}
+            <tr><td><span class="badge r">不具合</span></td><td>{{ defect.title }}</td><td class="nowrap">{{ defect.get_status_display }}</td></tr>
+          {% endfor %}
+          {% if not project.changerequest_set.count and not project.defect_set.count %}
+            <tr><td colspan="3"><div class="empty">登録されていません。</div></td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 {% endblock %}
