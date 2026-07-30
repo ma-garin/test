@@ -299,16 +299,43 @@ a { color: inherit; text-decoration: none; }
 .shell.nav-collapsed { grid-template-columns: 56px 1fr; }
 .nav-collapsed .hdr-brand { width: 56px; padding: 0 11px; }
 .nav-collapsed .hdr-title { display: none; }
-.nav-collapsed .sb-scroll { padding: 10px 6px; }
+.nav-collapsed .sb-scroll { padding: 4px 6px 6px; }
 .nav-collapsed .sb-hd { display: none; }
-.nav-collapsed .sb-sec { margin-bottom: 6px; }
-.nav-collapsed .sb-sec + .sb-sec { border-top: 1px solid var(--nav-line); padding-top: 6px; }
+.nav-collapsed .sb-sec { margin-bottom: 2px; }
 .nav-collapsed .sb-sec-body { display: block; padding: 0; margin: 0; border-left: 0; }
 .nav-collapsed .sb-label { display: none; }
-.nav-collapsed .sb-item { justify-content: center; padding: 8px 0; }
 .nav-collapsed .sb-badge { display: inline-grid; }
 .nav-collapsed .sb-collapse { justify-content: center; padding: 11px 0; }
 .nav-collapsed .sb-collapse-ico { transform: rotate(180deg); }
+
+/* 畳んだときは項目を詰める。24 項目が縦に並ぶので、1 項目あたりの高さが効く。
+   1 項目 28px・見出し 22px で、24 項目 + 5 見出しが 1440x900 に収まる。 */
+.nav-collapsed .sb-item { justify-content: center; padding: 2px 0; }
+.nav-collapsed .sb-badge { width: 26px; height: 20px; border-radius: 6px; font-size: 10px; }
+.nav-collapsed .sb-sec { margin-bottom: 0; }
+
+/* セクション見出しは、畳んだ状態でもスクロール中に見えている必要がある。
+   区切り線だけだと自分がどの領域にいるか分からなくなるため、粘着させる。 */
+.sb-mini-hd { display: none; }
+
+.nav-collapsed .sb-mini-hd {
+  position: sticky;
+  top: -6px;
+  z-index: 1;
+  display: block;
+  margin: 0 0 1px;
+  padding: 3px 0;
+  background: var(--nav-deep);
+  border-bottom: 1px solid var(--nav-line);
+  color: var(--nav-muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+
+.nav-collapsed .sb-sec + .sb-sec .sb-mini-hd { margin-top: 4px; }
+.nav-collapsed .sb-collapse { padding: 8px 0; }
 
 /* 未実装画面。押せるが、実装済みと同じ重みでは並べない。 */
 .sb-item.dim { color: rgba(255, 255, 255, 0.38); font-weight: 600; }

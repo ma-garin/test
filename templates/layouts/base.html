@@ -39,6 +39,8 @@
             {{ section.label }}
             <span class="sb-caret" aria-hidden="true">▶</span>
           </button>
+          {# 畳んだときだけ出る見出し。区切り線だけだと、どの領域を見ているか分からなくなる。 #}
+          <div class="sb-mini-hd" aria-hidden="true" title="{{ section.label }}">{{ section.label|slice:":2" }}</div>
           <div class="sb-sec-body">
             {% for item in section.items %}
               <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
