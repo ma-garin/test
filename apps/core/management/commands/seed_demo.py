@@ -49,15 +49,21 @@ class Command(BaseCommand):
         )
 
         user, created = User.objects.get_or_create(
-            username="pmo",
+            email="pmo@example.com",
             # ロールはヘッダーで別に表示されるので、表示名には含めない。
-            defaults={"display_name": "体験ユーザー", "tenant": tenant, "role": Role.PMO},
+            defaults={
+                "username": "pmo",
+                "display_name": "体験ユーザー",
+                "tenant": tenant,
+                "role": Role.PMO,
+            },
         )
 
         if created:
-            user.set_password("demo-password")
+            # ログインはメールアドレスのみ。パスワードは設定しない。
+            user.set_unusable_password()
             user.save(update_fields=["password"])
-            self.stdout.write("利用者 pmo を作成しました（パスワード: demo-password）")
+            self.stdout.write("利用者 pmo@example.com を作成しました（パスワード不要）")
 
         atlas = self._create_atlas(tenant, user)
         self._create_pos_tax(tenant, user)

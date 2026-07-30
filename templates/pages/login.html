@@ -3,21 +3,17 @@
 {% block content %}
   <form method="post" class="form">
     {% csrf_token %}
-    {% if form.errors %}
-      <div class="callout d">ユーザー名またはパスワードが正しくありません。</div>
+    {% if error or form.errors %}
+      <div class="callout d">{{ error|default:"メールアドレスの形式が正しくありません。" }}</div>
     {% endif %}
     <div>
-      <label for="{{ form.username.id_for_label }}">ユーザー名</label>
-      {{ form.username }}
-    </div>
-    <div>
-      <label for="{{ form.password.id_for_label }}">パスワード</label>
-      {{ form.password }}
+      <label for="{{ form.email.id_for_label }}">メールアドレス</label>
+      {{ form.email }}
     </div>
     <button type="submit" class="btn-b">ログイン</button>
   </form>
   <p class="auth-note">
-    体験用データを投入した環境では <code>pmo</code> でログインできます。<br>
-    認証情報は環境変数で管理し、画面には表示しません。
+    パスワードは使いません。初めてのメールアドレスは、その場で利用者を作成します。<br>
+    体験用データは <code>pmo@example.com</code> に紐づいています。
   </p>
 {% endblock %}

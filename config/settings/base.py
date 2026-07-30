@@ -95,6 +95,12 @@ DATABASES = {
 
 AUTH_USER_MODEL = "accounts.User"
 
+# 画面のログインはメールアドレスのみ。ModelBackend は Django admin 用に残す。
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.backends.EmailOnlyBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

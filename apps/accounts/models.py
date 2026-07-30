@@ -36,6 +36,8 @@ class User(AbstractUser):
     """利用者。テナントとロールを必ず持つ。"""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # ログイン識別子。パスワードを使わないため、一意であることが本人特定の唯一の根拠になる。
+    email = models.EmailField("メールアドレス", unique=True)
     tenant = models.ForeignKey(
         Tenant,
         verbose_name="テナント",
@@ -51,6 +53,9 @@ class User(AbstractUser):
         choices=Role.choices,
         default=Role.VIEWER,
     )
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]
 
     class Meta:
         verbose_name = "利用者"
