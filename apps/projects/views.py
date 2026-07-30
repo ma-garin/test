@@ -23,7 +23,7 @@ from apps.projects.forms import IssueForm, RiskForm, RiskPromoteForm, WbsTaskFor
 from apps.projects.models import Issue, Risk, WbsTask
 from apps.projects.forms import ChangeDecisionForm, ChangeRequestForm, DefectForm
 from apps.projects.models import ChangeRequest, Defect
-from apps.projects.selectors import projects_for
+from apps.projects.selectors import projects_for, scoped_projects_for
 from apps.projects.services.change_requests import decide_change_request, save_change_request
 from apps.projects.services.defects import close_defect, save_defect
 from apps.projects.services.issues import close_issue, save_issue
@@ -39,6 +39,8 @@ ISSUE_LIST_URL = "projects:issue_list"
 def project_list(request: HttpRequest) -> HttpResponse:
     """案件一覧。総件数はページャに出し、表示だけをページで切る。"""
 
+    # 案件一覧だけは選択中の案件で絞らない。ここは切替の起点なので、
+    # 絞った状態だと他の案件へ移れなくなる。
     page = paginate(projects_for(request.user, request.tenant), request)
 
     return render(
@@ -75,6 +77,16 @@ def _change_requests_for(request: HttpRequest):
     return ChangeRequest.objects.filter(
         project__in=projects_for(request.user, request.tenant)
     ).select_related("project")
+
+
+def _scoped(request: HttpRequest, queryset):
+    """一覧の絞り込み。選択中の案件があればその1件だけにする。
+
+    詳細・編集には掛けない。直リンクで開いたときに「権限はあるのに
+    選択中でないから404」となるのは、実務では事故のもとになる。
+    """
+
+    return queryset.filter(project__in=scoped_projects_for(request))
 
 
 def _defects_for(request: HttpRequest):
@@ -163,7 +175,7 @@ def change_decide(request: HttpRequest, pk) -> HttpResponse:
 def defect_list(request: HttpRequest) -> HttpResponse:
     """不具合一覧。件数が増えても 1 画面へ詰め込まない。"""
 
-    page = paginate(_defects_for(request), request)
+    page = paginate(_scoped(request, _defects_for(request)), request)
 
     return render(
         request,
@@ -442,7 +454,7 @@ def risk_promote(request: HttpRequest, pk) -> HttpResponse:
 def issue_list(request: HttpRequest) -> HttpResponse:
     """課題一覧。件数が増えても 1 画面へ詰め込まない。"""
 
-    page = paginate(_issues_for(request), request)
+    page = paginate(_scoped(request, _issues_for(request)), request)
 
     return render(
         request,

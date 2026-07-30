@@ -35,7 +35,7 @@ from apps.dashboard.services.quality import build_quality_report
 from apps.dashboard.services.tasks import TaskFilters, build_task_board
 from apps.audit.selectors import feedbacks_for
 from apps.core.pagination import page_window, paginate, query_without_page
-from apps.projects.selectors import projects_for
+from apps.projects.selectors import scoped_projects_for
 
 
 def _page_context(page, request: HttpRequest) -> dict:
@@ -49,9 +49,13 @@ def _page_context(page, request: HttpRequest) -> dict:
 
 
 def _projects(request: HttpRequest):
-    """この利用者が参照できる案件。全画面の入口。"""
+    """この画面が対象とする案件。全画面の入口。
 
-    return projects_for(request.user, getattr(request, "tenant", None))
+    案件が選択されていればその1件、未選択なら参照できる全件。
+    ここを通すことで、案件切替が管制配下の全画面へ一度に効く。
+    """
+
+    return scoped_projects_for(request)
 
 
 @login_required

@@ -129,6 +129,8 @@ a { color: inherit; text-decoration: none; }
 }
 
 .hdr-project:hover { background: var(--nav-hover); }
+/* 案件で絞り込んでいる状態。数字が全案件のものでないことを、色で気づかせる。 */
+.hdr-project.on { background: var(--blue-soft); border-color: #bfdbfe; color: var(--blue); }
 
 .hdr-chip {
   padding: 4px 11px;

@@ -24,6 +24,12 @@
       {% if current_tenant %}
         <a class="hdr-project" href="{% url 'accounts:select_tenant' %}" title="テナントを切り替える">{{ current_tenant.name }}</a>
       {% endif %}
+      {# 対象案件は常に見えている必要がある。絞り込み中と気づかずに数字を読むと誤解する。 #}
+      <a class="hdr-project{% if current_project %} on{% endif %}"
+         href="{% url 'accounts:select_project' %}?next={{ request.get_full_path|urlencode }}"
+         title="対象案件を切り替える">
+        {% if current_project %}{{ current_project.code }} {{ current_project.name }}{% else %}全案件{% endif %} ▾
+      </a>
       <span class="hdr-user">{{ user.display_name|default:user.username }} <span>{{ user.get_role_display }}</span></span>
       <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
         <button type="submit" class="hdr-chip">ログアウト</button>

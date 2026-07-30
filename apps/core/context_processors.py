@@ -23,5 +23,7 @@ def navigation(request: HttpRequest) -> dict:
     return {
         "nav_sections": navigation_for(getattr(request, "user", None), current),
         "current_tenant": getattr(request, "tenant", None),
+        # 選択中の案件。全画面のヘッダーに出し、いま何を見ているかを常に示す。
+        "current_project": getattr(request, "project", None),
         "current_url_name": current,
     }
