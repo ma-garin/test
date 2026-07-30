@@ -1,0 +1,81 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}変更要求の影響範囲・工数・スケジュール影響と、判断の状態を記録します。{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">変更要求</div>
+      <div class="kpi-v">{{ report.total }}</div>
+      <div class="kpi-s">{% if status %}絞り込み中{% else %}全件{% endif %}</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">判断待ち</div>
+      <div class="kpi-v" style="color:var(--orange)">{{ report.pending_count }}</div>
+      <div class="kpi-s">人の判断が必要</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:70%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">想定工数の合計</div>
+      <div class="kpi-v">{{ report.total_effort_days|floatformat:"-1" }}<small>人日</small></div>
+      <div class="kpi-s">承認済み {{ report.approved_count }}件を含む</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:60%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">スケジュール影響</div>
+      <div class="kpi-v" style="color:var(--red)">{{ report.total_schedule_days }}<small>日</small></div>
+      <div class="kpi-s">全変更の合計</div>
+      <div class="kpi-bar"><div class="kpi-fill r" style="width:60%"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">変更要求一覧</span>
+      <a class="card-act" href="{% url 'projects:change_create' %}">新規作成</a>
+      {% if status %}<a class="card-act" href="{% url 'dashboard:change' %}">条件をクリア</a>{% endif %}
+    </div>
+    <form method="get" class="search-row">
+      <select name="status">
+        <option value="">状態（すべて）</option>
+        {% for value, label in report.status_choices %}
+          <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-b sm">絞り込む</button>
+    </form>
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr><th>案件</th><th>変更要求</th><th>影響範囲</th><th>工数</th><th>日程影響</th><th>状態</th><th>判断者</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          {% for row in report.rows %}
+            <tr>
+              <td>{{ row.change.project.code }}</td>
+              <td>{{ row.change.title }}</td>
+              <td>{{ row.change.impact_scope|truncatechars:36|default:"—" }}</td>
+              <td class="nowrap">{{ row.change.effort_days|floatformat:"-1"|default:"—" }}</td>
+              <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.change.schedule_impact_days|default:0 }}日</span></td>
+              <td>
+                <span class="badge {% if row.is_pending %}a{% else %}n{% endif %}">{{ row.change.get_status_display }}</span>
+              </td>
+              <td>{{ row.change.decided_by|default:"—" }}</td>
+              <td class="nowrap">
+                <a class="btn-ghost sm" href="{% url 'projects:change_edit' row.change.pk %}">編集</a>
+                {% if user.can_approve %}
+                  <a class="btn-out sm" href="{% url 'projects:change_decide' row.change.pk %}">判断</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8"><div class="dashboard-empty">{% if status %}条件に一致する変更要求がありません。{% else %}登録された変更要求がありません。{% endif %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

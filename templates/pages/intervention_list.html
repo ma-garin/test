@@ -1,0 +1,115 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}AIの提案には必ず根拠・信頼度・人の判断が残ります。判断していない提案は採用されません。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'agents:run_list' %}">Agenticトレースへ</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">提案</div>
+      <div class="kpi-v">{{ report.total }}</div>
+      <div class="kpi-s">{% if status %}絞り込み中{% else %}全件{% endif %}</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">判断待ち</div>
+      <div class="kpi-v" style="color:var(--orange)">{{ report.proposed_count }}</div>
+      <div class="kpi-s">人の確認が必要</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:70%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">採用率</div>
+      <div class="kpi-v" style="color:var(--green)">{{ report.adoption_percent }}<small>%</small></div>
+      <div class="kpi-s">採用 {{ report.adopted_count }}件</div>
+      <div class="kpi-bar"><div class="kpi-fill g" style="width:{{ report.adoption_percent }}%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">不採用</div>
+      <div class="kpi-v" style="color:var(--red)">{{ report.rejected_count }}</div>
+      <div class="kpi-s">判断理由が残ります</div>
+      <div class="kpi-bar"><div class="kpi-fill r" style="width:40%"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">介入提案</span>
+      {% if status %}<a class="card-act" href="{% url 'dashboard:intervention' %}">条件をクリア</a>{% endif %}
+    </div>
+    <form method="get" class="search-row">
+      <select name="status">
+        <option value="">状態（すべて）</option>
+        {% for value, label in report.status_choices %}
+          <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-b sm">絞り込む</button>
+    </form>
+
+    {% for row in report.rows %}
+      <div class="pb-row">
+        <div class="pb-lr">
+          <span class="pb-t">{{ row.proposal.title }}</span>
+          <span class="pb-v"><span class="badge {{ row.tone }}">{{ row.proposal.get_status_display }}</span></span>
+        </div>
+        <div class="ps">
+          {{ row.proposal.project.name }}
+          {% if row.confidence_percent is not None %} ／ 信頼度 {{ row.confidence_percent }}%{% endif %}
+          {% if row.proposal.decided_by %} ／ 判断者 {{ row.proposal.decided_by }}{% endif %}
+        </div>
+        {% if row.proposal.recommended_action %}
+          <div class="callout"><p><strong>推奨アクション:</strong> {{ row.proposal.recommended_action }}</p></div>
+        {% endif %}
+        {% if row.evidence_items %}
+          <div class="ps"><strong>根拠</strong></div>
+          <ul class="ps">
+            {% for item in row.evidence_items %}<li>{{ item }}</li>{% endfor %}
+          </ul>
+        {% else %}
+          <div class="callout w"><p>この提案には根拠が記録されていません。採用の前に必ず裏取りしてください。</p></div>
+        {% endif %}
+        {% if row.proposal.decision_reason %}
+          <div class="ps"><strong>判断理由:</strong> {{ row.proposal.decision_reason }}</div>
+        {% endif %}
+        {% if row.proposal.modified_action %}
+          <div class="ps"><strong>修正後のアクション:</strong> {{ row.proposal.modified_action }}</div>
+        {% endif %}
+        {% if row.proposal.status == "proposed" %}
+          <form method="post" class="form" action="{% url 'dashboard:intervention_decide' row.proposal.pk %}">
+            {% csrf_token %}
+            <div>
+              <label for="status-{{ row.proposal.pk }}">判断</label>
+              <select id="status-{{ row.proposal.pk }}" name="status">
+                <option value="accepted">採用</option>
+                <option value="modified">修正して採用</option>
+                <option value="rejected">不採用</option>
+                <option value="done">実施済み</option>
+              </select>
+            </div>
+            <div>
+              <label for="reason-{{ row.proposal.pk }}">判断理由（必須）</label>
+              <textarea id="reason-{{ row.proposal.pk }}" name="decision_reason" rows="2" required></textarea>
+            </div>
+            <div>
+              <label for="action-{{ row.proposal.pk }}">修正後のアクション（「修正して採用」の場合は必須）</label>
+              <textarea id="action-{{ row.proposal.pk }}" name="modified_action" rows="2"></textarea>
+            </div>
+            <div class="actions">
+              <button type="submit" class="btn-b sm">判断を記録する</button>
+              <a class="btn-out sm" href="{% url 'dashboard:intervention_decide' row.proposal.pk %}">根拠を確認して判断</a>
+            </div>
+          </form>
+        {% else %}
+          <div class="ps">判断済み（{{ row.proposal.decided_at|date:"Y/m/d H:i"|default:"日時不明" }}）。履歴を保つため再判断はできません。</div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="empty">{% if status %}条件に一致する提案がありません。{% else %}AIの介入提案はまだありません。{% endif %}</div>
+    {% endfor %}
+  </div>
+
+{% endblock %}

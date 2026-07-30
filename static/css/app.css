@@ -12,11 +12,17 @@
   --muted: #5f6e84;
   --line: #d9e1ec;
 
-  --nav: #0b2742;
-  --nav-text: rgba(255, 255, 255, 0.90);
-  --nav-muted: rgba(255, 255, 255, 0.55);
-  --nav-hover: rgba(255, 255, 255, 0.12);
-  --nav-active: rgba(37, 99, 235, 0.28);
+  /* サイドバーとヘッダー。面を白で通し、区切りは細い線だけに任せる。
+     色を持つのは「現在地」と「データ」だけにして、目線をそこへ集める。 */
+  --nav: #ffffff;
+  --nav-deep: #ffffff;
+  --nav-text: #374151;
+  --nav-muted: #9ca3af;
+  --nav-hover: #f3f4f6;
+  --nav-active: #eef4ff;
+  --nav-line: #e5e7eb;
+  /* ログイン画面など、濃い面が要る場所だけで使う。 */
+  --nav-dark: #111827;
 
   --blue: #2563eb;
   --blue-soft: #eaf2ff;
@@ -74,7 +80,7 @@ a { color: inherit; text-decoration: none; }
   gap: 10px;
   padding-right: 16px;
   background: var(--nav);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--nav-line);
   z-index: 10;
 }
 
@@ -103,7 +109,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ブランド名は 2 行固定。折り返すと "AI" が 1 行目へ回り込んで読めなくなる。 */
 .hdr-title { display: block; min-width: 0; }
-.hdr-name { display: block; color: #fff; font-size: 13px; font-weight: 800; line-height: 1.25; white-space: nowrap; }
+.hdr-name { display: block; color: var(--ink); font-size: 13px; font-weight: 800; line-height: 1.25; white-space: nowrap; }
 .hdr-sub { display: block; color: var(--nav-muted); font-size: 10px; font-weight: 600; white-space: nowrap; }
 .hdr-spacer { flex: 1; }
 .hdr-chips { display: flex; gap: 6px; align-items: center; }
@@ -114,28 +120,30 @@ a { color: inherit; text-decoration: none; }
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 4px 11px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--nav-line);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--surface);
+  color: var(--ink);
   font-size: 11px;
   font-weight: 900;
 }
 
+.hdr-project:hover { background: var(--nav-hover); }
+
 .hdr-chip {
   padding: 4px 11px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--nav-line);
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--surface);
+  color: var(--nav-text);
   font-size: 11px;
   font-weight: 800;
   transition: background 0.15s;
 }
 
-.hdr-chip:hover { background: rgba(255, 255, 255, 0.18); }
+.hdr-chip:hover { background: var(--nav-hover); }
 
-.hdr-user { color: rgba(255, 255, 255, 0.9); font-size: 11px; font-weight: 800; }
+.hdr-user { color: var(--nav-text); font-size: 11px; font-weight: 800; }
 .hdr-user span { color: var(--nav-muted); font-weight: 600; }
 
 .hdr-badge { padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 900; }
@@ -146,7 +154,8 @@ a { color: inherit; text-decoration: none; }
 
 /* ── サイドバー ─────────────────────────────────────────── */
 
-.sb { background: var(--nav); overflow-y: auto; padding: 12px 8px 24px; }
+/* ヘッダーより一段暗くして、同色のべた塗りに見えないようにする。 */
+.sb { background: var(--nav-deep); overflow-y: auto; padding: 12px 8px 24px; border-right: 1px solid var(--nav-line); }
 
 .sb-gl {
   color: var(--nav-muted);
@@ -177,7 +186,8 @@ a { color: inherit; text-decoration: none; }
 }
 
 .sb-item:hover { background: var(--nav-hover); }
-.sb-item.active { background: var(--nav-active); font-weight: 900; }
+/* 現在地はこの画面で唯一の彩色。ここだけ青にして、他は無彩色で抑える。 */
+.sb-item.active { background: var(--nav-active); color: var(--blue); font-weight: 900; }
 
 .sb-badge {
   display: inline-grid;
@@ -185,13 +195,13 @@ a { color: inherit; text-decoration: none; }
   width: 19px;
   height: 19px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--nav-hover);
   font-size: 9px;
   font-weight: 900;
   flex-shrink: 0;
 }
 
-.sb-item.active .sb-badge { background: rgba(255, 255, 255, 0.22); }
+.sb-item.active .sb-badge { background: var(--blue-soft); }
 .sb-label { min-width: 0; flex: 1; line-height: 1.25; }
 .sb-tags { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; flex-shrink: 0; }
 
@@ -211,6 +221,50 @@ a { color: inherit; text-decoration: none; }
 .sb-tag.ai { background: rgba(59, 130, 246, 0.28); border-color: rgba(147, 197, 253, 0.36); color: #dbeafe; }
 .sb-tag.rag { background: rgba(34, 197, 94, 0.22); border-color: rgba(134, 239, 172, 0.34); color: #bbf7d0; }
 .sb-tag.wip { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.55); }
+
+/* 折りたたみセクション。現在地のセクションだけ開いた状態で描画する。 */
+
+.sb-sec { margin-bottom: 1px; }
+
+.sb-hd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--nav-text);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.sb-hd:hover { background: var(--nav-hover); }
+
+.sb-caret {
+  margin-left: auto;
+  font-size: 9px;
+  color: var(--nav-muted);
+  transition: transform 0.15s;
+}
+
+.sb-sec.open .sb-caret { transform: rotate(90deg); }
+
+.sb-sec-body {
+  display: none;
+  padding: 2px 0 6px 8px;
+  margin-left: 5px;
+  border-left: 1px solid var(--nav-line);
+}
+
+.sb-sec.open .sb-sec-body { display: block; }
+
+/* 未実装画面。押せるが、実装済みと同じ重みでは並べない。 */
+.sb-item.dim { color: rgba(255, 255, 255, 0.38); font-weight: 600; }
+.sb-item.dim:hover { background: rgba(255, 255, 255, 0.06); }
 
 /* ── メイン ─────────────────────────────────────────────── */
 
@@ -495,8 +549,9 @@ a { color: inherit; text-decoration: none; }
 /* ── AIパネル ───────────────────────────────────────────── */
 
 .ai-p { border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 14px; }
-.ai-ph { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: var(--nav); color: #fff; }
-.ai-pm { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--blue); font-size: 10px; font-weight: 900; flex-shrink: 0; }
+/* ナビが白になったので、AIパネルの見出しは青の面で区別する。 */
+.ai-ph { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: var(--blue); color: #fff; }
+.ai-pm { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: rgba(255, 255, 255, 0.22); font-size: 10px; font-weight: 900; flex-shrink: 0; }
 .ai-pt { font-size: 12px; font-weight: 900; }
 .ai-ps { font-size: 10px; color: rgba(255, 255, 255, 0.6); font-weight: 700; }
 .ai-pb { background: var(--surface); padding: 14px; }
@@ -535,8 +590,8 @@ a { color: inherit; text-decoration: none; }
 
 /* ── 認証画面 ───────────────────────────────────────────── */
 
-.auth { display: grid; place-items: center; min-height: 100vh; background: var(--nav); padding: 20px; }
-.auth-card { width: 100%; max-width: 380px; background: var(--surface); border-radius: var(--r-lg); padding: 26px 28px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28); }
+.auth { display: grid; place-items: center; min-height: 100vh; background: var(--nav-dark); padding: 20px; }
+.auth-card { width: 100%; max-width: 380px; background: var(--surface); border-radius: var(--r-lg); padding: 26px 28px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.34); }
 .auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 .auth-brand .hdr-mark { width: 38px; height: 38px; font-size: 12px; }
 .auth-brand strong { display: block; font-size: 14px; font-weight: 900; }

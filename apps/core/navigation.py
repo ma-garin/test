@@ -46,6 +46,8 @@ class NavSection:
     key: str
     label: str
     items: tuple[NavItem, ...] = field(default_factory=tuple)
+    #: 現在表示中の画面を含むセクション。サイドバーはここだけ開いた状態で描く。
+    is_current: bool = False
 
 
 NAVIGATION: tuple[NavSection, ...] = (
@@ -54,13 +56,15 @@ NAVIGATION: tuple[NavSection, ...] = (
         label="AIプロジェクト管制",
         items=(
             NavItem("control_dashboard", "管制ダッシュボード", "dashboard:control", "DB", "ready", ("ai",)),
-            NavItem("tasks", "タスク一覧", "dashboard:tasks", "TA"),
-            NavItem("progress", "進捗予測・介入", "dashboard:progress", "PR", tags=("ai",)),
-            NavItem("quality", "品質リアルタイム管理", "dashboard:quality", "QA"),
-            NavItem("risk", "リスク予測・対策", "dashboard:risk", "RK", tags=("ai",)),
-            NavItem("change", "変更影響分析", "dashboard:change", "CH"),
-            NavItem("intervention", "AI介入提案", "dashboard:intervention", "AI", tags=("ai",)),
-            NavItem("kpi", "KPI・効果測定", "dashboard:kpi", "KP"),
+            NavItem("tasks", "タスク一覧", "dashboard:tasks", "TA", "ready"),
+            NavItem("issues", "課題管理", "projects:issue_list", "IS", "ready"),
+            NavItem("progress", "進捗予測・介入", "dashboard:progress", "PR", "ready", ("ai",)),
+            NavItem("quality", "品質リアルタイム管理", "dashboard:quality", "QA", "ready"),
+            NavItem("defects", "不具合管理", "projects:defect_list", "DF", "ready"),
+            NavItem("risk", "リスク予測・対策", "dashboard:risk", "RK", "ready", ("ai",)),
+            NavItem("change", "変更影響分析", "dashboard:change", "CH", "ready"),
+            NavItem("intervention", "AI介入提案", "dashboard:intervention", "AI", "ready", ("ai",)),
+            NavItem("kpi", "KPI・効果測定", "dashboard:kpi", "KP", "ready"),
         ),
     ),
     NavSection(
@@ -68,11 +72,11 @@ NAVIGATION: tuple[NavSection, ...] = (
         label="PMO支援",
         items=(
             NavItem("consultation", "PMO相談・状況整理", "pmo:consultation", "SO", "ready", ("ai", "rag")),
-            NavItem("planning", "計画策定", "pmo:planning", "PL", tags=("ai",)),
-            NavItem("deliverables", "成果物支援", "pmo:deliverables", "DL", tags=("ai",)),
-            NavItem("approvals", "報告生成・承認", "pmo:approvals", "AP"),
-            NavItem("prompt_library", "プロンプトライブラリ", "pmo:prompt_library", "LB"),
-            NavItem("education", "教育支援", "pmo:education", "ED"),
+            NavItem("planning", "計画策定", "pmo:planning", "PL", "ready", ("ai",)),
+            NavItem("deliverables", "成果物支援", "pmo:deliverables", "DL", "ready", ("ai",)),
+            NavItem("approvals", "報告生成・承認", "pmo:approvals", "AP", "ready"),
+            NavItem("prompt_library", "プロンプトライブラリ", "pmo:prompt_library", "LB", "ready"),
+            NavItem("education", "教育支援", "pmo:education", "ED", "ready"),
         ),
     ),
     NavSection(
@@ -80,9 +84,10 @@ NAVIGATION: tuple[NavSection, ...] = (
         label="ナレッジ / RAG",
         items=(
             NavItem("documents", "ドキュメント登録", "documents:list", "DC", "ready", ("rag",)),
-            NavItem("templates", "ひな型管理", "documents:template_list", "TP"),
+            NavItem("upload", "文書アップロード", "documents:upload", "UP", "ready", ("rag",)),
+            NavItem("templates", "ひな型管理", "documents:template_list", "TP", "ready"),
             NavItem("search", "RAG検索", "rag:search", "SE", "ready", ("rag",)),
-            NavItem("chat", "チャットモード", "rag:chat", "CT", tags=("ai", "rag")),
+            NavItem("chat", "チャットモード", "rag:chat", "CT", "ready", ("ai", "rag")),
         ),
     ),
     NavSection(
@@ -91,7 +96,7 @@ NAVIGATION: tuple[NavSection, ...] = (
         items=(
             NavItem("agent_runs", "Agenticトレース", "agents:run_list", "TR", "ready", ("ai",)),
             NavItem("operations", "操作ログ", "audit:operation_list", "OP", "ready"),
-            NavItem("feedback", "フィードバック", "audit:feedback_list", "FB"),
+            NavItem("feedback", "フィードバック", "audit:feedback_list", "FB", "ready"),
         ),
     ),
     NavSection(
@@ -112,7 +117,7 @@ NAVIGATION: tuple[NavSection, ...] = (
 )
 
 
-def navigation_for(user) -> list[NavSection]:
+def navigation_for(user, current_url_name: str = "") -> list[NavSection]:
     """ユーザーが参照できる項目だけを残したナビゲーションを返す。"""
 
     visible: list[NavSection] = []
@@ -121,7 +126,14 @@ def navigation_for(user) -> list[NavSection]:
         items = tuple(item for item in section.items if item.is_visible_to(user))
 
         if items:
-            visible.append(NavSection(key=section.key, label=section.label, items=items))
+            visible.append(
+                NavSection(
+                    key=section.key,
+                    label=section.label,
+                    items=items,
+                    is_current=any(item.url_name == current_url_name for item in items),
+                )
+            )
 
     return visible
 

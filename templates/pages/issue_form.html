@@ -1,0 +1,50 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}{{ form_subtitle }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{% url 'projects:issue_list' %}">課題一覧へ戻る</a>
+{% endblock %}
+
+{% block content %}
+
+  {% if risk %}
+    <div class="callout w">
+      リスク「{{ risk.title }}」を課題へ転換します。保存すると、このリスクは「顕在化」状態になります。
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">{{ form_title }}</span>
+    </div>
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="callout d">{{ form.non_field_errors|join:" " }}</div>
+      {% endif %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-b">{{ submit_label|default:"保存する" }}</button>
+    </form>
+  </div>
+
+  {% if issue %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">この課題への操作</span>
+      </div>
+      <form method="post" action="{% url 'projects:issue_close' issue.pk %}" class="form">
+        {% csrf_token %}
+        <button type="submit" class="btn-out">クローズする</button>
+      </form>
+    </div>
+  {% endif %}
+
+{% endblock %}

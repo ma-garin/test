@@ -27,3 +27,6 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # デザイン案（docs/idea/）を開発サーバーから直接開けるようにする。
+    # 静的HTMLなので本番では配信しない。
+    urlpatterns += static("/idea/", document_root=settings.BASE_DIR / "docs" / "idea")

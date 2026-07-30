@@ -1,0 +1,44 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}承認・却下は監査対象です。判断者・判断日時・理由を記録します。{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">{{ change.title }}</span>
+      <a class="card-act" href="{% url 'dashboard:change' %}">一覧へ戻る</a>
+    </div>
+    <dl class="dl">
+      <dt>案件</dt><dd>{{ change.project.code }} {{ change.project.name }}</dd>
+      <dt>現在の状態</dt><dd><span class="badge n">{{ change.get_status_display }}</span></dd>
+      <dt>起票者</dt><dd>{{ change.requested_by|default:"—" }}</dd>
+      <dt>内容</dt><dd>{{ change.description|default:"—"|linebreaksbr }}</dd>
+      <dt>影響分析</dt><dd>{{ change.impact_summary|default:"—"|linebreaksbr }}</dd>
+      <dt>影響工数</dt><dd>{{ change.estimated_effort_days|floatformat:"-1"|default:"—" }} 人日</dd>
+      <dt>日程影響</dt><dd>{{ change.schedule_impact_days|default:0 }} 日</dd>
+      {% if change.decided_at %}
+        <dt>前回の判断</dt>
+        <dd>{{ change.decided_by|default:"—" }} / {{ change.decided_at }} / {{ change.decision_reason|default:"—" }}</dd>
+      {% endif %}
+    </dl>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">判断を記録する</span></div>
+    <div class="callout w">この操作は操作ログに残ります。理由は必須です。</div>
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+          {% for error in field.errors %}<div class="callout d">{{ error }}</div>{% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-b">判断を確定する</button>
+    </form>
+  </div>
+
+{% endblock %}

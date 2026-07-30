@@ -4,6 +4,7 @@
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'rag:search' %}">RAG検索へ</a>
+  <a class="btn-b sm" href="{% url 'documents:upload' %}">文書をアップロード</a>
 {% endblock %}
 
 {% block content %}
@@ -30,8 +31,8 @@
     </div>
   </div>
 
-  <div class="callout w">
-    <p><strong>アップロード画面は未実装です。</strong>現時点は管理画面と管理コマンドから登録します。</p>
-    <p>検証ロジック（形式・サイズ・空・重複）は <code>apps/documents/services/validation.py</code> に実装済みです。</p>
+  <div class="callout">
+    <p><strong>登録は <a href="{% url 'documents:upload' %}">文書アップロード</a> から行います。</strong>形式・サイズ・空ファイル・重複を検証してから登録します。</p>
+    <p>検証ロジックは <code>apps/documents/services/validation.py</code> にあります。インデックス構築は <code>python manage.py rebuild_index</code> です。</p>
   </div>
 {% endblock %}

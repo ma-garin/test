@@ -1,0 +1,84 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}PMO支援{% endblock %}
+{% block subtitle %}計画ドラフトと、確定前に確認すべきレビュー観点を並べて表示します。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'pmo:prompt_library' %}">プロンプト集</a>
+  <a class="btn-b sm" href="{% url 'pmo:consultation' %}">PMOに相談する</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="project-strip">
+    <span>計画ドラフト</span>
+    <strong>{{ drafts|length }}件</strong>
+    <em>選択中 {% if selected %}{{ selected.title }}{% else %}なし{% endif %}</em>
+  </div>
+
+  <div class="sg">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">計画ドラフト一覧</span>
+        <span class="card-act">{{ drafts|length }}件</span>
+      </div>
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>計画名</th><th>案件</th><th>状態</th><th>更新</th></tr></thead>
+          <tbody>
+            {% for draft in drafts %}
+              <tr>
+                <td><a href="?draft={{ draft.pk }}" style="color:var(--blue);font-weight:900">{{ draft.title }}</a></td>
+                <td>{{ draft.project.name }}</td>
+                <td><span class="badge {% if draft.status == 'finalized' %}g{% elif draft.status == 'reviewing' %}b{% else %}n{% endif %}">{{ draft.get_status_display }}</span></td>
+                <td class="nowrap">{{ draft.updated_at|date:"n/j H:i" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4"><div class="empty">計画ドラフトがありません。</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">レビュー観点</span>
+        <span class="card-act">確定前チェック</span>
+      </div>
+      {% if selected %}
+        <dl class="dl">
+          <dt>計画名</dt><dd>{{ selected.title }}</dd>
+          <dt>案件</dt><dd>{{ selected.project.name }}</dd>
+          <dt>状態</dt><dd>{{ selected.get_status_display }}</dd>
+          <dt>生成元</dt>
+          <dd>{% if selected.agent_run %}<a href="{% url 'agents:run_detail' selected.agent_run.pk %}" style="color:var(--blue)">処理トレース</a>{% else %}AI未使用{% endif %}</dd>
+        </dl>
+        <div class="steps">
+          {% for point in selected.review_points %}
+            <div class="pb-row"><span class="pb-t">{{ point }}</span></div>
+          {% empty %}
+            <div class="empty">レビュー観点が登録されていません。</div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">表示できる計画がありません。</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">計画本文</span>
+      <span class="card-act">{% if selected %}{{ selected.get_status_display }}{% else %}—{% endif %}</span>
+    </div>
+    {% if selected and selected.body %}
+      <div class="result-text">{{ selected.body|linebreaksbr }}</div>
+    {% else %}
+      <div class="empty">本文が未作成です。</div>
+    {% endif %}
+    <div class="callout w">
+      <p><strong>この計画は確定情報ではありません。</strong>レビュー観点をすべて確認し、人が承認するまでは下書きとして扱ってください。</p>
+    </div>
+  </div>
+
+{% endblock %}

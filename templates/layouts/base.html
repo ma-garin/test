@@ -31,19 +31,21 @@
     </div>
   </header>
 
-  <nav class="sb">
+  <nav class="sb" id="sidebar">
     {% for section in nav_sections %}
-      <p class="sb-gl">{{ section.label }}</p>
-      {% for item in section.items %}
-        <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}" href="{% url item.url_name %}">
-          <span class="sb-badge">{{ item.code }}</span>
-          <span class="sb-label">{{ item.label }}</span>
-          <span class="sb-tags">
-            {% for tag in item.tags %}<span class="sb-tag {{ tag }}">{{ tag|upper }}</span>{% endfor %}
-            {% if not item.is_ready %}<span class="sb-tag wip">WIP</span>{% endif %}
-          </span>
-        </a>
-      {% endfor %}
+      <div class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}">
+        <button class="sb-hd" type="button">
+          {{ section.label }}
+          <span class="sb-caret" aria-hidden="true">▶</span>
+        </button>
+        <div class="sb-sec-body">
+          {% for item in section.items %}
+            <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}" href="{% url item.url_name %}">
+              <span class="sb-label">{{ item.label }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
     {% endfor %}
   </nav>
 
@@ -65,5 +67,37 @@
   </main>
 
 </div>
+
+<script>
+// サイドバーのセクション開閉。現在の画面を含むセクションは常に開く。
+(function () {
+  var nav = document.getElementById('sidebar');
+
+  if (!nav) { return; }
+
+  var KEY = 'verirag.nav.open';
+  var saved = null;
+
+  try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { saved = null; }
+
+  if (saved) {
+    nav.querySelectorAll('.sb-sec').forEach(function (sec) {
+      if (sec.classList.contains('current')) { return; }
+      sec.classList.toggle('open', saved.indexOf(sec.dataset.sec) !== -1);
+    });
+  }
+
+  nav.querySelectorAll('.sb-hd').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btn.parentElement.classList.toggle('open');
+
+      var open = [];
+      nav.querySelectorAll('.sb-sec.open').forEach(function (sec) { open.push(sec.dataset.sec); });
+
+      try { localStorage.setItem(KEY, JSON.stringify(open)); } catch (e) { /* 保存できなくても動く */ }
+    });
+  });
+})();
+</script>
 </body>
 </html>

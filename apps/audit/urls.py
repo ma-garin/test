@@ -7,4 +7,5 @@ app_name = "audit"
 urlpatterns = [
     path("operations/", views.operation_list, name="operation_list"),
     path("feedback/", views.feedback_list, name="feedback_list"),
+    path("feedback/new/", views.feedback_create, name="feedback_create"),
 ]

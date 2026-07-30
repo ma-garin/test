@@ -1,0 +1,103 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}PMO支援{% endblock %}
+{% block subtitle %}AI生成本文と人が確定させた本文を分けて保持し、赤字率（書き換え割合）を測ります。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'pmo:prompt_library' %}">プロンプト集</a>
+  <a class="btn-b sm" href="{% url 'pmo:approvals' %}">承認へ進む</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">成果物</div>
+      <div class="kpi-v">{{ report.total }}</div>
+      <div class="kpi-s">承認済み {{ report.approved_count }}件</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">平均赤字率</div>
+      <div class="kpi-v" style="color:var(--{% if report.correction_tone == 'g' %}green{% else %}yellow{% endif %})">{{ report.average_correction_percent }}<small>%</small></div>
+      <div class="kpi-s">目標 {{ target_percent }}%未満 ／ 実測 {{ report.measured_rows|length }}件</div>
+      <div class="kpi-bar"><div class="kpi-fill {{ report.correction_tone }}" style="width:{{ report.average_correction_percent }}%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">承認ブロック中</div>
+      <div class="kpi-v" style="color:var(--red)">{{ report.blocked_count }}</div>
+      <div class="kpi-s">根拠不足で承認へ進めない</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">承認済み</div>
+      <div class="kpi-v" style="color:var(--green)">{{ report.approved_count }}</div>
+      <div class="kpi-s">確定情報として扱える</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">成果物一覧</span>
+      <span class="card-act">赤字率は文字単位の差分比</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>タイトル</th><th>案件</th><th>種別</th><th>版</th><th>状態</th><th>赤字率</th><th>承認可否</th></tr></thead>
+        <tbody>
+          {% for row in report.rows %}
+            <tr>
+              <td><a href="?deliverable={{ row.deliverable.pk }}" style="color:var(--blue);font-weight:900">{{ row.deliverable.title }}</a></td>
+              <td>{{ row.deliverable.project.name }}</td>
+              <td class="nowrap">{{ row.deliverable.get_kind_display }}</td>
+              <td class="nowrap">v{{ row.deliverable.version }}</td>
+              <td><span class="badge {{ row.status_tone }}">{{ row.deliverable.get_status_display }}</span></td>
+              <td class="nowrap">{% if row.correction_percent is None %}<span class="muted">AI未使用</span>{% else %}<span class="badge {{ row.tone }}">{{ row.correction_percent }}%</span>{% endif %}</td>
+              <td>{% if row.can_approve %}<span class="badge g">可</span>{% else %}<span class="badge r">ブロック</span>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7"><div class="empty">成果物が登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if selected %}
+    {% if not selected.can_approve %}
+      <div class="callout d">
+        <p><strong>この成果物は承認へ進めません。</strong>{{ selected.blocking_reason }}</p>
+      </div>
+    {% endif %}
+
+    <div class="sg">
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">AI生成本文</span>
+          <span class="card-act">未確定</span>
+        </div>
+        {% if selected.deliverable.ai_generated_body %}
+          <div class="result-text">{{ selected.deliverable.ai_generated_body|linebreaksbr }}</div>
+        {% else %}
+          <div class="empty">AIは使用されていません。</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">確定本文（人が編集）</span>
+          <span class="card-act">{% if selected.correction_percent is None %}—{% else %}赤字率 {{ selected.correction_percent }}%{% endif %}</span>
+        </div>
+        {% if selected.deliverable.body %}
+          <div class="result-text">{{ selected.deliverable.body|linebreaksbr }}</div>
+        {% else %}
+          <div class="empty">まだ人の編集が入っていません。</div>
+        {% endif %}
+        <dl class="dl">
+          <dt>作成者</dt><dd>{{ selected.deliverable.created_by|default:"—" }}</dd>
+          <dt>状態</dt><dd>{{ selected.deliverable.get_status_display }}</dd>
+          <dt>生成元</dt>
+          <dd>{% if selected.deliverable.agent_run %}<a href="{% url 'agents:run_detail' selected.deliverable.agent_run.pk %}" style="color:var(--blue)">処理トレース</a>{% else %}AI未使用{% endif %}</dd>
+        </dl>
+      </div>
+    </div>
+  {% endif %}
+
+{% endblock %}

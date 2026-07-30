@@ -36,6 +36,7 @@ class NavigationViewTests(TestCase):
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
         self.user = User.objects.create_user(
             username="admin-user",
+            email="admin-user@example.com",
             password="test-password",
             tenant=self.tenant,
             role=Role.TENANT_ADMIN,
@@ -77,6 +78,7 @@ class RoleVisibilityTests(TestCase):
     def test_参照のみのロールには設定画面を出さない(self):
         viewer = User.objects.create_user(
             username="viewer",
+            email="viewer@example.com",
             password="test-password",
             tenant=self.tenant,
             role=Role.VIEWER,
@@ -89,6 +91,7 @@ class RoleVisibilityTests(TestCase):
     def test_テナント管理者には設定画面を出す(self):
         admin_user = User.objects.create_user(
             username="tenant-admin",
+            email="tenant-admin@example.com",
             password="test-password",
             tenant=self.tenant,
             role=Role.TENANT_ADMIN,

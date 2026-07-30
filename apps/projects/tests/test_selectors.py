@@ -26,6 +26,7 @@ class ProjectsForTests(TestCase):
 
         self.member = User.objects.create_user(
             username="member",
+            email="member@example.com",
             password="x",
             tenant=self.tenant_a,
             role=Role.PMO,
@@ -44,6 +45,7 @@ class ProjectsForTests(TestCase):
     def test_テナント管理者は自テナント全案件を参照できる(self):
         admin_user = User.objects.create_user(
             username="ta",
+            email="ta@example.com",
             password="x",
             tenant=self.tenant_a,
             role=Role.TENANT_ADMIN,
@@ -55,6 +57,7 @@ class ProjectsForTests(TestCase):
     def test_テナント管理者でも他テナントは見えない(self):
         admin_user = User.objects.create_user(
             username="ta2",
+            email="ta2@example.com",
             password="x",
             tenant=self.tenant_a,
             role=Role.TENANT_ADMIN,

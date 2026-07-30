@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>サイドメニュー デザイン案 5件 | VeriRAG PMO Agent</title>
+<link rel="stylesheet" href="../../static/css/app.css">
+<style>
+/* 比較ページ用。実画面のトークン（app.css の :root）をそのまま使う。 */
+html, body { height: auto; overflow: visible; }
+body { background: #eef1f6; }
+
+.doc-hd { background: var(--nav); color: #fff; padding: 22px 28px; }
+.doc-hd h1 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 0.3px; }
+.doc-hd p { margin: 6px 0 0; color: var(--nav-muted); font-size: 12px; max-width: 76ch; line-height: 1.7; }
+.doc-hd code { background: rgba(255,255,255,0.12); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+.doc-toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.doc-toc a {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 800;
+  background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.16); color: #fff;
+}
+.doc-toc a:hover { background: rgba(255,255,255,0.2); }
+.doc-toc b { color: #93c5fd; }
+
+.doc-main { padding: 28px; display: grid; gap: 28px; }
+
+.variant { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); }
+.variant-hd { padding: 16px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.variant-no { display: inline-grid; place-items: center; min-width: 46px; height: 24px; padding: 0 8px; border-radius: 6px; background: var(--blue); color: #fff; font-size: 11px; font-weight: 900; }
+.variant-hd h2 { margin: 0; font-size: 16px; font-weight: 900; }
+.variant-lead { margin: 0; flex-basis: 100%; color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+
+.variant-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 0; }
+@media (max-width: 1180px) { .variant-body { grid-template-columns: 1fr; } }
+
+.demo { height: 640px; border-right: 1px solid var(--line); overflow: hidden; }
+.demo .shell { height: 100%; }
+.demo .main { padding: 16px 18px; }
+
+.variant-note { padding: 16px 18px; font-size: 12px; }
+.variant-note dt { font-weight: 900; font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); margin-top: 14px; }
+.variant-note dt:first-child { margin-top: 0; }
+.variant-note dd { margin: 4px 0 0; line-height: 1.7; }
+.variant-note .bad { color: var(--red); }
+.variant-note .cost { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 900; }
+.cost.s { background: var(--green-soft); color: var(--green); }
+.cost.m { background: var(--yellow-soft); color: var(--yellow); }
+.cost.l { background: var(--red-soft); color: var(--red); }
+
+/* プレビュー内のダミー本文 */
+.mock-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; }
+.mock-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.mock-k { font-size: 10px; font-weight: 800; color: var(--muted); letter-spacing: 0.4px; }
+.mock-v { font-size: 21px; font-weight: 900; line-height: 1.2; margin-top: 2px; }
+.mock-rows { display: grid; gap: 7px; }
+.mock-row { display: flex; align-items: center; gap: 9px; height: 15px; }
+.mock-bar { height: 8px; border-radius: 4px; background: #e8edf4; }
+.mock-note { color: var(--muted); font-size: 11px; margin: 12px 0 6px; font-weight: 800; }
+
+/* ── 案1: ミニマル ───────────────────────────────────── */
+.v1 .sb-item { padding: 8px 10px; font-size: 12.5px; }
+.v1 .sb-item.dim { color: rgba(255,255,255,0.38); font-weight: 600; }
+.v1 .sb-item.dim:hover { background: rgba(255,255,255,0.06); }
+.v1 .sb-gl { margin: 16px 0 6px; }
+
+/* ── 案2: 業務フロー再編 ─────────────────────────────── */
+.v2 .sb { padding-top: 0; }
+.v2 .sb-ctx {
+  position: sticky; top: 0; z-index: 2;
+  margin: 0 -8px 10px; padding: 11px 14px;
+  background: rgba(0,0,0,0.22); border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.v2 .sb-ctx-k { font-size: 9px; font-weight: 900; letter-spacing: 0.7px; color: var(--nav-muted); text-transform: uppercase; }
+.v2 .sb-ctx-v { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #fff; font-size: 13px; font-weight: 900; margin-top: 3px; }
+.v2 .sb-ctx-v span:last-child { color: var(--nav-muted); font-size: 10px; font-weight: 800; }
+.v2 .sb-gl { display: flex; align-items: center; gap: 7px; text-transform: none; font-size: 11px; letter-spacing: 0; }
+.v2 .sb-gl::before { content: ""; width: 3px; height: 12px; border-radius: 2px; background: var(--blue); flex-shrink: 0; }
+.v2 .sb-gl.g2::before { background: #a855f7; }
+.v2 .sb-gl.g3::before { background: #22c55e; }
+.v2 .sb-gl.g4::before { background: #f59e0b; }
+.v2 .sb-item { padding-left: 19px; }
+
+/* ── 案3: アコーディオン ─────────────────────────────── */
+.v3 .acc-hd {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 9px 10px; margin-top: 4px; border: 0; border-radius: var(--r-sm);
+  background: transparent; color: var(--nav-text); font-size: 12px; font-weight: 900; text-align: left;
+}
+.v3 .acc-hd:hover { background: var(--nav-hover); }
+.v3 .acc-hd .caret { margin-left: auto; font-size: 9px; color: var(--nav-muted); transition: transform 0.15s; }
+.v3 .acc[open] .caret, .v3 .acc.open .caret { transform: rotate(90deg); }
+.v3 .acc-body { display: none; padding: 2px 0 6px 8px; margin-left: 5px; border-left: 1px solid rgba(255,255,255,0.14); }
+.v3 .acc.open .acc-body { display: block; }
+.v3 .sb-item.dim { color: rgba(255,255,255,0.38); font-weight: 600; }
+
+/* ── 案4: アイコンレール + パネル ───────────────────── */
+.shell.v4 { grid-template-columns: 60px 196px 1fr; }
+.v4 .hdr-brand { width: 256px; }
+.v4 .rail { background: #071d33; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; }
+.v4 .rail-btn {
+  display: grid; place-items: center; gap: 3px; width: 46px; padding: 7px 0;
+  border: 0; border-radius: var(--r-sm); background: transparent; color: rgba(255,255,255,0.62);
+}
+.v4 .rail-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.v4 .rail-btn.active { background: var(--nav-active); color: #fff; }
+.v4 .rail-ico { font-size: 16px; line-height: 1; }
+.v4 .rail-tx { font-size: 8.5px; font-weight: 900; letter-spacing: 0.2px; }
+.v4 .sb { padding-top: 14px; }
+.v4 .panel-t { color: #fff; font-size: 13px; font-weight: 900; padding: 0 9px 4px; }
+.v4 .panel-s { color: var(--nav-muted); font-size: 10.5px; padding: 0 9px 12px; line-height: 1.6; }
+.v4 .panel { display: none; }
+.v4 .panel.on { display: block; }
+
+/* ── 案5: 案件コンテキスト + 検索 ───────────────────── */
+.v5 .sb { padding-top: 0; }
+.v5 .sb-top { position: sticky; top: 0; z-index: 2; background: var(--nav); margin: 0 -8px; padding: 10px 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.10); }
+.v5 .sb-sel {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 7px 10px; border-radius: var(--r-sm); border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08); color: #fff; font-size: 12px; font-weight: 900;
+}
+.v5 .sb-sel .sub { color: var(--nav-muted); font-size: 9.5px; font-weight: 800; margin-left: auto; }
+.v5 .sb-find { position: relative; margin-top: 7px; }
+.v5 .sb-find input {
+  width: 100%; padding: 6px 10px 6px 26px; border-radius: var(--r-sm);
+  border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.22);
+  color: #fff; font-size: 11.5px; font-family: inherit;
+}
+.v5 .sb-find input::placeholder { color: rgba(255,255,255,0.42); }
+.v5 .sb-find input:focus { outline: 2px solid rgba(59,130,246,0.55); outline-offset: -1px; }
+.v5 .sb-find .ico { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: rgba(255,255,255,0.45); }
+.v5 .sb-item.hide, .v5 .sb-gl.hide { display: none; }
+.v5 .sb-empty { color: var(--nav-muted); font-size: 11px; padding: 14px 10px; display: none; }
+.v5 .sb-empty.on { display: block; }
+.v5 .sb-count { margin-left: auto; display: inline-grid; place-items: center; min-width: 17px; height: 16px; padding: 0 5px; border-radius: 999px; background: var(--red); color: #fff; font-size: 9px; font-weight: 900; }
+.v5 .sb-item.dim { color: rgba(255,255,255,0.38); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header class="doc-hd">
+  <h1>サイドメニュー デザイン案 5件</h1>
+  <p>
+    現行実装（<code>templates/layouts/base.html</code> + <code>static/css/app.css</code>）のトークンをそのまま使った実画面ベースの比較。
+    掲載しているメニュー項目は <code>apps/core/navigation.py</code> の実データ 23 画面。
+    案3・4・5 は動作します（折りたたみ、レール切替、絞り込み）。
+  </p>
+  <nav class="doc-toc">
+    <a href="#v1"><b>案1</b> ミニマル</a>
+    <a href="#v2"><b>案2</b> 業務フロー再編</a>
+    <a href="#v3"><b>案3</b> 折りたたみ</a>
+    <a href="#v4"><b>案4</b> アイコンレール＋パネル</a>
+    <a href="#v5"><b>案5</b> 案件コンテキスト＋検索</a>
+  </nav>
+</header>
+
+<main class="doc-main">
+
+<!-- ══════════════ 案1 ══════════════ -->
+<section class="variant" id="v1">
+  <div class="variant-hd">
+    <span class="variant-no">案1</span>
+    <h2>ミニマル — 区分は変えず、装飾だけ落とす</h2>
+    <p class="variant-lead">
+      2文字バッジと AI / RAG / WIP タグを全廃し、ラベル1要素に統一。未実装画面は輝度を落として「押せるが未完成」と伝える。
+      情報構造には手を入れないため、既存のURL・ドキュメント・スクリーンショットがそのまま生きる。
+    </p>
+  </div>
+  <div class="variant-body">
+    <div class="demo">
+      <div class="shell v1">
+        <header class="hdr">
+          <a class="hdr-brand" href="#">
+            <span class="hdr-mark">VR</span>
+            <span class="hdr-title">
+              <span class="hdr-name">VeriRAG PMO Agent</span>
+              <span class="hdr-sub">AI PROJECT CONTROL</span>
+            </span>
+          </a>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips">
+            <a class="hdr-project" href="#">体験用テナント</a>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+          </div>
+        </header>
+
+        <nav class="sb">
+          <p class="sb-gl">AIプロジェクト管制</p>
+          <a class="sb-item active" href="#"><span class="sb-label">管制ダッシュボード</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">タスク一覧</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">進捗予測・介入</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">品質リアルタイム管理</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">リスク予測・対策</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">変更影響分析</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">AI介入提案</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">KPI・効果測定</span></a>
+
+          <p class="sb-gl">PMO支援</p>
+          <a class="sb-item" href="#"><span class="sb-label">PMO相談・状況整理</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">計画策定</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">成果物支援</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">報告生成・承認</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">プロンプトライブラリ</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">教育支援</span></a>
+
+          <p class="sb-gl">ナレッジ / RAG</p>
+          <a class="sb-item" href="#"><span class="sb-label">ドキュメント登録</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">ひな型管理</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">RAG検索</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">チャットモード</span></a>
+
+          <p class="sb-gl">監査・トレース</p>
+          <a class="sb-item" href="#"><span class="sb-label">Agenticトレース</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">操作ログ</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">フィードバック</span></a>
+
+          <p class="sb-gl">管理・設定</p>
+          <a class="sb-item" href="#"><span class="sb-label">案件管理</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">設定</span></a>
+        </nav>
+
+        <main class="main">
+          <div class="ph"><div><div class="pk">VERIRAG</div><h1 class="pt">管制ダッシュボード</h1><p class="ps">選択中テナントの案件状況</p></div></div>
+          <div class="mock-grid">
+            <div class="mock-card"><div class="mock-k">案件</div><div class="mock-v">2</div></div>
+            <div class="mock-card"><div class="mock-k">オープン課題</div><div class="mock-v">7</div></div>
+            <div class="mock-card"><div class="mock-k">高リスク</div><div class="mock-v">3</div></div>
+            <div class="mock-card"><div class="mock-k">未判断の提案</div><div class="mock-v">4</div></div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-note">重要アラート</div>
+            <div class="mock-rows">
+              <div class="mock-row"><span class="mock-bar" style="width:38%"></span><span class="mock-bar" style="width:22%"></span></div>
+              <div class="mock-row"><span class="mock-bar" style="width:52%"></span><span class="mock-bar" style="width:15%"></span></div>
+              <div class="mock-row"><span class="mock-bar" style="width:44%"></span><span class="mock-bar" style="width:28%"></span></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <aside class="variant-note">
+      <dl>
+        <dt>狙い</dt>
+        <dd>1項目あたりの視覚要素を 4 → 1 に減らす。項目数（23）は変えない。</dd>
+        <dt>効く場面</dt>
+        <dd>今すぐ軽くしたい。情報構造の議論を後回しにしたい。</dd>
+        <dt>代償</dt>
+        <dd class="bad">区分がアプリ構成のままなので、「管制」と「PMO支援」の違いが利用者に伝わらない問題は残る。未実装15件も並んだまま。</dd>
+        <dt>実装</dt>
+        <dd><span class="cost s">小</span> テンプレート2行の削除とCSS微修正のみ。<code>navigation.py</code> は無変更。</dd>
+      </dl>
+    </aside>
+  </div>
+</section>
+
+<!-- ══════════════ 案2 ══════════════ -->
+<section class="variant" id="v2">
+  <div class="variant-hd">
+    <span class="variant-no">案2</span>
+    <h2>業務フロー再編 — 動詞で区切る</h2>
+    <p class="variant-lead">
+      区分をアプリ境界（dashboard / pmo / rag / audit）から、PMOの仕事の流れ「状況を見る → AIに聞く → 根拠を引く → 確かめる」へ組み替える。
+      設定はメニューから外してヘッダーへ。上部に案件コンテキストを常時表示する。
+    </p>
+  </div>
+  <div class="variant-body">
+    <div class="demo">
+      <div class="shell v2">
+        <header class="hdr">
+          <a class="hdr-brand" href="#">
+            <span class="hdr-mark">VR</span>
+            <span class="hdr-title">
+              <span class="hdr-name">VeriRAG PMO Agent</span>
+              <span class="hdr-sub">AI PROJECT CONTROL</span>
+            </span>
+          </a>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips">
+            <a class="hdr-project" href="#">体験用テナント</a>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">設定</button>
+          </div>
+        </header>
+
+        <nav class="sb">
+          <div class="sb-ctx">
+            <div class="sb-ctx-k">対象案件</div>
+            <div class="sb-ctx-v"><span>Project Atlas</span><span>切替 ▾</span></div>
+          </div>
+
+          <p class="sb-gl">状況を見る</p>
+          <a class="sb-item active" href="#"><span class="sb-label">管制ダッシュボード</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">タスク・WBS</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">リスク・課題</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">変更影響</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">品質・KPI</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">進捗予測</span></a>
+
+          <p class="sb-gl g2">AIに聞く</p>
+          <a class="sb-item" href="#"><span class="sb-label">PMO相談・状況整理</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">AI介入提案</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">計画策定</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">成果物・報告の作成</span></a>
+
+          <p class="sb-gl g3">根拠を引く</p>
+          <a class="sb-item" href="#"><span class="sb-label">RAG検索</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">チャット</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">ドキュメント</span></a>
+
+          <p class="sb-gl g4">確かめる</p>
+          <a class="sb-item" href="#"><span class="sb-label">Agenticトレース</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">承認待ち</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">操作ログ</span></a>
+        </nav>
+
+        <main class="main">
+          <div class="ph"><div><div class="pk">PROJECT ATLAS</div><h1 class="pt">管制ダッシュボード</h1><p class="ps">この案件の状況</p></div></div>
+          <div class="mock-grid">
+            <div class="mock-card"><div class="mock-k">進捗</div><div class="mock-v">62%</div></div>
+            <div class="mock-card"><div class="mock-k">オープン課題</div><div class="mock-v">5</div></div>
+            <div class="mock-card"><div class="mock-k">高リスク</div><div class="mock-v">2</div></div>
+            <div class="mock-card"><div class="mock-k">未判断の提案</div><div class="mock-v">4</div></div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-note">重要アラート</div>
+            <div class="mock-rows">
+              <div class="mock-row"><span class="mock-bar" style="width:38%"></span><span class="mock-bar" style="width:22%"></span></div>
+              <div class="mock-row"><span class="mock-bar" style="width:52%"></span><span class="mock-bar" style="width:15%"></span></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <aside class="variant-note">
+      <dl>
+        <dt>狙い</dt>
+        <dd>実装の都合（アプリ境界）を利用者から隠す。23 → 16項目に統合し、設定を外へ出す。</dd>
+        <dt>効く場面</dt>
+        <dd>新任PMOが自力で目的の画面に辿り着けるようにしたい。研修コストを下げたい。</dd>
+        <dt>代償</dt>
+        <dd class="bad">既存のURL名・ドキュメントの画面区分を書き換える必要がある。<code>screen_map.md</code> と <code>navigation.py</code> の対応表も作り直しになる。</dd>
+        <dt>実装</dt>
+        <dd><span class="cost m">中</span> <code>navigation.py</code> の再定義。案件セレクタは予定されているプロジェクト選択画面がそのまま入る。</dd>
+      </dl>
+    </aside>
+  </div>
+</section>
+
+<!-- ══════════════ 案3 ══════════════ -->
+<section class="variant" id="v3">
+  <div class="variant-hd">
+    <span class="variant-no">案3</span>
+    <h2>折りたたみ — 開いている場所だけ見せる</h2>
+    <p class="variant-lead">
+      区分は現状のまま、セクションをアコーディオンにして現在地のみ展開する。常時表示は 23 → 5〜13項目。
+      項目を削らないので「どこに何があるか」の地図は保たれたまま、視界だけが狭まる。
+      バッジ・タグは全廃し、右端は開閉のキャレットだけにする。<b>見出しをクリックすると開閉します。</b>
+    </p>
+  </div>
+  <div class="variant-body">
+    <div class="demo">
+      <div class="shell v3">
+        <header class="hdr">
+          <a class="hdr-brand" href="#">
+            <span class="hdr-mark">VR</span>
+            <span class="hdr-title">
+              <span class="hdr-name">VeriRAG PMO Agent</span>
+              <span class="hdr-sub">AI PROJECT CONTROL</span>
+            </span>
+          </a>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips">
+            <a class="hdr-project" href="#">体験用テナント</a>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+          </div>
+        </header>
+
+        <nav class="sb" data-acc>
+          <div class="acc open">
+            <button class="acc-hd" type="button">AIプロジェクト管制 <span class="caret">▶</span></button>
+            <div class="acc-body">
+              <a class="sb-item active" href="#"><span class="sb-label">管制ダッシュボード</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">タスク一覧</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">進捗予測・介入</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">品質リアルタイム管理</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">リスク予測・対策</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">変更影響分析</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">AI介入提案</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">KPI・効果測定</span></a>
+            </div>
+          </div>
+
+          <div class="acc">
+            <button class="acc-hd" type="button">PMO支援 <span class="caret">▶</span></button>
+            <div class="acc-body">
+              <a class="sb-item" href="#"><span class="sb-label">PMO相談・状況整理</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">計画策定</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">成果物支援</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">報告生成・承認</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">プロンプトライブラリ</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">教育支援</span></a>
+            </div>
+          </div>
+
+          <div class="acc">
+            <button class="acc-hd" type="button">ナレッジ / RAG <span class="caret">▶</span></button>
+            <div class="acc-body">
+              <a class="sb-item" href="#"><span class="sb-label">ドキュメント登録</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">ひな型管理</span></a>
+              <a class="sb-item" href="#"><span class="sb-label">RAG検索</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">チャットモード</span></a>
+            </div>
+          </div>
+
+          <div class="acc">
+            <button class="acc-hd" type="button">監査・トレース <span class="caret">▶</span></button>
+            <div class="acc-body">
+              <a class="sb-item" href="#"><span class="sb-label">Agenticトレース</span></a>
+              <a class="sb-item" href="#"><span class="sb-label">操作ログ</span></a>
+              <a class="sb-item dim" href="#"><span class="sb-label">フィードバック</span></a>
+            </div>
+          </div>
+
+          <div class="acc">
+            <button class="acc-hd" type="button">管理・設定 <span class="caret">▶</span></button>
+            <div class="acc-body">
+              <a class="sb-item" href="#"><span class="sb-label">案件管理</span></a>
+              <a class="sb-item" href="#"><span class="sb-label">設定</span></a>
+            </div>
+          </div>
+        </nav>
+
+        <main class="main">
+          <div class="ph"><div><div class="pk">VERIRAG</div><h1 class="pt">管制ダッシュボード</h1><p class="ps">選択中テナントの案件状況</p></div></div>
+          <div class="mock-grid">
+            <div class="mock-card"><div class="mock-k">案件</div><div class="mock-v">2</div></div>
+            <div class="mock-card"><div class="mock-k">オープン課題</div><div class="mock-v">7</div></div>
+            <div class="mock-card"><div class="mock-k">高リスク</div><div class="mock-v">3</div></div>
+            <div class="mock-card"><div class="mock-k">未判断の提案</div><div class="mock-v">4</div></div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-note">重要アラート</div>
+            <div class="mock-rows">
+              <div class="mock-row"><span class="mock-bar" style="width:38%"></span><span class="mock-bar" style="width:22%"></span></div>
+              <div class="mock-row"><span class="mock-bar" style="width:52%"></span><span class="mock-bar" style="width:15%"></span></div>
+              <div class="mock-row"><span class="mock-bar" style="width:44%"></span><span class="mock-bar" style="width:28%"></span></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <aside class="variant-note">
+      <dl>
+        <dt>狙い</dt>
+        <dd>情報構造に手を入れず、常時表示量だけを半減させる。区分の議論を保留したまま先に軽くできる。</dd>
+        <dt>効く場面</dt>
+        <dd>画面区分（案2の再編）をいずれやるとしても、それを待たずに今の重さを解消したいとき。案1より効果が大きく、案2より安全。</dd>
+        <dt>代償</dt>
+        <dd class="bad">目的の画面が閉じたセクションにあると1クリック増える。開いていたセクションをセッションに保持しないと、画面遷移のたびに畳まれて逆に遅くなる。</dd>
+        <dt>実装</dt>
+        <dd><span class="cost s">小</span> テンプレートと数十行のJSのみ。<code>navigation.py</code> は無変更。</dd>
+      </dl>
+    </aside>
+  </div>
+</section>
+
+<!-- ══════════════ 案4 ══════════════ -->
+<section class="variant" id="v4">
+  <div class="variant-hd">
+    <span class="variant-no">案4</span>
+    <h2>アイコンレール ＋ パネル — 2段構成</h2>
+    <p class="variant-lead">
+      左端に領域を示す細いレール（60px）、その右に選択領域の項目だけを出すパネル。画面数が増え続ける業務システムの定石。
+      レールが常に見えるので現在地を見失わない。<b>レールのアイコンをクリックすると切り替わります。</b>
+    </p>
+  </div>
+  <div class="variant-body">
+    <div class="demo">
+      <div class="shell v4" data-rail>
+        <header class="hdr">
+          <a class="hdr-brand" href="#">
+            <span class="hdr-mark">VR</span>
+            <span class="hdr-title">
+              <span class="hdr-name">VeriRAG PMO Agent</span>
+              <span class="hdr-sub">AI PROJECT CONTROL</span>
+            </span>
+          </a>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips">
+            <a class="hdr-project" href="#">体験用テナント</a>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+          </div>
+        </header>
+
+        <div class="rail">
+          <button class="rail-btn active" type="button" data-target="p1"><span class="rail-ico">◫</span><span class="rail-tx">管制</span></button>
+          <button class="rail-btn" type="button" data-target="p2"><span class="rail-ico">✻</span><span class="rail-tx">PMO</span></button>
+          <button class="rail-btn" type="button" data-target="p3"><span class="rail-ico">▤</span><span class="rail-tx">知識</span></button>
+          <button class="rail-btn" type="button" data-target="p4"><span class="rail-ico">◎</span><span class="rail-tx">検証</span></button>
+          <button class="rail-btn" type="button" data-target="p5"><span class="rail-ico">⚙</span><span class="rail-tx">管理</span></button>
+        </div>
+
+        <nav class="sb">
+          <div class="panel on" id="p1">
+            <div class="panel-t">AIプロジェクト管制</div>
+            <div class="panel-s">案件の状態・予測・介入</div>
+            <a class="sb-item active" href="#"><span class="sb-label">管制ダッシュボード</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">タスク一覧</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">進捗予測・介入</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">品質リアルタイム管理</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">リスク予測・対策</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">変更影響分析</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">AI介入提案</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">KPI・効果測定</span></a>
+          </div>
+          <div class="panel" id="p2">
+            <div class="panel-t">PMO支援</div>
+            <div class="panel-s">相談・計画・成果物・承認</div>
+            <a class="sb-item" href="#"><span class="sb-label">PMO相談・状況整理</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">計画策定</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">成果物支援</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">報告生成・承認</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">プロンプトライブラリ</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">教育支援</span></a>
+          </div>
+          <div class="panel" id="p3">
+            <div class="panel-t">ナレッジ / RAG</div>
+            <div class="panel-s">文書の登録と検索</div>
+            <a class="sb-item" href="#"><span class="sb-label">ドキュメント登録</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">ひな型管理</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">RAG検索</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">チャットモード</span></a>
+          </div>
+          <div class="panel" id="p4">
+            <div class="panel-t">監査・トレース</div>
+            <div class="panel-s">AIの判断根拠と操作履歴</div>
+            <a class="sb-item" href="#"><span class="sb-label">Agenticトレース</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">操作ログ</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">フィードバック</span></a>
+          </div>
+          <div class="panel" id="p5">
+            <div class="panel-t">管理・設定</div>
+            <div class="panel-s">案件とシステム設定</div>
+            <a class="sb-item" href="#"><span class="sb-label">案件管理</span></a>
+            <a class="sb-item" href="#"><span class="sb-label">設定</span></a>
+          </div>
+        </nav>
+
+        <main class="main">
+          <div class="ph"><div><div class="pk">VERIRAG</div><h1 class="pt">管制ダッシュボード</h1><p class="ps">選択中テナントの案件状況</p></div></div>
+          <div class="mock-grid">
+            <div class="mock-card"><div class="mock-k">案件</div><div class="mock-v">2</div></div>
+            <div class="mock-card"><div class="mock-k">オープン課題</div><div class="mock-v">7</div></div>
+            <div class="mock-card"><div class="mock-k">高リスク</div><div class="mock-v">3</div></div>
+            <div class="mock-card"><div class="mock-k">未判断の提案</div><div class="mock-v">4</div></div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-note">重要アラート</div>
+            <div class="mock-rows">
+              <div class="mock-row"><span class="mock-bar" style="width:38%"></span><span class="mock-bar" style="width:22%"></span></div>
+              <div class="mock-row"><span class="mock-bar" style="width:52%"></span><span class="mock-bar" style="width:15%"></span></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <aside class="variant-note">
+      <dl>
+        <dt>狙い</dt>
+        <dd>領域の切替と項目の選択を分離する。1画面に出るメニュー項目は最大8件。</dd>
+        <dt>効く場面</dt>
+        <dd>画面数が今後30〜50に増える前提のとき。P1の未着手機能を全部足すとこの規模になる。</dd>
+        <dt>代償</dt>
+        <dd class="bad">別領域の画面へ移るのに2クリック。<b>2文字バッジを消してアイコンを入れる案なので、記号の解読しにくさは形を変えて残る</b>（アイコン選定が甘いと悪化する）。横幅も 252 → 256px と減らない。</dd>
+        <dt>実装</dt>
+        <dd><span class="cost m">中</span> レイアウトの grid を3列化。<code>navigation.py</code> はセクションにアイコンを足すだけ。</dd>
+      </dl>
+    </aside>
+  </div>
+</section>
+
+<!-- ══════════════ 案5 ══════════════ -->
+<section class="variant" id="v5">
+  <div class="variant-hd">
+    <span class="variant-no">案5</span>
+    <h2>案件コンテキスト ＋ 絞り込み — 探させない</h2>
+    <p class="variant-lead">
+      上部に案件セレクタと絞り込み欄を固定。23項目を覚えなくても、数文字打てば辿り着ける。
+      未実装は輝度を落として最下部の扱いにし、未処理件数を右端に出す。<b>絞り込み欄に入力すると即座に絞られます</b>（例: 「リスク」「承認」）。
+    </p>
+  </div>
+  <div class="variant-body">
+    <div class="demo">
+      <div class="shell v5">
+        <header class="hdr">
+          <a class="hdr-brand" href="#">
+            <span class="hdr-mark">VR</span>
+            <span class="hdr-title">
+              <span class="hdr-name">VeriRAG PMO Agent</span>
+              <span class="hdr-sub">AI PROJECT CONTROL</span>
+            </span>
+          </a>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips">
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">設定</button>
+          </div>
+        </header>
+
+        <nav class="sb" data-filter>
+          <div class="sb-top">
+            <button class="sb-sel" type="button">Project Atlas <span class="sub">案件を切替 ▾</span></button>
+            <div class="sb-find">
+              <span class="ico">⌕</span>
+              <input type="text" placeholder="画面を絞り込む" data-filter-input>
+            </div>
+          </div>
+
+          <p class="sb-gl">案件</p>
+          <a class="sb-item active" href="#"><span class="sb-label">管制ダッシュボード</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">タスク・WBS</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">リスク・課題</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">変更影響</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">品質・KPI</span></a>
+
+          <p class="sb-gl">AI支援</p>
+          <a class="sb-item" href="#"><span class="sb-label">PMO相談・状況整理</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">AI介入提案</span><span class="sb-count">4</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">報告生成・承認</span><span class="sb-count">2</span></a>
+
+          <p class="sb-gl">ナレッジ</p>
+          <a class="sb-item" href="#"><span class="sb-label">RAG検索</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">チャットモード</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">ドキュメント登録</span></a>
+
+          <p class="sb-gl">検証</p>
+          <a class="sb-item" href="#"><span class="sb-label">Agenticトレース</span></a>
+          <a class="sb-item" href="#"><span class="sb-label">操作ログ</span></a>
+
+          <p class="sb-gl">開発中</p>
+          <a class="sb-item dim" href="#"><span class="sb-label">進捗予測・介入</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">計画策定</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">成果物支援</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">プロンプトライブラリ</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">教育支援</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">ひな型管理</span></a>
+          <a class="sb-item dim" href="#"><span class="sb-label">フィードバック</span></a>
+          <p class="sb-empty">該当する画面がありません</p>
+        </nav>
+
+        <main class="main">
+          <div class="ph"><div><div class="pk">PROJECT ATLAS</div><h1 class="pt">管制ダッシュボード</h1><p class="ps">この案件の状況</p></div></div>
+          <div class="mock-grid">
+            <div class="mock-card"><div class="mock-k">進捗</div><div class="mock-v">62%</div></div>
+            <div class="mock-card"><div class="mock-k">オープン課題</div><div class="mock-v">5</div></div>
+            <div class="mock-card"><div class="mock-k">高リスク</div><div class="mock-v">2</div></div>
+            <div class="mock-card"><div class="mock-k">未判断の提案</div><div class="mock-v">4</div></div>
+          </div>
+          <div class="mock-card">
+            <div class="mock-note">重要アラート</div>
+            <div class="mock-rows">
+              <div class="mock-row"><span class="mock-bar" style="width:38%"></span><span class="mock-bar" style="width:22%"></span></div>
+              <div class="mock-row"><span class="mock-bar" style="width:52%"></span><span class="mock-bar" style="width:15%"></span></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <aside class="variant-note">
+      <dl>
+        <dt>狙い</dt>
+        <dd>「どの画面か覚えていない」問題を、構造の工夫ではなく検索で解く。実装済み13件と開発中7件を階層で分ける。</dd>
+        <dt>効く場面</dt>
+        <dd>複数案件を担当し、毎日使う実務利用。使用頻度の高い画面が上に集まる。</dd>
+        <dt>代償</dt>
+        <dd class="bad">絞り込み欄は「メニューが多すぎる」ことの自白でもある。件数バッジを出すなら、集計を毎リクエスト走らせないようキャッシュが要る。</dd>
+        <dt>実装</dt>
+        <dd><span class="cost l">大</span> 案2の再編に検索UIと件数集計が加わる。5案で最も重い。</dd>
+      </dl>
+    </aside>
+  </div>
+</section>
+
+</main>
+
+<script>
+// 案3: アコーディオン
+document.querySelectorAll('[data-acc] .acc-hd').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var acc = btn.parentElement;
+    var wasOpen = acc.classList.contains('open');
+    acc.parentElement.querySelectorAll('.acc').forEach(function (a) { a.classList.remove('open'); });
+    if (!wasOpen) { acc.classList.add('open'); }
+  });
+});
+
+// 案4: アイコンレールでパネル切替
+document.querySelectorAll('[data-rail] .rail-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var shell = btn.closest('[data-rail]');
+    shell.querySelectorAll('.rail-btn').forEach(function (b) { b.classList.remove('active'); });
+    shell.querySelectorAll('.panel').forEach(function (p) { p.classList.remove('on'); });
+    btn.classList.add('active');
+    shell.querySelector('#' + btn.dataset.target).classList.add('on');
+  });
+});
+
+// 案5: 絞り込み
+document.querySelectorAll('[data-filter]').forEach(function (nav) {
+  var input = nav.querySelector('[data-filter-input]');
+  var empty = nav.querySelector('.sb-empty');
+
+  input.addEventListener('input', function () {
+    var q = input.value.trim().toLowerCase();
+    var hits = 0;
+
+    nav.querySelectorAll('.sb-item').forEach(function (item) {
+      var match = !q || item.textContent.toLowerCase().indexOf(q) !== -1;
+      item.classList.toggle('hide', !match);
+      if (match) { hits++; }
+    });
+
+    // 見出しは、配下に残った項目が無ければ隠す。
+    nav.querySelectorAll('.sb-gl').forEach(function (gl) {
+      var visible = false;
+      var node = gl.nextElementSibling;
+      while (node && !node.classList.contains('sb-gl')) {
+        if (node.classList.contains('sb-item') && !node.classList.contains('hide')) { visible = true; }
+        node = node.nextElementSibling;
+      }
+      gl.classList.toggle('hide', !visible);
+    });
+
+    empty.classList.toggle('on', hits === 0);
+  });
+});
+</script>
+</body>
+</html>

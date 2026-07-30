@@ -21,7 +21,7 @@ def navigation(request: HttpRequest) -> dict:
         current = f"{match.app_name}:{match.url_name}" if match.app_name else (match.url_name or "")
 
     return {
-        "nav_sections": navigation_for(getattr(request, "user", None)),
+        "nav_sections": navigation_for(getattr(request, "user", None), current),
         "current_tenant": getattr(request, "tenant", None),
         "current_url_name": current,
     }

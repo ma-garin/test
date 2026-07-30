@@ -12,5 +12,10 @@ urlpatterns = [
     path("risk/", views.risk, name="risk"),
     path("change/", views.change, name="change"),
     path("intervention/", views.intervention, name="intervention"),
+    path(
+        "intervention/<uuid:pk>/decide/",
+        views.intervention_decide,
+        name="intervention_decide",
+    ),
     path("kpi/", views.kpi, name="kpi"),
 ]

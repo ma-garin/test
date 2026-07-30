@@ -1,0 +1,52 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}監査・トレース{% endblock %}
+{% block subtitle %}事実誤認の報告は受入条件「事実誤認 0 件」の集計に直結します。気づいた時点で残してください。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'audit:feedback_list' %}">集計へ戻る</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">フィードバックを投稿する</span><span class="card-act">自テナントのみ</span></div>
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% if form.errors %}
+        <div class="callout d">
+          <p>入力内容を確認してください。</p>
+          {% for field in form %}
+            {% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+      <div>
+        <label for="{{ form.rating.id_for_label }}">{{ form.rating.label }}</label>
+        {{ form.rating }}
+      </div>
+      <div>
+        <label for="{{ form.answer.id_for_label }}">{{ form.answer.label }}</label>
+        {{ form.answer }}
+      </div>
+      <div>
+        <label for="{{ form.agent_run.id_for_label }}">{{ form.agent_run.label }}</label>
+        {{ form.agent_run }}
+      </div>
+      <div>
+        <label for="{{ form.has_fact_error.id_for_label }}">{{ form.has_fact_error.label }}</label>
+        {{ form.has_fact_error }}
+      </div>
+      <div>
+        <label for="{{ form.comment.id_for_label }}">{{ form.comment.label }}</label>
+        {{ form.comment }}
+        <div class="ps">「役に立たなかった」または事実誤認ありの場合は必須です。</div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn-b">フィードバックを送る</button>
+        <a class="btn-ghost" href="{% url 'audit:feedback_list' %}">やめる</a>
+      </div>
+    </form>
+  </div>
+
+{% endblock %}

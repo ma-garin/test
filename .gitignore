@@ -29,3 +29,6 @@ htmlcov/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Playwright MCP の作業ディレクトリ
+.playwright-mcp/

@@ -1,0 +1,115 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}参照できる案件の WBS タスクを、期限の危ない順に確認できます。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'dashboard:progress' %}">進捗予測へ</a>
+  <a class="btn-b sm" href="{% url 'projects:task_create' %}">タスクを新規作成</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">対象タスク</div>
+      <div class="kpi-v">{{ board.total }}</div>
+      <div class="kpi-s">{% if board.filters.is_active %}絞り込み中{% else %}全件{% endif %}</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">期限超過</div>
+      <div class="kpi-v" style="color:var(--red)">{{ board.overdue }}</div>
+      <div class="kpi-s">完了していない未達</div>
+      <div class="kpi-bar"><div class="kpi-fill r" style="width:{{ board.overdue }}%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">ブロック中</div>
+      <div class="kpi-v" style="color:var(--orange)">{{ board.blocked }}</div>
+      <div class="kpi-s">着手できないタスク</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:{{ board.blocked }}%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">完了率</div>
+      <div class="kpi-v" style="color:var(--green)">{{ board.done_percent }}<small>%</small></div>
+      <div class="kpi-s">完了 {{ board.done }}件 / 進行中 {{ board.in_progress }}件</div>
+      <div class="kpi-bar"><div class="kpi-fill g" style="width:{{ board.done_percent }}%"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">絞り込み</span>
+      {% if board.filters.is_active %}<a class="card-act" href="{% url 'dashboard:tasks' %}">条件をクリア</a>{% endif %}
+    </div>
+    <form method="get" class="search-row">
+      <input type="text" name="owner" value="{{ board.filters.owner }}" placeholder="担当者">
+      <select name="status">
+        <option value="">状態（すべて）</option>
+        {% for value, label in board.status_choices %}
+          <option value="{{ value }}"{% if board.filters.status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="priority">
+        <option value="">優先度（すべて）</option>
+        {% for value, label in board.priority_choices %}
+          <option value="{{ value }}"{% if board.filters.priority == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="due">
+        <option value="">期限（すべて）</option>
+        {% for value, label in board.due_choices %}
+          <option value="{{ value }}"{% if board.filters.due == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="progress">
+        <option value="">進捗（すべて）</option>
+        {% for value, label in board.progress_choices %}
+          <option value="{{ value }}"{% if board.filters.progress == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-b sm">絞り込む</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">タスク一覧</span>
+      <span class="card-act">期限の近い順</span>
+    </div>
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr>
+            <th>案件</th><th>WBS</th><th>タスク</th><th>担当</th><th>期限</th>
+            <th>進捗</th><th>状態</th><th>優先度</th><th>次アクション</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in board.rows %}
+            <tr>
+              <td>{{ row.task.project.code }}</td>
+              <td class="nowrap">{{ row.task.wbs_code }}</td>
+              <td><a href="{% url 'projects:task_detail' row.task.pk %}">{{ row.task.name }}</a></td>
+              <td>{{ row.task.owner|default:"—" }}</td>
+              <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.task.planned_end|date:"n/j"|default:"未設定" }}</span></td>
+              <td class="nowrap">{{ row.task.progress_percent|floatformat:0 }}%</td>
+              <td><span class="badge {{ row.status_tone }}">{{ row.task.get_status_display }}</span></td>
+              <td><span class="badge {{ row.priority_tone }}">{{ row.task.get_priority_display }}</span></td>
+              <td>{{ row.task.next_action|default:"—" }}</td>
+              <td class="nowrap">
+                <a class="btn-ghost sm" href="{% url 'projects:task_detail' row.task.pk %}">詳細</a>
+                <a class="btn-ghost sm" href="{% url 'projects:task_edit' row.task.pk %}">編集</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="10"><div class="dashboard-empty">{% if board.filters.is_active %}条件に一致するタスクがありません。{% else %}参照できるタスクがありません。{% endif %}</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if board.is_truncated %}
+      <div class="callout w"><p>表示件数の上限に達しています。絞り込んで確認してください。</p></div>
+    {% endif %}
+  </div>
+
+{% endblock %}
