@@ -201,3 +201,56 @@ LOGGING = {
     },
     "root": {"handlers": ["console"], "level": env("DJANGO_LOG_LEVEL", default="INFO")},
 }
+
+# 予兆検知のしきい値。
+# 現場ごとに「何日止まったら危ない」「変更が何倍で異常か」の基準が違うため、
+# 判定ロジック側へ数値を埋め込まない。ここを変えるだけで基準を動かせるようにする。
+# 観測数が少ないときに異常と判定しないよう、各ルールに MIN_OBSERVATIONS を必ず置く。
+DETECTION_RULES = {
+    # 1 回の実行で作るアラートの上限。作りすぎると読まれなくなり、検知全体が信用を失う。
+    "MAX_ALERTS_PER_RUN": env.int("DETECTION_MAX_ALERTS_PER_RUN", default=20),
+    "CRITICAL_PATH": {
+        # 計画終了日をこの日数以上超過した未完了タスクを起点にする。
+        "DELAY_DAYS": env.int("DETECTION_CP_DELAY_DAYS", default=3),
+        # 後続をたどる深さの上限。循環参照が無くても無限に広がらせない。
+        "MAX_DEPTH": env.int("DETECTION_CP_MAX_DEPTH", default=5),
+        # 波及先がこの件数未満なら「波及なし」としてアラートにしない。
+        "MIN_IMPACTED_TASKS": env.int("DETECTION_CP_MIN_IMPACTED_TASKS", default=1),
+        # 波及先がこの件数以上、またはクリティカルパス上なら重大扱い。
+        "CRITICAL_IMPACTED_TASKS": env.int("DETECTION_CP_CRITICAL_IMPACTED_TASKS", default=3),
+    },
+    "SILENT_FIRE": {
+        # 更新が止まったとみなす日数。
+        "STALE_UPDATE_DAYS": env.int("DETECTION_SF_STALE_UPDATE_DAYS", default=10),
+        # ボール保持者が動かないとみなす日数。
+        "SAME_BALL_HOLDER_DAYS": env.int("DETECTION_SF_SAME_BALL_HOLDER_DAYS", default=14),
+        # 進捗が伸びていないとみなす進捗率(%)。
+        "LOW_PROGRESS_PERCENT": env.int("DETECTION_SF_LOW_PROGRESS_PERCENT", default=30),
+        # 兆候がこの数以上そろって初めて検知する。1 つでは誤検知になる。
+        "MIN_SIGNALS": env.int("DETECTION_SF_MIN_SIGNALS", default=2),
+        "CRITICAL_SIGNALS": env.int("DETECTION_SF_CRITICAL_SIGNALS", default=3),
+    },
+    "CHANGE_FREQUENCY": {
+        "WINDOW_DAYS": env.int("DETECTION_CF_WINDOW_DAYS", default=30),
+        "BASELINE_DAYS": env.int("DETECTION_CF_BASELINE_DAYS", default=120),
+        # 母数がこれ未満なら「判定不能」。変更要求 2 件で頻度異常は主張できない。
+        "MIN_OBSERVATIONS": env.int("DETECTION_CF_MIN_OBSERVATIONS", default=6),
+        # 直近の発生ペースが期間平均の何倍で異常とみなすか。
+        "SPIKE_RATIO": env.float("DETECTION_CF_SPIKE_RATIO", default=2.0),
+        "CRITICAL_SPIKE_RATIO": env.float("DETECTION_CF_CRITICAL_SPIKE_RATIO", default=3.0),
+    },
+    "DEFECT_RATE": {
+        "WINDOW_DAYS": env.int("DETECTION_DR_WINDOW_DAYS", default=30),
+        "BASELINE_DAYS": env.int("DETECTION_DR_BASELINE_DAYS", default=120),
+        # 母数がこれ未満なら分布を語らない。
+        "MIN_OBSERVATIONS": env.int("DETECTION_DR_MIN_OBSERVATIONS", default=10),
+        # 重大度 高・重大 の占める割合(%)がこれ以上なら異常。
+        "SEVERE_RATIO_PERCENT": env.int("DETECTION_DR_SEVERE_RATIO_PERCENT", default=20),
+        # 未クローズの割合(%)がこれ以上なら滞留として異常。
+        "OPEN_RATIO_PERCENT": env.int("DETECTION_DR_OPEN_RATIO_PERCENT", default=60),
+        # 発生ペースが期間平均の何倍で異常とみなすか。
+        "SPIKE_RATIO": env.float("DETECTION_DR_SPIKE_RATIO", default=2.0),
+    },
+    # 1 件の検知から作る介入提案の上限。選択肢が多すぎると誰も決められない。
+    "MAX_PROPOSALS_PER_FINDING": env.int("DETECTION_MAX_PROPOSALS_PER_FINDING", default=3),
+}

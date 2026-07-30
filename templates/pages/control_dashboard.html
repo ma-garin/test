@@ -3,6 +3,11 @@
 {% block subtitle %}選択中テナントの案件を集計し、危ない順に確認できます。{% endblock %}
 
 {% block header_actions %}
+  <a class="btn-out sm" href="{% url 'dashboard:detection' %}">検知結果</a>
+  <form method="post" action="{% url 'dashboard:detection_run' %}" class="actions">
+    {% csrf_token %}
+    <button type="submit" class="btn-out sm">検知を実行</button>
+  </form>
   <a class="btn-out sm" href="{% url 'projects:list' %}">案件管理へ</a>
   <a class="btn-b sm" href="{% url 'pmo:consultation' %}">PMOに相談する</a>
 {% endblock %}

@@ -35,6 +35,33 @@
 
   <div class="card">
     <div class="card-hdr">
+      <span class="card-t">成果物を生成する</span>
+      <span class="card-act">登録済みの実データから組み立てます</span>
+    </div>
+    <form class="form" method="post" action="{% url 'pmo:deliverables' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="generate">
+      {% if generate_form.non_field_errors %}
+        <div class="callout d">{{ generate_form.non_field_errors }}</div>
+      {% endif %}
+      <div class="search-row">
+        <label>案件<br>{{ generate_form.project }}</label>
+        <label>種類<br>{{ generate_form.generator }}</label>
+        <button class="btn-b" type="submit">生成する</button>
+      </div>
+      {% if generate_form.project.errors %}<div class="callout d">{{ generate_form.project.errors }}</div>{% endif %}
+      <div class="stack">
+        <label>{{ generate_form.notes.label }}<br>{{ generate_form.notes }}</label>
+        {% if generate_form.notes.errors %}<div class="callout d">{{ generate_form.notes.errors }}</div>{% endif %}
+      </div>
+      <div class="callout w">
+        <p>数値は WBS・課題・リスク・不具合・品質指標・アラートから集計します。AIモデルは使いません。算出根拠は生成後の処理トレースに残ります。</p>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
       <span class="card-t">成果物一覧</span>
       <span class="card-act">赤字率は文字単位の差分比</span>
     </div>
@@ -86,10 +113,31 @@
           <span class="card-t">確定本文（人が編集）</span>
           <span class="card-act">{% if selected.correction_percent is None %}—{% else %}赤字率 {{ selected.correction_percent }}%{% endif %}</span>
         </div>
-        {% if selected.deliverable.body %}
-          <div class="result-text">{{ selected.deliverable.body|linebreaksbr }}</div>
+        {% if can_edit %}
+          <form class="form" method="post" action="{% url 'pmo:deliverables' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save">
+            <input type="hidden" name="deliverable" value="{{ selected.deliverable.pk }}">
+            {% if edit_form.title.errors %}<div class="callout d">{{ edit_form.title.errors }}</div>{% endif %}
+            <div class="stack">
+              <label>タイトル<br>{{ edit_form.title }}</label>
+            </div>
+            {% if edit_form.body.errors %}<div class="callout d">{{ edit_form.body.errors }}</div>{% endif %}
+            <div class="stack">
+              <label>確定本文<br>{{ edit_form.body }}</label>
+            </div>
+            <div class="actions">
+              <button class="btn-b" type="submit">確定本文を保存</button>
+              <a class="btn-ghost" href="?deliverable={{ selected.deliverable.pk }}">編集を取り消す</a>
+            </div>
+          </form>
         {% else %}
-          <div class="empty">まだ人の編集が入っていません。</div>
+          {% if selected.deliverable.body %}
+            <div class="result-text">{{ selected.deliverable.body|linebreaksbr }}</div>
+          {% else %}
+            <div class="empty">まだ人の編集が入っていません。</div>
+          {% endif %}
+          <div class="callout ok"><p>承認済みの版のため編集できません。直す場合は新しい版を生成してください。</p></div>
         {% endif %}
         <dl class="dl">
           <dt>作成者</dt><dd>{{ selected.deliverable.created_by|default:"—" }}</dd>
@@ -98,6 +146,33 @@
           <dd>{% if selected.deliverable.agent_run %}<a href="{% url 'agents:run_detail' selected.deliverable.agent_run.pk %}" style="color:var(--blue)">処理トレース</a>{% else %}AI未使用{% endif %}</dd>
         </dl>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">AI生成本文との差分</span>
+        <span class="card-act">{% if diff.changed %}追記 {{ diff.added }}行 ／ 削除・書換 {{ diff.removed }}行{% else %}差分なし{% endif %}</span>
+      </div>
+      {% if diff.lines %}
+        <div class="t-wrap">
+          <table class="t">
+            <thead><tr><th class="nowrap">区分</th><th>本文</th></tr></thead>
+            <tbody>
+              {% for line in diff.lines %}
+                <tr>
+                  <td class="nowrap"><span class="badge {{ line.tone }}">{{ line.marker }}</span></td>
+                  <td>{{ line.text }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if diff.truncated %}
+          <div class="callout w"><p>差分が長いため先頭のみ表示しています。</p></div>
+        {% endif %}
+      {% else %}
+        <div class="empty">確定本文がまだ無いため差分を出せません。AI生成本文を編集して保存してください。</div>
+      {% endif %}
     </div>
   {% endif %}
 

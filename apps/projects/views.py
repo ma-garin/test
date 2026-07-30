@@ -8,27 +8,31 @@
 from __future__ import annotations
 
 from django.contrib import messages
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.shortcuts import redirect
-from django.views.decorators.http import require_POST
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.core.pagination import page_window, paginate, query_without_page
-from apps.projects.forms import IssueForm, RiskForm, RiskPromoteForm, WbsTaskForm
-from apps.projects.models import Issue, Risk, WbsTask
-from apps.projects.forms import ChangeDecisionForm, ChangeRequestForm, DefectForm
-from apps.projects.models import ChangeRequest, Defect
+from apps.projects.forms import (
+    ChangeDecisionForm,
+    ChangeRequestForm,
+    DefectForm,
+    IssueForm,
+    RiskForm,
+    RiskPromoteForm,
+    WbsTaskForm,
+)
+from apps.projects.models import ChangeRequest, Defect, Issue, Risk, WbsTask
 from apps.projects.selectors import projects_for, scoped_projects_for
 from apps.projects.services.change_requests import decide_change_request, save_change_request
 from apps.projects.services.defects import close_defect, save_defect
 from apps.projects.services.issues import close_issue, save_issue
 from apps.projects.services.risks import close_risk, promote_risk_to_issue, save_risk
 from apps.projects.services.tasks import archive_task, create_task, update_task
+from apps.rag.services.similar_projects import similar_projects_for
 
 TASK_LIST_URL = "dashboard:tasks"
 RISK_LIST_URL = "dashboard:risk"
@@ -63,7 +67,12 @@ def project_detail(request: HttpRequest, pk) -> HttpResponse:
     return render(
         request,
         "pages/project_detail.html",
-        {"project": project, "page_title": project.name},
+        {
+            "project": project,
+            # 候補は必ず参照権限のある案件だけに絞る（テナント越境の防止）。
+            "similar_projects": similar_projects_for(request, project),
+            "page_title": project.name,
+        },
     )
 
 

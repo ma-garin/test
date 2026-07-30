@@ -331,6 +331,12 @@ class Command(BaseCommand):
             ),
         )
 
+        # 検知ロジックが実際に発火する状態を作る。
+        # しきい値を満たすデータが無いと、検知機能があること自体を確認できない。
+        self._wire_task_chain(project)
+        self._create_change_history(project)
+        self._create_defect_history(project)
+
         ChangeRequest.objects.update_or_create(
             project=project,
             title="政令改正に伴う対象品目リストの追加",
@@ -404,6 +410,122 @@ class Command(BaseCommand):
         )
 
         return project
+
+    def _wire_task_chain(self, project) -> None:
+        """タスクの後続関係を張る。
+
+        クリティカルパスの波及検知は「遅延タスクの後続が何件止まるか」で判定する。
+        関連が張られていないと、15日遅れていても波及0件として見送られる。
+        実プロジェクトでは WBS ツールから取り込む部分を、ここで模している。
+
+        併せて「サイレント炎上」の兆候（更新が止まった・ボールが動かない・
+        進捗が伸びない）を持つタスクを作る。兆候が2つ重ならないと検知しない
+        ルールなので、3つそろったタスクを1件だけ置く。
+        """
+
+        today = timezone.localdate()
+        tasks = {task.wbs_code: task for task in WbsTask.objects.filter(project=project)}
+        blocker = tasks.get("3.5")
+
+        if blocker is None:
+            return
+
+        # 3.5（レジ端末結合）が止まると、以降の工程が全部動かない。
+        for code in ("4.1", "4.3", "5.2", "6.1"):
+            following = tasks.get(code)
+
+            if following is not None:
+                following.parent = blocker
+                following.save(update_fields=["parent"])
+                blocker.related_tasks.add(following)
+
+        # サイレント炎上の兆候を3つ重ねる。表面上はブロックでも遅延でもないが、
+        # 2週間ボールが動かず進捗も伸びていない、という最も見落とされる形。
+        stalled, _ = WbsTask.objects.update_or_create(
+            project=project,
+            wbs_code="3.6",
+            defaults={
+                "name": "軽減税率の判定ロジック レビュー",
+                "owner": "業務チーム",
+                "status": WbsTask.Status.IN_PROGRESS,
+                "priority": Priority.HIGH,
+                "planned_start": today - timedelta(days=24),
+                "planned_end": today + timedelta(days=4),
+                "progress_percent": 15,
+                "next_action": "レビュー会の日程が2度延期されている",
+                "ball_holder": "顧客業務部",
+                "follow_up_state": WbsTask.FollowUpState.WATCHING,
+            },
+        )
+        # 更新が止まっている状態を作る。auto_now を避けて直接書き換える。
+        WbsTask.objects.filter(pk=stalled.pk).update(
+            updated_at=timezone.now() - timedelta(days=21)
+        )
+
+    def _create_change_history(self, project) -> None:
+        """変更要求の履歴。
+
+        頻度異常の検知は最低6件の観測を求める（2件で「頻度異常」は無意味なため）。
+        直近に集中させ、異常として検知される形にする。
+        """
+
+        now = timezone.now()
+        specs = (
+            ("軽減税率の対象品目を追加（第1次）", 3, ChangeRequest.Status.APPROVED, 4, 2),
+            ("レシート様式の文言修正", 2, ChangeRequest.Status.APPROVED, 2, 0),
+            ("返品時の税率適用ルール見直し", 2, ChangeRequest.Status.PENDING_APPROVAL, 8, 5),
+            ("店舗別の適用開始日を分ける", 1, ChangeRequest.Status.PENDING_APPROVAL, 6, 3),
+            ("会計連携の項目定義変更", 1, ChangeRequest.Status.APPROVED, 5, 2),
+            ("軽減税率の対象品目を追加（第2次）", 0, ChangeRequest.Status.PENDING_APPROVAL, 10, 7),
+        )
+
+        for title, days_ago, status, effort, schedule in specs:
+            change, created = ChangeRequest.objects.update_or_create(
+                project=project,
+                title=title,
+                defaults={
+                    "status": status,
+                    "requested_by": "経理部",
+                    "impact_summary": "判定ロジックとテスト範囲に影響する。",
+                    "impact_scope": ["税率判定ロジック", "結合試験シナリオ"],
+                    "estimated_effort_days": effort,
+                    "schedule_impact_days": schedule,
+                },
+            )
+            # 発生日を散らす。auto_now_add は代入できないので更新で入れる。
+            ChangeRequest.objects.filter(pk=change.pk).update(
+                created_at=now - timedelta(days=days_ago)
+            )
+
+    def _create_defect_history(self, project) -> None:
+        """不具合の履歴。
+
+        バグ率異常の検知は最低10件の観測を求める。
+        重大度の分布に偏りを持たせ、異常として拾われる形にする。
+        """
+
+        today = timezone.localdate()
+        extra = (
+            ("小計行の税率表示が欠ける", Defect.Status.CLOSED, Severity.MEDIUM, "単体試験", -18),
+            ("軽減税率商品の値引き計算が合わない", Defect.Status.FIXING, Severity.CRITICAL, "結合試験", -5),
+            ("レシート再発行で旧税率が印字される", Defect.Status.NEW, Severity.HIGH, "結合試験", -2),
+            ("日次締めで税区分別合計が一致しない", Defect.Status.ANALYZING, Severity.CRITICAL, "結合試験", -4),
+            ("免税対象商品の判定が漏れる", Defect.Status.NEW, Severity.HIGH, "結合試験", -1),
+            ("軽減税率の適用開始時刻がずれる", Defect.Status.FIXING, Severity.MEDIUM, "単体試験", -8),
+            ("クレジット決済の税額内訳が出力されない", Defect.Status.NEW, Severity.HIGH, "結合試験", -3),
+        )
+
+        for title, status, severity, phase, detected in extra:
+            Defect.objects.update_or_create(
+                project=project,
+                title=title,
+                defaults={
+                    "status": status,
+                    "severity": severity,
+                    "phase": phase,
+                    "detected_on": today + timedelta(days=detected),
+                },
+            )
 
     def _create_issues(self, project, specs) -> None:
         """課題をまとめて投入する。期日は今日からの相対日数で受ける。"""

@@ -12,7 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.documents.models import Document, DocumentStatus
-from apps.rag.models import Chunk, VectorIndex
+from apps.rag.models import Chunk, ChunkSourceType, VectorIndex
 from apps.rag.services.embeddings import get_embedder
 from apps.rag.services.tokenizer import chunk_key, tokenize
 from apps.rag.services.vector_store import get_vector_store
@@ -91,9 +91,12 @@ def rebuild_index(index: VectorIndex) -> IndexBuildResult:
 
     documents = documents.prefetch_related("pages")
 
+    # 業務データのチャンク（`business_indexer`）が同じインデックスに同居するため、
+    # store.clear() は使わない。文書由来のチャンクとベクトルだけを消す。
     store = get_vector_store(index)
-    store.clear()
-    Chunk.objects.filter(index=index).delete()
+    document_chunks = Chunk.objects.filter(index=index, source_type=ChunkSourceType.DOCUMENT)
+    store.delete([str(pk) for pk in document_chunks.values_list("pk", flat=True)])
+    document_chunks.delete()
 
     embedder = get_embedder(index.embedding_provider)
     created: list[Chunk] = []
@@ -108,6 +111,10 @@ def rebuild_index(index: VectorIndex) -> IndexBuildResult:
                         index=index,
                         document=document,
                         chunk_key=chunk_key(document.pk, page.page_number, position, piece),
+                        project_id=document.project_id,
+                        source_type=ChunkSourceType.DOCUMENT,
+                        source_id=document.pk,
+                        source_label=document.title,
                         page_number=page.page_number,
                         position=position,
                         text=piece,
@@ -123,7 +130,7 @@ def rebuild_index(index: VectorIndex) -> IndexBuildResult:
 
     Chunk.objects.bulk_create(created, batch_size=500)
 
-    stored = list(Chunk.objects.filter(index=index))
+    stored = list(Chunk.objects.filter(index=index, source_type=ChunkSourceType.DOCUMENT))
 
     if stored:
         vectors = embedder.embed([chunk.text for chunk in stored])
@@ -139,7 +146,8 @@ def rebuild_index(index: VectorIndex) -> IndexBuildResult:
     index.embedding_provider = embedder.provider
     index.embedding_model = embedder.model
     index.dimension = dimension
-    index.chunk_count = len(stored)
+    # 業務データのチャンクも同じインデックスに載るため、総数で数える。
+    index.chunk_count = Chunk.objects.filter(index=index).count()
     index.built_at = now
     index.save()
 

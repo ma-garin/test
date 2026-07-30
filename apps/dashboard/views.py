@@ -12,10 +12,12 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.dashboard import selectors
 from apps.dashboard.forms import InterventionDecisionForm
 from apps.dashboard.models import InterventionProposal
+from apps.dashboard.services.detection import kind_label, run_detection
 from apps.dashboard.services.decisions import (
     build_change_report,
     build_intervention_report,
@@ -65,6 +67,50 @@ def control(request: HttpRequest) -> HttpResponse:
         "pages/control_dashboard.html",
         {"overview": build_overview(_projects(request)), "page_title": "管制ダッシュボード"},
     )
+
+
+@login_required
+def detection(request: HttpRequest) -> HttpResponse:
+    """検知結果の一覧。
+
+    表示は必ず乾式実行（保存しない）で作る。「押す前に何が作られるか」が
+    見えていないと、アラートが増えた理由を後から説明できない。
+    """
+
+    result = run_detection(_projects(request), dry_run=True)
+
+    return render(
+        request,
+        "pages/detection_list.html",
+        {
+            "result": result,
+            "finding_rows": [(kind_label(f.kind), f) for f in result.findings],
+            "skip_rows": [(kind_label(s.kind), s) for s in result.skips],
+            "page_title": "予兆検知",
+        },
+    )
+
+
+@login_required
+@require_POST
+def detection_run(request: HttpRequest) -> HttpResponse:
+    """検知を実行してアラート・介入提案を保存する。
+
+    参照ではなく作成なので POST のみ。対象は画面と同じ案件スコープに揃える。
+    """
+
+    result = run_detection(_projects(request))
+
+    if result.alert_count:
+        messages.success(
+            request,
+            f"検知を実行しました。アラート {result.alert_count}件、"
+            f"介入提案 {result.proposal_count}件 を作成しました。",
+        )
+    else:
+        messages.info(request, f"検知を実行しました。新しいアラートはありません（{result.summary_line()}）。")
+
+    return redirect("dashboard:detection")
 
 
 @login_required

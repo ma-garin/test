@@ -9,10 +9,17 @@
 
 {% block content %}
 
-  {% if not index %}
+  {% if not scope.is_usable %}
     <div class="callout w">
       <p><strong>検索インデックスが未構築です。</strong>応答は根拠なしとなり、確認を促す文面のみを返します。</p>
       <p>構築コマンド: <code>python manage.py rebuild_index --tenant &lt;テナントコード&gt;</code></p>
+    </div>
+  {% endif %}
+
+  {% if project_context %}
+    <div class="callout ok">
+      <p><strong>いま見ている案件の状況</strong>（{{ project_context.project.name }}）</p>
+      <p>進捗 {{ project_context.progress_percent|floatformat:0 }}% ／ 未解決の課題 {{ project_context.open_issues }}件 ／ 未クローズのリスク {{ project_context.open_risks }}件 ／ 未完了の不具合 {{ project_context.open_defects }}件 ／ 期限超過タスク {{ project_context.overdue_tasks }}件</p>
     </div>
   {% endif %}
 
@@ -53,9 +60,13 @@
                   <article class="result">
                     <div class="result-hdr">
                       <span class="result-rank">{{ forloop.counter }}</span>
-                      <span class="result-src">{{ citation.chunk.document.title }}</span>
-                      <span class="result-loc">p.{{ citation.chunk.page_number }}</span>
-                      <span class="badge n">{{ citation.chunk.document.get_file_type_display }}</span>
+                      <span class="result-src">{{ citation.chunk.source_title }}</span>
+                      {% if citation.chunk.is_business %}
+                        <span class="badge a">{{ citation.chunk.get_source_type_display }}</span>
+                      {% else %}
+                        <span class="result-loc">p.{{ citation.chunk.page_number }}</span>
+                        <span class="badge n">{{ citation.chunk.document.get_file_type_display }}</span>
+                      {% endif %}
                     </div>
                     <p class="result-text">{{ citation.quoted_text }}</p>
                   </article>
@@ -81,7 +92,12 @@
       <form method="post" action="{% url 'rag:chat' %}" class="search-row">
         {% csrf_token %}
         {% if session %}<input type="hidden" name="session" value="{{ session.pk }}">{% endif %}
-        <input type="text" name="message" placeholder="登録文書へ質問する（例: 結合試験の完了判定はどう決める？）" aria-label="質問" required>
+        <input type="text" name="message" placeholder="登録文書・業務データへ質問する（例: この案件の課題は？）" aria-label="質問" required>
+        <select name="scope" aria-label="検索範囲">
+          {% for value, label in scope_choices %}
+            <option value="{{ value }}"{% if scope.value == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
         <button type="submit" class="btn-b">送信</button>
       </form>
     </div>

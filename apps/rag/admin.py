@@ -5,11 +5,34 @@ from apps.rag.models import (
     ChatMessage,
     ChatSession,
     Chunk,
+    EvaluationCase,
+    EvaluationRun,
+    GoldenQuestion,
     RagAnswer,
     RetrievalQuery,
     RetrievedChunk,
     VectorIndex,
 )
+
+
+@admin.register(GoldenQuestion)
+class GoldenQuestionAdmin(admin.ModelAdmin):
+    list_display = ("question", "tenant", "category", "must_abstain", "is_active")
+    list_filter = ("tenant", "category", "is_active", "must_abstain")
+    search_fields = ("question", "category")
+    filter_horizontal = ("expected_documents",)
+
+
+@admin.register(EvaluationRun)
+class EvaluationRunAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "tenant", "suite", "case_count", "evaluable", "recall_at_k", "mrr")
+    list_filter = ("tenant", "suite", "evaluable")
+
+
+@admin.register(EvaluationCase)
+class EvaluationCaseAdmin(admin.ModelAdmin):
+    list_display = ("question", "run", "position", "passed", "first_hit_rank", "recall")
+    list_filter = ("passed", "evaluable")
 
 
 @admin.register(VectorIndex)

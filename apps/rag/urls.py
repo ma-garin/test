@@ -7,4 +7,5 @@ app_name = "rag"
 urlpatterns = [
     path("search/", views.search_view, name="search"),
     path("chat/", views.chat_view, name="chat"),
+    path("evaluation/", views.evaluation_view, name="evaluation"),
 ]

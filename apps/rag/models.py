@@ -19,6 +19,22 @@ class IndexScope(models.TextChoices):
     PROJECT = "project", "案件別"
 
 
+class ChunkSourceType(models.TextChoices):
+    """チャンクの出典。
+
+    文書だけでなく業務データ（課題・不具合など）も同じインデックスへ載せるため、
+    検索結果で出典を区別できるように種別を持つ。「不具合 #a1b2c3d4」と分かることが
+    過去障害事例検索の前提になる。
+    """
+
+    DOCUMENT = "document", "文書"
+    ISSUE = "issue", "課題"
+    DEFECT = "defect", "不具合"
+    RISK = "risk", "リスク"
+    CHANGE_REQUEST = "change_request", "変更要求"
+    WBS_TASK = "wbs_task", "WBSタスク"
+
+
 class VectorIndex(TimeStampedModel):
     """検索インデックスの単位。テナント／案件の参照分離境界でもある。"""
 
@@ -94,6 +110,33 @@ class Chunk(TimeStampedModel):
         verbose_name="文書",
         on_delete=models.CASCADE,
         related_name="chunks",
+        null=True,
+        blank=True,
+        help_text="業務データ由来のチャンクは文書に紐づかないため null になる。",
+    )
+    project = models.ForeignKey(
+        "projects.Project",
+        verbose_name="案件",
+        on_delete=models.CASCADE,
+        related_name="rag_chunks",
+        null=True,
+        blank=True,
+        help_text="案件別に検索範囲を切るための境界。テナント共通の文書は null。",
+    )
+    source_type = models.CharField(
+        "出典種別",
+        max_length=32,
+        choices=ChunkSourceType.choices,
+        default=ChunkSourceType.DOCUMENT,
+        db_index=True,
+    )
+    source_id = models.UUIDField("出典レコードID", null=True, blank=True, db_index=True)
+    source_label = models.CharField("出典表示名", max_length=200, blank=True)
+    source_updated_at = models.DateTimeField(
+        "出典の更新日時",
+        null=True,
+        blank=True,
+        help_text="差分インデックスの判定に使う。元レコードの updated_at を写す。",
     )
     chunk_key = models.CharField(
         "チャンクキー",
@@ -115,8 +158,23 @@ class Chunk(TimeStampedModel):
             models.UniqueConstraint(fields=["index", "chunk_key"], name="uniq_chunk_key_per_index"),
         ]
 
+    @property
+    def is_business(self) -> bool:
+        """業務データ由来か。画面で出典バッジを出し分けるために使う。"""
+
+        return self.source_type != ChunkSourceType.DOCUMENT
+
+    @property
+    def source_title(self) -> str:
+        """検索結果に出す出典名。文書名と業務データ名を同じ口で扱う。"""
+
+        if self.source_label:
+            return self.source_label
+
+        return self.document.title if self.document_id else "（出典不明）"
+
     def __str__(self) -> str:
-        return f"{self.chunk_key} ({self.document.title})"
+        return f"{self.chunk_key} ({self.source_title})"
 
 
 class RetrievalQuery(TimeStampedModel):
@@ -251,6 +309,188 @@ class AnswerCitation(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.chunk.chunk_key}"
+
+
+class GoldenQuestion(TimeStampedModel):
+    """評価用の「質問と期待する根拠」の組（Golden Dataset）。
+
+    旧実装では `eval/golden_dataset.json` に置いていたが、期待文書の実在性を
+    検証できないという欠点があった。ここでは FK として持ち、文書が削除された
+    ことを検知できるようにする（黙って除外しない、が要件）。
+
+    `expected_document_titles` は登録時のスナップショット。M2M は参照先を
+    物理削除されると行ごと消えるため、それだけでは「消えたこと」を検知できない。
+    """
+
+    tenant = models.ForeignKey(
+        "accounts.Tenant",
+        verbose_name="テナント",
+        on_delete=models.CASCADE,
+        related_name="golden_questions",
+    )
+    project = models.ForeignKey(
+        "projects.Project",
+        verbose_name="案件",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="golden_questions",
+    )
+    question = models.TextField("質問")
+    category = models.CharField("カテゴリ", max_length=60, blank=True)
+    expected_documents = models.ManyToManyField(
+        "documents.Document",
+        verbose_name="期待する文書",
+        blank=True,
+        related_name="golden_questions",
+    )
+    expected_document_titles = models.JSONField(
+        "期待文書名スナップショット",
+        default=list,
+        blank=True,
+        help_text="登録時点の文書名。参照が消えたことを検知するために保持する。",
+    )
+    expected_terms = models.JSONField("期待キーワード", default=list, blank=True)
+    required_sections = models.JSONField(
+        "回答に必須のセクション",
+        default=list,
+        blank=True,
+        help_text="回答評価 dry-run で本文に含まれることを確認する見出し。",
+    )
+    must_abstain = models.BooleanField(
+        "根拠不足なら回答を抑制すべき",
+        default=False,
+        help_text="登録文書に無いはずの質問。断定せず確認を促すことを期待する。",
+    )
+    is_active = models.BooleanField("有効", default=True)
+    note = models.TextField("備考", blank=True)
+
+    class Meta:
+        verbose_name = "Golden質問"
+        verbose_name_plural = "Golden質問"
+        ordering = ["category", "created_at"]
+        indexes = [models.Index(fields=["tenant", "is_active"])]
+
+    def __str__(self) -> str:
+        return self.question[:60]
+
+    def sync_expected_snapshot(self) -> None:
+        """期待文書名のスナップショットを現在の M2M から作り直す。"""
+
+        titles = list(self.expected_documents.values_list("title", flat=True))
+        self.expected_document_titles = titles
+        self.save(update_fields=["expected_document_titles", "updated_at"])
+
+
+class EvaluationSuite(models.TextChoices):
+    """評価スイート。何を測るかで分ける。"""
+
+    RETRIEVAL = "retrieval", "検索評価（ベクトル+語彙）"
+    RETRIEVAL_OFFLINE = "retrieval_offline", "APIなし検索評価（語彙のみ）"
+    ANSWER = "answer", "回答評価 dry-run"
+    STATIC = "static", "静的チェック"
+
+
+class EvaluationRun(TimeStampedModel):
+    """評価の 1 回分。履歴として残し、前回との差分を出せるようにする。
+
+    指標を null 可にしているのは「0点」と「評価不能」を区別するため。
+    Golden が 0 件のときに Recall 100% と出すのは、最も危険な嘘になる。
+    """
+
+    tenant = models.ForeignKey(
+        "accounts.Tenant",
+        verbose_name="テナント",
+        on_delete=models.CASCADE,
+        related_name="evaluation_runs",
+    )
+    project = models.ForeignKey(
+        "projects.Project",
+        verbose_name="案件",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="evaluation_runs",
+    )
+    index = models.ForeignKey(
+        VectorIndex,
+        verbose_name="対象インデックス",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="evaluation_runs",
+    )
+    executed_by = models.ForeignKey(
+        "accounts.User",
+        verbose_name="実行者",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="evaluation_runs",
+    )
+    suite = models.CharField("スイート", max_length=32, choices=EvaluationSuite.choices)
+    top_k = models.PositiveSmallIntegerField("評価対象の上位件数", default=8)
+    case_count = models.PositiveIntegerField("評価件数", default=0)
+    evaluable = models.BooleanField("評価可能", default=False)
+    unavailable_reason = models.CharField("評価不能の理由", max_length=200, blank=True)
+    recall_at_k = models.FloatField("Recall@K", null=True, blank=True)
+    precision_at_k = models.FloatField("Precision@K", null=True, blank=True)
+    mrr = models.FloatField("MRR", null=True, blank=True)
+    pass_rate = models.FloatField("合格率", null=True, blank=True)
+    issues = models.JSONField("検出事項", default=list, blank=True)
+    metrics = models.JSONField("補助指標", default=dict, blank=True)
+
+    class Meta:
+        verbose_name = "評価実行"
+        verbose_name_plural = "評価実行"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["tenant", "suite", "-created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.get_suite_display()} {self.created_at:%Y-%m-%d %H:%M}"
+
+    @property
+    def issue_count(self) -> int:
+        return len(self.issues or [])
+
+
+class EvaluationCase(TimeStampedModel):
+    """評価 1 問分の結果。どの質問がなぜ落ちたかを追えるようにする。"""
+
+    run = models.ForeignKey(
+        EvaluationRun,
+        verbose_name="評価実行",
+        on_delete=models.CASCADE,
+        related_name="cases",
+    )
+    golden = models.ForeignKey(
+        GoldenQuestion,
+        verbose_name="Golden質問",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cases",
+    )
+    position = models.PositiveSmallIntegerField("表示順", default=0)
+    question = models.TextField("質問")
+    evaluable = models.BooleanField("評価可能", default=True)
+    passed = models.BooleanField("合格", default=False)
+    first_hit_rank = models.PositiveSmallIntegerField("初出順位", null=True, blank=True)
+    recall = models.FloatField("Recall", null=True, blank=True)
+    precision = models.FloatField("Precision", null=True, blank=True)
+    reciprocal_rank = models.FloatField("逆順位", null=True, blank=True)
+    matched_documents = models.JSONField("命中した期待文書", default=list, blank=True)
+    missing_documents = models.JSONField("出なかった期待文書", default=list, blank=True)
+    issues = models.JSONField("検出事項", default=list, blank=True)
+    detail = models.JSONField("詳細", default=dict, blank=True)
+
+    class Meta:
+        verbose_name = "評価ケース"
+        verbose_name_plural = "評価ケース"
+        ordering = ["run", "position"]
+
+    def __str__(self) -> str:
+        return self.question[:40]
 
 
 class ChatSession(TimeStampedModel):

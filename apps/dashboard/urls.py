@@ -17,6 +17,8 @@ urlpatterns = [
         views.intervention_decide,
         name="intervention_decide",
     ),
+    path("detection/", views.detection, name="detection"),
+    path("detection/run/", views.detection_run, name="detection_run"),
     path("kpi/", views.kpi, name="kpi"),
     path("poc/", views.poc, name="poc"),
 ]

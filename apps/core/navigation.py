@@ -58,6 +58,7 @@ NAVIGATION: tuple[NavSection, ...] = (
             NavItem("control_dashboard", "管制ダッシュボード", "dashboard:control", "DB", "ready", ("ai",)),
             NavItem("tasks", "タスク一覧", "dashboard:tasks", "TA", "ready"),
             NavItem("issues", "課題管理", "projects:issue_list", "IS", "ready"),
+            NavItem("detection", "予兆検知", "dashboard:detection", "DT", "ready", ("ai",)),
             NavItem("progress", "進捗予測・介入", "dashboard:progress", "PR", "ready", ("ai",)),
             NavItem("quality", "品質リアルタイム管理", "dashboard:quality", "QA", "ready"),
             NavItem("defects", "不具合管理", "projects:defect_list", "DF", "ready"),
@@ -89,6 +90,7 @@ NAVIGATION: tuple[NavSection, ...] = (
             NavItem("templates", "ひな型管理", "documents:template_list", "TP", "ready"),
             NavItem("search", "RAG検索", "rag:search", "SE", "ready", ("rag",)),
             NavItem("chat", "チャットモード", "rag:chat", "CT", "ready", ("ai", "rag")),
+            NavItem("evaluation", "RAG評価", "rag:evaluation", "EV", "ready", ("rag",)),
         ),
     ),
     NavSection(

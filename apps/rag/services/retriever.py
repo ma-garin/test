@@ -16,11 +16,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from django.conf import settings
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 from apps.documents.models import DocumentStatus
-from apps.rag.models import Chunk, RetrievalQuery, RetrievedChunk, VectorIndex
+from apps.rag.models import Chunk, ChunkSourceType, RetrievalQuery, RetrievedChunk, VectorIndex
 from apps.rag.services.embeddings import cosine_similarity, get_embedder
 from apps.rag.services.lexical import LexicalIndex
 from apps.rag.services.vector_store import get_vector_store
@@ -40,38 +40,82 @@ class SearchHit:
     matched_terms: list[str] = field(default_factory=list)
 
 
-def active_chunks(index: VectorIndex) -> QuerySet[Chunk]:
-    """RAG 対象の文書に属するチャンクだけを返す。
+def active_chunks(
+    index: VectorIndex,
+    *,
+    project=None,
+    include_business: bool = True,
+) -> QuerySet[Chunk]:
+    """検索対象のチャンクを返す。
 
     除外・削除済み文書のチャンクが検索に出ないことは、旧実装から引き継ぐ必須条件。
+    業務データのチャンクは文書に紐づかないので、条件を分けて評価する。
+
+    `project` を渡すと当該案件のチャンクだけに絞る（案件別ナレッジ領域）。
     """
 
-    return (
-        Chunk.objects.filter(
-            index=index,
-            document__status=DocumentStatus.ACTIVE,
-            document__deleted_at__isnull=True,
-        )
-        .select_related("document")
+    document_condition = Q(
+        source_type=ChunkSourceType.DOCUMENT,
+        document__status=DocumentStatus.ACTIVE,
+        document__deleted_at__isnull=True,
     )
+
+    if include_business:
+        condition = document_condition | ~Q(source_type=ChunkSourceType.DOCUMENT)
+    else:
+        condition = document_condition
+
+    queryset = Chunk.objects.filter(index=index).filter(condition)
+
+    if project is not None:
+        # 案件の分離はここだけで担保する。呼び出し側に条件を書かせない。
+        queryset = queryset.filter(project=project)
+
+    return queryset.select_related("document", "project")
 
 
 def _rrf(rank: int) -> float:
     return 1.0 / (RRF_K + rank)
 
 
+def index_list(index) -> list[VectorIndex]:
+    """単一インデックスと複数インデックスの両方を受け付ける。
+
+    案件スコープの検索では「案件別インデックス（文書）」と
+    「テナント共通インデックス（業務データ）」を横断する必要があるため。
+    """
+
+    if index is None:
+        return []
+
+    if isinstance(index, (list, tuple, set)):
+        return [item for item in index if item is not None]
+
+    return [index]
+
+
 def search(
-    index: VectorIndex,
+    index,
     question: str,
     *,
     top_k: int | None = None,
     use_vector: bool = True,
     use_lexical: bool = True,
+    project=None,
+    include_business: bool = True,
 ) -> list[SearchHit]:
-    """ハイブリッド検索を実行し、上位 `top_k` 件を返す。"""
+    """ハイブリッド検索を実行し、上位 `top_k` 件を返す。
 
+    `index` はインデックス 1 件でも複数でもよい。`project` を渡すと当該案件の
+    チャンクだけを、`include_business=False` なら文書だけを対象にする。
+    """
+
+    indexes = index_list(index)
     limit = top_k or settings.RAG["DEFAULT_TOP_K"]
-    chunks = list(active_chunks(index))
+    chunks: list[Chunk] = []
+
+    for target in indexes:
+        chunks.extend(active_chunks(target, project=project, include_business=include_business))
 
     if not chunks:
         return []
@@ -80,7 +124,9 @@ def search(
     fused: dict[str, SearchHit] = {}
 
     if use_vector:
-        for rank, (chunk_id, score) in enumerate(_vector_hits(index, question, limit * 3), start=1):
+        for rank, (chunk_id, score) in enumerate(
+            _merged_vector_hits(indexes, question, limit * 3), start=1
+        ):
             chunk = by_id.get(chunk_id)
 
             if chunk is None:
@@ -125,6 +171,26 @@ def _vector_hits(index: VectorIndex, question: str, limit: int) -> list[tuple[st
     return scored[:limit]
 
 
+def _merged_vector_hits(
+    indexes: list[VectorIndex],
+    question: str,
+    limit: int,
+) -> list[tuple[str, float]]:
+    """複数インデックスのベクトル検索結果を 1 本の順位へまとめる。
+
+    チャンク ID は DB の主キーなので、インデックス間で衝突しない。
+    """
+
+    scored: list[tuple[str, float]] = []
+
+    for index in indexes:
+        scored.extend(_vector_hits(index, question, limit))
+
+    scored.sort(key=lambda item: item[1], reverse=True)
+
+    return scored[:limit]
+
+
 def search_and_record(
     index: VectorIndex,
     question: str,
@@ -142,9 +208,10 @@ def search_and_record(
     hits = search(index, question, top_k=top_k)
     elapsed_ms = int((timezone.now() - started).total_seconds() * 1000)
 
+    primary = index_list(index)[0]
     query = RetrievalQuery.objects.create(
-        tenant=index.tenant,
-        project=project or index.project,
+        tenant=primary.tenant,
+        project=project or primary.project,
         user=user,
         question=question,
         top_k=top_k or settings.RAG["DEFAULT_TOP_K"],

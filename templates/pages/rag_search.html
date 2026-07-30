@@ -4,18 +4,24 @@
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'documents:list' %}">ドキュメント登録へ</a>
+  <a class="btn-ghost sm" href="{% url 'rag:evaluation' %}">検索品質を評価する</a>
 {% endblock %}
 
 {% block content %}
 
   <div class="card">
     <form method="get" class="search-row">
-      <input type="search" name="q" value="{{ question }}" placeholder="登録文書へ質問する（例: 結合試験の完了判定）" aria-label="検索語">
+      <input type="search" name="q" value="{{ question }}" placeholder="登録文書・業務データへ質問する（例: 決済APIのタイムアウト）" aria-label="検索語">
+      <select name="scope" aria-label="検索範囲">
+        {% for value, label in scope_choices %}
+          <option value="{{ value }}"{% if scope.value == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
       <button type="submit" class="btn-b">検索</button>
     </form>
   </div>
 
-  {% if not index %}
+  {% if not scope.is_usable %}
     <div class="callout w">
       <p><strong>検索インデックスが未構築です。</strong></p>
       <p>次のコマンドで構築してください: <code>python manage.py rebuild_index --tenant &lt;テナントコード&gt;</code></p>
@@ -36,16 +42,21 @@
     <div class="card">
       <div class="card-hdr">
         <span class="card-t">検索結果 {{ hits|length }}件</span>
-        <span class="card-act">{{ index.embedding_model }} / {{ index.chunk_count }}チャンク</span>
+        <span class="card-act">{{ scope.label }} / {{ index.chunk_count }}チャンク</span>
       </div>
 
       {% for hit in hits %}
         <article class="result">
           <div class="result-hdr">
             <span class="result-rank">{{ hit.rank }}</span>
-            <span class="result-src">{{ hit.chunk.document.title }}</span>
-            <span class="result-loc">p.{{ hit.chunk.page_number }}</span>
-            <span class="badge n">{{ hit.chunk.document.get_file_type_display }}</span>
+            <span class="result-src">{{ hit.chunk.source_title }}</span>
+            {% if hit.chunk.is_business %}
+              <span class="badge a">{{ hit.chunk.get_source_type_display }}</span>
+              <span class="result-loc">{{ hit.chunk.project.name }}</span>
+            {% else %}
+              <span class="result-loc">p.{{ hit.chunk.page_number }}</span>
+              <span class="badge n">{{ hit.chunk.document.get_file_type_display }}</span>
+            {% endif %}
           </div>
           <p class="result-text">{{ hit.chunk.text }}</p>
           <div class="result-scores">

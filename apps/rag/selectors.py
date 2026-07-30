@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from django.db.models import QuerySet
 
-from apps.rag.models import ChatMessage, ChatSession, VectorIndex
+from apps.documents.models import Document, DocumentStatus
+from apps.rag.models import ChatMessage, ChatSession, EvaluationRun, VectorIndex
 
 
 def chat_sessions_for(user, tenant) -> QuerySet[ChatSession]:
@@ -59,3 +60,33 @@ def current_index(tenant, project=None) -> VectorIndex | None:
             return index
 
     return VectorIndex.objects.filter(tenant=tenant, project__isnull=True).first()
+
+
+def evaluation_runs_for(tenant, project=None) -> QuerySet[EvaluationRun]:
+    """評価履歴。テナント分離はここで担保する。"""
+
+    if tenant is None:
+        return EvaluationRun.objects.none()
+
+    queryset = EvaluationRun.objects.filter(tenant=tenant).select_related("project", "executed_by")
+
+    return queryset.filter(project=project) if project is not None else queryset
+
+
+def latest_evaluation_run(tenant, suite: str, project=None) -> EvaluationRun | None:
+    """指定スイートの最新実行。無ければ None（＝まだ測っていない）。"""
+
+    return evaluation_runs_for(tenant, project).filter(suite=suite).first()
+
+
+def document_choices_for(tenant) -> QuerySet[Document]:
+    """Golden の期待文書として選べる文書（RAG 対象のみ）。"""
+
+    if tenant is None:
+        return Document.objects.none()
+
+    return Document.objects.filter(
+        tenant=tenant,
+        status=DocumentStatus.ACTIVE,
+        deleted_at__isnull=True,
+    ).order_by("title")

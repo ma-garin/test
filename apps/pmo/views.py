@@ -6,15 +6,20 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from apps.agents.models import AgentRun
 from apps.agents.services import orchestrator
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.pmo import selectors
+from apps.pmo.forms import DeliverableEditForm, DeliverableGenerateForm
 from apps.pmo.models import Deliverable
 from apps.pmo.services import approval as approval_service
 from apps.pmo.services import deliverables as deliverable_service
+from apps.pmo.services import diffing
+from apps.pmo.services import generators
 from apps.pmo.services import prompt_library as prompt_library_service
+from apps.projects.selectors import scoped_projects_for
 from apps.rag.models import VectorIndex
 
 
@@ -68,7 +73,27 @@ def planning(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def deliverables(request: HttpRequest) -> HttpResponse:
-    """成果物支援。AI 生成本文と確定本文を並べ、赤字率を示す。"""
+    """成果物支援。生成・編集・差分確認をこの 1 画面で完結させる。
+
+    生成（POST action=generate）と確定本文の保存（POST action=save）を同じ URL で
+    受ける。成果物の一覧・差分・編集フォームは同じ選択状態を共有するため、
+    別画面へ分けると「どれを直しているのか」が分からなくなる。
+    """
+
+    if request.method == "POST":
+        return _deliverable_post(request)
+
+    return render(request, "pages/pmo_deliverables.html", _deliverables_context(request))
+
+
+def _deliverables_context(
+    request: HttpRequest,
+    *,
+    selected_pk: str | None = None,
+    generate_form=None,
+    edit_form=None,
+) -> dict:
+    """成果物画面の描画データ。POST 失敗時の再描画からも同じものを使う。"""
 
     # 集計（件数・平均赤字率）は全件から出す。ページを送るたびに KPI が動くと、
     # その数字が現状を表していないことになるため。
@@ -76,21 +101,114 @@ def deliverables(request: HttpRequest) -> HttpResponse:
         selectors.deliverables_for(request.user, request.tenant)
     )
     page = paginate(report.rows, request)
-    selected = _pick(report.rows, request.GET.get("deliverable"), key=_row_pk)
+    selected = _pick(report.rows, selected_pk or request.GET.get("deliverable"), key=_row_pk)
+    projects = scoped_projects_for(request)
 
-    return render(
-        request,
-        "pages/pmo_deliverables.html",
-        {
-            "report": report,
-            "page": page,
-            "page_window": page_window(page),
-            "page_query": query_without_page(request),
-            "selected": selected,
-            "target_percent": deliverable_service.CORRECTION_RATE_TARGET_PERCENT,
-            "page_title": "成果物支援",
-        },
+    if selected is not None and edit_form is None:
+        edit_form = DeliverableEditForm(instance=selected.deliverable)
+
+    return {
+        "report": report,
+        "page": page,
+        "page_window": page_window(page),
+        "page_query": query_without_page(request),
+        "selected": selected,
+        "target_percent": deliverable_service.CORRECTION_RATE_TARGET_PERCENT,
+        "generate_form": generate_form or DeliverableGenerateForm(projects=projects),
+        "edit_form": edit_form,
+        "diff": diffing.line_diff(
+            selected.deliverable.ai_generated_body, selected.deliverable.body
+        )
+        if selected
+        else None,
+        "can_edit": bool(selected)
+        and selected.deliverable.status != Deliverable.Status.APPROVED,
+        "generators": generators.GENERATORS,
+        "page_title": "成果物支援",
+    }
+
+
+def _deliverable_post(request: HttpRequest) -> HttpResponse:
+    """成果物画面の POST。生成と保存のどちらかを受ける。"""
+
+    action = request.POST.get("action", "")
+
+    if action == "generate":
+        return _generate_deliverable(request)
+
+    if action == "save":
+        return _save_deliverable(request)
+
+    messages.error(request, "不明な操作です。")
+
+    return redirect("pmo:deliverables")
+
+
+def _generate_deliverable(request: HttpRequest) -> HttpResponse:
+    """実データから成果物を生成する。案件は参照できる範囲からしか選べない。"""
+
+    projects = scoped_projects_for(request)
+    form = DeliverableGenerateForm(request.POST, projects=projects)
+
+    if not form.is_valid():
+        messages.error(request, "成果物を生成できませんでした。入力内容を確認してください。")
+
+        return render(
+            request,
+            "pages/pmo_deliverables.html",
+            _deliverables_context(request, generate_form=form),
+        )
+
+    result = generators.generate_and_save(
+        project=form.cleaned_data["project"],
+        generator_key=form.cleaned_data["generator"],
+        user=request.user,
+        notes=form.cleaned_data.get("notes", ""),
     )
+
+    if not result.ok:
+        messages.error(request, result.message)
+
+        return redirect("pmo:deliverables")
+
+    if result.document is not None and not result.document.has_material:
+        messages.warning(request, result.message)
+    else:
+        messages.success(request, result.message)
+
+    return redirect(f"{reverse('pmo:deliverables')}?deliverable={result.deliverable.pk}")
+
+
+def _save_deliverable(request: HttpRequest) -> HttpResponse:
+    """確定本文を保存する。承認済みの版は書き換えさせない。"""
+
+    deliverable = get_object_or_404(
+        selectors.deliverables_for(request.user, request.tenant),
+        pk=request.POST.get("deliverable"),
+    )
+
+    if deliverable.status == Deliverable.Status.APPROVED:
+        messages.error(request, "承認済みの版は編集できません。新しい版を生成してください。")
+
+        return redirect(f"{reverse('pmo:deliverables')}?deliverable={deliverable.pk}")
+
+    form = DeliverableEditForm(request.POST, instance=deliverable)
+
+    if not form.is_valid():
+        messages.error(request, "確定本文を保存できませんでした。入力内容を確認してください。")
+
+        return render(
+            request,
+            "pages/pmo_deliverables.html",
+            _deliverables_context(request, selected_pk=str(deliverable.pk), edit_form=form),
+        )
+
+    saved = form.save()
+    rate = saved.correction_rate
+    detail = "（AI未使用のため赤字率は算出しません）" if rate is None else f"（赤字率 {round(rate * 100)}%）"
+    messages.success(request, f"確定本文を保存しました。{detail}")
+
+    return redirect(f"{reverse('pmo:deliverables')}?deliverable={saved.pk}")
 
 
 @login_required

@@ -26,6 +26,7 @@ from apps.rag.models import (
     RetrievedChunk,
     VectorIndex,
 )
+from apps.rag.services import project_context as project_context_service
 from apps.rag.services.retriever import SearchHit, search
 
 #: 引用として画面へ出す本文の長さ。長すぎると根拠ではなく本文の再掲になる。
@@ -79,7 +80,7 @@ def _citations(hits: list[SearchHit]) -> list[Citation]:
     return [
         Citation(
             rank=hit.rank,
-            title=hit.chunk.document.title,
+            title=hit.chunk.source_title,
             page=hit.chunk.page_number,
             quote=hit.chunk.text[:QUOTE_LENGTH],
             score=hit.final_score,
@@ -115,15 +116,24 @@ def _build_body(intent_result, evidence, citations: list[Citation]) -> str:
     return "\n".join(lines)
 
 
-def build_reply(question: str, hits: list[SearchHit]) -> ChatReply:
-    """検索結果から応答を組み立てる。保存はしない（テストしやすさのため分離）。"""
+def build_reply(question: str, hits: list[SearchHit], context=None) -> ChatReply:
+    """検索結果から応答を組み立てる。保存はしない（テストしやすさのため分離）。
+
+    `context`（案件の現在値）があれば応答の冒頭へ付ける。登録文書には書かれていない
+    進捗・課題数・期限超過は DB にしかなく、これが無いと「この案件の課題は？」に
+    答えられないため。
+    """
 
     intent_result = intent_service.classify(question)
     evidence = evidence_service.evaluate(hits, intent_result)
     citations = _citations(hits)
+    body = _build_body(intent_result, evidence, citations)
+
+    if context is not None:
+        body = f"{context.as_text()}\n\n{body}"
 
     return ChatReply(
-        body=_build_body(intent_result, evidence, citations),
+        body=body,
         recommendation=evidence.recommendation,
         confidence=evidence.confidence,
         intent_label=intent_result.label,
@@ -176,11 +186,27 @@ def _persist_answer(session: ChatSession, question: str, hits: list[SearchHit], 
     return answer
 
 
-def respond(session: ChatSession, question: str, index: VectorIndex | None) -> ChatReply:
-    """1 往復の会話を実行し、履歴として保存する。"""
+def respond(
+    session: ChatSession,
+    question: str,
+    index=None,
+    *,
+    project=None,
+    include_business: bool = True,
+) -> ChatReply:
+    """1 往復の会話を実行し、履歴として保存する。
 
-    hits = search(index, question) if index is not None else []
-    reply = build_reply(question, hits)
+    `project` を渡すと、その案件の現在値（進捗・課題・リスク・期限超過）を
+    応答の冒頭へ添える。未指定ならセッションに紐づく案件を使う。
+    """
+
+    target_project = project or session.project
+    hits = (
+        search(index, question, project=project, include_business=include_business)
+        if index is not None
+        else []
+    )
+    reply = build_reply(question, hits, project_context_service.build(target_project))
 
     ChatMessage.objects.create(session=session, role=ChatMessage.Role.USER, content=question)
     answer = _persist_answer(session, question, hits, reply) if hits else None

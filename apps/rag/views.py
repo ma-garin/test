@@ -11,13 +11,20 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from apps.rag import selectors
-from apps.rag.models import ChatSession
+from apps.documents.models import Document
+from apps.rag import scopes, selectors
+from apps.rag.models import ChatSession, EvaluationSuite, GoldenQuestion
 from apps.rag.services import chat
+from apps.rag.services import project_context as project_context_service
+from apps.rag.services.evaluation import golden as golden_service
+from apps.rag.services.evaluation import metric_deltas, run_evaluation
 from apps.rag.services.retriever import search
 
 #: セッションのタイトルに使う、最初の質問の長さ。
 TITLE_LENGTH = 60
+
+#: 評価画面の既定スイート。
+DEFAULT_SUITE = EvaluationSuite.RETRIEVAL
 
 
 def _current_tenant(request: HttpRequest):
@@ -26,16 +33,30 @@ def _current_tenant(request: HttpRequest):
 
 @login_required
 def search_view(request: HttpRequest) -> HttpResponse:
+    """RAG 検索。検索範囲（テナント / 案件 / 業務データ）を切り替えられる。"""
+
+    tenant = _current_tenant(request)
+    scope = scopes.resolve(request, request.GET.get("scope"), tenant)
     question = request.GET.get("q", "").strip()
-    index = selectors.current_index(_current_tenant(request))
-    hits = search(index, question) if (question and index) else []
+    hits = (
+        search(
+            list(scope.indexes),
+            question,
+            project=scope.project,
+            include_business=scope.include_business,
+        )
+        if (question and scope.is_usable)
+        else []
+    )
 
     return render(
         request,
         "pages/rag_search.html",
         {
             "question": question,
-            "index": index,
+            "index": scope.primary_index,
+            "scope": scope,
+            "scope_choices": scopes.SCOPE_CHOICES,
             "hits": hits,
             "page_title": "RAG検索",
         },
@@ -52,6 +73,7 @@ def chat_view(request: HttpRequest) -> HttpResponse:
         return _post_message(request, tenant)
 
     session = selectors.chat_session_for(request.user, tenant, request.GET.get("session"))
+    scope = scopes.resolve(request, request.GET.get("scope"), tenant)
 
     return render(
         request,
@@ -61,7 +83,12 @@ def chat_view(request: HttpRequest) -> HttpResponse:
             "session": session,
             # `messages` は Django のメッセージフレームワークと名前が衝突するため避ける。
             "chat_messages": selectors.messages_of(session),
-            "index": selectors.current_index(tenant),
+            "index": scope.primary_index,
+            "scope": scope,
+            "scope_choices": scopes.SCOPE_CHOICES,
+            "project_context": project_context_service.build(
+                scope.project or getattr(session, "project", None)
+            ),
             "page_title": "チャットモード",
         },
     )
@@ -75,6 +102,7 @@ def _post_message(request: HttpRequest, tenant) -> HttpResponse:
 
     question = request.POST.get("message", "").strip()
     session = selectors.chat_session_for(request.user, tenant, request.POST.get("session"))
+    scope = scopes.resolve(request, request.POST.get("scope"), tenant)
 
     if tenant is None or not question:
         return redirect(_chat_url(session))
@@ -82,11 +110,19 @@ def _post_message(request: HttpRequest, tenant) -> HttpResponse:
     if session is None:
         session = ChatSession.objects.create(
             tenant=tenant,
+            # 選択中の案件を残し、以降の応答にも案件文脈を効かせる。
+            project=scope.project,
             user=request.user,
             title=question[:TITLE_LENGTH],
         )
 
-    chat.respond(session, question, selectors.current_index(tenant, session.project))
+    chat.respond(
+        session,
+        question,
+        list(scope.indexes),
+        project=scope.project or session.project,
+        include_business=scope.include_business,
+    )
 
     return redirect(_chat_url(session))
 
@@ -95,3 +131,106 @@ def _chat_url(session: ChatSession | None) -> str:
     url = reverse("rag:chat")
 
     return f"{url}?session={session.pk}" if session is not None else url
+
+
+@login_required
+def evaluation_view(request: HttpRequest) -> HttpResponse:
+    """RAG 評価。実行・指標・Golden Dataset・履歴を 1 画面で扱う（#68〜#71）。"""
+
+    tenant = _current_tenant(request)
+
+    if request.method == "POST":
+        return _post_evaluation(request, tenant)
+
+    suite = _resolved_suite(request.GET.get("suite"))
+    run = selectors.latest_evaluation_run(tenant, suite)
+
+    return render(
+        request,
+        "pages/rag_evaluation.html",
+        {
+            "suites": EvaluationSuite.choices,
+            "suite": suite,
+            "run": run,
+            "deltas": metric_deltas(run),
+            "cases": list(run.cases.all()) if run is not None else [],
+            "history": list(selectors.evaluation_runs_for(tenant)[:10]),
+            "golden_rows": golden_service.golden_overview(tenant),
+            "documents": selectors.document_choices_for(tenant),
+            "index": selectors.current_index(tenant),
+            "error": request.GET.get("error", ""),
+            "page_title": "RAG評価",
+        },
+    )
+
+
+def _resolved_suite(value: str | None) -> str:
+    """未知の値を既定へ落とす。URL 経由の入力を信用しない。"""
+
+    return value if value in EvaluationSuite.values else DEFAULT_SUITE
+
+
+def _post_evaluation(request: HttpRequest, tenant) -> HttpResponse:
+    """評価実行と Golden 登録。どちらも PRG で GET へ戻す。"""
+
+    if tenant is None:
+        return redirect(reverse("rag:evaluation"))
+
+    if request.POST.get("action") == "add_golden":
+        return _create_golden(request, tenant)
+
+    suite = _resolved_suite(request.POST.get("suite"))
+    run_evaluation(tenant=tenant, suite=suite, user=request.user)
+
+    return redirect(f"{reverse('rag:evaluation')}?suite={suite}")
+
+
+def _split_terms(raw: str) -> list[str]:
+    """読点・カンマ・改行のいずれでも区切れるようにする。"""
+
+    normalized = raw.replace("、", ",").replace("\n", ",")
+
+    return [term.strip() for term in normalized.split(",") if term.strip()]
+
+
+def _valid_uuids(values: list[str]) -> list[str]:
+    """UUID として読めるものだけを残す。不正値でクエリを壊さないため。"""
+
+    import uuid
+
+    kept: list[str] = []
+
+    for value in values:
+        try:
+            kept.append(str(uuid.UUID(value)))
+        except (ValueError, AttributeError, TypeError):
+            continue
+
+    return kept
+
+
+def _create_golden(request: HttpRequest, tenant) -> HttpResponse:
+    """Golden を 1 件登録する。画面から増やせないと評価は続かない。"""
+
+    question = request.POST.get("question", "").strip()
+
+    if not question:
+        return redirect(f"{reverse('rag:evaluation')}?error=question")
+
+    golden = GoldenQuestion.objects.create(
+        tenant=tenant,
+        question=question,
+        category=request.POST.get("category", "").strip()[:60],
+        expected_terms=_split_terms(request.POST.get("expected_terms", "")),
+        must_abstain=bool(request.POST.get("must_abstain")),
+    )
+    golden.expected_documents.set(
+        Document.objects.filter(
+            tenant=tenant,
+            pk__in=_valid_uuids(request.POST.getlist("expected_documents")),
+            deleted_at__isnull=True,
+        )
+    )
+    golden.sync_expected_snapshot()
+
+    return redirect(reverse("rag:evaluation"))

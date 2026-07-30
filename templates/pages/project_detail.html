@@ -104,4 +104,31 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">類似案件</span>
+      <span class="card-act">{{ similar_projects|length }}件</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>案件</th><th>状態</th><th>進捗</th><th>類似の根拠</th></tr></thead>
+        <tbody>
+          {% for item in similar_projects %}
+            <tr>
+              <td><a href="{% url 'projects:detail' item.project.pk %}" style="color:var(--blue);font-weight:900">{{ item.project.name }}</a><div class="ps">{{ item.project.code }}</div></td>
+              <td class="nowrap">{{ item.project.get_status_display }}</td>
+              <td class="nowrap">{{ item.project.progress_percent|floatformat:0 }}%</td>
+              <td>{{ item.reason }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty">比較できる案件がまだありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <p>案件のプロフィール（規模・フェーズ・課題やリスクの傾向）を語彙比較して並べています。LLM は使っていません。</p>
+    </div>
+  </div>
+
 {% endblock %}
