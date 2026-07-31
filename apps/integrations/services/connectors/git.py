@@ -21,9 +21,10 @@ TODO(親タスク): `Provider` に GIT を追加したら `provider` をその�
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Iterable
+from typing import Any
 
 from django.utils import timezone
 

@@ -27,8 +27,8 @@ RAG が常に最新の設計・議事録を引ける状態にするための経�
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from django.db import transaction
 from django.utils import timezone
@@ -147,7 +147,54 @@ def _apply(job: SyncJob, connection: Connection, pages: Iterable[ExternalPage]) 
 
         counts[outcome.kind] += 1
 
-    return _finish(job, connection, counts=counts, failures=failures, fetched=fetched)
+    # 取込だけして索引を張らないと、画面上は「登録済み」なのに検索へ出てこない。
+    # 変更があったときだけ張り直す（変更なしの回まで再構築すると毎回重くなる）。
+    reindexed = (
+        _reindex(connection) if counts[CREATED] or counts[UPDATED] else None
+    )
+
+    return _finish(
+        job,
+        connection,
+        counts=counts,
+        failures=failures,
+        fetched=fetched,
+        reindexed=reindexed,
+    )
+
+
+def _reindex(connection: Connection):
+    """取込先のインデックスを張り直す。
+
+    対象は接続のスコープに合わせる。案件つきの接続で取り込んだ文書は
+    案件別インデックスにしか入らないため、共通インデックスを張り直しても
+    検索に出てこない（`indexer.rebuild_index` の絞り込みと対）。
+
+    失敗しても取込自体は成功として扱う。索引は作り直せるが、取り直した
+    ページを巻き戻すほうが損失が大きい。失敗した事実は履歴へ残す。
+    """
+
+    from apps.rag.models import IndexScope, VectorIndex
+    from apps.rag.services.indexer import rebuild_index
+
+    index, _ = VectorIndex.objects.get_or_create(
+        tenant=connection.tenant,
+        project=connection.project,
+        defaults={
+            "scope": IndexScope.PROJECT if connection.project_id else IndexScope.TENANT
+        },
+    )
+
+    try:
+        result = rebuild_index(index)
+    except Exception as error:  # noqa: BLE001 - 索引の失敗で取込を失敗にしない
+        return {"ok": False, "reason": f"{error.__class__.__name__}: {error}"}
+
+    return {
+        "ok": True,
+        "document_count": result.document_count,
+        "chunk_count": result.chunk_count,
+    }
 
 
 def _sync_one(connection: Connection, page: ExternalPage) -> PageOutcome:
@@ -241,6 +288,7 @@ def _finish(
     counts: dict[str, int],
     failures: list[dict],
     fetched: int,
+    reindexed: dict | None = None,
 ) -> SyncJob:
     """件数と状態を確定して履歴へ書く。"""
 
@@ -265,10 +313,18 @@ def _finish(
         f"{fetched} 件のページを取得: 新規 {counts[CREATED]} / 更新 {counts[UPDATED]} / "
         f"変更なし {counts[SKIPPED]} / 失敗 {failed}"
     )
+
+    if reindexed is not None:
+        job.message += (
+            f" / 索引再構築 チャンク {reindexed['chunk_count']}件"
+            if reindexed.get("ok")
+            else f" / 索引再構築に失敗（{reindexed.get('reason', '理由不明')}）"
+        )
     job.detail = {
         "fetched": fetched,
         "failures": failures[:MAX_DETAIL_ROWS],
         "truncated": len(failures) > MAX_DETAIL_ROWS,
+        "reindexed": reindexed,
     }
     job.save(
         update_fields=[

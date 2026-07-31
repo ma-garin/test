@@ -10,7 +10,7 @@ from __future__ import annotations
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.accounts.constants import Role
+from apps.accounts.constants import ProjectRole, Role
 from apps.accounts.models import Tenant, User
 from apps.audit.models import OperationLog
 from apps.projects.models import ChangeRequest, Defect, Project, ProjectMember
@@ -38,8 +38,13 @@ class ChangeDefectViewTests(TestCase):
             tenant=self.tenant_a,
             role=Role.VIEWER,
         )
-        ProjectMember.objects.create(project=self.project_a, user=self.approver)
-        ProjectMember.objects.create(project=self.project_a, user=self.viewer)
+        # 案件ロールまで指定する（要件 #30）。承認は案件責任者・案件PMOのみ。
+        ProjectMember.objects.create(
+            project=self.project_a, user=self.approver, role=ProjectRole.PMO
+        )
+        ProjectMember.objects.create(
+            project=self.project_a, user=self.viewer, role=ProjectRole.VIEWER
+        )
 
         self.change_a = ChangeRequest.objects.create(
             project=self.project_a,

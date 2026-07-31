@@ -10,8 +10,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date, timedelta
-from typing import Iterable
 
 from apps.integrations.services.connectors.base import (
     BaseConnector,

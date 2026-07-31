@@ -48,13 +48,26 @@
           {# 畳んだときだけ出る見出し。区切り線だけだと、どの領域を見ているか分からなくなる。 #}
           <div class="sb-mini-hd" aria-hidden="true" title="{{ section.label }}">{{ section.label|slice:":2" }}</div>
           <div class="sb-sec-body">
-            {% for item in section.items %}
+            {% for item in section.primary_items %}
               <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
                  href="{% url item.url_name %}" title="{{ item.label }}">
                 <span class="sb-badge" aria-hidden="true">{{ item.code }}</span>
                 <span class="sb-label">{{ item.label }}</span>
               </a>
             {% endfor %}
+            {# 使用頻度の低い画面は畳む。全項目を同じ重さで並べると、毎日使う画面が埋もれる。 #}
+            {% if section.has_secondary %}
+              <details class="sb-more"{% if section.is_current %} open{% endif %}>
+                <summary class="sb-more-hd">その他 {{ section.secondary_items|length }}件</summary>
+                {% for item in section.secondary_items %}
+                  <a class="sb-item{% if not item.is_ready %} dim{% endif %}"
+                     href="{% url item.url_name %}" title="{{ item.label }}">
+                    <span class="sb-badge" aria-hidden="true">{{ item.code }}</span>
+                    <span class="sb-label">{{ item.label }}</span>
+                  </a>
+                {% endfor %}
+              </details>
+            {% endif %}
           </div>
         </div>
       {% endfor %}

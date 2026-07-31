@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.audit.models import OperationLog
 from apps.projects.models import ChangeRequest
+from apps.projects.permissions import approval_denied_reason, can_approve_in_project
 
 DECISION_STATUS = {
     "approved": ChangeRequest.Status.APPROVED,
@@ -43,8 +44,11 @@ def decide_change_request(change: ChangeRequest, *, user, decision: str, reason:
     権限のない利用者からの呼び出しは PermissionDenied（403）にする。
     """
 
-    if not getattr(user, "can_approve", False):
-        raise PermissionDenied("変更要求を判断する権限がありません。")
+    # テナントロールと案件ロールの両方を見る（要件 #30）。
+    if not can_approve_in_project(user, change.project):
+        raise PermissionDenied(
+            approval_denied_reason(user, change.project) or "変更要求を判断する権限がありません。"
+        )
 
     if decision not in DECISION_STATUS:
         raise ValidationError("判断の値が不正です。")

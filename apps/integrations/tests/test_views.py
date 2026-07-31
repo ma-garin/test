@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 from unittest.mock import patch
 
 from django.test import TestCase

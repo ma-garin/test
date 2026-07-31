@@ -84,6 +84,7 @@ def run(
     user=None,
     project=None,
     top_k: int | None = None,
+    screen_hint: str = "",
 ) -> OrchestratorResult:
     """オーケストレーターを 1 回実行する。
 
@@ -124,19 +125,32 @@ def run(
         output_summary=f"tools={', '.join(plan.tools)}",
     )
 
+    # 直前に開いていた画面名を検索語へ足す（要件 #22）。質問そのもの
+    # （`user_input`）は書き換えない。何を足したかはトレースに残す。
+    search_text = f"{question} {screen_hint}".strip() if screen_hint else question
+
     hits: list = []
 
     if index is not None and plan.search_required:
-        hits = registry.get("search_local_docs").func(index, question, top_k=top_k)
+        hits = registry.get("search_local_docs").func(index, search_text, top_k=top_k)
 
     _record_step(
         run_record,
         order=3,
         tool_name="search_local_docs",
         status=AgentStep.Status.OK if index is not None else AgentStep.Status.SKIPPED,
-        input_summary=question,
+        input_summary=search_text,
         output_summary=f"{len(hits)} 件取得" if index is not None else "インデックス未構築のためスキップ",
     )
+
+    if screen_hint:
+        _record_step(
+            run_record,
+            order=5,
+            tool_name="screen_context",
+            input_summary=screen_hint,
+            output_summary=f"直前に開いていた画面「{screen_hint}」を検索語へ追加した",
+        )
 
     evidence_result = registry.get("evaluate_evidence").func(hits, intent_result)
     evidence = EvidenceEvaluation.objects.create(

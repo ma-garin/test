@@ -33,6 +33,7 @@ from apps.integrations.services.connectors.confluence import (
     _storage_to_text,
 )
 from apps.projects.models import Project
+from apps.rag.models import VectorIndex
 
 #: 例外・メッセージへ絶対に現れてはいけない値。
 SECRET_TOKEN = "super-secret-confluence-token-000"
@@ -296,6 +297,28 @@ class ConfluenceSyncTests(TestCase):
 
         self.assertEqual(job.created_count, 1)
         self.assertEqual(Document.objects.count(), 8)
+
+    def test_取込に変更があれば索引を張り直す(self):
+        """取込だけして索引を張らないと、登録済みなのに検索へ出てこない。"""
+
+        job = run_confluence_pull(self.connection)
+
+        self.assertTrue(job.detail["reindexed"]["ok"])
+        self.assertGreater(job.detail["reindexed"]["chunk_count"], 0)
+        self.assertIn("索引再構築", job.message)
+        # 案件つきの接続で取り込んだ文書は、案件別インデックスへ入る。
+        self.assertTrue(
+            VectorIndex.objects.filter(tenant=self.tenant, project=self.project).exists()
+        )
+
+    def test_変更が無い回は索引を張り直さない(self):
+        """毎回張り直すと、変更が無くても取込のたびに重くなる。"""
+
+        run_confluence_pull(self.connection)
+        second = run_confluence_pull(self.connection)
+
+        self.assertIsNone(second.detail["reindexed"])
+        self.assertNotIn("索引再構築", second.message)
 
     def test_無効な接続は履歴を残して失敗する(self):
         self.connection.is_active = False

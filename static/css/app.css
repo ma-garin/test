@@ -339,6 +339,31 @@ a { color: inherit; text-decoration: none; }
 .nav-collapsed .sb-sec + .sb-sec .sb-mini-hd { margin-top: 4px; }
 .nav-collapsed .sb-collapse { padding: 8px 0; }
 
+/* ── 「その他」に畳んだ項目 ─────────────────────────────
+   使用頻度の低い画面をここへ入れる。全項目を同じ重さで並べると、
+   毎日使う画面が埋もれる。畳んだサイドバー（アイコン表示）では
+   常に開いておく。2 文字コードだけなら縦に収まるため。 */
+.sb-more { margin-top: 2px; }
+
+.sb-more-hd {
+  padding: 5px 9px;
+  color: var(--nav-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 6px;
+}
+
+.sb-more-hd::-webkit-details-marker { display: none; }
+.sb-more-hd::before { content: "▸ "; }
+.sb-more[open] > .sb-more-hd::before { content: "▾ "; }
+.sb-more-hd:hover { background: var(--nav-hover); color: var(--nav-fg); }
+
+.nav-collapsed .sb-more-hd { display: none; }
+.nav-collapsed .sb-more > .sb-item { display: flex; }
+
 /* 未実装画面。押せるが、実装済みと同じ重みでは並べない。 */
 .sb-item.dim { color: rgba(255, 255, 255, 0.38); font-weight: 600; }
 .sb-item.dim:hover { background: rgba(255, 255, 255, 0.06); }

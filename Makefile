@@ -1,4 +1,4 @@
-.PHONY: help setup migrate seed run test lint fmt check index clean
+.PHONY: help setup migrate seed run test lint fmt check ci index clean
 
 VENV ?= .venv
 PY := $(VENV)/bin/python
@@ -35,6 +35,12 @@ fmt:  ## 自動整形
 check:  ## Django のシステムチェック（本番設定含む）
 	$(PY) manage.py check
 	$(PY) manage.py makemigrations --check --dry-run
+
+ci:  ## コミット前の一括チェック（lint → check → test）
+	$(VENV)/bin/ruff check .
+	$(PY) manage.py check --settings=config.settings.test
+	$(PY) manage.py makemigrations --check --dry-run --settings=config.settings.test
+	$(PY) manage.py test apps --settings=config.settings.test
 
 index:  ## 検索インデックスを再構築する（例: make index TENANT=demo）
 	$(PY) manage.py rebuild_index --tenant $(TENANT)

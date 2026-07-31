@@ -171,6 +171,33 @@ class ReportGenerationTests(GeneratorTestBase):
         self.assertIn("テスト消化率", document.body)
         self.assertTrue(any(item.source == "projects.WbsTask" for item in document.evidence))
 
+    def test_週次と月次で期間中の動きが変わる(self) -> None:
+        """現在値だけを並べると週次と月次が同じ本文になる。期間の節で差が出ること。"""
+
+        self._seed()
+        # 20 日前に解決した課題は、月次には入るが週次には入らない。
+        Issue.objects.create(
+            project=self.project,
+            title="20日前に解決した課題",
+            status=Issue.Status.RESOLVED,
+            severity=Severity.MEDIUM,
+            resolved_at=timezone.now() - timedelta(days=20),
+        )
+
+        weekly = generators.build_document(self.project, "weekly_report", today=TODAY)
+        monthly = generators.build_document(self.project, "monthly_report", today=TODAY)
+
+        self.assertIn("今期間の動き", weekly.body)
+        self.assertIn("解決した課題 0件", weekly.body)
+        self.assertIn("解決した課題 1件", monthly.body)
+
+    def test_期間中に動きが無ければその旨を書く(self) -> None:
+        self._seed()
+
+        document = generators.build_document(self.project, "weekly_report", today=TODAY)
+
+        self.assertIn("今期間の動き", document.body)
+
     def test_incident_summary_counts_by_severity_and_phase(self) -> None:
         self._seed()
         document = generators.build_document(self.project, "incident_summary", today=TODAY)

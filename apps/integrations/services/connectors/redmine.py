@@ -15,8 +15,9 @@ PMO の現場では課題が既に Redmine にある。ここへ二重入力さ�
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date, datetime
-from typing import Any, Iterable
+from typing import Any
 
 from .base import (
     BaseConnector,

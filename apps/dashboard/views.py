@@ -14,29 +14,33 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.audit.selectors import feedbacks_for
+from apps.core.pagination import page_window, paginate, query_without_page
 from apps.dashboard import selectors
 from apps.dashboard.forms import InterventionDecisionForm
 from apps.dashboard.models import InterventionProposal
-from apps.dashboard.services.detection import kind_label, run_detection
 from apps.dashboard.services.decisions import (
     build_change_report,
     build_intervention_report,
     build_risk_report,
 )
+from apps.dashboard.services.detection import kind_label, run_detection
+from apps.dashboard.services.gantt import build_gantt_chart
+from apps.dashboard.services.input_rules import build_input_rule_report
 from apps.dashboard.services.interventions import (
     AlreadyDecidedError,
     decide_intervention,
     is_pending,
 )
-from apps.dashboard.services.gantt import build_gantt_chart
 from apps.dashboard.services.kpi import build_derived_rows, build_kpi_report
+from apps.dashboard.services.milestones import build_milestone_report
 from apps.dashboard.services.overview import build_overview
 from apps.dashboard.services.poc_evaluation import BUSINESS_DAY_NOTE, build_poc_evaluation
 from apps.dashboard.services.progress import build_progress_report
 from apps.dashboard.services.quality import build_quality_report
 from apps.dashboard.services.tasks import TaskFilters, build_task_board
-from apps.audit.selectors import feedbacks_for
-from apps.core.pagination import page_window, paginate, query_without_page
+from apps.documents.selectors import documents_for
+from apps.documents.services.requirement_coverage import build_coverage_report
 from apps.projects.selectors import scoped_projects_for
 
 
@@ -136,6 +140,9 @@ def tasks(request: HttpRequest) -> HttpResponse:
     is_gantt = request.GET.get("view", "") == "gantt"
     context = {
         "board": board,
+        # 入力ルールの遵守状況（要件 #47）。絞り込みに関係なく案件全体で数える。
+        # 絞り込むと「絞り込み条件の中では違反ゼロ」という無意味な数字になる。
+        "input_rules": build_input_rule_report(_projects(request)),
         **_page_context(page, request),
         "page_title": "タスク一覧",
         "view_mode": "gantt" if is_gantt else "table",
@@ -178,7 +185,12 @@ def progress(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "pages/progress.html",
-        {"report": report, "page_title": "進捗予測・介入"},
+        {
+            "report": report,
+            # タスクの予実だけでは「節目に間に合うか」が分からない（要件 #4）。
+            "milestones": build_milestone_report(projects),
+            "page_title": "進捗予測・介入",
+        },
     )
 
 
@@ -193,7 +205,14 @@ def quality(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "pages/quality.html",
-        {"report": report, "page_title": "品質リアルタイム管理"},
+        {
+            "report": report,
+            # 要件書とテスト計画書の要件IDを突き合わせる（要件 #44）。
+            "coverage": build_coverage_report(
+                documents_for(request.user, request.tenant)
+            ),
+            "page_title": "品質リアルタイム管理",
+        },
     )
 
 
@@ -283,7 +302,10 @@ def poc(request: HttpRequest) -> HttpResponse:
     それぞれの selectors を入口に通したものだけをサービスへ渡す。
     """
 
-    report = build_poc_evaluation(_projects(request), feedbacks_for(request.user, getattr(request, "tenant", None)))
+    report = build_poc_evaluation(
+        _projects(request),
+        feedbacks_for(request.user, getattr(request, "tenant", None)),
+    )
 
     return render(
         request,

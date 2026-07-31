@@ -12,9 +12,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
-from typing import Sequence
 
 from apps.dashboard.services.tasks import TaskRow
 from apps.projects.models import WbsTask
