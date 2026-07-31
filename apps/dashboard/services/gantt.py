@@ -67,6 +67,94 @@ class GanttBar:
 
         return _clamp(float(self.task.progress_percent or 0))
 
+    @property
+    def progress_left(self) -> float:
+        """稲妻線が通る位置（期間全体に対する %）。
+
+        「進捗率のぶんだけ計画上を進んだ地点」を日付軸へ写した点。
+        完了 100% なら棒の右端、未着手 0% なら棒の左端に来る。
+        この点を上から順につないだ折れ線が稲妻線になる。
+        """
+
+        return round(self.left + self.width * _clamp(float(self.task.progress_percent or 0)) / 100, 2)
+
+
+@dataclass(frozen=True)
+class ProgressPoint:
+    """稲妻線の頂点 1 つ。
+
+    `left` は日付軸上の位置、`delay` は本日との差（%）。
+    `delay` が正なら遅れ（本日より左）、負なら先行。
+    """
+
+    bar: GanttBar
+    left: float
+    today_left: float
+
+    @property
+    def delay(self) -> float:
+        return round(self.today_left - self.left, 2)
+
+    @property
+    def is_behind(self) -> bool:
+        return self.left < self.today_left
+
+    @property
+    def is_ahead(self) -> bool:
+        return self.left > self.today_left
+
+
+@dataclass(frozen=True)
+class ProgressLine:
+    """稲妻線。本日線から出て、各タスクの到達点を通り、本日線へ戻る折れ線。
+
+    PM が進捗会議で最初に見るのはこの線の形である。左へ大きく張り出した
+    タスクが遅れているもので、棒の色（期限の近さ）とは別の情報を持つ。
+    期限内でも進捗が足りなければ左へ出る。
+    """
+
+    points: tuple[ProgressPoint, ...]
+    today_left: float
+
+    @property
+    def has_points(self) -> bool:
+        return bool(self.points)
+
+    @property
+    def behind_count(self) -> int:
+        return sum(1 for point in self.points if point.is_behind)
+
+    @property
+    def ahead_count(self) -> int:
+        return sum(1 for point in self.points if point.is_ahead)
+
+    @property
+    def worst(self) -> ProgressPoint | None:
+        """最も左へ張り出した点。会議で最初に議題になるタスク。"""
+
+        behind = [point for point in self.points if point.is_behind]
+
+        return max(behind, key=lambda point: point.delay) if behind else None
+
+    @property
+    def polyline(self) -> str:
+        """SVG の points 属性。座標は x=0〜100（%）、y=行番号。
+
+        始点と終点を本日線へ置くことで、線が宙に浮かず本日から出て戻る形になる。
+        """
+
+        coordinates = [f"{self.today_left},0"]
+        coordinates += [
+            f"{point.left},{index + 0.5}" for index, point in enumerate(self.points)
+        ]
+        coordinates.append(f"{self.today_left},{len(self.points)}")
+
+        return " ".join(coordinates)
+
+    @property
+    def row_count(self) -> int:
+        return len(self.points)
+
 
 @dataclass(frozen=True)
 class GanttGroup:
@@ -75,6 +163,9 @@ class GanttGroup:
     code: str
     name: str
     bars: tuple[GanttBar, ...]
+    #: この案件ぶんの稲妻線。案件見出しの高さを挟むと座標がずれるため、
+    #: 図全体で 1 本引くのではなく、行だけが並ぶ範囲ごとに引く。
+    progress_line: "ProgressLine | None" = None
 
 
 @dataclass(frozen=True)
@@ -88,6 +179,8 @@ class GanttChart:
     days: int
     today_left: float | None
     ticks: tuple[GanttTick, ...]
+    #: 稲妻線。本日が期間外なら None（基準が無いので引けない）。
+    progress_line: ProgressLine | None = None
 
     @property
     def has_bars(self) -> bool:
@@ -106,6 +199,10 @@ class GanttChart:
     @property
     def bar_count(self) -> int:
         return sum(len(group.bars) for group in self.groups)
+
+    @property
+    def has_progress_line(self) -> bool:
+        return self.progress_line is not None and self.progress_line.has_points
 
 
 def build_gantt_chart(rows: Sequence[TaskRow], today: date) -> GanttChart:
@@ -139,15 +236,52 @@ def build_gantt_chart(rows: Sequence[TaskRow], today: date) -> GanttChart:
     # 全タスクが同じ日に集中していると幅が 0 になり除算で落ちる。最低 1 日とみなす。
     days = max((end - start).days + 1, 1)
 
+    today_left = _today_left(today, start, end, days)
+    groups = tuple(
+        GanttGroup(
+            code=group.code,
+            name=group.name,
+            bars=group.bars,
+            progress_line=_line_for(group.bars, today_left),
+        )
+        for group in _group_by_project(dated, start, days)
+    )
+
     return GanttChart(
-        groups=_group_by_project(dated, start, days),
+        groups=groups,
         undated=tuple(undated),
         start=start,
         end=end,
         days=days,
-        today_left=_today_left(today, start, end, days),
+        today_left=today_left,
         ticks=_build_ticks(start, days),
+        progress_line=_build_progress_line(groups, today_left),
     )
+
+
+def _line_for(bars: Sequence[GanttBar], today_left: float | None):
+    """棒の並びから稲妻線を作る。本日が期間外なら引かない。
+
+    基準となる本日が図の外にあるとき、線を引いても遅れ・先行を読み取れない。
+    嘘の形を見せるより出さないほうがよい。
+    """
+
+    if today_left is None or not bars:
+        return None
+
+    return ProgressLine(
+        points=tuple(
+            ProgressPoint(bar=bar, left=bar.progress_left, today_left=today_left)
+            for bar in bars
+        ),
+        today_left=today_left,
+    )
+
+
+def _build_progress_line(groups: tuple[GanttGroup, ...], today_left: float | None):
+    """図全体の集計用。凡例に出す遅れ・先行の件数はここから取る。"""
+
+    return _line_for([bar for group in groups for bar in group.bars], today_left)
 
 
 def _end_of(task: WbsTask) -> date:

@@ -33,6 +33,14 @@
     .gantt-bar.a .gantt-fill { background: var(--orange, #f59e0b); }
     .gantt-pct { position: absolute; top: 0; left: 4px; font-size: 10px; line-height: 16px; color: var(--fg, #0f172a); }
     .gantt-today { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 2px dashed var(--red, #ef4444); }
+    /* 稲妻線。棒の上へ重ねるため、行をまとめた箱を基準に絶対配置する。
+       SVG は viewBox を 100 × 行数にして preserveAspectRatio を切り、
+       横は % 座標、縦は行番号としてそのまま引き伸ばす。 */
+    .gantt-rows { position: relative; }
+    .gantt-line { position: absolute; top: 0; left: 260px; right: 0; height: 100%; pointer-events: none; }
+    .gantt-line svg { width: 100%; height: 100%; }
+    .gantt-line polyline { fill: none; stroke: var(--purple, #7c3aed); stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .gantt-line circle { fill: var(--purple, #7c3aed); }
     .gantt-legend { font-size: 11px; color: var(--muted, #64748b); margin-top: 12px; }
     .gantt-undated { margin-top: 8px; font-size: 12px; }
     .gantt-undated li { padding: 2px 0; }
@@ -62,6 +70,14 @@
             {% for group in chart.groups %}
               <div class="gantt-group">
                 <div class="gantt-group-name">{{ group.code }} {{ group.name }}</div>
+                <div class="gantt-rows">
+                {% if group.progress_line %}
+                  <div class="gantt-line" aria-hidden="true">
+                    <svg viewBox="0 0 100 {{ group.progress_line.row_count }}" preserveAspectRatio="none">
+                      <polyline points="{{ group.progress_line.polyline }}"></polyline>
+                    </svg>
+                  </div>
+                {% endif %}
                 {% for bar in group.bars %}
                   <div class="gantt-row">
                     <div class="gantt-label">
@@ -79,11 +95,22 @@
                     </div>
                   </div>
                 {% endfor %}
+                </div>
               </div>
             {% endfor %}
           </div>
         </div>
-        <div class="gantt-legend">棒の塗りは進捗率。赤=期限超過 / 橙=期限接近 / 青=通常。破線は本日。</div>
+        <div class="gantt-legend">
+          棒の塗りは進捗率。赤=期限超過 / 橙=期限接近 / 青=通常。破線は本日。
+          {% if chart.has_progress_line %}
+            {% with line=chart.progress_line %}
+              紫の折れ線が稲妻線（進捗線）で、各タスクが進捗率のぶん進んだ地点を結んでいます。
+              本日線より<strong>左へ張り出したタスクが遅れ</strong>、右なら先行です。
+              遅れ {{ line.behind_count }}件 / 先行 {{ line.ahead_count }}件{% if line.worst %}
+              ／ 最も遅れているのは {{ line.worst.bar.task.wbs_code }} {{ line.worst.bar.task.name }}{% endif %}。
+            {% endwith %}
+          {% endif %}
+        </div>
       {% endif %}
 
       {% if chart.undated %}
