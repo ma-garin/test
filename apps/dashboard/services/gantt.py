@@ -165,7 +165,7 @@ class GanttGroup:
     bars: tuple[GanttBar, ...]
     #: この案件ぶんの稲妻線。案件見出しの高さを挟むと座標がずれるため、
     #: 図全体で 1 本引くのではなく、行だけが並ぶ範囲ごとに引く。
-    progress_line: "ProgressLine | None" = None
+    progress_line: ProgressLine | None = None
 
 
 @dataclass(frozen=True)
