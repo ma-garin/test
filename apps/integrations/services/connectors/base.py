@@ -14,9 +14,9 @@ import hashlib
 import json
 import os
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime
-from typing import Iterable
 
 
 class ConnectorError(RuntimeError):

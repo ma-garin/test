@@ -7,8 +7,6 @@
 
 from __future__ import annotations
 
-from apps.projects.models import WbsTask
-
 from apps.pmo.services.generators.base import (
     NO_MATERIAL_HEADLINE,
     EvidenceItem,
@@ -18,6 +16,7 @@ from apps.pmo.services.generators.base import (
     spec_for,
 )
 from apps.pmo.services.generators.facts import ProjectFacts
+from apps.projects.models import WbsTask
 
 GENERATOR_KEY = "plan_draft"
 

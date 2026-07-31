@@ -1,4 +1,4 @@
-.PHONY: help setup migrate seed run test lint fmt check index clean
+.PHONY: help setup migrate seed run test e2e test-all lint fmt check ci index clean
 
 VENV ?= .venv
 PY := $(VENV)/bin/python
@@ -22,7 +22,13 @@ seed:  ## 体験用デモデータを投入する
 run:  ## 開発サーバーを起動する
 	$(PY) manage.py runserver
 
-test:  ## テストを実行する
+test:  ## テストを実行する（ブラウザ検証を除く）
+	$(PY) manage.py test apps --settings=config.settings.test --exclude-tag=e2e
+
+e2e:  ## ブラウザ検証だけを実行する（Chromium が要る）
+	$(PY) manage.py test apps --settings=config.settings.test --tag=e2e
+
+test-all:  ## ブラウザ検証を含む全テスト
 	$(PY) manage.py test apps --settings=config.settings.test
 
 lint:  ## 静的チェック
@@ -35,6 +41,12 @@ fmt:  ## 自動整形
 check:  ## Django のシステムチェック（本番設定含む）
 	$(PY) manage.py check
 	$(PY) manage.py makemigrations --check --dry-run
+
+ci:  ## コミット前の一括チェック（lint → check → test）
+	$(VENV)/bin/ruff check .
+	$(PY) manage.py check --settings=config.settings.test
+	$(PY) manage.py makemigrations --check --dry-run --settings=config.settings.test
+	$(PY) manage.py test apps --settings=config.settings.test
 
 index:  ## 検索インデックスを再構築する（例: make index TENANT=demo）
 	$(PY) manage.py rebuild_index --tenant $(TENANT)

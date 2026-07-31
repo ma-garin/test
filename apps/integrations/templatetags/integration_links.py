@@ -30,6 +30,18 @@ register = template.Library()
 SAFE_SCHEMES = ("http://", "https://")
 
 
+def _lookup(obj: Any, links: dict):
+    """先に引いておいた辞書から取り出す。キーは `(種別, 内部ID)`。"""
+
+    entity_type = selectors.entity_type_for(obj)
+    object_id = getattr(obj, "pk", None)
+
+    if entity_type is None or object_id is None:
+        return None
+
+    return links.get((entity_type, object_id))
+
+
 def _is_safe_url(url: str) -> bool:
     """`href` に置いてよい URL か。"""
 
@@ -37,15 +49,16 @@ def _is_safe_url(url: str) -> bool:
 
 
 @register.simple_tag
-def external_link(obj: Any, css_class: str = "btn-ghost sm") -> SafeString:
+def external_link(obj: Any, links: dict | None = None, css_class: str = "btn-ghost sm") -> SafeString:
     """内部レコードに対応する外部原文へのリンク。対応が無ければ空文字。
 
-    一覧では 1 行につき 1 クエリ増える（N+1）。ページングで 1 画面あたりの行数が
-    抑えられているため許容し、必要になったら `selectors.synced_records_for()` で
-    ビュー側から一括取得できるようにしてある。
+    一覧では `links`（`selectors.synced_records_for()` の結果）を渡すこと。
+    渡さないと 1 行ごとに 1 クエリ増える。50 行の一覧で 50 本になり、
+    ページングを入れていても体感が落ちる。詳細画面のように 1 件しか
+    描かない場所では省略してよい。
     """
 
-    record = selectors.synced_record_for(obj)
+    record = _lookup(obj, links) if links is not None else selectors.synced_record_for(obj)
 
     if record is None or not _is_safe_url(record.external_url):
         return mark_safe("")

@@ -114,7 +114,7 @@ def select_project(request: HttpRequest) -> HttpResponse:
 
         if projects.filter(pk=raw).exists():
             request.session[PROJECT_SESSION_KEY] = str(raw)
-            messages.success(request, f"対象案件を切り替えました。")
+            messages.success(request, "対象案件を切り替えました。")
 
             return redirect(_back_to(request))
 

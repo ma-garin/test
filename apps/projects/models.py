@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from django.db import models
 
+from apps.accounts.constants import ProjectRole
 from apps.core.models import SoftDeleteModel, TimeStampedModel
 
 
@@ -92,7 +93,19 @@ class ProjectMember(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name="project_memberships",
     )
-    role_label = models.CharField("案件内の役割", max_length=64, blank=True)
+    role = models.CharField(
+        "案件ロール",
+        max_length=16,
+        choices=ProjectRole.choices,
+        default=ProjectRole.MEMBER,
+        help_text="この案件での権限。テナントロールを広げることはなく、狭めるだけ。",
+    )
+    role_label = models.CharField(
+        "案件内の役割",
+        max_length=64,
+        blank=True,
+        help_text="表示用の肩書き（「基盤チームリーダー」など）。権限判定には使わない。",
+    )
 
     class Meta:
         verbose_name = "案件メンバー"

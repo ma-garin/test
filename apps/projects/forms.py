@@ -52,9 +52,13 @@ class WbsTaskForm(forms.ModelForm):
             projects if projects is not None else Project.objects.none()
         )
         self.fields["project"].empty_label = "案件を選択"
+        # 未着手のタスクを登録するのに「0」と打たせない。空欄は 0 として扱う
+        # （`clean_progress_percent` がその意図で書かれているが、必須のままだと
+        # フィールド検証で先に弾かれ、その分岐へ到達しない）。
+        self.fields["progress_percent"].required = False
 
     def clean_progress_percent(self) -> Decimal:
-        value = self.cleaned_data["progress_percent"]
+        value = self.cleaned_data.get("progress_percent")
 
         if value is None:
             return Decimal("0")

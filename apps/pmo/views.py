@@ -10,14 +10,16 @@ from django.urls import reverse
 
 from apps.agents.models import AgentRun
 from apps.agents.services import orchestrator
+from apps.core import screen_context
 from apps.core.pagination import page_window, paginate, query_without_page
+from apps.documents.selectors import templates_for
+from apps.documents.services import template_export
 from apps.pmo import selectors
 from apps.pmo.forms import DeliverableEditForm, DeliverableGenerateForm
 from apps.pmo.models import Deliverable
 from apps.pmo.services import approval as approval_service
 from apps.pmo.services import deliverables as deliverable_service
-from apps.pmo.services import diffing
-from apps.pmo.services import generators
+from apps.pmo.services import diffing, fact_check, generators
 from apps.pmo.services import prompt_library as prompt_library_service
 from apps.projects.selectors import scoped_projects_for
 from apps.rag.models import VectorIndex
@@ -28,6 +30,16 @@ def consultation(request: HttpRequest) -> HttpResponse:
     """PMO 相談。オーケストレーターを通し、意図・計画・根拠評価を画面へ返す。"""
 
     question = request.GET.get("q", "").strip()
+    # 直前に開いていた画面を文脈として使う（要件 #22）。使うかどうかは
+    # 利用者が選べる。勝手に混ぜて外した検索をされるほうが困るため。
+    screen = screen_context.current(request)
+    # チェックを外すと `use_screen` は送られてこない。フォームを出したこと自体を
+    # `screen_form` で示し、「外した」と「まだ出していない」を区別する。
+    use_screen = (
+        request.GET.get("use_screen") == "1"
+        if request.GET.get("screen_form")
+        else True
+    )
     result = None
 
     if question and request.tenant:
@@ -38,12 +50,19 @@ def consultation(request: HttpRequest) -> HttpResponse:
             area=AgentRun.Area.PMO_CONSULTATION,
             index=index,
             user=request.user,
+            screen_hint=screen.as_hint if screen and use_screen else "",
         )
 
     return render(
         request,
         "pages/pmo_consultation.html",
-        {"question": question, "result": result, "page_title": "PMO相談・状況整理"},
+        {
+            "question": question,
+            "result": result,
+            "screen": screen,
+            "use_screen": use_screen,
+            "page_title": "PMO相談・状況整理",
+        },
     )
 
 
@@ -124,6 +143,13 @@ def _deliverables_context(
         "can_edit": bool(selected)
         and selected.deliverable.status != Deliverable.Status.APPROVED,
         "generators": generators.GENERATORS,
+        # ひな型が 1 件も無いときは出力欄ごと出さない。押しても何も起きない
+        # ボタンを置くと、機能が壊れているのか未設定なのか区別できない。
+        "export_templates": templates_for(request.user, request.tenant),
+        # 本文中の数値を実データと突き合わせる（要件 #15）。人が直した後こそ
+        # 検証したいので、確定本文を保存するたびに出し直す。
+        "fact_check": fact_check.check(selected.deliverable) if selected else None,
+        "fact_check_note": fact_check.UNCHECKABLE_NOTE,
         "page_title": "成果物支援",
     }
 
@@ -138,6 +164,9 @@ def _deliverable_post(request: HttpRequest) -> HttpResponse:
 
     if action == "save":
         return _save_deliverable(request)
+
+    if action == "export":
+        return _export_deliverable(request)
 
     messages.error(request, "不明な操作です。")
 
@@ -177,6 +206,36 @@ def _generate_deliverable(request: HttpRequest) -> HttpResponse:
         messages.success(request, result.message)
 
     return redirect(f"{reverse('pmo:deliverables')}?deliverable={result.deliverable.pk}")
+
+
+def _export_deliverable(request: HttpRequest) -> HttpResponse:
+    """成果物を Excel ひな型へ書き出す（要件 #62）。
+
+    書けなかった項目があっても出力自体は成功させる。ここで失敗にすると、
+    「1 項目のマッピング漏れで報告書が 1 枚も出せない」ことになるため。
+    ただし書けなかった理由は必ず画面へ出す。
+    """
+
+    deliverable = get_object_or_404(
+        selectors.deliverables_for(request.user, request.tenant),
+        pk=request.POST.get("deliverable"),
+    )
+    # ひな型も参照可能な範囲からしか選ばせない。他テナントのひな型は解決しない。
+    template = get_object_or_404(
+        templates_for(request.user, request.tenant), pk=request.POST.get("template")
+    )
+    result = template_export.export(template, deliverable, user=request.user)
+
+    if not result.ok:
+        for error in result.errors:
+            messages.error(request, error)
+    else:
+        messages.success(request, f"{result.written_count}項目をひな型へ書き出しました。")
+
+        for warning in result.warnings:
+            messages.warning(request, warning)
+
+    return redirect(f"{reverse('pmo:deliverables')}?deliverable={deliverable.pk}")
 
 
 def _save_deliverable(request: HttpRequest) -> HttpResponse:

@@ -24,7 +24,6 @@ from apps.rag.models import (
     RagAnswer,
     RetrievalQuery,
     RetrievedChunk,
-    VectorIndex,
 )
 from apps.rag.services import project_context as project_context_service
 from apps.rag.services.retriever import SearchHit, search

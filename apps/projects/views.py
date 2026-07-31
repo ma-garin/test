@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.core.pagination import page_window, paginate, query_without_page
+from apps.integrations.selectors import synced_records_for
 from apps.projects.forms import (
     ChangeDecisionForm,
     ChangeRequestForm,
@@ -26,6 +27,12 @@ from apps.projects.forms import (
     WbsTaskForm,
 )
 from apps.projects.models import ChangeRequest, Defect, Issue, Project, Risk, WbsTask
+from apps.projects.permissions import (
+    approval_denied_reason,
+    can_approve_in_project,
+    can_edit_project,
+    editable_projects_for,
+)
 from apps.projects.selectors import projects_for, scoped_projects_for
 from apps.projects.services.change_requests import decide_change_request, save_change_request
 from apps.projects.services.defects import close_defect, save_defect
@@ -78,9 +85,33 @@ def project_detail(request: HttpRequest, pk) -> HttpResponse:
             "project": project,
             # 候補は必ず参照権限のある案件だけに絞る（テナント越境の防止）。
             "similar_projects": similar_projects_for(request, project),
+            # 誰がこの案件で何をできるかを 1 表で見せる（要件 #30）。
+            "members": _member_rows(project),
             "page_title": project.name,
         },
     )
+
+
+def _member_rows(project) -> list:
+    """案件メンバーに、実際に行使できる権限を添えて返す（要件 #30）。
+
+    ロール名だけを出しても「結局この人は承認できるのか」が読み取れない。
+    判定関数そのものを通した結果を表示し、画面と実際の挙動をずらさない。
+    """
+
+    from apps.projects.models import ProjectMember
+
+    members = list(
+        ProjectMember.objects.filter(project=project)
+        .select_related("user")
+        .order_by("user__username")
+    )
+
+    for member in members:
+        member.can_edit = can_edit_project(member.user, project)
+        member.can_approve = can_approve_in_project(member.user, project)
+
+    return members
 
 
 # --- 変更要求・不具合 -------------------------------------------------------
@@ -111,8 +142,28 @@ def _defects_for(request: HttpRequest):
     ).select_related("project")
 
 
+def _editable_projects(request: HttpRequest):
+    """書き込みフォームで選べる案件（要件 #30）。
+
+    参照専用に設定された案件は選択肢に出さない。出してから保存時に弾くと、
+    利用者は「なぜ保存できないのか」を画面から判断できない。
+    """
+
+    return editable_projects_for(request.user, projects_for(request.user, request.tenant))
+
+
+def _require_edit(request: HttpRequest, project) -> None:
+    """案件のデータを更新できないなら 403 にする。"""
+
+    if not can_edit_project(request.user, project):
+        raise PermissionDenied("この案件のデータを編集する権限がありません。")
+
+
 def _render_change_form(request: HttpRequest, *, change: ChangeRequest | None) -> HttpResponse:
-    projects = projects_for(request.user, request.tenant)
+    if change is not None:
+        _require_edit(request, change.project)
+
+    projects = _editable_projects(request)
 
     if request.method == "POST":
         form = ChangeRequestForm(request.POST, instance=change, projects=projects)
@@ -152,8 +203,13 @@ def change_decide(request: HttpRequest, pk) -> HttpResponse:
 
     change = get_object_or_404(_change_requests_for(request), pk=pk)
 
-    if not request.user.can_approve:
-        raise PermissionDenied("変更要求を判断する権限がありません。")
+    # 案件ロールまで見る（要件 #30）。テナント側で承認権があっても、
+    # その案件で参照専用に設定されていれば判断させない。
+    if not can_approve_in_project(request.user, change.project):
+        raise PermissionDenied(
+            approval_denied_reason(request.user, change.project)
+            or "変更要求を判断する権限がありません。"
+        )
 
     if request.method == "POST":
         form = ChangeDecisionForm(request.POST)
@@ -198,6 +254,7 @@ def defect_list(request: HttpRequest) -> HttpResponse:
         "pages/defect_list.html",
         {
             "defects": page.object_list,
+            "external_links": synced_records_for(page.object_list),
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),
@@ -207,7 +264,10 @@ def defect_list(request: HttpRequest) -> HttpResponse:
 
 
 def _render_defect_form(request: HttpRequest, *, defect: Defect | None) -> HttpResponse:
-    projects = projects_for(request.user, request.tenant)
+    if defect is not None:
+        _require_edit(request, defect.project)
+
+    projects = _editable_projects(request)
 
     if request.method == "POST":
         form = DefectForm(request.POST, instance=defect, projects=projects)
@@ -246,7 +306,9 @@ def defect_edit(request: HttpRequest, pk) -> HttpResponse:
 def defect_close(request: HttpRequest, pk) -> HttpResponse:
     """不具合のクローズ。物理削除はせず状態で終了を表す。"""
 
-    defect = close_defect(get_object_or_404(_defects_for(request), pk=pk), user=request.user)
+    target = get_object_or_404(_defects_for(request), pk=pk)
+    _require_edit(request, target.project)
+    defect = close_defect(target, user=request.user)
     messages.success(request, f"不具合「{defect.title}」をクローズしました。")
 
     return redirect("projects:defect_list")
@@ -262,7 +324,7 @@ def _tasks_for(request: HttpRequest) -> QuerySet[WbsTask]:
 
 @login_required
 def task_create(request: HttpRequest) -> HttpResponse:
-    projects = projects_for(request.user, request.tenant)
+    projects = _editable_projects(request)
 
     if request.method == "POST":
         form = WbsTaskForm(request.POST, projects=projects)
@@ -287,7 +349,8 @@ def task_create(request: HttpRequest) -> HttpResponse:
 @login_required
 def task_edit(request: HttpRequest, pk) -> HttpResponse:
     task = get_object_or_404(_tasks_for(request), pk=pk)
-    projects = projects_for(request.user, request.tenant)
+    _require_edit(request, task.project)
+    projects = _editable_projects(request)
 
     if request.method == "POST":
         form = WbsTaskForm(request.POST, instance=task, projects=projects)
@@ -329,6 +392,7 @@ def task_detail(request: HttpRequest, pk) -> HttpResponse:
 @require_POST
 def task_archive(request: HttpRequest, pk) -> HttpResponse:
     task = get_object_or_404(_tasks_for(request), pk=pk)
+    _require_edit(request, task.project)
     archive_task(task)
     messages.success(request, f"タスク「{task.name}」をアーカイブしました。")
 
@@ -353,7 +417,7 @@ def _issues_for(request: HttpRequest) -> QuerySet[Issue]:
 
 @login_required
 def risk_create(request: HttpRequest) -> HttpResponse:
-    projects = projects_for(request.user, request.tenant)
+    projects = _editable_projects(request)
 
     if request.method == "POST":
         form = RiskForm(request.POST, projects=projects)
@@ -384,7 +448,8 @@ def risk_create(request: HttpRequest) -> HttpResponse:
 @login_required
 def risk_edit(request: HttpRequest, pk) -> HttpResponse:
     risk = get_object_or_404(_risks_for(request), pk=pk)
-    projects = projects_for(request.user, request.tenant)
+    _require_edit(request, risk.project)
+    projects = _editable_projects(request)
 
     if request.method == "POST":
         form = RiskForm(request.POST, instance=risk, projects=projects)
@@ -416,6 +481,7 @@ def risk_edit(request: HttpRequest, pk) -> HttpResponse:
 @require_POST
 def risk_close(request: HttpRequest, pk) -> HttpResponse:
     risk = get_object_or_404(_risks_for(request), pk=pk)
+    _require_edit(request, risk.project)
     close_risk(risk)
     messages.success(request, f"リスク「{risk.title}」をクローズしました。")
 
@@ -427,6 +493,7 @@ def risk_promote(request: HttpRequest, pk) -> HttpResponse:
     """リスクを課題へ転換する。課題作成とリスクの状態遷移はサービス層で同時に確定する。"""
 
     risk = get_object_or_404(_risks_for(request), pk=pk)
+    _require_edit(request, risk.project)
 
     if request.method == "POST":
         form = RiskPromoteForm(request.POST)
@@ -477,6 +544,8 @@ def issue_list(request: HttpRequest) -> HttpResponse:
         "pages/issue_list.html",
         {
             "issues": page.object_list,
+            # 外部原文リンクは 1 行ずつ引くと N+1 になる。表示する行だけ先に引く。
+            "external_links": synced_records_for(page.object_list),
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),
@@ -487,7 +556,7 @@ def issue_list(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def issue_create(request: HttpRequest) -> HttpResponse:
-    projects = projects_for(request.user, request.tenant)
+    projects = _editable_projects(request)
 
     if request.method == "POST":
         form = IssueForm(request.POST, projects=projects)
@@ -519,7 +588,8 @@ def issue_create(request: HttpRequest) -> HttpResponse:
 @login_required
 def issue_edit(request: HttpRequest, pk) -> HttpResponse:
     issue = get_object_or_404(_issues_for(request), pk=pk)
-    projects = projects_for(request.user, request.tenant)
+    _require_edit(request, issue.project)
+    projects = _editable_projects(request)
 
     if request.method == "POST":
         form = IssueForm(request.POST, instance=issue, projects=projects)
@@ -552,6 +622,7 @@ def issue_edit(request: HttpRequest, pk) -> HttpResponse:
 @require_POST
 def issue_close(request: HttpRequest, pk) -> HttpResponse:
     issue = get_object_or_404(_issues_for(request), pk=pk)
+    _require_edit(request, issue.project)
     close_issue(issue)
     messages.success(request, f"課題「{issue.title}」をクローズしました。")
 

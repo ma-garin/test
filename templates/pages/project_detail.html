@@ -131,4 +131,36 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">メンバーと権限</span>
+      <span class="card-act">{{ members|length }}名</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>利用者</th><th>テナントロール</th><th>案件ロール</th><th>この案件で</th><th>肩書き</th></tr></thead>
+        <tbody>
+          {% for member in members %}
+            <tr>
+              <td>{{ member.user }}</td>
+              <td class="nowrap">{{ member.user.get_role_display }}</td>
+              <td class="nowrap">{{ member.get_role_display }}</td>
+              <td class="nowrap">
+                {% if member.can_approve %}<span class="badge g">承認できる</span>
+                {% elif member.can_edit %}<span class="badge b">編集できる</span>
+                {% else %}<span class="badge n">参照のみ</span>{% endif %}
+              </td>
+              <td>{{ member.role_label|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty">メンバーが登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <p>案件ロールはテナントロールを狭めるだけで、広げません。テナント側で承認権が無い利用者は、案件責任者に設定しても承認できません。</p>
+    </div>
+  </div>
+
 {% endblock %}

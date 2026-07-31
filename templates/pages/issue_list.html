@@ -27,7 +27,7 @@
               <td class="nowrap">{{ issue.get_severity_display }}</td>
               <td class="nowrap">{{ issue.owner|default:"—" }}</td>
               <td class="nowrap">{{ issue.due_date|date:"n/j"|default:"—" }}</td>
-              <td class="nowrap">{% external_link issue as issue_link %}{% if issue_link %}{{ issue_link }}{% else %}{{ issue.external_key|default:"—" }}{% endif %}</td>
+              <td class="nowrap">{% external_link issue external_links as issue_link %}{% if issue_link %}{{ issue_link }}{% else %}{{ issue.external_key|default:"—" }}{% endif %}</td>
               <td><span class="badge n">{{ issue.get_status_display }}</span></td>
               <td class="nowrap"><a class="btn-ghost sm" href="{% url 'projects:issue_edit' issue.pk %}">編集</a></td>
             </tr>

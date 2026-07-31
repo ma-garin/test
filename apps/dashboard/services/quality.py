@@ -152,7 +152,9 @@ def _consumption(metric_rows: tuple[MetricRow, ...], total: int, closed: int) ->
 
     for row in metric_rows:
         if row.metric.metric_key in CONSUMPTION_KEYS:
-            return int(row.metric.value / Decimal(1)), f"{row.metric.metric_label or row.metric.metric_key}（実測）"
+            label = row.metric.metric_label or row.metric.metric_key
+
+            return int(row.metric.value / Decimal(1)), f"{label}（実測）"
 
     if total:
         return round(100 * closed / total), "不具合クローズ率で代替（消化率の指標が未登録）"

@@ -174,6 +174,85 @@
         <div class="empty">確定本文がまだ無いため差分を出せません。AI生成本文を編集して保存してください。</div>
       {% endif %}
     </div>
+
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">事実チェック</span>
+        <span class="card-act"><span class="badge {{ fact_check.tone }}">{{ fact_check.summary }}</span></span>
+      </div>
+      {% if fact_check.total %}
+        <div class="t-wrap">
+          <table class="t">
+            <thead><tr><th class="nowrap">判定</th><th class="nowrap">数値</th><th>記載箇所</th></tr></thead>
+            <tbody>
+              {% for claim in fact_check.claims %}
+                <tr>
+                  <td class="nowrap"><span class="badge {{ claim.tone }}">{% if claim.verified %}一致{% else %}不一致{% endif %}</span></td>
+                  <td class="nowrap">{{ claim.display }}</td>
+                  <td>{{ claim.line }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if not fact_check.passed %}
+          <div class="callout d">
+            <p><strong>実データと一致しない数値があります。</strong>本文を直すか、元データを更新してください。承認前に解消することを推奨します。</p>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="empty">{{ fact_check.summary }}</div>
+      {% endif %}
+      <div class="callout w"><p>{{ fact_check_note }}</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">Excel ひな型へ出力</span>
+        <span class="card-act">マッピング済みのセルだけを書き換えます</span>
+      </div>
+      {% if export_templates %}
+        <form class="form" method="post" action="{% url 'pmo:deliverables' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="export">
+          <input type="hidden" name="deliverable" value="{{ selected.deliverable.pk }}">
+          <div class="search-row">
+            <label>ひな型<br>
+              <select name="template">
+                {% for template in export_templates %}
+                  <option value="{{ template.pk }}">{{ template.name }}（{{ template.get_mapping_status_display }}）</option>
+                {% endfor %}
+              </select>
+            </label>
+            <button class="btn-b" type="submit">出力する</button>
+          </div>
+          <div class="callout w">
+            <p>数式セルと未マッピング項目は書き換えません。飛ばした項目は出力後にメッセージで表示します。</p>
+          </div>
+        </form>
+        {% with outputs=selected.deliverable.project.template_outputs.all|slice:":5" %}
+          {% if outputs %}
+            <div class="t-wrap">
+              <table class="t">
+                <thead><tr><th>出力日時</th><th>ひな型</th><th>警告</th><th class="nowrap">ファイル</th></tr></thead>
+                <tbody>
+                  {% for output in outputs %}
+                    <tr>
+                      <td class="nowrap">{{ output.created_at|date:"Y-m-d H:i" }}</td>
+                      <td>{{ output.template.name }}</td>
+                      <td>{% if output.warnings %}<span class="badge a">{{ output.warnings|length }}件</span>{% else %}<span class="badge g">なし</span>{% endif %}</td>
+                      <td class="nowrap"><a href="{{ output.file.url }}" style="color:var(--blue)">ダウンロード</a></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        {% endwith %}
+      {% else %}
+        <div class="empty">ひな型が登録されていません。ひな型管理から Excel ひな型を登録してください。</div>
+      {% endif %}
+    </div>
   {% endif %}
 
 {% endblock %}

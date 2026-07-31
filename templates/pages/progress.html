@@ -66,6 +66,42 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">マイルストーンの予実</span>
+      <span class="card-act">
+        {% if milestones.total %}
+          遅れ {{ milestones.late_count }}件{% if milestones.gate_late_count %}（うち品質ゲート {{ milestones.gate_late_count }}件）{% endif %}
+        {% else %}未登録{% endif %}
+      </span>
+    </div>
+    {% if milestones.total %}
+      <div class="dashboard-risk-wrap">
+        <table class="dashboard-risk-table">
+          <thead>
+            <tr><th>案件</th><th>マイルストーン</th><th>計画日</th><th>見込日</th><th>実績日</th><th>ずれ</th><th>状態</th><th>判定根拠</th></tr>
+          </thead>
+          <tbody>
+            {% for row in milestones.rows %}
+              <tr>
+                <td><a href="{% url 'projects:detail' row.project.pk %}" style="color:var(--blue);font-weight:900">{{ row.project.name }}</a></td>
+                <td>{{ row.milestone.name }}{% if row.milestone.is_gate %} <span class="badge b">品質ゲート</span>{% endif %}</td>
+                <td class="nowrap">{{ row.milestone.planned_date|date:"Y-m-d" }}</td>
+                <td class="nowrap">{{ row.milestone.forecast_date|date:"Y-m-d"|default:"—" }}</td>
+                <td class="nowrap">{{ row.milestone.actual_date|date:"Y-m-d"|default:"—" }}</td>
+                <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.slip_label }}</span></td>
+                <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.state_label }}</span></td>
+                <td>{{ row.basis }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">マイルストーンが登録されていません。登録すると、タスクの予実とは別に節目のずれを追跡できます。</div>
+    {% endif %}
+  </div>
+
   <div class="sg">
     <div class="card">
       <div class="card-hdr">

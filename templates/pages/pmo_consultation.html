@@ -22,6 +22,18 @@
           <label for="q">相談内容</label>
           <textarea name="q" id="q" rows="3" placeholder="例: 結合試験が5日遅れています。どう整理すべきですか。">{{ question }}</textarea>
         </div>
+        {% if screen %}
+          <div class="callout w">
+            <p>
+              <strong>直前に開いていた画面:</strong> {{ screen.describe }}
+              {% if use_screen %}を検索の手がかりに使います。{% else %}は使いません。{% endif %}
+            </p>
+            <p>
+              <input type="hidden" name="screen_form" value="1">
+              <label><input type="checkbox" name="use_screen" value="1" {% if use_screen %}checked{% endif %}> この画面を文脈として使う</label>
+            </p>
+          </div>
+        {% endif %}
         <div class="actions"><button type="submit" class="btn-b">整理する</button></div>
       </form>
     </div>

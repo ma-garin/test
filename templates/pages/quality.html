@@ -97,4 +97,55 @@
     </div>
   </div>
 
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">テスト計画と要件の整合性</span>
+      <span class="card-act"><span class="badge {{ coverage.tone }}">{{ coverage.summary }}</span></span>
+    </div>
+    {% if coverage.determinable %}
+      <div class="kpi-g">
+        <div class="kpi">
+          <div class="kpi-l">テストのカバー率</div>
+          <div class="kpi-v">{{ coverage.coverage_percent }}<small>%</small></div>
+          <div class="kpi-s">要件書のIDのうち、テスト計画書にも出てくる割合</div>
+          <div class="kpi-bar"><div class="kpi-fill {{ coverage.tone }}" style="width:{{ coverage.coverage_percent }}%"></div></div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-l">テストが無い要件</div>
+          <div class="kpi-v" style="color:var(--red)">{{ coverage.uncovered|length }}</div>
+          <div class="kpi-s">要件書にあり、テスト計画書に無い</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-l">出所不明のテスト</div>
+          <div class="kpi-v" style="color:var(--orange)">{{ coverage.orphan_tests|length }}</div>
+          <div class="kpi-s">テスト計画書にあり、要件書に無い</div>
+        </div>
+      </div>
+      <div class="dashboard-risk-wrap">
+        <table class="dashboard-risk-table">
+          <thead><tr><th>要件ID</th><th>要件書</th><th>テスト計画書</th><th>判定</th></tr></thead>
+          <tbody>
+            {% for row in coverage.rows %}
+              <tr>
+                <td class="nowrap">{{ row.requirement_id }}</td>
+                <td class="nowrap">{% if row.in_requirements %}あり{% else %}—{% endif %}</td>
+                <td class="nowrap">{% if row.in_tests %}あり{% else %}—{% endif %}</td>
+                <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.state_label }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">{{ coverage.summary }}</div>
+    {% endif %}
+    {% if coverage.unreadable_documents %}
+      <div class="callout w">
+        <p><strong>本文が取れていない文書があります。</strong>下記は判定に含めていません。ドキュメント登録から本文抽出を実行してください。</p>
+        <p>{% for document in coverage.unreadable_documents %}{{ document.title }}{% if not forloop.last %} ／ {% endif %}{% endfor %}</p>
+      </div>
+    {% endif %}
+    <div class="callout w"><p>文書名に「要件」「仕様」を含むものを要件書、「テスト」「試験」「検証」を含むものをテスト計画書として扱います。突合は要件ID（REQ-…／NFR-…）の一致のみで、推測は行いません。</p></div>
+  </div>
+
 {% endblock %}

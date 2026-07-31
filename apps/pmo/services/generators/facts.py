@@ -15,9 +15,8 @@ from decimal import Decimal
 from django.utils import timezone
 
 from apps.dashboard.models import Alert
-from apps.projects.models import Defect, Issue, QualityMetric, Risk, Severity, WbsTask
-
 from apps.pmo.services.generators.base import EvidenceItem, percent
+from apps.projects.models import Defect, Issue, QualityMetric, Risk, Severity, WbsTask
 
 #: リスクスコア（発生確率 × 影響度、各 1-5）がこの値以上なら「高リスク」。
 HIGH_RISK_SCORE = 15
@@ -65,6 +64,15 @@ class ProjectFacts:
     milestones: list = field(default_factory=list)
     milestone_late: int = 0
 
+    #: 期間の開始日。週次と月次で数字が変わるのはここから下だけ。
+    period_start: date | None = None
+    period_task_done: int = 0
+    period_issue_opened: int = 0
+    period_issue_resolved: int = 0
+    period_defect_detected: int = 0
+    period_defect_closed: int = 0
+    period_alert_detected: int = 0
+
     evidence: list = field(default_factory=list)
 
     @property
@@ -87,12 +95,36 @@ class ProjectFacts:
     def task_done_percent(self) -> float:
         return percent(self.task_done, self.task_total)
 
+    @property
+    def has_period(self) -> bool:
+        return self.period_start is not None
 
-def collect_facts(project, today: date | None = None) -> ProjectFacts:
-    """案件の実データを 1 度だけ読み、以降の生成で使い回す。"""
+    @property
+    def period_movement(self) -> int:
+        """期間中に動いた件数の合計。0 なら「動きが無かった」と書く。"""
+
+        return (
+            self.period_task_done
+            + self.period_issue_opened
+            + self.period_issue_resolved
+            + self.period_defect_detected
+            + self.period_defect_closed
+            + self.period_alert_detected
+        )
+
+
+def collect_facts(
+    project, today: date | None = None, period_start: date | None = None
+) -> ProjectFacts:
+    """案件の実データを 1 度だけ読み、以降の生成で使い回す。
+
+    `period_start` を渡すと、その日以降に動いた件数も数える。週次報告と
+    月次報告が同じ数字になるのは、現在値しか数えていなかったため。
+    現在値（未解決 N 件）と期間中の動き（今週 N 件解決）は別の情報である。
+    """
 
     today = today or timezone.localdate()
-    facts = ProjectFacts(project=project, today=today)
+    facts = ProjectFacts(project=project, today=today, period_start=period_start)
 
     _collect_tasks(facts, project, today)
     _collect_issues(facts, project, today)
@@ -102,7 +134,66 @@ def collect_facts(project, today: date | None = None) -> ProjectFacts:
     _collect_alerts(facts, project)
     _collect_milestones(facts, project, today)
 
+    if period_start is not None:
+        _collect_period(facts, project, period_start, today)
+
     return facts
+
+
+def _collect_period(facts: ProjectFacts, project, start: date, today: date) -> None:
+    """期間中に動いた件数。日付フィールドが空のものは数えない。
+
+    「いつ動いたか分からないもの」を期間中の実績として数えると、
+    毎週同じものが実績に並ぶ。分からないものは数えないほうが正しい。
+    """
+
+    from datetime import datetime, time
+
+    from django.utils.timezone import make_aware
+
+    from apps.dashboard.models import Alert
+    from apps.projects.models import Defect, Issue, WbsTask
+
+    boundary = datetime.combine(start, time.min)
+    boundary = make_aware(boundary) if timezone.is_naive(boundary) else boundary
+
+    facts.period_task_done = WbsTask.objects.filter(
+        project=project,
+        status=WbsTask.Status.DONE,
+        actual_end__gte=start,
+        actual_end__lte=today,
+    ).count()
+    facts.period_issue_opened = Issue.objects.filter(
+        project=project, created_at__gte=boundary
+    ).count()
+    facts.period_issue_resolved = Issue.objects.filter(
+        project=project, resolved_at__gte=boundary
+    ).count()
+    facts.period_defect_detected = Defect.objects.filter(
+        project=project, detected_on__gte=start, detected_on__lte=today
+    ).count()
+    facts.period_defect_closed = Defect.objects.filter(
+        project=project, closed_on__gte=start, closed_on__lte=today
+    ).count()
+    facts.period_alert_detected = Alert.objects.filter(
+        project=project, detected_at__gte=boundary
+    ).count()
+
+    facts.evidence.append(
+        EvidenceItem(
+            source="期間集計",
+            label=f"{start} 〜 {today} の動き",
+            detail=(
+                f"完了タスク {facts.period_task_done}件 / "
+                f"起票課題 {facts.period_issue_opened}件 / "
+                f"解決課題 {facts.period_issue_resolved}件 / "
+                f"検出不具合 {facts.period_defect_detected}件 / "
+                f"クローズ不具合 {facts.period_defect_closed}件 / "
+                f"新規アラート {facts.period_alert_detected}件"
+            ),
+            count=facts.period_movement,
+        )
+    )
 
 
 def _collect_tasks(facts: ProjectFacts, project, today: date) -> None:

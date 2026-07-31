@@ -21,18 +21,26 @@ from apps.pmo.services.generators.facts import ProjectFacts
 PERIOD_DAYS = {"weekly_report": 7, "monthly_report": 30, "quality_report": 30}
 
 
+def period_start_for(generator_key: str, today: date) -> date | None:
+    """この生成種別が振り返る期間の開始日。レポート以外は期間を持たない。"""
+
+    days = PERIOD_DAYS.get(generator_key)
+
+    return today - timedelta(days=days) if days else None
+
+
 def build_report(facts: ProjectFacts, generator_key: str) -> GeneratedDocument:
     """週次・月次・品質レポートを組み立てる。"""
 
     spec = spec_for(generator_key)
-    period_days = PERIOD_DAYS.get(generator_key, 7)
-    start = facts.today - timedelta(days=period_days)
+    start = facts.period_start or facts.today - timedelta(days=PERIOD_DAYS.get(generator_key, 7))
     title = f"{spec.label} {facts.project.name}（{start} 〜 {facts.today}）"
 
     if not facts.has_material:
         return _empty(facts, generator_key, title)
 
     sections = [
+        _period_section(facts),
         _progress_section(facts),
         _issue_section(facts),
         _risk_section(facts),
@@ -43,8 +51,13 @@ def build_report(facts: ProjectFacts, generator_key: str) -> GeneratedDocument:
 
     if generator_key == "quality_report":
         # 品質レポートは品質・不具合を先頭へ出す。読み手（品質保証）が
-        # 最初に見る情報を上に置くため。
-        sections = [sections[3], sections[1], sections[0], sections[2], sections[4], sections[5]]
+        # 最初に見る情報を上に置くため。期間の動きはその次に置く。
+        order = ("品質", "課題", "今期間の動き", "進捗", "リスク", "アラート", "次アクション")
+        sections = sorted(
+            sections, key=lambda section: order.index(section.heading)
+            if section.heading in order
+            else len(order)
+        )
 
     footer = _footer(facts, start)
 
@@ -84,6 +97,33 @@ def _empty(facts: ProjectFacts, generator_key: str, title: str) -> GeneratedDocu
         evidence=(),
         warnings=("生成に使える実データが 1 件もありません。",),
         has_material=False,
+    )
+
+
+def _period_section(facts: ProjectFacts) -> Section:
+    """期間中に動いた件数（週次と月次で変わる唯一の節）。
+
+    現在値だけを並べると、週次報告と月次報告がまったく同じ本文になる。
+    """
+
+    if not facts.has_period:
+        return Section("今期間の動き", [])
+
+    if not facts.period_movement:
+        return Section(
+            "今期間の動き",
+            [f"{facts.period_start} 以降、完了・起票・解決・検出のいずれも記録がありません。"],
+        )
+
+    return Section(
+        "今期間の動き",
+        [
+            f"完了したタスク {facts.period_task_done}件",
+            f"起票された課題 {facts.period_issue_opened}件／解決した課題 {facts.period_issue_resolved}件",
+            f"検出された不具合 {facts.period_defect_detected}件／"
+            f"クローズした不具合 {facts.period_defect_closed}件",
+            f"新規アラート {facts.period_alert_detected}件",
+        ],
     )
 
 

@@ -24,13 +24,14 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.constants import Role
+from apps.accounts.constants import ProjectRole
 from apps.accounts.models import Tenant, User
 from apps.dashboard.models import Alert, KpiMeasurement
 from apps.projects.models import (
     ChangeRequest,
     Defect,
     Issue,
+    Milestone,
     Priority,
     Project,
     ProjectMember,
@@ -66,13 +67,17 @@ class Command(BaseCommand):
 
         if user is not None:
             ProjectMember.objects.get_or_create(
-                project=project, user=user, defaults={"role_label": "PMO"}
+                project=project,
+                user=user,
+                defaults={"role": ProjectRole.PMO, "role_label": "PMO"},
             )
             # 参加していない利用者には何も見えない。実データを見せるため、
             # このテナントの利用者全員をメンバーにする（体験環境の割り切り）。
             for other in User.objects.filter(tenant=tenant).exclude(pk=user.pk):
                 ProjectMember.objects.get_or_create(
-                    project=project, user=other, defaults={"role_label": "参照"}
+                    project=project,
+                    user=other,
+                    defaults={"role": ProjectRole.VIEWER, "role_label": "参照"},
                 )
 
         counts = {
@@ -81,6 +86,7 @@ class Command(BaseCommand):
             "不具合": self._create_defects(project),
             "リスク": self._create_risks(project),
             "変更要求": self._create_changes(project),
+            "マイルストーン": self._create_milestones(project),
             "品質指標": self._create_metrics(project),
             "KPI": self._create_kpi(project),
             "アラート": self._create_alerts(project),
@@ -113,11 +119,12 @@ class Command(BaseCommand):
                     "再設計する。要件の一次資料は mvp_scope_directory_mapping.csv（55項目）と "
                     "directory_extra_features.csv（21項目）の計76項目。\n"
                     "要件突合を行わずに「完了」と報告したインシデント（INCIDENT-001）が発生し、"
-                    "実際の充足率が32%だったことが判明。以降はトレーサビリティ表を分母としている。"
+                    "実際の充足率が32%だったことが判明。以降はトレーサビリティ表を分母としている。\n"
+                    "現在の充足率は97%。残る1件は回答生成（ADR-0004 の判断待ち）。"
                 ),
                 "status": ProjectStatus.DELAYED,
                 "rag_status": RagStatus.YELLOW,
-                "progress_percent": 83,
+                "progress_percent": 97,
                 "project_manager": "利用者（発注者）",
                 "pmo_manager": "Claude（実装担当）",
                 "is_demo": False,
@@ -169,25 +176,27 @@ class Command(BaseCommand):
              Priority.HIGH, 0, 0, 100, "", False),
             ("5.3", "評価基盤（Golden Dataset）", "Claude", WbsTask.Status.DONE,
              Priority.MEDIUM, 0, 0, 100, "", False),
-            ("6.1", "実データセットの作成", "Claude", WbsTask.Status.IN_PROGRESS,
-             Priority.URGENT, 0, 0, 60,
-             "この案件自体を PMO データとして投入中", True),
+            ("6.1", "実データセットの作成", "Claude", WbsTask.Status.DONE,
+             Priority.URGENT, 0, 0, 100, "", True),
             # 遅延の震源。設計の決定待ちで着手できず、後続が全部止まっている。
             # 計画では初日に終える予定だったが、5日経っても着手できていない。
-            ("6.2", "回答生成（LLM 呼び出し）", "Claude", WbsTask.Status.BLOCKED,
+            ("6.2", "回答生成", "Claude", WbsTask.Status.BLOCKED,
              Priority.URGENT, -5, -4, 0,
-             "open_questions.md 3番（回答フォーマットとフォールバック）の決定待ち", True),
-            ("6.3", "事実誤認の自動チェック", "Claude", WbsTask.Status.NOT_STARTED,
-             Priority.HIGH, -3, -1, 0, "6.2 の完了が前提。着手できていない", True),
-            ("7.1", "Excel 成果物出力", "Claude", WbsTask.Status.NOT_STARTED,
-             Priority.MEDIUM, 0, 1, 0, "openpyxl の導入が必要", False),
-            ("7.2", "マイルストーン管理", "Claude", WbsTask.Status.NOT_STARTED,
-             Priority.MEDIUM, 0, 1, 0, "予実差分析の精度向上に必要", False),
-            ("7.3", "案件単位のRBAC細分化", "Claude", WbsTask.Status.NOT_STARTED,
-             Priority.LOW, 1, 2, 0, "", False),
+             "ADR-0004（2層構成）を提案済み。利用者の承認待ち", True),
+            ("6.3", "事実誤認の自動チェック", "Claude", WbsTask.Status.DONE,
+             Priority.HIGH, -3, 0, 100,
+             "6.2 を待たずルールベースで実装（本文の数値をDBと突合）", True),
+            ("7.1", "Excel 成果物出力", "Claude", WbsTask.Status.DONE,
+             Priority.MEDIUM, 0, 0, 100, "", False),
+            ("7.2", "マイルストーン予実差分析", "Claude", WbsTask.Status.DONE,
+             Priority.MEDIUM, 0, 0, 100, "登録画面は未着手（admin のみ）", False),
+            ("7.3", "案件単位のRBAC細分化", "Claude", WbsTask.Status.DONE,
+             Priority.LOW, 0, 0, 100, "", False),
+            ("7.4", "入力標準ルール・要件突合・画面文脈", "Claude", WbsTask.Status.DONE,
+             Priority.MEDIUM, 0, 0, 100, "", False),
             ("8.1", "受入確認・残課題の整理", "利用者", WbsTask.Status.NOT_STARTED,
              Priority.URGENT, 1, PLANNED_END_OFFSET, 0,
-             "充足率100%が前提。現在83%", True),
+             "充足率100%が前提。現在97%（残り1件は6.2）", True),
         )
 
         created = 0
@@ -251,29 +260,30 @@ class Command(BaseCommand):
              Issue.Status.RESOLVED, Severity.CRITICAL, "Claude", -1,
              "mvp_scope_directory_mapping.csv 55項目を読まずに「実装完了」と報告。"
              "実際の充足率は32%だった。トレーサビリティ表を作成し再発防止。"),
-            ("回答生成（LLM呼び出し）の設計が未決定で着手できない",
+            ("回答生成の設計が未決定で着手できない",
              Issue.Status.BLOCKED, Severity.CRITICAL, "利用者", 1,
-             "open_questions.md 3番。回答フォーマット（REQ-AG-007 の7セクション）、"
-             "LLM不可時のフォールバック、引用の対応付け方法の3点が未決。"
-             "これが決まらないと 6.2 / 6.3 が動かない。"),
+             "ADR-0004 として2層構成（根拠アセンブラ＋文体整形）を提案済み。"
+             "承認されれば第1層から実装できる。6.3 は先行してルールベースで実装した。"),
             ("venv に requests が未導入で実API連携を検証できない",
-             Issue.Status.OPEN, Severity.HIGH, "Claude", 0,
-             "コネクタは遅延importで実装済み。requirements への追加と"
-             "インストールが必要。現状はモックモードのみ検証済み。"),
+             Issue.Status.RESOLVED, Severity.HIGH, "Claude", 0,
+             "requirements/base.txt へ追加済み。実APIでの疎通確認は"
+             "接続情報が用意でき次第（モックモードでの検証は完了）。"),
             ("生成される文章が事実の羅列で、そのまま提出できない",
              Issue.Status.OPEN, Severity.HIGH, "Claude", 2,
              "数字は正しいが文体が報告書として不十分。赤字率は20%を超える見込みで、"
              "PoC目標（赤字率20%未満）を満たせない可能性がある。"),
             ("週次レポートと月次レポートで数字が同じになる",
-             Issue.Status.OPEN, Severity.MEDIUM, "Claude", 3,
-             "期間で絞り込まず現在値を出しているため。created_at / detected_on での"
-             "絞り込みが必要。"),
+             Issue.Status.RESOLVED, Severity.MEDIUM, "Claude", 3,
+             "「今期間の動き」の節を追加し、完了・起票・解決・検出を期間で数えるようにした。"
+             "現在値（未解決N件）と期間中の動きは別の情報として並べる。"),
             ("Confluence 取込後の再インデックスが自動起動しない",
-             Issue.Status.OPEN, Severity.MEDIUM, "Claude", 3,
-             "last_indexed_at をクリアするのみ。rebuild_index の手動実行が必要。"),
+             Issue.Status.RESOLVED, Severity.MEDIUM, "Claude", 3,
+             "取込で変更があったときだけ索引を張り直すようにした。"
+             "索引の失敗で取込を失敗にはせず、履歴へ理由を残す。"),
             ("サイドメニューの項目が28件に増え、折りたたみ時に収まらない",
-             Issue.Status.OPEN, Severity.LOW, "Claude", 5,
-             "機能追加のたびに増えている。区分の見直しか、使用頻度による並べ替えが要る。"),
+             Issue.Status.RESOLVED, Severity.LOW, "Claude", 5,
+             "使用頻度の低い11画面を各区分の「その他」へ畳んだ。"
+             "現在開いている画面は畳まず常時表示側へ引き上げる。"),
         )
 
         for title, status, severity, owner, due, description in specs:
@@ -426,14 +436,46 @@ class Command(BaseCommand):
 
     # ── 品質指標 ────────────────────────────────────────────
 
+    def _create_milestones(self, project: Project) -> int:
+        """実際の節目。要件充足率の到達点と受入をゲートとして置く。
+
+        6.2（回答生成）が設計待ちで止まっているため、「充足率100%」以降が
+        全て後ろ倒しになっている。見込日を入れて、ずれが画面に出る状態にする。
+        """
+
+        today = timezone.localdate()
+        specs = (
+            # (名称, 計画日, 見込日, 実績日, 品質ゲート)
+            ("リポジトリ構成の確定", -1, None, -1, False),
+            ("要件突合表の作成（INCIDENT-001 対応）", 0, None, 0, True),
+            ("要件充足率 95% 到達", 0, None, 0, False),
+            ("回答生成の設計決定", -4, 2, None, True),
+            ("要件充足率 100% 到達", 1, 4, None, True),
+            ("受入確認", PLANNED_END_OFFSET, 6, None, True),
+        )
+
+        for name, planned, forecast, actual, is_gate in specs:
+            Milestone.objects.update_or_create(
+                project=project,
+                name=name,
+                defaults={
+                    "planned_date": today + timedelta(days=planned),
+                    "forecast_date": today + timedelta(days=forecast) if forecast else None,
+                    "actual_date": today + timedelta(days=actual) if actual is not None else None,
+                    "is_gate": is_gate,
+                },
+            )
+
+        return len(specs)
+
     def _create_metrics(self, project: Project) -> int:
         """実測値。テスト件数とコード規模は実際の値。"""
 
         today = timezone.localdate()
         specs = (
-            ("自動テスト件数", 501, 400, "件"),
-            ("要件充足率", 83, 100, "%"),
-            ("未解決の重大課題", 2, 0, "件"),
+            ("自動テスト件数", 591, 400, "件"),
+            ("要件充足率", 97, 100, "%"),
+            ("未解決の重大課題", 1, 0, "件"),
             ("未クローズ不具合", 0, 0, "件"),
         )
 
@@ -479,13 +521,13 @@ class Command(BaseCommand):
         specs = (
             ("回答生成の設計待ちでクリティカルパスが停止している",
              Alert.Category.SCHEDULE, Alert.Severity.CRITICAL, 0,
-             "WBS 6.2 がブロック中。後続の 6.3 / 8.1 が着手できない。"
+             "WBS 6.2 がブロック中。後続の 8.1（受入確認）が着手できない。"
              "決定の主体は利用者側にあり、実装側では解消できない。",
-             {"wbs_code": "6.2", "blocked_successors": 2}),
-            ("要件充足率が目標に達していない（83% / 目標100%）",
+             {"wbs_code": "6.2", "blocked_successors": 1}),
+            ("要件充足率が目標に達していない（97% / 目標100%）",
              Alert.Category.QUALITY, Alert.Severity.WARNING, 0,
-             "残り12項目（部分5・未7）。うち2項目は参考データで Phase2 相当とされている。",
-             {"achieved": 63, "total": 76}),
+             "残り1項目（#23 根本原因分析の指示応答）。回答生成の設計判断が前提。",
+             {"achieved": 72, "total": 74}),
         )
 
         for title, category, severity, hours_ago, detail, evidence in specs:

@@ -27,7 +27,40 @@ class CurrentTenantMiddleware:
         request.tenant = self._resolve_tenant(request)
         request.project = self._resolve_project(request)
 
-        return self.get_response(request)
+        response = self.get_response(request)
+
+        self._remember_screen(request, response)
+
+        return response
+
+    def _remember_screen(self, request: HttpRequest, response: HttpResponse) -> None:
+        """開いた画面を記録する（要件 #22）。
+
+        正常に描画できた GET だけを記録する。404 やリダイレクトを「見ていた画面」
+        として覚えると、相談画面に出す文脈が実際に見たものとずれる。
+        """
+
+        if request.method != "GET" or response.status_code != 200:
+            return
+
+        user = getattr(request, "user", None)
+
+        if user is None or not user.is_authenticated:
+            return
+
+        from apps.core import navigation, screen_context
+
+        match = getattr(request, "resolver_match", None)
+
+        if match is None or not match.view_name:
+            return
+
+        item = navigation.item_by_url_name(match.view_name)
+
+        if item is None:
+            return
+
+        screen_context.remember(request, match.view_name, item.label)
 
     def _resolve_tenant(self, request: HttpRequest):
         user = getattr(request, "user", None)

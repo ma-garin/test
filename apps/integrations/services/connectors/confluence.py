@@ -27,9 +27,10 @@ import hashlib
 import html
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Iterable
+from typing import Any
 
 from django.utils import timezone
 

@@ -6,8 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, render
 
-from apps.core.pagination import page_window, paginate, query_without_page
 from apps.agents.models import AgentRun
+from apps.core.pagination import page_window, paginate, query_without_page
 
 
 def _runs_for(request: HttpRequest):

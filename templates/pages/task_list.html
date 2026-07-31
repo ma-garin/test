@@ -78,4 +78,39 @@
     {% include "partials/pager.html" %}
   </div>
 
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">入力ルールの遵守状況</span>
+      <span class="card-act"><span class="badge {{ input_rules.tone }}">{{ input_rules.summary }}</span></span>
+    </div>
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr><th>ルール</th><th class="nowrap">対象</th><th class="nowrap">遵守率</th><th class="nowrap">判定</th><th>違反しているタスク</th></tr>
+        </thead>
+        <tbody>
+          {% for rule in input_rules.results %}
+            <tr>
+              <td>{{ rule.label }}<div class="ps">{{ rule.guidance }}</div></td>
+              <td class="nowrap">{{ rule.target_count }}件</td>
+              <td class="nowrap">{% if rule.has_target %}{{ rule.compliance_percent }}%{% else %}—{% endif %}</td>
+              <td class="nowrap"><span class="badge {{ rule.tone }}">{{ rule.state_label }}</span></td>
+              <td>
+                {% comment %}
+                  タスク名はこの上の表が唯一の出所にする。ここへ再掲すると、
+                  絞り込み中の一覧に絞り込み対象外のタスク名が混ざる。
+                {% endcomment %}
+                {% for task in rule.samples %}
+                  <a href="{% url 'projects:task_detail' task.pk %}" style="color:var(--blue)">{{ task.wbs_code }}</a>{% if not forloop.last %} ／ {% endif %}
+                {% empty %}—{% endfor %}
+                {% if rule.truncated %}<div class="ps">ほか {{ rule.violation_count|add:"-10" }}件</div>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="callout w"><p>入力の穴はそのまま検知の穴になります。期限・担当が空のタスクは遅延検知の対象になりません。</p></div>
+  </div>
+
 {% endblock %}

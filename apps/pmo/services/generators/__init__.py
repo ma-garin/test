@@ -30,7 +30,7 @@ from apps.pmo.services.generators.facts import collect_facts
 from apps.pmo.services.generators.incidents import build_incident_summary
 from apps.pmo.services.generators.minutes import build_action_items, build_minutes
 from apps.pmo.services.generators.plan import build_plan_draft
-from apps.pmo.services.generators.reports import build_report
+from apps.pmo.services.generators.reports import build_report, period_start_for
 
 __all__ = [
     "GENERATORS",
@@ -38,6 +38,7 @@ __all__ = [
     "GeneratorSpec",
     "GenerationResult",
     "build_document",
+    "period_start_for",
     "generate_and_save",
     "generator_choices",
     "spec_for",
@@ -74,7 +75,7 @@ def build_document(
     if generator_key == "action_items":
         return build_action_items(project, notes, today)
 
-    facts = collect_facts(project, today=today)
+    facts = collect_facts(project, today=today, period_start=period_start_for(generator_key, today))
 
     if generator_key == "incident_summary":
         return build_incident_summary(facts)

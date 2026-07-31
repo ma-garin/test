@@ -24,3 +24,27 @@ APPROVER_ROLES = (
     Role.TENANT_ADMIN,
     Role.SYSTEM_ADMIN,
 )
+
+
+class ProjectRole(models.TextChoices):
+    """案件の中での役割（要件 #30）。
+
+    テナントロール（`Role`）が「この人はそもそも何ができるか」を決め、
+    案件ロールは「この案件では何をしてよいか」を決める。
+
+    **案件ロールは権限を狭めるだけで、広げない。** 参照のみのテナントロールの人が
+    案件責任者に任命されたら承認できる、という抜け道を作らないため。
+    テナント側で承認権が無い人は、どの案件でも承認できない。
+    """
+
+    OWNER = "owner", "案件責任者"
+    PMO = "pmo", "案件PMO"
+    MEMBER = "member", "担当"
+    VIEWER = "viewer", "参照のみ"
+
+
+#: 案件のデータを更新できる案件ロール。
+PROJECT_EDITOR_ROLES = (ProjectRole.OWNER, ProjectRole.PMO, ProjectRole.MEMBER)
+
+#: 案件の中で承認・判断を行える案件ロール。テナント側の承認権と AND で効く。
+PROJECT_APPROVER_ROLES = (ProjectRole.OWNER, ProjectRole.PMO)
