@@ -1,5 +1,10 @@
-{# ページ送り。`page` と `page_window` と `page_query` をコンテキストに入れて使う。
-   1 ページに収まるときは何も出さない（無意味な「1 / 1」を見せない）。 #}
+{% comment %}
+  ページ送り。page と page_window と page_query をコンテキストに入れて使う。
+  1 ページに収まるときは何も出さない（無意味な「1 / 1」を見せない）。
+
+  Django の {# #} は単一行コメントなので、複数行に跨ると本文として描画される。
+  複数行は必ず comment タグを使うこと。
+{% endcomment %}
 {% if page.paginator.num_pages > 1 %}
   <nav class="pager" aria-label="ページ送り">
     <span class="pager-info">

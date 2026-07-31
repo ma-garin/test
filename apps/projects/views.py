@@ -25,7 +25,7 @@ from apps.projects.forms import (
     RiskPromoteForm,
     WbsTaskForm,
 )
-from apps.projects.models import ChangeRequest, Defect, Issue, Risk, WbsTask
+from apps.projects.models import ChangeRequest, Defect, Issue, Project, Risk, WbsTask
 from apps.projects.selectors import projects_for, scoped_projects_for
 from apps.projects.services.change_requests import decide_change_request, save_change_request
 from apps.projects.services.defects import close_defect, save_defect
@@ -55,6 +55,13 @@ def project_list(request: HttpRequest) -> HttpResponse:
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),
+            # 0 件のとき「案件が無い」のか「権限が無い」のかを区別して伝えるため、
+            # テナント全体の件数も渡す。件数だけなので情報漏洩にはならない。
+            "tenant_project_count": Project.objects.alive()
+            .filter(tenant=request.tenant)
+            .count()
+            if request.tenant
+            else 0,
             "page_title": "案件管理",
         },
     )

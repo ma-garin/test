@@ -21,7 +21,24 @@
               <td>{% if project.is_demo %}<span class="badge p">体験用</span>{% else %}<span class="badge n">実案件</span>{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="empty">参照できる案件がありません。</div></td></tr>
+            <tr>
+              <td colspan="8">
+                {% comment %}
+                  「案件が無い」のか「権限が無い」のかを区別して伝える。
+                  同じ文言だと、利用者は自分の権限を疑えず問い合わせもできない。
+                {% endcomment %}
+                {% if tenant_project_count %}
+                  <div class="callout w">
+                    <p><strong>あなたが参加している案件がありません。</strong>
+                    このテナントには案件が {{ tenant_project_count }}件 ありますが、
+                    いずれもメンバーに登録されていないため表示できません。</p>
+                    <p>テナント管理者に、案件メンバーへの追加を依頼してください。</p>
+                  </div>
+                {% else %}
+                  <div class="empty">このテナントに案件が登録されていません。</div>
+                {% endif %}
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
