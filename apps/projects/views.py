@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.core.pagination import page_window, paginate, query_without_page
+from apps.integrations.selectors import synced_records_for
 from apps.projects.forms import (
     ChangeDecisionForm,
     ChangeRequestForm,
@@ -253,6 +254,7 @@ def defect_list(request: HttpRequest) -> HttpResponse:
         "pages/defect_list.html",
         {
             "defects": page.object_list,
+            "external_links": synced_records_for(page.object_list),
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),
@@ -542,6 +544,8 @@ def issue_list(request: HttpRequest) -> HttpResponse:
         "pages/issue_list.html",
         {
             "issues": page.object_list,
+            # 外部原文リンクは 1 行ずつ引くと N+1 になる。表示する行だけ先に引く。
+            "external_links": synced_records_for(page.object_list),
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),

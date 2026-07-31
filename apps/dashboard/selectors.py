@@ -47,6 +47,12 @@ def tasks_for(
 
     queryset = WbsTask.objects.filter(project__in=projects).select_related("project")
 
+    # アーカイブは「一覧から外す」ための状態。既定で出すとアーカイブの意味が無く、
+    # 集計側（`facts` / `input_rules` / `progress`）は除外しているため、
+    # 同じ画面の中で件数が食い違う。明示的に選んだときだけ出す。
+    if status != WbsTask.Status.ARCHIVED:
+        queryset = queryset.exclude(status=WbsTask.Status.ARCHIVED)
+
     if owner:
         queryset = queryset.filter(owner__icontains=owner)
 

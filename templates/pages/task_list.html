@@ -96,8 +96,10 @@
               <td class="nowrap">{% if rule.has_target %}{{ rule.compliance_percent }}%{% else %}—{% endif %}</td>
               <td class="nowrap"><span class="badge {{ rule.tone }}">{{ rule.state_label }}</span></td>
               <td>
-                {# タスク名はこの上の表が唯一の出所にする。ここへ再掲すると、絞り込み中の一覧に
-                   絞り込み対象外のタスク名が混ざり、どれが検索結果か分からなくなる。 #}
+                {% comment %}
+                  タスク名はこの上の表が唯一の出所にする。ここへ再掲すると、
+                  絞り込み中の一覧に絞り込み対象外のタスク名が混ざる。
+                {% endcomment %}
                 {% for task in rule.samples %}
                   <a href="{% url 'projects:task_detail' task.pk %}" style="color:var(--blue)">{{ task.wbs_code }}</a>{% if not forloop.last %} ／ {% endif %}
                 {% empty %}—{% endfor %}

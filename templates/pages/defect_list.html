@@ -24,7 +24,7 @@
               <td class="nowrap"><span class="badge {% if defect.status == 'closed' %}g{% else %}a{% endif %}">{{ defect.get_status_display }}</span></td>
               <td>{{ defect.phase|default:"—" }}</td>
               <td class="nowrap">{{ defect.detected_on|date:"Y-m-d"|default:"—" }}</td>
-              <td class="nowrap">{% external_link defect as defect_link %}{% if defect_link %}{{ defect_link }}{% else %}—{% endif %}</td>
+              <td class="nowrap">{% external_link defect external_links as defect_link %}{% if defect_link %}{{ defect_link }}{% else %}—{% endif %}</td>
               <td class="nowrap">
                 <a class="btn-ghost sm" href="{% url 'projects:defect_edit' defect.pk %}">編集</a>
                 {% if defect.status != 'closed' %}
