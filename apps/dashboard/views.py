@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -41,6 +42,7 @@ from apps.dashboard.services.quality import build_quality_report
 from apps.dashboard.services.tasks import TaskFilters, build_task_board
 from apps.documents.selectors import documents_for
 from apps.documents.services.requirement_coverage import build_coverage_report
+from apps.projects.permissions import approval_denied_reason, can_approve_in_project
 from apps.projects.selectors import scoped_projects_for
 
 
@@ -331,6 +333,14 @@ def intervention_decide(request: HttpRequest, pk) -> HttpResponse:
         pk=pk,
         project__in=_projects(request),
     )
+
+    # 介入提案の採否は人の判断（HITL）そのもので、変更要求の判断と同じ重さがある。
+    # 参照専用の利用者に記録させると、誰が決めたのかという監査の前提が崩れる。
+    if not can_approve_in_project(request.user, proposal.project):
+        raise PermissionDenied(
+            approval_denied_reason(request.user, proposal.project)
+            or "この提案を判断する権限がありません。"
+        )
 
     if not is_pending(proposal):
         messages.warning(request, "この提案はすでに判断済みです。履歴を保つため再判断はできません。")
