@@ -168,6 +168,24 @@ class WbsTask(ProjectScopedModel):
     actual_start = models.DateField("実績開始日", null=True, blank=True)
     actual_end = models.DateField("実績終了日", null=True, blank=True)
     progress_percent = models.DecimalField("進捗率", max_digits=5, decimal_places=2, default=0)
+    # 工数が無いと出来高（EV）を金額・時間で測れず、「いつ終わるか」に答えられない。
+    # 進捗率だけでは、残り20%が1日なのか1ヶ月なのか判断できない。
+    planned_hours = models.DecimalField(
+        "計画工数",
+        max_digits=8,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="人時。EVM の PV / EV の算出に使う",
+    )
+    actual_hours = models.DecimalField(
+        "実績工数",
+        max_digits=8,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text="人時。EVM の AC の算出に使う",
+    )
     is_critical_path = models.BooleanField("クリティカルパス", default=False)
     next_action = models.CharField("次アクション", max_length=300, blank=True)
     ball_holder = models.CharField(

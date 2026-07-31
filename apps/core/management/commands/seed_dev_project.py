@@ -31,6 +31,7 @@ from apps.projects.models import (
     ChangeRequest,
     Defect,
     Issue,
+    Milestone,
     Priority,
     Project,
     ProjectMember,
@@ -77,6 +78,7 @@ class Command(BaseCommand):
 
         counts = {
             "タスク": self._create_wbs(project),
+            "マイルストーン": self._create_milestones(project),
             "課題": self._create_issues(project),
             "不具合": self._create_defects(project),
             "リスク": self._create_risks(project),
@@ -136,6 +138,16 @@ class Command(BaseCommand):
         """
 
         today = timezone.localdate()
+        # 工数は実際のコミット間隔から推定した人時。完了予測の根拠になる。
+        # 未入力にすると EVM が算出できず「いつ終わるか」に答えられない。
+        hours = {
+            "1.1": (1.0, 1.2), "1.2": (2.0, 3.5), "2.1": (2.0, 2.0), "2.2": (1.5, 1.5),
+            "2.3": (1.0, 1.5), "3.1": (1.0, 1.0), "3.2": (6.0, 6.5), "3.3": (5.0, 5.5),
+            "3.4": (3.0, 3.0), "4.1": (5.0, 5.5), "4.2": (3.0, 3.0), "4.3": (2.0, 2.0),
+            "5.1": (4.0, 4.5), "5.2": (4.0, 4.0), "5.3": (3.0, 3.0), "6.1": (3.0, 2.0),
+            "6.2": (6.0, 0.0), "6.3": (4.0, 0.0), "7.1": (2.0, 0.0), "7.2": (3.0, 0.0),
+            "7.3": (2.0, 0.0), "8.1": (4.0, 0.0),
+        }
         specs = (
             # (WBS, 名称, 担当, 状態, 優先度, 開始, 終了, 進捗, 次アクション, CP)
             ("1.1", "現行リポジトリの調査・構成把握", "Claude", WbsTask.Status.DONE,
@@ -194,6 +206,7 @@ class Command(BaseCommand):
         tasks: dict[str, WbsTask] = {}
 
         for code, name, owner, status, priority, start, end, progress, action, cp in specs:
+            planned_hours, actual_hours = hours.get(code, (None, None))
             task, _ = WbsTask.objects.update_or_create(
                 project=project,
                 wbs_code=code,
@@ -204,7 +217,12 @@ class Command(BaseCommand):
                     "priority": priority,
                     "planned_start": today + timedelta(days=start),
                     "planned_end": today + timedelta(days=end),
+                    "actual_end": today + timedelta(days=end)
+                    if status == WbsTask.Status.DONE
+                    else None,
                     "progress_percent": progress,
+                    "planned_hours": planned_hours,
+                    "actual_hours": actual_hours or None,
                     "next_action": action,
                     "is_critical_path": cp,
                     "ball_holder": "利用者" if code == "6.2" else owner,
@@ -236,6 +254,36 @@ class Command(BaseCommand):
                     parent.related_tasks.add(child)
 
         return created
+
+    def _create_milestones(self, project: Project) -> int:
+        """マイルストーン。
+
+        計画日と見込日を分けて持つ。遅れているとき「いつになる見込みか」を
+        言えないと、関係者は次の予定を立てられない。
+        """
+
+        today = timezone.localdate()
+        specs = (
+            ("再構築の着手", -1, -1, -1, False),
+            ("全画面の実装完了", 0, 0, 0, True),
+            ("外部連携の実装完了", 0, 0, 0, True),
+            ("要件充足率 100%", 0, 3, None, True),
+            ("受入確認の完了", 1, 4, None, True),
+        )
+
+        for name, planned, forecast, actual, is_gate in specs:
+            Milestone.objects.update_or_create(
+                project=project,
+                name=name,
+                defaults={
+                    "planned_date": today + timedelta(days=planned),
+                    "forecast_date": today + timedelta(days=forecast),
+                    "actual_date": today + timedelta(days=actual) if actual is not None else None,
+                    "is_gate": is_gate,
+                },
+            )
+
+        return len(specs)
 
     # ── 課題 ────────────────────────────────────────────────
 

@@ -38,6 +38,69 @@
 
   <div class="card">
     <div class="card-hdr">
+      <span class="card-t">出来高管理（EVM）と完了予測</span>
+      <span class="card-act">PMBOK の定義</span>
+    </div>
+
+    <div class="callout">
+      <p><strong>SPI</strong> = 出来高 ÷ 計画（1.0未満は遅れ） ／
+      <strong>CPI</strong> = 出来高 ÷ 実績工数（1.0未満は工数超過） ／
+      <strong>EAC</strong> = 現在の効率が続いた場合の総工数見込み</p>
+      <p>完了予測日は直近14日の消化速度から算出します。速度が出せない場合は日付を出しません。</p>
+    </div>
+
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr>
+            <th>案件</th><th>計画(PV)</th><th>出来高(EV)</th><th>実績(AC)</th>
+            <th>SPI</th><th>CPI</th><th>総工数見込</th><th>残工数</th><th>完了予測</th><th>工数入力率</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ev in earned_values %}
+            <tr>
+              <td><a href="{% url 'projects:detail' ev.project.pk %}" style="color:var(--blue);font-weight:900">{{ ev.project.name }}</a></td>
+              <td class="nowrap">{{ ev.planned_value|floatformat:"-1" }}h</td>
+              <td class="nowrap">{{ ev.earned_value|floatformat:"-1" }}h</td>
+              <td class="nowrap">{{ ev.actual_cost|floatformat:"-1" }}h</td>
+              <td class="nowrap">
+                {% if ev.schedule_index %}
+                  <span class="badge {{ ev.tone }}">{{ ev.schedule_index }}</span>
+                  <span class="ps">{{ ev.schedule_label }}</span>
+                {% else %}<span class="badge n">判定不能</span>{% endif %}
+              </td>
+              <td class="nowrap">
+                {% if ev.cost_index %}<span class="badge {{ ev.tone }}">{{ ev.cost_index }}</span>
+                {% else %}<span class="badge n">—</span>{% endif %}
+              </td>
+              <td class="nowrap">
+                {% if ev.estimate_at_completion %}{{ ev.estimate_at_completion|floatformat:"-1" }}h
+                  {% if ev.variance_at_completion < 0 %}
+                    <span class="badge r">{{ ev.variance_at_completion|floatformat:"-1" }}h</span>
+                  {% endif %}
+                {% else %}—{% endif %}
+              </td>
+              <td class="nowrap">{{ ev.remaining_hours|floatformat:"-1" }}h</td>
+              <td class="nowrap">
+                {% if ev.forecast_end_date %}{{ ev.forecast_end_date|date:"n/j" }}
+                {% else %}<span class="ps">{{ ev.forecast_note }}</span>{% endif %}
+              </td>
+              <td class="nowrap">
+                <span class="badge {% if ev.coverage_percent < 80 %}a{% else %}g{% endif %}">{{ ev.coverage_percent }}%</span>
+                {% if ev.skipped_tasks %}<span class="ps">未入力 {{ ev.skipped_tasks }}件</span>{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="10"><div class="dashboard-empty">対象の案件がありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
       <span class="card-t">案件別の計画実績差</span>
       <span class="card-act">{% if report.worst %}最も遅れているのは {{ report.worst.project.name }}{% endif %}</span>
     </div>

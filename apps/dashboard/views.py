@@ -28,6 +28,7 @@ from apps.dashboard.services.interventions import (
     decide_intervention,
     is_pending,
 )
+from apps.dashboard.services.earned_value import build_portfolio
 from apps.dashboard.services.gantt import build_gantt_chart
 from apps.dashboard.services.kpi import build_derived_rows, build_kpi_report
 from apps.dashboard.services.overview import build_overview
@@ -178,7 +179,12 @@ def progress(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "pages/progress.html",
-        {"report": report, "page_title": "進捗予測・介入"},
+        {
+            "report": report,
+            # 進捗率だけでは「いつ終わるか」に答えられない。工数から出来高を出す。
+            "earned_values": build_portfolio(projects, timezone.localdate()),
+            "page_title": "進捗予測・介入",
+        },
     )
 
 
