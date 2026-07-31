@@ -1,7 +1,11 @@
 # 文書取込（PDF/Office → テキスト）に必要。
 -r base.txt
 
-pymupdf>=1.24
+# PDF は pypdf（BSD-3-Clause）を使う。
+# PyMuPDF は AGPL-3.0 で、ネットワーク越しに使わせた時点でソース開示義務が
+# 生じるため、商用利用の判断が必要になる。抽出の実装（extractors._extract_pdf）
+# も元から pypdf を呼んでおり、PyMuPDF は使っていなかった。
+pypdf>=5.0
 python-docx>=1.1
 python-pptx>=1.0
 openpyxl>=3.1
