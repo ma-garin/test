@@ -116,8 +116,8 @@ class Command(BaseCommand):
                 "name": "VeriRAG PMO Agent 再構築（Django版）",
                 "description": (
                     "Streamlit 単一ファイル（約18,700行）を Django モジュラーモノリスへ"
-                    "再設計する。要件の一次資料は mvp_scope_directory_mapping.csv（55項目）と "
-                    "directory_extra_features.csv（21項目）の計76項目。\n"
+                    "再設計する。要件の一次資料は mvp_scope_directory_mapping.csv（54項目）と "
+                    "directory_extra_features.csv（20項目）の計74項目。\n"
                     "要件突合を行わずに「完了」と報告したインシデント（INCIDENT-001）が発生し、"
                     "実際の充足率が32%だったことが判明。以降はトレーサビリティ表を分母としている。\n"
                     "現在の充足率は97%。残る1件は回答生成（ADR-0004 の判断待ち）。"
@@ -258,7 +258,7 @@ class Command(BaseCommand):
         specs = (
             ("要件の一次資料を突合せずに完了報告した（INCIDENT-001）",
              Issue.Status.RESOLVED, Severity.CRITICAL, "Claude", -1,
-             "mvp_scope_directory_mapping.csv 55項目を読まずに「実装完了」と報告。"
+             "mvp_scope_directory_mapping.csv 54項目を読まずに「実装完了」と報告。"
              "実際の充足率は32%だった。トレーサビリティ表を作成し再発防止。"),
             ("回答生成の設計が未決定で着手できない",
              Issue.Status.BLOCKED, Severity.CRITICAL, "利用者", 1,

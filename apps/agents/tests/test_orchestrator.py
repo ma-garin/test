@@ -101,8 +101,23 @@ class OrchestratorRunTests(TestCase):
 
         self.assertEqual(result.run.status, AgentRun.Status.SUCCEEDED)
         self.assertEqual(result.run.intent, Intent.DELAY)
-        self.assertEqual(result.run.steps.count(), 4)
+        # 意図分類・計画・検索・根拠評価・回答生成の 5 ステップ。
+        # 検索がスキップされても回答生成は動く（「確認できないこと」を書くため）。
+        self.assertEqual(result.run.steps.count(), 5)
         self.assertEqual(result.run.steps.get(order=3).status, "skipped")
+
+    def test_インデックスなしでも回答本文が組み立てられる(self):
+        """根拠が無いときこそ「資料上は確認できないこと」を明示する必要がある。"""
+
+        result = orchestrator.run(
+            tenant=self.tenant,
+            question="要員は足りていますか",
+            area=AgentRun.Area.PMO_CONSULTATION,
+        )
+
+        self.assertIsNotNone(result.answer)
+        self.assertTrue(result.answer.section("grounded").is_empty)
+        self.assertIn("要員は足りていますか", result.answer.body())
 
     def test_根拠不足なら承認をブロックする(self):
         result = orchestrator.run(

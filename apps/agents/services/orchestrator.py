@@ -46,6 +46,8 @@ class OrchestratorResult:
     plan: Plan
     hits: list
     evidence: EvidenceEvaluation | None
+    #: 組み立て済みの回答本文（ADR-0004 第1層）。`None` は生成前を表す。
+    answer: object | None = None
 
 
 def build_plan(intent_result: intent_service.IntentResult, question: str) -> Plan:
@@ -60,7 +62,14 @@ def build_plan(intent_result: intent_service.IntentResult, question: str) -> Pla
 
     tools = [
         name
-        for name in ("expand_query", "search_local_docs", "rerank_results", "evaluate_evidence")
+        for name in (
+            "expand_query",
+            "search_local_docs",
+            "rerank_results",
+            "evaluate_evidence",
+            # 回答生成（ADR-0004 第1層）。LLM 不要なので常に計画へ入る。
+            "answer_question",
+        )
         if name in available
     ]
 
@@ -171,6 +180,29 @@ def run(
         output_summary=f"{evidence.get_recommendation_display()} ({evidence.confidence:.2f})",
     )
 
+    # 回答本文の組み立て（ADR-0004 第1層）。
+    # 出所を持てない主張は構造上ここへ入らないため、事実誤認が混ざらない。
+    # 案件が指定されていれば、検索に出てこない実データも根拠として使える。
+    from apps.rag.services.project_context import build as build_project_context
+
+    answer = registry.get("answer_question").func(
+        question=question,
+        hits=hits,
+        evidence=evidence_result,
+        intent_result=intent_result,
+        project_context=build_project_context(project) if project else None,
+    )
+
+    _record_step(
+        run_record,
+        order=6,
+        tool_name="answer_question",
+        output_summary=(
+            f"主張 {answer.claim_count}件 / 出所あり {len(answer.grounded_claims)}件"
+            f"（根拠率 {answer.grounded_ratio}%）"
+        ),
+    )
+
     run_record.status = AgentRun.Status.SUCCEEDED
     run_record.elapsed_ms = int((timezone.now() - started).total_seconds() * 1000)
     run_record.save(update_fields=["status", "elapsed_ms", "updated_at"])
@@ -181,6 +213,7 @@ def run(
         plan=plan,
         hits=hits,
         evidence=evidence,
+        answer=answer,
     )
 
 

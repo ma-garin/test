@@ -10,8 +10,8 @@
 「未実装15画面をすべて実装した」「全25画面が動作する」と報告したが、
 その判断根拠は `apps/core/navigation.py` の `status` フィールドだけだった。
 
-要件の一次資料である `docs/reference/mvp_scope_directory_mapping.csv`（55項目）と
-`docs/reference/directory_extra_features.csv`（21項目）を**一度も読んでいない**。
+要件の一次資料である `docs/reference/mvp_scope_directory_mapping.csv`（54項目）と
+`docs/reference/directory_extra_features.csv`（20項目）を**一度も読んでいない**。
 
 結果、以下を「実装済み」と誤って報告した。
 
@@ -59,7 +59,7 @@ A-5「検証していないことを断定しない」に反する。
 
 ## 突合結果（2026-07-31 時点）
 
-`mvp_scope_directory_mapping.csv` 55項目のうち、参考データで「なし」または
+`mvp_scope_directory_mapping.csv` 54項目のうち、参考データで「なし」または
 「一部あり」とされ、かつ現在の Django 版でも未実装のもの。
 
 ### 未実装（要対応）
@@ -111,5 +111,5 @@ A-5「検証していないことを断定しない」に反する。
 
 ## 対応
 
-`docs/requirements/traceability.md` に55項目の突合表を作り、画面 `/core/screen-map/` から
+`docs/requirements/traceability.md` に74項目の突合表を作り、画面 `/core/screen-map/` から
 参照できるようにする。以後の完了報告はこの表を分母とする。

@@ -8,11 +8,19 @@ from __future__ import annotations
 
 import io
 import tempfile
+import unittest
 
 from django.core.files.base import ContentFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from openpyxl import Workbook, load_workbook
+
+# openpyxl はこの環境に入っていないことがある（requirements/ingest.txt は任意）。
+# モジュールの import で落とすと、テストが「存在しない」ことになり、
+# トレーサビリティ表の割り当てまで壊れる。未導入なら skip として扱う。
+try:
+    from openpyxl import Workbook, load_workbook
+except ModuleNotFoundError:  # pragma: no cover - 環境依存
+    Workbook = load_workbook = None
 
 from apps.accounts.constants import Role
 from apps.accounts.models import Tenant, User
@@ -44,6 +52,7 @@ def _workbook_bytes(*, with_formula: bool = False) -> bytes:
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
+@unittest.skipIf(Workbook is None, "openpyxl 未導入のため実ファイル検証をスキップ")
 class TemplateExportTests(TestCase):
     def setUp(self) -> None:
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
@@ -176,6 +185,7 @@ class TemplateExportTests(TestCase):
 
 
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
+@unittest.skipIf(Workbook is None, "openpyxl 未導入のため実ファイル検証をスキップ")
 class TemplateExportViewTests(TestCase):
     def setUp(self) -> None:
         self.tenant = Tenant.objects.create(code="acme", name="ACME")

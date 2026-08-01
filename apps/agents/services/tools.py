@@ -93,6 +93,26 @@ def evaluate_evidence(hits, intent_result):
     return evaluate(hits, intent_result)
 
 
+@registry.register("answer_question", "根拠から回答本文を組み立てる")
+def answer_question(*, question, hits, evidence, intent_result, project_context=None):
+    """回答生成の第 1 層（ADR-0004）。
+
+    `requires_llm=False`。LLM が無くても必ず動く方を主とし、
+    文体整形（`polish`）は上乗せに留める。出所を持てない主張は
+    そもそも組み立てられない構造なので、事実誤認が入り込む余地が無い。
+    """
+
+    from apps.rag.services.answer import assemble
+
+    return assemble(
+        question=question,
+        hits=hits,
+        evidence=evidence,
+        intent_result=intent_result,
+        project_context=project_context,
+    )
+
+
 @registry.register("rerank_results", "LLM で検索結果を再順位付けする", requires_llm=True)
 def rerank_results(hits, question: str):
     """LLM リランク。
