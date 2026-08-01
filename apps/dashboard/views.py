@@ -31,6 +31,8 @@ from apps.dashboard.services.interventions import (
 from apps.dashboard.services.earned_value import build_portfolio
 from apps.dashboard.services.gantt import build_gantt_chart
 from apps.dashboard.services.kpi import build_derived_rows, build_kpi_report
+from apps.dashboard.services.milestones import build_milestone_report
+from apps.dashboard.services.ops_rules import build_ops_rules_report
 from apps.dashboard.services.overview import build_overview
 from apps.dashboard.services.poc_evaluation import BUSINESS_DAY_NOTE, build_poc_evaluation
 from apps.dashboard.services.progress import build_progress_report
@@ -183,8 +185,27 @@ def progress(request: HttpRequest) -> HttpResponse:
             "report": report,
             # 進捗率だけでは「いつ終わるか」に答えられない。工数から出来高を出す。
             "earned_values": build_portfolio(projects, timezone.localdate()),
+            # タスク単位の遅れより先に、対外的な約束（マイルストーン）の予実を見せる。
+            "milestones": build_milestone_report(selectors.milestones_for(projects)),
             "page_title": "進捗予測・介入",
         },
+    )
+
+
+@login_required
+def ops_rules(request: HttpRequest) -> HttpResponse:
+    """入力標準ルールの運用支援。
+
+    集計より前に「そもそもデータが更新されているか」を見る画面。
+    催促は人単位でしか行えないため、担当者別の未更新一覧を主役にする。
+    """
+
+    report = build_ops_rules_report(selectors.ops_rule_tasks_for(_projects(request)))
+
+    return render(
+        request,
+        "pages/ops_rules.html",
+        {"report": report, "page_title": "入力標準ルール運用"},
     )
 
 

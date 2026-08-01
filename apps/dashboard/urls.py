@@ -19,6 +19,7 @@ urlpatterns = [
     ),
     path("detection/", views.detection, name="detection"),
     path("detection/run/", views.detection_run, name="detection_run"),
+    path("ops-rules/", views.ops_rules, name="ops_rules"),
     path("kpi/", views.kpi, name="kpi"),
     path("poc/", views.poc, name="poc"),
 ]

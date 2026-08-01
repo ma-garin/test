@@ -4,6 +4,7 @@
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'projects:list' %}">案件一覧へ</a>
+  <a class="btn-b sm" href="{% url 'pmo:consultation' %}?screen=project_detail&amp;subject={{ project.name|urlencode }}">この画面について相談</a>
 {% endblock %}
 
 {% block content %}
@@ -101,6 +102,70 @@
           {% endif %}
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">メンバーと権限</span>
+      <span class="card-act">{{ member_rows|length }}名</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>メンバー</th><th>案件内の役割</th><th>閲覧</th><th>編集</th><th>承認</th><th>管理</th><th>判定の根拠</th>{% if can_manage_members %}<th>操作</th>{% endif %}</tr></thead>
+        <tbody>
+          {% for row in member_rows %}
+            <tr>
+              <td>{{ row.display_name }}<div class="ps">{{ row.user.email }}</div></td>
+              <td class="nowrap"><span class="badge n">{{ row.role_display }}</span>{% if row.member.role_label %}<div class="ps">{{ row.member.role_label }}</div>{% endif %}</td>
+              <td class="nowrap">{% if row.permissions.can_view %}<span class="badge g">可</span>{% else %}<span class="badge r">不可</span>{% endif %}</td>
+              <td class="nowrap">{% if row.permissions.can_edit %}<span class="badge g">可</span>{% else %}<span class="badge r">不可</span>{% endif %}</td>
+              <td class="nowrap">{% if row.permissions.can_approve %}<span class="badge g">可</span>{% else %}<span class="badge r">不可</span>{% endif %}</td>
+              <td class="nowrap">{% if row.permissions.can_manage %}<span class="badge g">可</span>{% else %}<span class="badge r">不可</span>{% endif %}</td>
+              <td class="nowrap">{{ row.permissions.source }}</td>
+              {% if can_manage_members %}
+                <td class="nowrap">
+                  <form method="post" action="{% url 'projects:member_remove' project.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="member" value="{{ row.member.pk }}">
+                    <button type="submit" class="btn-ghost sm">解除</button>
+                  </form>
+                </td>
+              {% endif %}
+            </tr>
+          {% empty %}
+            <tr><td colspan="{% if can_manage_members %}8{% else %}7{% endif %}"><div class="empty">メンバーが登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if can_manage_members %}
+      <form method="post" action="{% url 'projects:member_save' project.pk %}" class="form">
+        {% csrf_token %}
+        <div>
+          <label for="{{ member_form.user.id_for_label }}">利用者</label>
+          {{ member_form.user }}
+        </div>
+        <div>
+          <label for="{{ member_form.role.id_for_label }}">権限役割</label>
+          {{ member_form.role }}
+        </div>
+        <div>
+          <label for="{{ member_form.role_label.id_for_label }}">表示上の肩書き（任意）</label>
+          {{ member_form.role_label }}
+        </div>
+        <div class="actions"><button type="submit" class="btn-b">メンバーを登録・更新する</button></div>
+      </form>
+    {% else %}
+      <div class="callout w">
+        <p>メンバーの追加・変更はテナント管理者、または案件の PM だけが行えます。</p>
+      </div>
+    {% endif %}
+
+    <div class="callout">
+      <p>権限は「案件内の役割」が「テナントのロール」より優先されます。テナント管理者は復旧のため、案件役割に関わらず管理できます。</p>
+      <p>あなたのこの案件での権限: <strong>{{ my_permissions.labels|join:" / "|default:"なし" }}</strong>（判定の根拠: {{ my_permissions.source }}）</p>
     </div>
   </div>
 

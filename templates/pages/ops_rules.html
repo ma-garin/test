@@ -1,0 +1,130 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}WBS の入力標準ルールが守られているかを判定し、担当者別に催促対象を出します。判定は実データのみで、AIは使っていません。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'dashboard:tasks' %}">タスク一覧へ</a>
+  <a class="btn-b sm" href="{% url 'dashboard:progress' %}">進捗予測へ</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="callout">
+    <p>判定日 <strong>{{ report.checked_on|date:"Y-m-d" }}</strong> ／
+    定期更新の基準日 <strong>{{ report.update_cutoff|date:"Y-m-d" }}</strong>
+    （この日より前の更新は未更新として扱います）</p>
+    <p>アーカイブ済みは対象外です。完了済みタスクは「定期更新」「期限管理」の催促対象に含めません。</p>
+  </div>
+
+  {% if not report.has_targets %}
+    <div class="callout w">
+      <p><strong>対象なし。</strong>判定できるタスクがありません。ルールが守られていることの確認にはなりません。</p>
+    </div>
+  {% else %}
+    <div class="kpi-g">
+      <div class="kpi">
+        <div class="kpi-l">判定対象タスク</div>
+        <div class="kpi-v">{{ report.target_tasks }}</div>
+        <div class="kpi-s">アーカイブ済みを除く</div>
+        <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-l">ルール違反</div>
+        <div class="kpi-v" style="color:var(--red)">{{ report.total_violations }}</div>
+        <div class="kpi-s">タスク {{ report.violating_tasks }}件</div>
+        <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-l">遵守率</div>
+        <div class="kpi-v">{{ report.compliance_percent }}<small>%</small></div>
+        <div class="kpi-s">違反のないタスクの割合</div>
+        <div class="kpi-bar"><div class="kpi-fill g" style="width:{{ report.compliance_percent }}%"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-l">催促先</div>
+        <div class="kpi-v" style="color:var(--orange)">{{ report.assignees|length }}</div>
+        <div class="kpi-s">{% if report.worst %}最多は {{ report.worst.assignee }}{% else %}—{% endif %}</div>
+        <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">ルール別の違反件数</span>
+      <span class="card-act">{{ report.status_note }}</span>
+    </div>
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr><th>ルール</th><th>判定内容</th><th>件数</th></tr>
+        </thead>
+        <tbody>
+          {% for summary in report.rule_summaries %}
+            <tr>
+              <td class="nowrap"><strong>{{ summary.label }}</strong></td>
+              <td>{{ summary.description }}</td>
+              <td class="nowrap">
+                {% if summary.count %}
+                  <span class="badge {{ summary.tone }}">{{ summary.count }}件</span>
+                {% else %}
+                  <span class="badge g">0件</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3"><div class="dashboard-empty">有効なルールがありません。設定 OPS_RULES を確認してください。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">担当者別の未更新一覧</span>
+      <span class="card-act">催促はここから</span>
+    </div>
+
+    {% for summary in report.assignees %}
+      <div class="pb-row">
+        <div class="pb-lr">
+          <span class="pb-t">{{ summary.assignee }}</span>
+          <span class="pb-v"><span class="badge {{ summary.tone }}">{{ summary.total }}件</span></span>
+        </div>
+        <div class="ps">
+          対象タスク {{ summary.task_count }}件 ／
+          {% for rule in summary.rule_counts %}{{ rule.label }} {{ rule.count }}{% if not forloop.last %} ・ {% endif %}{% endfor %}
+        </div>
+        <div class="dashboard-risk-wrap">
+          <table class="dashboard-risk-table">
+            <thead>
+              <tr><th>案件</th><th>WBS</th><th>タスク</th><th>状態</th><th>ルール</th><th>根拠</th></tr>
+            </thead>
+            <tbody>
+              {% for violation in summary.violations %}
+                <tr>
+                  <td class="nowrap">{{ violation.task.project.name }}</td>
+                  <td class="nowrap">{{ violation.task.wbs_code }}</td>
+                  <td>
+                    <a href="{% url 'projects:detail' violation.task.project.pk %}" style="color:var(--blue);font-weight:900">{{ violation.task.name }}</a>
+                  </td>
+                  <td class="nowrap">{{ violation.task.get_status_display }}</td>
+                  <td class="nowrap"><span class="badge {{ violation.tone }}">{{ violation.label }}</span></td>
+                  <td>{{ violation.detail }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% empty %}
+      {% if report.has_targets %}
+        <div class="empty">違反はありません。対象タスクはすべてルールを満たしています。</div>
+      {% else %}
+        <div class="empty">対象なし。判定できるタスクがありません。</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+{% endblock %}

@@ -175,7 +175,7 @@ def build_poc_evaluation(projects, feedbacks: QuerySet) -> PocEvaluationReport:
     criteria = (
         _report_hours_criterion(projects, targets),
         _correction_rate_criterion(projects, targets),
-        _fact_error_criterion(feedbacks, targets),
+        _fact_error_criterion(projects, feedbacks, targets),
         _detection_lead_criterion(projects, targets),
         _hitl_block_criterion(blocked),
     )
@@ -289,8 +289,27 @@ def _correction_rate_criterion(projects, targets: dict) -> PocCriterion:
     )
 
 
-def _fact_error_criterion(feedbacks: QuerySet, targets: dict) -> PocCriterion:
-    """#52 事実誤認の件数。"""
+@dataclass(frozen=True)
+class FactErrorTally:
+    """成果物本文の自動照合の集計。
+
+    `unknown_claims`（照合できなかった記述）を必ず持たせる。検査できなかった
+    ものを 0 件と同じ扱いにすると、「事実誤認 0 件」を実態より良く見せてしまう。
+    """
+
+    checked_deliverables: int = 0
+    mismatched_deliverables: int = 0
+    mismatched_claims: int = 0
+    unknown_claims: int = 0
+
+
+def _fact_error_criterion(projects, feedbacks: QuerySet, targets: dict) -> PocCriterion:
+    """#52 事実誤認の件数。
+
+    人のフィードバック（自己申告）だけでは「誰も見ていない」と「誤りが無い」を
+    区別できない。そこで `pmo.services.fact_check` による本文と実データの自動照合を
+    足し合わせて数える。照合できなかった記述は誤認にも一致にも数えず、理由文へ書く。
+    """
 
     target = targets.get("FACT_ERROR_COUNT")
     base = {
@@ -304,27 +323,78 @@ def _fact_error_criterion(feedbacks: QuerySet, targets: dict) -> PocCriterion:
         return _unknown(**base, reason="目標値 FACT_ERROR_COUNT が設定にありません。")
 
     total = feedbacks.count()
+    tally = _auto_fact_errors(projects)
 
-    if not total:
+    if not total and not tally.checked_deliverables:
         return _unknown(
             **base,
-            reason="フィードバックが 1 件もありません。誰も評価していない状態を「事実誤認 0 件」とは言えません。",
+            reason=(
+                "フィードバックが 1 件もなく、実データと照合できる記述を含む成果物もありません。"
+                "誰も評価しておらず自動照合もできない状態を「事実誤認 0 件」とは言えません。"
+            ),
         )
 
-    errors = feedbacks.filter(has_fact_error=True).count()
+    reported = feedbacks.filter(has_fact_error=True).count()
+    errors = reported + tally.mismatched_claims
     passed = errors <= target
+    unknown_note = (
+        f" 照合できなかった記述が {tally.unknown_claims} 件あり、これは誤りが無いことの証明にはなりません。"
+        if tally.unknown_claims
+        else ""
+    )
 
     return PocCriterion(
         **base,
-        baseline_text=f"評価 {total} 件",
+        baseline_text=f"評価 {total} 件／自動照合 {tally.checked_deliverables} 件",
         actual_text=f"{errors} 件",
         actual_value=float(errors),
         verdict=VERDICT_PASS if passed else VERDICT_FAIL,
         reason=(
-            f"フィードバック {total} 件のうち、事実誤認ありは {errors} 件。"
-            f"目標 {target} 件以下を"
+            f"フィードバック {total} 件のうち事実誤認ありは {reported} 件、"
+            f"本文と実データの自動照合で {tally.mismatched_claims} 件"
+            f"（成果物 {tally.mismatched_deliverables} 件）の食い違いを検出。"
+            f"合計 {errors} 件が目標 {target} 件以下を"
             + ("満たしています。" if passed else "満たしていません。")
+            + unknown_note
         ),
+        notes=(
+            "自動照合は本文の「ラベル＋数値」と DB の実測値を突き合わせた結果です。"
+            "照合できなかった記述は一致にも誤認にも数えていません。",
+        ),
+    )
+
+
+def _auto_fact_errors(projects) -> FactErrorTally:
+    """成果物本文を実データと突き合わせ、食い違いを数える。"""
+
+    from apps.pmo.services import fact_check
+
+    queryset = (
+        Deliverable.objects.filter(project__in=projects)
+        .select_related("project", "agent_run")
+        .order_by("-created_at")
+    )
+    facts_cache: dict = {}
+    checked = mismatched_deliverables = mismatched_claims = unknown_claims = 0
+
+    for deliverable in queryset:
+        result = fact_check.check_deliverable(deliverable, facts_cache=facts_cache)
+
+        if not result.checked_count:
+            continue
+
+        checked += 1
+        mismatched_claims += result.mismatched_count
+        unknown_claims += result.unknown_count
+
+        if result.mismatched_count:
+            mismatched_deliverables += 1
+
+    return FactErrorTally(
+        checked_deliverables=checked,
+        mismatched_deliverables=mismatched_deliverables,
+        mismatched_claims=mismatched_claims,
+        unknown_claims=unknown_claims,
     )
 
 

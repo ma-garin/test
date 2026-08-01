@@ -15,12 +15,15 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.accounts.constants import Action
+from apps.accounts.services import permissions
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.projects.forms import (
     ChangeDecisionForm,
     ChangeRequestForm,
     DefectForm,
     IssueForm,
+    ProjectMemberForm,
     RiskForm,
     RiskPromoteForm,
     WbsTaskForm,
@@ -30,6 +33,7 @@ from apps.projects.selectors import projects_for, scoped_projects_for
 from apps.projects.services.change_requests import decide_change_request, save_change_request
 from apps.projects.services.defects import close_defect, save_defect
 from apps.projects.services.issues import close_issue, save_issue
+from apps.projects.services.members import assign_member, remove_member
 from apps.projects.services.risks import close_risk, promote_risk_to_issue, save_risk
 from apps.projects.services.tasks import archive_task, create_task, update_task
 from apps.rag.services.similar_projects import similar_projects_for
@@ -70,6 +74,7 @@ def project_list(request: HttpRequest) -> HttpResponse:
 @login_required
 def project_detail(request: HttpRequest, pk) -> HttpResponse:
     project = get_object_or_404(projects_for(request.user, request.tenant), pk=pk)
+    can_manage_members = permissions.can(request.user, Action.MANAGE, project)
 
     return render(
         request,
@@ -78,9 +83,67 @@ def project_detail(request: HttpRequest, pk) -> HttpResponse:
             "project": project,
             # 候補は必ず参照権限のある案件だけに絞る（テナント越境の防止）。
             "similar_projects": similar_projects_for(request, project),
+            "member_rows": permissions.member_permission_rows(project),
+            "can_manage_members": can_manage_members,
+            # フォームは権限がある人にだけ渡す。権限が無い人の画面に
+            # 利用者一覧を載せると、それ自体が情報漏れになる。
+            "member_form": ProjectMemberForm(project=project) if can_manage_members else None,
+            "my_permissions": permissions.permissions_for(request.user, project),
             "page_title": project.name,
         },
     )
+
+
+@login_required
+@require_POST
+def project_member_save(request: HttpRequest, pk) -> HttpResponse:
+    """案件メンバーの登録・役割変更。
+
+    画面でカードを隠すだけでは防御にならないため、POST の入口で必ず
+    `require()` を通す。既存の承認機能（`change_decide`）と同じ作法に揃える。
+    """
+
+    project = get_object_or_404(projects_for(request.user, request.tenant), pk=pk)
+    permissions.require(request.user, Action.MANAGE, project)
+
+    form = ProjectMemberForm(request.POST, project=project)
+
+    if not form.is_valid():
+        messages.error(request, "メンバーを登録できませんでした。入力内容を確認してください。")
+
+        return redirect("projects:detail", pk=project.pk)
+
+    result = assign_member(
+        project,
+        user=form.cleaned_data["user"],
+        role=form.cleaned_data["role"],
+        role_label=form.cleaned_data.get("role_label", ""),
+    )
+
+    if result.ok:
+        messages.success(request, result.message)
+    else:
+        messages.error(request, result.message)
+
+    return redirect("projects:detail", pk=project.pk)
+
+
+@login_required
+@require_POST
+def project_member_remove(request: HttpRequest, pk) -> HttpResponse:
+    """案件メンバーの解除。"""
+
+    project = get_object_or_404(projects_for(request.user, request.tenant), pk=pk)
+    permissions.require(request.user, Action.MANAGE, project)
+
+    result = remove_member(project, member_pk=request.POST.get("member"))
+
+    if result.ok:
+        messages.success(request, result.message)
+    else:
+        messages.error(request, result.message)
+
+    return redirect("projects:detail", pk=project.pk)
 
 
 # --- 変更要求・不具合 -------------------------------------------------------

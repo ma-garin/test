@@ -10,7 +10,9 @@ from django.urls import reverse
 
 from apps.agents.models import AgentRun
 from apps.agents.services import orchestrator
+from apps.agents.services import screen_context as screen_context_service
 from apps.core.pagination import page_window, paginate, query_without_page
+from apps.documents import selectors as document_selectors
 from apps.pmo import selectors
 from apps.pmo.forms import DeliverableEditForm, DeliverableGenerateForm
 from apps.pmo.models import Deliverable
@@ -28,6 +30,11 @@ def consultation(request: HttpRequest) -> HttpResponse:
     """PMO 相談。オーケストレーターを通し、意図・計画・根拠評価を画面へ返す。"""
 
     question = request.GET.get("q", "").strip()
+    # 直前に開いていた画面。各画面の「この画面について相談」から渡ってくる。
+    # 利用者に状況説明を書き直させないための入力なので、無ければ従来どおり動く。
+    screen = screen_context_service.resolve(
+        request.GET.get("screen"), request.GET.get("subject")
+    )
     result = None
 
     if question and request.tenant:
@@ -38,12 +45,19 @@ def consultation(request: HttpRequest) -> HttpResponse:
             area=AgentRun.Area.PMO_CONSULTATION,
             index=index,
             user=request.user,
+            project=request.project,
+            screen_context=screen,
         )
 
     return render(
         request,
         "pages/pmo_consultation.html",
-        {"question": question, "result": result, "page_title": "PMO相談・状況整理"},
+        {
+            "question": question,
+            "result": result,
+            "screen_context": screen,
+            "page_title": "PMO相談・状況整理",
+        },
     )
 
 
@@ -123,7 +137,12 @@ def _deliverables_context(
         else None,
         "can_edit": bool(selected)
         and selected.deliverable.status != Deliverable.Status.APPROVED,
+        # 事実確認の明細は「事実確認」ボタンを押したときだけ開く。既定で全件を
+        # 並べると本文が読めなくなるため、要約だけを常時出す。
+        "show_fact_check": request.GET.get("factcheck") == "1",
         "generators": generators.GENERATORS,
+        # 成果物は最終的に Excel で提出する。画面で完結させず、出力導線を同じ場所に置く。
+        "export_templates": document_selectors.templates_for(request.user, request.tenant)[:20],
         "page_title": "成果物支援",
     }
 

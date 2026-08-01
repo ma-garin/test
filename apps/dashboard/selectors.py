@@ -17,6 +17,7 @@ from apps.dashboard.models import InterventionProposal, KpiMeasurement
 from apps.projects.models import (
     ChangeRequest,
     Defect,
+    Milestone,
     Project,
     QualityMetric,
     Risk,
@@ -196,4 +197,29 @@ def kpi_measurements_for(projects: QuerySet[Project]) -> QuerySet[KpiMeasurement
         KpiMeasurement.objects.filter(project__in=projects)
         .select_related("project")
         .order_by("kind", "-measured_on")
+    )
+
+
+def milestones_for(projects: QuerySet[Project]) -> QuerySet[Milestone]:
+    """マイルストーン。予実表は計画日の早い順に読むため、計画日で並べる。"""
+
+    return (
+        Milestone.objects.filter(project__in=projects)
+        .select_related("project")
+        .order_by("planned_date", "name")
+    )
+
+
+def ops_rule_tasks_for(projects: QuerySet[Project]) -> QuerySet[WbsTask]:
+    """入力標準ルールの判定対象タスク。
+
+    アーカイブ済みは運用対象外なのでここで落とす。完了済みを残すのは、
+    「進捗100%なのに根拠が無い」を完了タスクでも検査する必要があるため。
+    """
+
+    return (
+        WbsTask.objects.filter(project__in=projects)
+        .exclude(status=WbsTask.Status.ARCHIVED)
+        .select_related("project")
+        .order_by("project__code", "wbs_code")
     )

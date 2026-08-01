@@ -4,10 +4,19 @@
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'dashboard:tasks' %}">タスク一覧へ</a>
+  <a class="btn-out sm" href="{% url 'dashboard:ops_rules' %}">入力標準ルール</a>
   <a class="btn-b sm" href="{% url 'dashboard:intervention' %}">AI介入提案へ</a>
 {% endblock %}
 
 {% block content %}
+
+  {% if milestones.slipping_rows %}
+    <div class="callout d">
+      <p><strong>マイルストーンの遅延見込み {{ milestones.slipping_rows|length }}件。</strong>
+      最大 {{ milestones.max_delay_days }}日の超過{% if milestones.worst %}（{{ milestones.worst.milestone.name }}）{% endif %}。
+      {% if milestones.slipping_gates %}うち品質ゲート {{ milestones.slipping_gates|length }}件は、遅れるとその先の工程が止まります。{% endif %}</p>
+    </div>
+  {% endif %}
 
   <div class="kpi-g">
     <div class="kpi">
@@ -123,6 +132,54 @@
             </tr>
           {% empty %}
             <tr><td colspan="8"><div class="dashboard-empty">参照できる案件がありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">マイルストーン予実</span>
+      <span class="card-act">計画・見込・実績の3点で測る</span>
+    </div>
+
+    <div class="callout">
+      <p>遅延日数は<strong>実績日</strong>があれば実績、なければ<strong>見込日</strong>で測ります。
+      見込日が未入力の場合のみ本日基準で測るため、「見込みを入れていない＝遅れていない」にはなりません。</p>
+    </div>
+
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr>
+            <th>マイルストーン</th><th>案件</th><th>区分</th>
+            <th>計画日</th><th>見込日</th><th>実績日</th><th>遅延</th><th>基準</th><th>状態</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in milestones.rows %}
+            <tr>
+              <td>
+                {% if row.is_gate %}<strong>{{ row.milestone.name }}</strong>{% else %}{{ row.milestone.name }}{% endif %}
+              </td>
+              <td><a href="{% url 'projects:detail' row.milestone.project.pk %}" style="color:var(--blue);font-weight:900">{{ row.milestone.project.name }}</a></td>
+              <td class="nowrap">
+                {% if row.is_gate %}<span class="badge r">品質ゲート</span>
+                {% else %}<span class="badge n">通常</span>{% endif %}
+              </td>
+              <td class="nowrap">{{ row.milestone.planned_date|date:"Y-n-j" }}</td>
+              <td class="nowrap">{{ row.milestone.forecast_date|date:"Y-n-j"|default:"未入力" }}</td>
+              <td class="nowrap">{{ row.milestone.actual_date|date:"Y-n-j"|default:"—" }}</td>
+              <td class="nowrap">
+                {% if row.delay_days > 0 %}<span class="badge {{ row.tone }}">+{{ row.delay_days }}日</span>
+                {% else %}<span class="badge g">0日</span>{% endif %}
+              </td>
+              <td class="nowrap"><span class="ps">{{ row.basis_label }}</span></td>
+              <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.status_label }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="9"><div class="dashboard-empty">マイルストーンが登録されていません。対象なしのため、遅延の有無は判定できません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

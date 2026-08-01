@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Iterable
 
 from apps.pmo.models import Deliverable
+from apps.pmo.services import fact_check
 from apps.pmo.services.approval import blocking_reason
 
 #: PoC の受け入れ条件。赤字率がこの値未満なら「良好」とみなす。
@@ -23,6 +24,7 @@ class DeliverableRow:
     deliverable: Deliverable
     correction_percent: int | None
     blocking_reason: str
+    fact_result: fact_check.FactCheckResult = field(default_factory=fact_check.FactCheckResult)
 
     @property
     def can_approve(self) -> bool:
@@ -85,16 +87,24 @@ class DeliverableReport:
 
 
 def build_report(deliverables: Iterable[Deliverable]) -> DeliverableReport:
-    """成果物のイテラブルから表示用レポートを組み立てる。"""
+    """成果物のイテラブルから表示用レポートを組み立てる。
 
-    return DeliverableReport(rows=[_build_row(item) for item in deliverables])
+    事実照合は案件の実測値を数え直すため、同じ案件の成果物が並ぶ一覧では
+    案件単位でキャッシュする。行数分だけ集計を繰り返さないための措置。
+    """
+
+    facts_cache: dict = {}
+
+    return DeliverableReport(rows=[_build_row(item, facts_cache) for item in deliverables])
 
 
-def _build_row(deliverable: Deliverable) -> DeliverableRow:
+def _build_row(deliverable: Deliverable, facts_cache: dict) -> DeliverableRow:
     rate = deliverable.correction_rate
+    result = fact_check.check_deliverable(deliverable, facts_cache=facts_cache)
 
     return DeliverableRow(
         deliverable=deliverable,
         correction_percent=None if rate is None else round(rate * 100),
-        blocking_reason=blocking_reason(deliverable),
+        blocking_reason=blocking_reason(deliverable, fact_result=result),
+        fact_result=result,
     )

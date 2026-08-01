@@ -6,6 +6,7 @@
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'dashboard:tasks' %}">タスク一覧へ</a>
   <a class="btn-b sm" href="{% url 'projects:task_edit' task.pk %}">編集する</a>
+  <a class="btn-out sm" href="{% url 'pmo:consultation' %}?screen=task_detail&amp;subject={{ task.wbs_code }} {{ task.name|urlencode }}">この画面について相談</a>
 {% endblock %}
 
 {% block content %}

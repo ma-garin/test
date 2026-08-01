@@ -9,4 +9,5 @@ urlpatterns = [
     path("upload/", views.upload, name="upload"),
     path("<uuid:pk>/extract/", views.extract_document, name="extract"),
     path("templates/", views.template_list, name="template_list"),
+    path("templates/<uuid:pk>/export/", views.template_export, name="template_export"),
 ]

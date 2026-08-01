@@ -95,6 +95,97 @@
       </div>
     {% endif %}
 
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">Excel で出力</span>
+        <span class="card-act">ひな型の項目マッピングに従って書き込みます</span>
+      </div>
+      {% if export_templates %}
+        <div class="t-wrap">
+          <table class="t">
+            <thead><tr><th>ひな型</th><th class="nowrap">マッピング状態</th><th class="nowrap">出力</th></tr></thead>
+            <tbody>
+              {% for export_template in export_templates %}
+                <tr>
+                  <td>{{ export_template.name }}</td>
+                  <td class="nowrap"><span class="badge n">{{ export_template.get_mapping_status_display }}</span></td>
+                  <td class="nowrap"><a class="btn-out sm" href="{% url 'documents:template_export' export_template.pk %}?deliverable={{ selected.deliverable.pk }}">Excel で出力</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="callout w"><p>元のひな型は書き換えません。出力できなかった項目は出力結果の画面に一覧で出ますので、空欄のまま提出しないよう必ず確認してください。</p></div>
+      {% else %}
+        <div class="empty">ひな型が登録されていません。<a href="{% url 'documents:template_list' %}" style="color:var(--blue)">ひな型管理</a>から登録してください。</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">事実確認</span>
+        <span class="card-act">{{ selected.fact_result.body_source }}の数値・固有名詞を実データと突き合わせます</span>
+      </div>
+      <div class="kpi-g">
+        <div class="kpi">
+          <div class="kpi-l">検査した主張</div>
+          <div class="kpi-v">{{ selected.fact_result.checked_count }}</div>
+          <div class="kpi-s">数値・固有名詞・実績日</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-l">一致</div>
+          <div class="kpi-v" style="color:var(--green)">{{ selected.fact_result.matched_count }}</div>
+          <div class="kpi-s">実データと同じ値</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-l">不一致</div>
+          <div class="kpi-v" style="color:var(--red)">{{ selected.fact_result.mismatched_count }}</div>
+          <div class="kpi-s">1件でもあれば承認へ進めません</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-l">照合できなかった</div>
+          <div class="kpi-v">{{ selected.fact_result.unknown_count }}</div>
+          <div class="kpi-s">一致には数えていません</div>
+        </div>
+      </div>
+      {% if selected.fact_result.mismatched_count %}
+        <div class="callout d"><p>実データと食い違う記述があります。本文を直してから承認へ回してください。</p></div>
+      {% elif selected.fact_result.unknown_count %}
+        <div class="callout w"><p>照合できなかった記述が {{ selected.fact_result.unknown_count }}件あります。これは「誤りが無い」という意味ではありません。</p></div>
+      {% endif %}
+      {% if show_fact_check %}
+        {% if selected.fact_result.claims %}
+          <div class="t-wrap">
+            <table class="t">
+              <thead><tr><th class="nowrap">判定</th><th class="nowrap">項目</th><th>本文の該当箇所</th><th class="nowrap">書かれていた値</th><th class="nowrap">実データ</th><th class="nowrap">根拠</th></tr></thead>
+              <tbody>
+                {% for claim in selected.fact_result.claims %}
+                  <tr>
+                    <td class="nowrap"><span class="badge {{ claim.verdict_tone }}">{{ claim.verdict_label }}</span></td>
+                    <td class="nowrap">{{ claim.label }}</td>
+                    <td>{{ claim.excerpt }}<br><small class="muted">{{ claim.reason }}</small></td>
+                    <td class="nowrap">{{ claim.written_value }}</td>
+                    <td class="nowrap">{{ claim.expected_value }}</td>
+                    <td class="nowrap">{% if claim.kind == "number" %}{% if claim.evidence_backed %}<span class="badge g">あり</span>{% else %}<span class="badge n">なし</span>{% endif %}{% else %}—{% endif %}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty">照合できる数値・固有名詞の記述がありません。</div>
+        {% endif %}
+        <div class="actions">
+          <a class="btn-ghost" href="?deliverable={{ selected.deliverable.pk }}">明細を閉じる</a>
+        </div>
+      {% else %}
+        <div class="actions">
+          <a class="btn-b" href="?deliverable={{ selected.deliverable.pk }}&amp;factcheck=1">事実確認</a>
+          <span class="muted">{{ selected.fact_result.summary }}</span>
+        </div>
+      {% endif %}
+    </div>
+
     <div class="sg">
       <div class="card">
         <div class="card-hdr">

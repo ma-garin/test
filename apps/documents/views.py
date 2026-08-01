@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+from urllib.parse import quote, urlencode
 from uuid import UUID
 
 from django.contrib.auth.decorators import login_required
@@ -12,9 +14,9 @@ from django.views.decorators.http import require_POST
 
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.documents import selectors
-from apps.documents.services import extractors, registration, template_mapping
+from apps.documents.services import excel_export, extractors, registration, template_mapping
 from apps.documents.services.validation import EXTENSION_TO_FILE_TYPE, MAX_FILE_SIZE_BYTES
-from apps.projects.selectors import projects_for
+from apps.projects.selectors import projects_for, scoped_projects_for
 
 #: ひな型はカード表示で 1 件が縦に長い。一覧の既定件数では画面に収まらない。
 CARDS_PER_PAGE = 8
@@ -109,6 +111,98 @@ def template_list(request: HttpRequest) -> HttpResponse:
             "page_title": "ひな型管理",
         },
     )
+
+
+@login_required
+def template_export(request: HttpRequest, pk: UUID) -> HttpResponse:
+    """ひな型へ実データを書き出し、結果を画面で見せてからダウンロードさせる。
+
+    いきなりファイルを返さないのは、「何が出力できなかったか」を伝える場所が
+    無くなるため。空欄が『値なし』なのか『出力漏れ』なのかを受け取った人が
+    判断できない成果物は、実務では出し直しになる。
+
+    出力に失敗しても 500 にしない。openpyxl 未導入・ひな型ファイル欠損は運用中に
+    普通に起こるので、理由を画面に出して次の手が打てる状態にする。
+    """
+
+    template = selectors.templates_for(request.user, request.tenant).filter(pk=pk).first()
+
+    if template is None:
+        # 他テナントのひな型 ID を推測されても存在有無を漏らさない。
+        raise Http404("ひな型が見つかりません。")
+
+    deliverable = _selected_deliverable(request)
+    projects = scoped_projects_for(request)
+    project = _selected_project(projects, request.GET.get("project"))
+
+    if project is None and deliverable is not None:
+        # 成果物から来た場合は、その成果物の案件を既定にする（選び直しの手間を省く）。
+        project = deliverable.project
+
+    result = excel_export.export(template, project=project, deliverable=deliverable)
+
+    if request.GET.get("download") and result.ok:
+        return _excel_response(result)
+
+    return render(
+        request,
+        "pages/template_export.html",
+        {
+            "template": template,
+            "projects": projects,
+            "project": project,
+            "deliverable": deliverable,
+            "result": result,
+            "download_query": _download_query(project, deliverable),
+            "page_title": f"Excel出力 / {template.name}",
+        },
+    )
+
+
+def _selected_deliverable(request: HttpRequest):
+    """出力対象の成果物。参照できる案件のものしか解決しない。"""
+
+    raw_value = request.GET.get("deliverable")
+
+    if not raw_value:
+        return None
+
+    # アプリ間の循環 import を避けるため関数内で読み込む。
+    from apps.pmo import selectors as pmo_selectors
+
+    try:
+        return pmo_selectors.deliverables_for(request.user, request.tenant).filter(
+            pk=raw_value
+        ).first()
+    except (ValueError, ValidationError, TypeError):
+        return None
+
+
+def _download_query(project, deliverable) -> str:
+    """ダウンロードリンクの検索文字列。画面と同じ条件で作り直させる。"""
+
+    params = {"download": "1"}
+
+    if project is not None:
+        params["project"] = str(project.pk)
+
+    if deliverable is not None:
+        params["deliverable"] = str(deliverable.pk)
+
+    return urlencode(params)
+
+
+def _excel_response(result: excel_export.ExportResult) -> HttpResponse:
+    """生成した Excel を返す。日本語ファイル名は RFC 5987 形式で渡す。"""
+
+    response = HttpResponse(result.content, content_type=result.content_type)
+    fallback = re.sub(r"[^A-Za-z0-9._-]+", "_", result.filename).strip("_") or "export.xlsx"
+    response["Content-Disposition"] = (
+        f'attachment; filename="{fallback}"; '
+        f"filename*=UTF-8''{quote(result.filename)}"
+    )
+
+    return response
 
 
 @login_required

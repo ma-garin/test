@@ -141,6 +141,29 @@ REST_FRAMEWORK = {
 # --- ドメイン固有設定 -------------------------------------------------------
 # 旧 .streamlit/secrets.toml に置かれていた値は、すべて環境変数へ移す。
 # 認証情報を UI・ログ・引継ぎ資料へ出力しないことは再設計時の必須要件。
+# --- RBAC（操作単位の認可） -------------------------------------------------
+# ロールごとの許可操作をコードへ埋め込まない。組織ごとに誰が承認できるかは変わるうえ、
+# コードを直さないと権限を動かせない状態では「権限を緩めた」ことが設定差分に残らない。
+# 判定は `apps.accounts.services.permissions.can()` に集約する。
+ROLE_PERMISSIONS: dict[str, tuple[str, ...]] = {
+    "system_admin": ("view", "edit", "approve", "manage"),
+    "tenant_admin": ("view", "edit", "approve", "manage"),
+    "pmo": ("view", "edit", "approve"),
+    "pm": ("view", "edit", "approve"),
+    "quality": ("view", "edit", "approve"),
+    # 変更管理者は変更要求を起票・編集するが、成果物の承認者ではない。
+    "change": ("view", "edit"),
+    "viewer": ("view",),
+}
+
+# 案件メンバーの役割ごとの許可操作。案件単位の権限はテナント単位より優先する。
+PROJECT_ROLE_PERMISSIONS: dict[str, tuple[str, ...]] = {
+    "pm": ("view", "edit", "approve", "manage"),
+    "pmo": ("view", "edit", "approve"),
+    "member": ("view", "edit"),
+    "viewer": ("view",),
+}
+
 AI_PROVIDER = env("AI_PROVIDER", default="local_hash")
 
 OPENAI = {
@@ -253,4 +276,27 @@ DETECTION_RULES = {
     },
     # 1 件の検知から作る介入提案の上限。選択肢が多すぎると誰も決められない。
     "MAX_PROPOSALS_PER_FINDING": env.int("DETECTION_MAX_PROPOSALS_PER_FINDING", default=3),
+}
+
+
+# 入力標準ルール（運用の型）。PMO の実務で最も時間を食うのは「メンバーに WBS を
+# 更新させること」であり、更新されていないデータで集計しても意味がない。
+# 何を違反とみなすかは組織ごとに違うため、判定ロジックへ埋め込まず設定で動かす。
+OPS_RULES = {
+    # 定期更新の締め曜日。0=月曜 … 6=日曜。既定は金曜（週次報告の前日に締める運用）。
+    "UPDATE_WEEKDAY": env.int("OPS_RULES_UPDATE_WEEKDAY", default=4),
+    # 締め曜日から何日の猶予を認めるか。0 なら締め日当日に未更新で違反。
+    "UPDATE_GRACE_DAYS": env.int("OPS_RULES_UPDATE_GRACE_DAYS", default=0),
+    # 期限超過を違反とみなすまでの猶予日数。当日超過で騒がない運用も選べるようにする。
+    "OVERDUE_GRACE_DAYS": env.int("OPS_RULES_OVERDUE_GRACE_DAYS", default=0),
+    # 根拠メモを必須とみなす進捗率(%)。既定は「完了扱い＝100%」。
+    "EVIDENCE_REQUIRED_PERCENT": env.int("OPS_RULES_EVIDENCE_REQUIRED_PERCENT", default=100),
+    # 有効なルール。False にすると画面・管理コマンドの双方から外れる。
+    "ENABLED": {
+        "stale_update": env.bool("OPS_RULES_ENABLE_STALE_UPDATE", default=True),
+        "blocked_handling": env.bool("OPS_RULES_ENABLE_BLOCKED_HANDLING", default=True),
+        "overdue_status": env.bool("OPS_RULES_ENABLE_OVERDUE_STATUS", default=True),
+        "missing_owner": env.bool("OPS_RULES_ENABLE_MISSING_OWNER", default=True),
+        "missing_evidence": env.bool("OPS_RULES_ENABLE_MISSING_EVIDENCE", default=True),
+    },
 }

@@ -475,14 +475,27 @@ class Command(BaseCommand):
     # ── 品質指標 ────────────────────────────────────────────
 
     def _create_metrics(self, project: Project) -> int:
-        """実測値。テスト件数とコード規模は実際の値。"""
+        """実測値。
+
+        件数系は**必ず DB から数える**。手で書いた値は実態とずれ、
+        事実確認（`pmo/services/fact_check.py`）で不一致として検出される。
+        「登録した指標が実データと合っていない」のは、報告書の信頼を最も損なう。
+        """
 
         today = timezone.localdate()
+        open_critical = Issue.objects.filter(
+            project=project,
+            severity__in=(Severity.CRITICAL, Severity.HIGH),
+        ).exclude(status__in=(Issue.Status.RESOLVED, Issue.Status.CLOSED)).count()
+        open_defects = Defect.objects.filter(project=project).exclude(
+            status=Defect.Status.CLOSED
+        ).count()
+
         specs = (
-            ("自動テスト件数", 501, 400, "件"),
+            ("自動テスト件数", 578, 400, "件"),
             ("要件充足率", 83, 100, "%"),
-            ("未解決の重大課題", 2, 0, "件"),
-            ("未クローズ不具合", 0, 0, "件"),
+            ("未解決の重大課題", open_critical, 0, "件"),
+            ("未クローズ不具合", open_defects, 0, "件"),
         )
 
         for key, value, target, unit in specs:

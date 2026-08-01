@@ -12,7 +12,17 @@ from decimal import Decimal
 from django import forms
 from django.db.models import QuerySet
 
-from apps.projects.models import ChangeRequest, Defect, Issue, Project, Risk, WbsTask
+from apps.accounts.models import User
+from apps.projects.models import (
+    ChangeRequest,
+    Defect,
+    Issue,
+    Project,
+    ProjectMember,
+    Risk,
+    WbsTask,
+)
+from apps.projects.services.members import assignable_users_for
 
 MIN_PROGRESS = Decimal("0")
 MAX_PROGRESS = Decimal("100")
@@ -286,3 +296,25 @@ class RiskPromoteForm(forms.ModelForm):
             "due_date": _DATE_WIDGET,
             "description": forms.Textarea(attrs={"rows": 3}),
         }
+
+
+class ProjectMemberForm(forms.ModelForm):
+    """案件メンバーの登録・役割変更フォーム。
+
+    選択肢は案件のテナントに所属する利用者だけへ絞る。ただし絞り込みは
+    入力補助であって防御ではないため、サービス側でも越境を再検証している。
+    """
+
+    class Meta:
+        model = ProjectMember
+        fields = ["user", "role", "role_label"]
+        widgets = {
+            "role_label": forms.TextInput(attrs={"placeholder": "表示上の肩書き（任意）"}),
+        }
+
+    def __init__(self, *args, project: Project | None = None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.project = project
+        self.fields["user"].queryset = assignable_users_for(project) if project else User.objects.none()
+        self.fields["user"].label = "利用者"
+        self.fields["role_label"].required = False

@@ -33,6 +33,7 @@
         <span class="card-t">{{ card.template.name }}</span>
         <span class="card-act">
           <span class="badge {{ card.tone }}">{{ card.template.get_mapping_status_display }}</span>
+          <a class="btn-out sm" href="{% url 'documents:template_export' card.template.pk %}">この様式で出力</a>
         </span>
       </div>
 

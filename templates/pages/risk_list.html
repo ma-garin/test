@@ -6,6 +6,7 @@
   <a class="btn-b sm" href="{% url 'projects:risk_create' %}">新規作成</a>
   <a class="btn-out sm" href="{% url 'projects:issue_list' %}">課題一覧へ</a>
   <a class="btn-out sm" href="{% url 'dashboard:change' %}">変更影響へ</a>
+  <a class="btn-out sm" href="{% url 'pmo:consultation' %}?screen=risk_list{% if request.project %}&amp;subject={{ request.project.name|urlencode }}{% endif %}">この画面について相談</a>
 {% endblock %}
 
 {% block content %}

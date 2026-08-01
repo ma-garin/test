@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from django.db import models
 
+from apps.accounts.constants import ProjectRole
 from apps.core.models import SoftDeleteModel, TimeStampedModel
 
 
@@ -91,6 +92,14 @@ class ProjectMember(TimeStampedModel):
         verbose_name="利用者",
         on_delete=models.CASCADE,
         related_name="project_memberships",
+    )
+    # 権限判定に使う役割。`role_label` は自由文字列で表記ゆれ（「PMO」「PMO担当」）を
+    # 含むため判定には使えない。判定用の識別子を別に持ち、表記は role_label に残す。
+    role = models.CharField(
+        "権限役割",
+        max_length=16,
+        choices=ProjectRole.choices,
+        default=ProjectRole.MEMBER,
     )
     role_label = models.CharField("案件内の役割", max_length=64, blank=True)
 
