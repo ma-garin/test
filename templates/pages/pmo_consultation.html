@@ -49,6 +49,62 @@
         </div>
       {% endif %}
 
+      {% if result.answer %}
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-t">回答</span>
+            <span class="card-act">
+              主張 {{ result.answer.claim_count }}件 ／ 出所あり {{ result.answer.grounded_claims|length }}件
+              （根拠率 {{ result.answer.grounded_ratio }}%）
+            </span>
+          </div>
+
+          {% comment %}
+            出所を持たない主張は組み立て段階で弾かれている（ADR-0004 第1層）。
+            節ごとに出すのは、どの主張がどの性質のものかを読み手が区別できるようにするため。
+          {% endcomment %}
+          {% for section in result.answer.sections %}
+            <div class="pb-row">
+              <div class="pb-lr"><span class="pb-t">{{ section.title }}</span></div>
+              {% if section.disclaimer and section.claims %}
+                <div class="callout w"><p>{{ section.disclaimer }}</p></div>
+              {% endif %}
+              {% if section.is_empty %}
+                <div class="ps">該当なし</div>
+              {% else %}
+                <ul class="ps">
+                  {% for claim in section.claims %}
+                    <li>
+                      {{ claim.text }}
+                      {% if claim.source_label %}
+                        <span class="badge n">{{ claim.source_label }}</span>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          {% endfor %}
+
+          <div class="sg">
+            <div>
+              <div class="pb-t">推奨アクション</div>
+              <ul class="ps">
+                {% for action in result.answer.recommended_actions %}<li>{{ action }}</li>
+                {% empty %}<li>該当なし</li>{% endfor %}
+              </ul>
+            </div>
+            <div>
+              <div class="pb-t">追加確認事項</div>
+              <ul class="ps">
+                {% for item in result.answer.follow_up_questions %}<li>{{ item }}</li>
+                {% empty %}<li>該当なし</li>{% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
       <div class="sg-r">
         <div class="card">
           <div class="card-hdr">

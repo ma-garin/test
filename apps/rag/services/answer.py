@@ -26,7 +26,12 @@ from apps.agents.models import Recommendation
 
 #: 1 つの節に載せる主張の上限。多いほど良いわけではなく、
 #: 読み切れない量を出すと結局どれも読まれない。
-MAX_CLAIMS_PER_SECTION = 6
+#: 案件データ（最大 5 件）と文書ヒットの合計がこれを超えないよう、
+#: 文書側には `MAX_DOCUMENT_CLAIMS` の枠を別に設けている。
+MAX_CLAIMS_PER_SECTION = 12
+
+#: 「登録情報から確認できること」へ載せる文書チャンクの上限。
+MAX_DOCUMENT_CLAIMS = 6
 
 #: 引用として抜き出す本文の長さ。根拠として確認できる最小限に留める。
 QUOTE_LENGTH = 160
@@ -57,10 +62,14 @@ class Claim:
 
     @property
     def source_label(self) -> str:
-        """画面と本文に出す出所の表示。どこから来た数字かを必ず言えるようにする。"""
+        """画面と本文に出す出所の表示。どこから来た数字かを必ず言えるようにする。
+
+        チャンクの出典名は `Chunk.source_title` に集約されている。
+        `document.title` を直接読むと、業務データ由来のチャンク（document が None）で落ちる。
+        """
 
         if self.source_chunk is not None:
-            return f"{self.source_chunk.document.title}"
+            return self.source_chunk.source_title
 
         return self.source_field
 
@@ -72,8 +81,14 @@ class Section:
     key: str
     title: str
     claims: list[Claim] = field(default_factory=list)
-    #: 一般知識の節だけ True。ここは事実確認の対象外として扱う。
-    is_general: bool = False
+    #: 出所を必須とするか。`False` にできるのは、事実確認の対象外と
+    #: 明示している節（一般知識・確認できないこと）だけ。
+    requires_source: bool = True
+    #: 節の先頭に出す但し書き。空なら出さない。
+    #: 「出所チェックの免除」と「但し書きの有無」は別の話なので、フラグを分ける。
+    #: 1つのフラグで兼ねると、確認できないことの節に
+    #: 「一般的な観点です」という無関係な但し書きが出る（実際に出ていた）。
+    disclaimer: str = ""
 
     def add(self, claim: Claim) -> bool:
         """主張を足す。出所が無ければ拒否する。
@@ -82,7 +97,7 @@ class Section:
         呼び出し側の善意に頼らず、この関数で弾く。
         """
 
-        if not claim.has_source and not self.is_general:
+        if not claim.has_source and self.requires_source:
             return False
 
         if len(self.claims) >= MAX_CLAIMS_PER_SECTION:
@@ -105,8 +120,8 @@ class Section:
 
         lines = [f"## {self.title}"]
 
-        if self.is_general and self.claims:
-            lines.append(GENERAL_DISCLAIMER)
+        if self.disclaimer and self.claims:
+            lines.append(self.disclaimer)
 
         if self.is_empty:
             lines.append("該当なし")
@@ -134,22 +149,34 @@ class AssembledAnswer:
         return None
 
     def body(self) -> str:
-        """7 セクションを連結した本文。"""
+        """REQ-AG-007 の 7 セクションを連結した本文。
+
+        **どの節も空を理由に省略しない。** 省略すると「調べたが無かった」と
+        「そもそも出していない」が読み手に区別できない。
+        節の生成は `Section.render()` に一本化し、ここで別形式を作らない。
+        """
 
         parts = [self.summary.strip()] if self.summary.strip() else []
         parts.extend(section.render() for section in self.sections)
-
-        if self.recommended_actions:
-            parts.append(
-                "## 推奨アクション\n" + "\n".join(f"- {a}" for a in self.recommended_actions)
-            )
-
-        if self.follow_up_questions:
-            parts.append(
-                "## 追加で確認したいこと\n" + "\n".join(f"- {q}" for q in self.follow_up_questions)
-            )
+        parts.append(_list_section("推奨アクション", self.recommended_actions))
+        parts.append(_list_section("追加確認事項", self.follow_up_questions))
+        parts.append(self._citation_section())
 
         return "\n\n".join(parts)
+
+    def _citation_section(self) -> str:
+        """参照根拠。REQ-AG-007 の 7 番目の節。
+
+        本文のどの主張がどの資料に由来するかを、本文の末尾でも辿れるようにする。
+        `AnswerCitation` と同じ情報だが、本文だけを渡された相手（メール転記など）
+        にも出所が残るようにここへ書く。
+        """
+
+        # 同じ資料から複数の主張を採ったときに、同じ行を何度も出さない。
+        # 箇条書きの記号は `_list_section` が付けるので、ここでは付けない。
+        labels = dict.fromkeys(claim.source_label for claim in self.grounded_claims)
+
+        return _list_section("参照根拠", list(labels))
 
     @property
     def grounded_claims(self) -> list[Claim]:
@@ -158,7 +185,6 @@ class AssembledAnswer:
         return [
             claim
             for section in self.sections
-            if not section.is_general
             for claim in section.claims
             if claim.source_chunk is not None
         ]
@@ -191,86 +217,86 @@ def assemble(
     新しい概念を持ち込まないのが ADR-0004 の方針である。
     """
 
-    grounded = _build_grounded_section(hits)
-    unverified = _build_unverified_section(hits, evidence, question)
-    general = _build_general_section(intent_result)
-    context = _build_context_section(project_context)
+    # REQ-AG-007 の節構成に合わせる。案件データ由来の主張は、独立した節を作らず
+    # 「登録情報から確認できること」へ入れる。出所を持つ点では文書チャンクと同じで、
+    # 節を増やすと 7 セクション固定という仕様から外れる。
+    #
+    # 案件データを先に入れる。検索ヒットで上限を使い切ると、案件の実数値という
+    # 常に正しい情報のほうが落ちる（実際に不具合・期限超過が落ちていた）。
+    context_claims = list(_context_claims(project_context))
+    grounded = Section(key="grounded", title="登録情報から確認できること")
 
-    sections = [grounded, context, general, unverified]
-    summary = _build_summary(question, evidence, grounded, context)
+    for claim in context_claims:
+        grounded.add(claim)
+
+    _add_document_claims(grounded, hits)
+
+    general = _build_general_section(intent_result)
+    unverified = _build_unverified_section(hits, evidence, question)
+
+    sections = [grounded, general, unverified]
+    summary = _build_summary(question, evidence, hits, context_claims)
 
     return AssembledAnswer(
         summary=summary,
         sections=sections,
         recommended_actions=_build_actions(evidence, intent_result),
-        follow_up_questions=list(getattr(evidence, "missing_information", []) or []),
-        recommendation=getattr(evidence, "recommendation", Recommendation.ANSWER),
+        follow_up_questions=list(evidence.missing_information),
+        recommendation=evidence.recommendation,
     )
 
 
-def _build_grounded_section(hits) -> Section:
-    """登録文書から確認できること。チャンク 1 件 = 主張 1 件。"""
+def _add_document_claims(section: Section, hits) -> None:
+    """検索でヒットした文書チャンクを主張として足す。チャンク 1 件 = 主張 1 件。
 
-    section = Section(key="grounded", title="登録情報から確認できること")
+    件数の上限はここで掛ける。案件データ（高々 5 件の実数値）と同じ枠を
+    奪い合わせると、常に正しい数値のほうが落ちることがある。
+    """
 
-    for hit in hits or []:
+    for hit in (hits or [])[:MAX_DOCUMENT_CLAIMS]:
         chunk = hit.chunk
         quote = _shorten(chunk.text)
 
         section.add(
             Claim(
-                text=f"{chunk.document.title}: {quote}",
+                # 出典名は Chunk.source_title を使う。業務データ由来のチャンクは
+                # document を持たないため、document.title を直接読むと落ちる。
+                text=f"{chunk.source_title}: {quote}",
                 source_chunk=chunk,
                 quote=quote,
             )
         )
 
-    return section
+
+#: 案件データから拾う指標。(表示名, 属性名, 出所, 書式)。
+#: 表示名は `project_context.ProjectContext.as_text()` と揃える。
+#: ずれると、チャット画面と RAG 回答で同じ数字が別名・別表記で出る。
+CONTEXT_FIELDS: tuple[tuple[str, str, str, str], ...] = (
+    ("進捗率", "progress_percent", "projects.Project.progress_percent", "{:.0f}%"),
+    ("未解決の課題", "open_issues", "projects.Issue（未解決）", "{}件"),
+    ("未クローズのリスク", "open_risks", "projects.Risk（監視中）", "{}件"),
+    ("未完了の不具合", "open_defects", "projects.Defect（未クローズ）", "{}件"),
+    ("期限超過タスク", "overdue_tasks", "projects.WbsTask（期限超過）", "{}件"),
+)
 
 
-def _build_context_section(project_context) -> Section:
+def _context_claims(project_context):
     """案件の実データから確認できること。
 
     検索に出てこなくても、DB に数字がある事柄は言える。
     出所はチャンクではなくフィールド名にする。
     """
 
-    section = Section(key="context", title="案件データから確認できること")
-
-    for label, value, field_name in _context_rows(project_context):
-        section.add(Claim(text=f"{label}: {value}", source_field=field_name))
-
-    return section
-
-
-def _context_rows(project_context):
-    """案件文脈から (表示名, 値, 出所フィールド) を取り出す。
-
-    `project_context` は `apps/rag/services/project_context.py` の戻り値を想定する。
-    形が違っても落ちないよう、属性の有無を見てから読む。
-    """
-
     if project_context is None:
-        return []
+        return
 
-    mapping = (
-        ("進捗率", "progress_percent", "projects.Project.progress_percent", "%"),
-        ("未解決の課題", "open_issues", "projects.Issue（未解決）", "件"),
-        ("オープンリスク", "open_risks", "projects.Risk（監視中）", "件"),
-        ("未クローズ不具合", "open_defects", "projects.Defect（未クローズ）", "件"),
-        ("期限超過タスク", "overdue_tasks", "projects.WbsTask（期限超過）", "件"),
-    )
-    rows = []
-
-    for label, attribute, field_name, unit in mapping:
+    for label, attribute, source, fmt in CONTEXT_FIELDS:
         value = getattr(project_context, attribute, None)
 
         if value is None:
             continue
 
-        rows.append((label, f"{value}{unit}", field_name))
-
-    return rows
+        yield Claim(text=f"{label}: {fmt.format(value)}", source_field=source)
 
 
 def _build_general_section(intent_result) -> Section:
@@ -280,9 +306,14 @@ def _build_general_section(intent_result) -> Section:
     断定しない文体に固定する。事実確認の対象からも外す。
     """
 
-    section = Section(key="general", title="一般的な観点（登録文書に基づかない）", is_general=True)
+    section = Section(
+        key="general",
+        title="PMBOK / 一般情報による補足",
+        requires_source=False,
+        disclaimer=GENERAL_DISCLAIMER,
+    )
 
-    for viewpoint in getattr(intent_result, "viewpoints", []) or []:
+    for viewpoint in intent_result.viewpoints:
         section.add(Claim(text=f"{viewpoint} を確認するのが一般的です。"))
 
     return section
@@ -295,22 +326,26 @@ def _build_unverified_section(hits, evidence, question: str) -> Section:
     省略すると「調べていない」と区別がつかなくなる。
     """
 
-    section = Section(key="unverified", title="資料上は確認できないこと", is_general=True)
+    # 出所は要らないが、但し書きも要らない。ここは「調べたが無かった」を書く節で、
+    # 一般知識の節とは意味が逆である。
+    section = Section(
+        key="unverified", title="資料上は確認できないこと", requires_source=False
+    )
 
     if not hits:
         section.add(Claim(text=f"「{question}」{NO_EVIDENCE_NOTE}"))
 
-    for missing in getattr(evidence, "missing_information", []) or []:
+    for missing in evidence.missing_information:
         section.add(Claim(text=missing))
 
     return section
 
 
-def _build_summary(question: str, evidence, grounded: Section, context: Section) -> str:
+def _build_summary(question: str, evidence, hits, context_claims: list[Claim]) -> str:
     """判断サマリ。根拠の量と、断定してよいかどうかを先に言う。"""
 
-    recommendation = getattr(evidence, "recommendation", Recommendation.ANSWER)
-    counts = f"登録文書 {len(grounded.claims)}件 / 案件データ {len(context.claims)}項目"
+    recommendation = evidence.recommendation
+    counts = f"登録文書 {len(hits or [])}件 / 案件データ {len(context_claims)}項目"
 
     if recommendation == Recommendation.ASK_CLARIFICATION:
         head = "根拠が不足しているため、断定できません。確認事項を先に埋める必要があります。"
@@ -327,10 +362,10 @@ def _build_actions(evidence, intent_result) -> list[str]:
 
     actions: list[str] = []
 
-    if getattr(evidence, "recommendation", "") == Recommendation.ASK_CLARIFICATION:
+    if evidence.recommendation == Recommendation.ASK_CLARIFICATION:
         actions.append("該当する資料を登録し、再度検索する")
 
-    for viewpoint in (getattr(intent_result, "viewpoints", []) or [])[:3]:
+    for viewpoint in intent_result.viewpoints[:3]:
         actions.append(f"{viewpoint} を関係者と確認する")
 
     return actions
@@ -386,6 +421,14 @@ def save(query, assembled: AssembledAnswer, *, provider: str = "", model: str = 
     )
 
     return answer
+
+
+def _list_section(title: str, items) -> str:
+    """箇条書きの節。空でも「該当なし」を出す（`Section.render()` と同じ約束）。"""
+
+    body = "\n".join(f"- {item}" for item in items) if items else "該当なし"
+
+    return f"## {title}\n{body}"
 
 
 def _shorten(text: str, length: int = QUOTE_LENGTH) -> str:

@@ -63,8 +63,8 @@ class SectionGuardTests(TestCase):
 
         self.assertTrue(section.add(Claim(text="a", source_field="projects.Project.progress")))
 
-    def test_一般知識の節だけは出所なしを許す(self):
-        section = Section(key="general", title="x", is_general=True)
+    def test_出所を要求しない節は出所なしを許す(self):
+        section = Section(key="general", title="x", requires_source=False)
 
         self.assertTrue(section.add(Claim(text="一般論")))
 
@@ -75,11 +75,19 @@ class SectionGuardTests(TestCase):
 
         self.assertIn("該当なし", rendered)
 
-    def test_一般知識の節には但し書きが付く(self):
-        section = Section(key="general", title="x", is_general=True)
-        section.add(Claim(text="一般論"))
+    def test_但し書きを設定した節にだけ但し書きが付く(self):
+        """出所チェックの免除と但し書きは別物。混ぜると
+        「確認できないこと」の節に「一般的な観点です」と出る。"""
 
-        self.assertIn(GENERAL_DISCLAIMER, section.render())
+        general = Section(key="general", title="x", requires_source=False,
+                          disclaimer=GENERAL_DISCLAIMER)
+        general.add(Claim(text="一般論"))
+
+        unverified = Section(key="unverified", title="y", requires_source=False)
+        unverified.add(Claim(text="確認できない"))
+
+        self.assertIn(GENERAL_DISCLAIMER, general.render())
+        self.assertNotIn(GENERAL_DISCLAIMER, unverified.render())
 
 
 class AssembleTests(TestCase):
@@ -136,19 +144,22 @@ class AssembleTests(TestCase):
 
         self.assertEqual(len(general.claims), 2)
         # 一般論が登録情報の節へ混ざらないこと。混ざると事実確認の対象が濁る。
-        self.assertTrue(all(c.source_chunk is not None for c in grounded.claims))
+        self.assertTrue(all(c.has_source for c in grounded.claims))
 
     def test_本文に7つの見出しがすべて出る(self):
         body = assemble(
             question="q", hits=[], evidence=_Evidence(), intent_result=_Intent()
         ).body()
 
+        # REQ-AG-007 の 7 セクション。どれも空を理由に省略しない。
         for title in (
             "判断サマリ",
             "登録情報から確認できること",
-            "案件データから確認できること",
-            "一般的な観点",
+            "PMBOK / 一般情報による補足",
             "資料上は確認できないこと",
+            "推奨アクション",
+            "追加確認事項",
+            "参照根拠",
         ):
             with self.subTest(title=title):
                 self.assertIn(title, body)
@@ -179,10 +190,12 @@ class AssembleTests(TestCase):
             intent_result=_Intent(),
             project_context=_Context(),
         )
-        context = answer.section("context")
+        grounded = answer.section("grounded")
+        field_claims = [c for c in grounded.claims if c.source_field]
 
-        self.assertEqual(len(context.claims), 5)
-        self.assertTrue(all(c.source_field for c in context.claims))
+        # 案件データは独立節を作らず「登録情報」へ入れる（REQ-AG-007 は 7 節固定）。
+        self.assertEqual(len(field_claims), 5)
+        self.assertIn("進捗率: 62%", grounded.render())
 
     def test_節あたりの主張数に上限がある(self):
         """読み切れない量を出すと結局どれも読まれない。"""
