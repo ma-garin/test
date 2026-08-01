@@ -1,8 +1,10 @@
-"""サイドメニューの常時表示と「その他」への畳み込み。
+"""サイドバーの項目表示。
 
-項目が 30 件近くあり、畳んだ状態では画面に収まらないという指摘への対応。
-守りたいのは 1 点。**現在開いている画面は必ず常時表示側に出る。**
-畳んだ中に現在地があると、自分がどこにいるか分からなくなる。
+以前は使用頻度の低い画面を「その他」へ畳んでいたが、利用者が自分の使う画面を
+探せなくなるため廃止した。ここでは**全項目が並ぶこと**を固定する。
+
+畳んだ状態（アイコン表示）で画面に収まるかは高さの問題であり、
+項目を隠すことで解決しない。
 """
 
 from __future__ import annotations
@@ -12,81 +14,82 @@ from django.urls import reverse
 
 from apps.accounts.constants import Role
 from apps.accounts.models import Tenant, User
-from apps.core.navigation import NAVIGATION, navigation_for
+from apps.core.navigation import NAVIGATION, all_items, navigation_for
 
 
-class NavigationPriorityTests(TestCase):
+class NavigationItemsTests(TestCase):
     def setUp(self) -> None:
-        self.tenant = Tenant.objects.create(code="acme", name="ACME")
-        self.user = User.objects.create_user(
-            username="pmo",
-            email="pmo@example.com",
+        self.tenant = Tenant.objects.create(code="nav", name="NAV")
+        self.admin = User.objects.create_user(
+            username="nav-admin",
+            email="nav-admin@example.com",
             password="x",
             tenant=self.tenant,
             role=Role.TENANT_ADMIN,
         )
 
-    def test_常時表示は全体の一部に絞られる(self) -> None:
-        sections = navigation_for(self.user)
-        total = sum(len(section.items) for section in sections)
-        primary = sum(len(section.primary_items) for section in sections)
+    def test_全項目が返る(self):
+        """権限で隠れるもの以外は、1 つも畳まれずに返ること。"""
 
-        self.assertLess(primary, total)
-        self.assertGreater(primary, 0)
+        sections = navigation_for(self.admin)
+        returned = sum(len(section.items) for section in sections)
 
-    def test_常時表示とその他で全項目を覆う(self) -> None:
-        """畳み込みで到達できない画面を作らない。"""
+        self.assertEqual(returned, len(all_items()))
 
-        for section in navigation_for(self.user):
-            covered = list(section.primary_items) + list(section.secondary_items)
+    def test_定義した項目が欠けない(self):
+        """セクションごとの件数が定義と一致すること。"""
 
-            self.assertEqual(
-                sorted(item.key for item in covered),
-                sorted(item.key for item in section.items),
-            )
+        by_key = {section.key: section for section in navigation_for(self.admin)}
 
-    def test_現在開いている画面は常時表示へ引き上げる(self) -> None:
-        sections = navigation_for(self.user, current_url_name="dashboard:kpi")
-        control = next(section for section in sections if section.key == "control")
+        for defined in NAVIGATION:
+            with self.subTest(section=defined.key):
+                self.assertEqual(len(by_key[defined.key].items), len(defined.items))
 
-        self.assertIn("kpi", [item.key for item in control.primary_items])
-        self.assertNotIn("kpi", [item.key for item in control.secondary_items])
+    def test_権限の無い項目だけは除かれる(self):
+        viewer = User.objects.create_user(
+            username="nav-viewer",
+            email="nav-viewer@example.com",
+            password="x",
+            tenant=self.tenant,
+            role=Role.VIEWER,
+        )
 
-    def test_既定ではKPIはその他に入る(self) -> None:
-        sections = navigation_for(self.user)
-        control = next(section for section in sections if section.key == "control")
+        visible = {item.key for s in navigation_for(viewer) for item in s.items}
 
-        self.assertIn("kpi", [item.key for item in control.secondary_items])
+        self.assertNotIn("settings", visible)
+        self.assertIn("control_dashboard", visible)
 
-    def test_全項目のURL名が一意(self) -> None:
-        names = [item.url_name for section in NAVIGATION for item in section.items]
+    def test_項目の重複が無い(self):
+        keys = [item.key for item in all_items()]
 
-        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(len(keys), len(set(keys)))
 
 
 class NavigationRenderTests(TestCase):
     def setUp(self) -> None:
-        self.tenant = Tenant.objects.create(code="acme", name="ACME")
+        self.tenant = Tenant.objects.create(code="nav2", name="NAV2")
         self.user = User.objects.create_user(
-            username="pmo",
-            email="pmo@example.com",
+            username="nav-render",
+            email="nav-render@example.com",
             password="x",
             tenant=self.tenant,
             role=Role.TENANT_ADMIN,
         )
         self.client.force_login(self.user)
-        session = self.client.session
-        session["tenant_id"] = str(self.tenant.pk)
-        session.save()
 
-    def test_サイドバーにその他の畳み込みが出る(self) -> None:
-        response = self.client.get(reverse("projects:list"))
+    def test_サイドバーに畳み込みが出ない(self):
+        """「その他」は廃止した。復活していないことを固定する。"""
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "その他")
-        self.assertContains(response, "sb-more")
+        response = self.client.get(reverse("dashboard:control"))
 
-    def test_その他の中の画面も開ける(self) -> None:
-        response = self.client.get(reverse("dashboard:kpi"))
+        self.assertNotContains(response, "その他")
+        self.assertNotContains(response, "sb-more")
 
-        self.assertEqual(response.status_code, 200)
+    def test_使用頻度の低い画面もサイドバーに出る(self):
+        """以前「その他」へ畳んでいた画面が、直接見えること。"""
+
+        response = self.client.get(reverse("dashboard:control"))
+
+        for label in ("KPI・効果測定", "PoC合否判定", "操作ログ", "同期履歴", "ひな型管理"):
+            with self.subTest(label=label):
+                self.assertContains(response, label)

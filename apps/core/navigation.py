@@ -8,14 +8,11 @@ URL 名を単一の場所で持ち、サイドメニュー・パンくず・権�
 - ``code``   : サイドバーに出す 2 文字の識別子（モックの `.sb-badge`）
 - ``tags``   : 機能タグ。``ai`` / ``rag`` はモックの `.sb-tag` と同じ意味
 - ``status`` : 移植状況。``ready`` = 実装済み、``planned`` = 導線のみ
-- ``is_primary`` : 常時表示するか。``False`` の項目はセクション内で
-  「その他」へ畳む。項目が 30 件近くあり、畳んだ状態では画面に収まらないため
-  （毎日開く画面と、月に一度開く画面を同じ重さで並べない）
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 
 from apps.accounts.constants import Role
 
@@ -29,7 +26,6 @@ class NavItem:
     status: str = "planned"
     tags: tuple[str, ...] = ()
     roles: tuple[str, ...] = ()
-    is_primary: bool = True
 
     def is_visible_to(self, user) -> bool:
         if not self.roles:
@@ -53,22 +49,6 @@ class NavSection:
     #: 現在表示中の画面を含むセクション。サイドバーはここだけ開いた状態で描く。
     is_current: bool = False
 
-    @property
-    def primary_items(self) -> tuple[NavItem, ...]:
-        return tuple(item for item in self.items if item.is_primary)
-
-    @property
-    def secondary_items(self) -> tuple[NavItem, ...]:
-        """「その他」へ畳む項目。現在開いている画面だけは畳まない。
-
-        畳んだ中に現在地があると、自分がどこにいるのか分からなくなる。
-        """
-
-        return tuple(item for item in self.items if not item.is_primary)
-
-    @property
-    def has_secondary(self) -> bool:
-        return bool(self.secondary_items)
 
 
 NAVIGATION: tuple[NavSection, ...] = (
@@ -86,8 +66,8 @@ NAVIGATION: tuple[NavSection, ...] = (
             NavItem("risk", "リスク予測・対策", "dashboard:risk", "RK", "ready", ("ai",)),
             NavItem("change", "変更影響分析", "dashboard:change", "CH", "ready"),
             NavItem("intervention", "AI介入提案", "dashboard:intervention", "AI", "ready", ("ai",)),
-            NavItem("kpi", "KPI・効果測定", "dashboard:kpi", "KP", "ready", is_primary=False),
-            NavItem("poc", "PoC合否判定", "dashboard:poc", "PC", "ready", is_primary=False),
+            NavItem("kpi", "KPI・効果測定", "dashboard:kpi", "KP", "ready"),
+            NavItem("poc", "PoC合否判定", "dashboard:poc", "PC", "ready"),
         ),
     ),
     NavSection(
@@ -104,9 +84,8 @@ NAVIGATION: tuple[NavSection, ...] = (
                 "pmo:prompt_library",
                 "LB",
                 "ready",
-                is_primary=False,
             ),
-            NavItem("education", "教育支援", "pmo:education", "ED", "ready", is_primary=False),
+            NavItem("education", "教育支援", "pmo:education", "ED", "ready"),
         ),
     ),
     NavSection(
@@ -115,12 +94,12 @@ NAVIGATION: tuple[NavSection, ...] = (
         items=(
             NavItem("documents", "ドキュメント登録", "documents:list", "DC", "ready", ("rag",)),
             NavItem(
-                "upload", "文書アップロード", "documents:upload", "UP", "ready", ("rag",), is_primary=False
+                "upload", "文書アップロード", "documents:upload", "UP", "ready", ("rag",)
             ),
-            NavItem("templates", "ひな型管理", "documents:template_list", "TP", "ready", is_primary=False),
+            NavItem("templates", "ひな型管理", "documents:template_list", "TP", "ready"),
             NavItem("search", "RAG検索", "rag:search", "SE", "ready", ("rag",)),
             NavItem("chat", "チャットモード", "rag:chat", "CT", "ready", ("ai", "rag")),
-            NavItem("evaluation", "RAG評価", "rag:evaluation", "EV", "ready", ("rag",), is_primary=False),
+            NavItem("evaluation", "RAG評価", "rag:evaluation", "EV", "ready", ("rag",)),
         ),
     ),
     NavSection(
@@ -128,8 +107,8 @@ NAVIGATION: tuple[NavSection, ...] = (
         label="監査・トレース",
         items=(
             NavItem("agent_runs", "Agenticトレース", "agents:run_list", "TR", "ready", ("ai",)),
-            NavItem("operations", "操作ログ", "audit:operation_list", "OP", "ready", is_primary=False),
-            NavItem("feedback", "フィードバック", "audit:feedback_list", "FB", "ready", is_primary=False),
+            NavItem("operations", "操作ログ", "audit:operation_list", "OP", "ready"),
+            NavItem("feedback", "フィードバック", "audit:feedback_list", "FB", "ready"),
         ),
     ),
     NavSection(
@@ -138,8 +117,8 @@ NAVIGATION: tuple[NavSection, ...] = (
         items=(
             NavItem("projects", "案件管理", "projects:list", "PJ", "ready"),
             NavItem("integrations", "外部連携", "integrations:list", "IN", "ready"),
-            NavItem("pipeline", "同期パイプライン", "integrations:pipeline", "PP", "ready", is_primary=False),
-            NavItem("sync_jobs", "同期履歴", "integrations:job_list", "SY", "ready", is_primary=False),
+            NavItem("pipeline", "同期パイプライン", "integrations:pipeline", "PP", "ready"),
+            NavItem("sync_jobs", "同期履歴", "integrations:job_list", "SY", "ready"),
             NavItem(
                 "settings",
                 "設定",
@@ -159,13 +138,7 @@ def navigation_for(user, current_url_name: str = "") -> list[NavSection]:
     visible: list[NavSection] = []
 
     for section in NAVIGATION:
-        items = tuple(
-            # 現在地が「その他」の中にあると、自分がどこにいるか分からなくなる。
-            # 開いている画面だけは常時表示側へ引き上げる。
-            replace(item, is_primary=True) if item.url_name == current_url_name else item
-            for item in section.items
-            if item.is_visible_to(user)
-        )
+        items = tuple(item for item in section.items if item.is_visible_to(user))
 
         if items:
             visible.append(
