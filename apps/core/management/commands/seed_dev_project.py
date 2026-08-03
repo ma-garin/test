@@ -120,11 +120,12 @@ class Command(BaseCommand):
                     "directory_extra_features.csv（20項目）の計74項目。\n"
                     "要件突合を行わずに「完了」と報告したインシデント（INCIDENT-001）が発生し、"
                     "実際の充足率が32%だったことが判明。以降はトレーサビリティ表を分母としている。\n"
-                    "現在の充足率は97%。残る1件は回答生成（ADR-0004 の判断待ち）。"
+                    "現在の充足率は99%（済73／74）。残る1件は「対象外」の自動書き戻しのみで、"
+                    "「未」「部分」の要件は無い。"
                 ),
                 "status": ProjectStatus.DELAYED,
                 "rag_status": RagStatus.YELLOW,
-                "progress_percent": 97,
+                "progress_percent": 99,
                 "project_manager": "利用者（発注者）",
                 "pmo_manager": "Claude（実装担当）",
                 "is_demo": False,
@@ -178,11 +179,12 @@ class Command(BaseCommand):
              Priority.MEDIUM, 0, 0, 100, "", False),
             ("6.1", "実データセットの作成", "Claude", WbsTask.Status.DONE,
              Priority.URGENT, 0, 0, 100, "", True),
-            # 遅延の震源。設計の決定待ちで着手できず、後続が全部止まっている。
-            # 計画では初日に終える予定だったが、5日経っても着手できていない。
-            ("6.2", "回答生成", "Claude", WbsTask.Status.BLOCKED,
-             Priority.URGENT, -5, -4, 0,
-             "ADR-0004（2層構成）を提案済み。利用者の承認待ち", True),
+            # 長く遅延の震源だった作業。計画では初日に終える予定が、設計の決定待ちで
+            # 5日止まり、2026-08-01 の ADR-0004 承認後に第1層を実装して完了した。
+            # 計画（-5〜-4日）と実績のずれは、EVM の材料として残している。
+            ("6.2", "回答生成", "Claude", WbsTask.Status.DONE,
+             Priority.URGENT, -5, -4, 100,
+             "第1層（根拠アセンブラ）を実装済み。第2層はLLMプロバイダの決定後", True),
             ("6.3", "事実誤認の自動チェック", "Claude", WbsTask.Status.DONE,
              Priority.HIGH, -3, 0, 100,
              "6.2 を待たずルールベースで実装（本文の数値をDBと突合）", True),
@@ -196,7 +198,7 @@ class Command(BaseCommand):
              Priority.MEDIUM, 0, 0, 100, "", False),
             ("8.1", "受入確認・残課題の整理", "利用者", WbsTask.Status.NOT_STARTED,
              Priority.URGENT, 1, PLANNED_END_OFFSET, 0,
-             "充足率100%が前提。現在97%（残り1件は6.2）", True),
+             "要件表の「未」「部分」は0件。残るは「対象外」1件のみ", True),
         )
 
         created = 0
@@ -216,7 +218,9 @@ class Command(BaseCommand):
                     "progress_percent": progress,
                     "next_action": action,
                     "is_critical_path": cp,
-                    "ball_holder": "利用者" if code == "6.2" else owner,
+                    # ボールは担当が持つ。利用者の判断待ちだった 6.2 は
+                    # ADR-0004 の承認で解消したので、特例は要らなくなった。
+                    "ball_holder": owner,
                     "follow_up_state": (
                         WbsTask.FollowUpState.ESCALATED
                         if status == WbsTask.Status.BLOCKED
@@ -261,9 +265,10 @@ class Command(BaseCommand):
              "mvp_scope_directory_mapping.csv 54項目を読まずに「実装完了」と報告。"
              "実際の充足率は32%だった。トレーサビリティ表を作成し再発防止。"),
             ("回答生成の設計が未決定で着手できない",
-             Issue.Status.BLOCKED, Severity.CRITICAL, "利用者", 1,
-             "ADR-0004 として2層構成（根拠アセンブラ＋文体整形）を提案済み。"
-             "承認されれば第1層から実装できる。6.3 は先行してルールベースで実装した。"),
+             Issue.Status.RESOLVED, Severity.CRITICAL, "利用者", 1,
+             "ADR-0004（根拠アセンブラ＋文体整形の2層構成）を2026-08-01に承認。"
+             "第1層 apps/rag/services/answer.py を実装し、要件 #23 は「済」になった。"
+             "第2層（文体整形）はLLMプロバイダの決定後で、第1層だけで回答は成立する。"),
             ("venv に requests が未導入で実API連携を検証できない",
              Issue.Status.RESOLVED, Severity.HIGH, "Claude", 0,
              "requirements/base.txt へ追加済み。実APIでの疎通確認は"
@@ -282,8 +287,9 @@ class Command(BaseCommand):
              "索引の失敗で取込を失敗にはせず、履歴へ理由を残す。"),
             ("サイドメニューの項目が28件に増え、折りたたみ時に収まらない",
              Issue.Status.RESOLVED, Severity.LOW, "Claude", 5,
-             "使用頻度の低い11画面を各区分の「その他」へ畳んだ。"
-             "現在開いている画面は畳まず常時表示側へ引き上げる。"),
+             "一度は使用頻度の低い11画面を各区分の「その他」へ畳んだが、"
+             "目的の画面に辿り着けないという指摘を受けて「その他」は廃止し、"
+             "全項目を並べる形へ戻した。"),
         )
 
         for title, status, severity, owner, due, description in specs:
@@ -355,28 +361,29 @@ class Command(BaseCommand):
 
     def _create_risks(self, project: Project) -> int:
         today = timezone.localdate()
+        monitoring = Risk.Status.MONITORING
         specs = (
             ("回答生成の設計が決まらず、AI支援の中核が未完のまま終わる",
-             5, 4, "open_questions.md 3番の決定を依頼済み。"
-             "決まらない場合はルールベースの要約で代替する案を用意", 1),
+             5, 4, "open_questions.md OQ-005 を2026-08-01に承認（ADR-0004）。"
+             "第1層（根拠アセンブラ）を実装済みでクローズ", 1, Risk.Status.CLOSED),
             ("生成文の品質がPoC目標（赤字率20%未満）に届かない",
-             4, 4, "テンプレートの文体調整と、章立ての固定で赤字を減らす", 3),
+             4, 4, "テンプレートの文体調整と、章立ての固定で赤字を減らす", 3, monitoring),
             ("実APIでの疎通が未検証のまま本番移行する",
-             4, 3, "requests導入後、各コネクタの疎通確認を実施する", 5),
+             4, 3, "requests導入後、各コネクタの疎通確認を実施する", 5, monitoring),
             ("機能追加に伴う画面数の増加で、利用者が目的の画面に辿り着けない",
-             3, 3, "", 7),
+             3, 3, "", 7, monitoring),
             ("並列実装による設計の不統一が、保守時に問題になる",
-             3, 3, "共通基盤（pagination / connectors / detection）を先に作る方針で対応中", 7),
+             3, 3, "共通基盤（pagination / connectors / detection）を先に作る方針で対応中", 7, monitoring),
             ("テスト501件の実行は速いが、実データ規模での性能が未検証",
-             3, 2, "", 10),
+             3, 2, "", 10, monitoring),
         )
 
-        for title, probability, impact, mitigation, due in specs:
+        for title, probability, impact, mitigation, due, status in specs:
             Risk.objects.update_or_create(
                 project=project,
                 title=title,
                 defaults={
-                    "status": Risk.Status.MONITORING,
+                    "status": status,
                     "probability": probability,
                     "impact": impact,
                     "mitigation": mitigation,

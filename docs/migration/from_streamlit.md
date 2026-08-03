@@ -44,7 +44,7 @@
 2. `python manage.py rebuild_index --tenant <code>` でインデックスを作り直す
 3. 履歴を移す場合は、匿名化と社内承認を経てから投入する
 
-`docs/open_questions.md` の 8 番も参照。
+`docs/open_questions.md` の OQ-008 も参照。
 
 ## 旧実装のどこを見ればよいか
 

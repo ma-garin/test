@@ -337,7 +337,7 @@ def _fact_error_criterion(feedbacks: QuerySet, targets: dict) -> PocCriterion:
 def _detection_lead_criterion(projects, targets: dict) -> PocCriterion:
     """#53 予兆検知の先行性。
 
-    比較対象の決め方は `docs/open_questions.md` 7 番の未決事項だった。
+    比較対象の決め方は `docs/open_questions.md` OQ-004 の未決事項だった。
     ここでは「案件で最初に作られた週次報告の作成日」を定例報告の代理とし、
     最初のアラート検知日との営業日差を先行日数とする（暫定の定義であることを画面に出す）。
     """
@@ -408,7 +408,8 @@ def _detection_lead_criterion(projects, targets: dict) -> PocCriterion:
         ),
         notes=(
             BUSINESS_DAY_NOTE,
-            "比較対象は「その案件で最初に作られた週次報告の作成日」です（open_questions.md 7番の暫定定義）。",
+            "比較対象は「その案件で最初に作られた週次報告の作成日」です"
+            "（open_questions.md OQ-004 の暫定定義）。",
         ),
     )
 
