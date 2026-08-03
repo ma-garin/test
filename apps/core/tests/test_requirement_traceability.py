@@ -97,7 +97,7 @@ REQUIREMENT_TESTS: dict[int, tuple[str, ...]] = {
     64: ("apps.pmo.tests.test_generators",),
     65: ("apps.agents.tests.test_orchestrator",),
     66: ("apps.dashboard.tests.test_intervention_decision",),
-    67: ("apps.core.tests.test_seed_dev_project",),
+    67: ("apps.core.tests.test_seed_demo",),
     68: ("apps.rag.tests.test_evaluation",),
     69: ("apps.rag.tests.test_evaluation",),
     70: ("apps.rag.tests.test_evaluation",),
@@ -114,6 +114,8 @@ CROSS_CUTTING_TESTS = (
     "apps.core.tests.test_query_budget",
     "apps.core.tests.test_template_hygiene",
     "apps.core.tests.test_open_question_ids",
+    # 実データ投入。要件表の行には対応しないが、充足率の写しを検査している。
+    "apps.core.tests.test_seed_dev_project",
     "apps.projects.tests.test_form_boundaries",
 )
 

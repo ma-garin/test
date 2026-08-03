@@ -59,7 +59,7 @@ FULFILLMENT_PERCENT = round(FULFILLED_REQUIREMENTS / TOTAL_REQUIREMENTS * 100)
 
 #: 自動テストの件数。`make test-all`（ブラウザ検証を含む）の実測値で、
 #: 測った時点の値である。**要件の充足を示す数ではない。**
-AUTOMATED_TESTS = 1341
+AUTOMATED_TESTS = 1346
 
 
 class Command(BaseCommand):
