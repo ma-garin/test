@@ -71,7 +71,6 @@
       <div class="search-row">
         <label>案件<br>{{ generate_form.project }}</label>
         <label>種類<br>{{ generate_form.generator }}</label>
-        <button class="{% if current_step.key == 'generate' %}btn-b{% else %}btn-out{% endif %}" type="submit">生成する</button>
       </div>
       {% if generate_form.project.errors %}<div class="callout d">{{ generate_form.project.errors }}</div>{% endif %}
       <div class="stack">
@@ -80,6 +79,10 @@
       </div>
       <div class="callout w">
         <p>数値は WBS・課題・リスク・不具合・品質指標・アラートから集計します。AIモデルは使いません。算出根拠は生成後の処理トレースに残ります。</p>
+      </div>
+      {% comment %}VP-19: 送信ボタンは入力項目より後ろに置く。備考を書く前に押させない。{% endcomment %}
+      <div class="actions">
+        <button class="{% if current_step.key == 'generate' %}btn-b{% else %}btn-out{% endif %}" type="submit">生成する</button>
       </div>
     </form>
   </div>

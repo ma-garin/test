@@ -31,8 +31,9 @@
             </li>
           {% endfor %}
         </ul>
+        {% comment %}VP-16: 同じ絞り込みの導線を 2 か所に置かない。操作は「ケース別の結果」に一本化する。{% endcomment %}
         {% if failed_count %}
-          <p><a class="btn-b sm" href="?suite={{ suite }}&amp;cases=failed">失敗ケース {{ failed_count }}件だけを見る</a></p>
+          <p class="ps">失敗しているのは {{ failed_count }}件です。下の「ケース別の結果」から絞り込めます。</p>
         {% endif %}
       </div>
     </div>
@@ -122,7 +123,7 @@
             <a class="btn-out sm" href="?suite={{ suite }}">全ケースを表示</a>
           {% else %}
             全 {{ case_total }}件中 失敗 {{ failed_count }}件
-            <a class="btn-b sm" href="?suite={{ suite }}&amp;cases=failed">失敗ケースだけに絞り込む</a>
+            <a class="btn-out sm" href="?suite={{ suite }}&amp;cases=failed">失敗ケースだけに絞り込む</a>
           {% endif %}
         </span>
       </div>
@@ -277,7 +278,7 @@
         根拠が無ければ回答を抑制すべき質問として扱う
       </label>
       <div class="actions">
-        <button type="submit" class="btn-b">登録する</button>
+        <button type="submit" class="btn-out">登録する</button>
       </div>
     </form>
   </div>

@@ -25,6 +25,15 @@
   --nav-line: #e5e7eb;
   --nav-accent: #0b4f8a;
   --nav-accent-soft: #eaf3fb;
+  /* 濃紺のレール上で現在地を示すための、--nav-accent の明るい同系色。
+     レールと同じ値だと現在地が沈むためここだけ明度を上げる。色相は揃える。 */
+  --nav-current: #1975b8;
+  /* 管理・設定の画面だけに使う面。業務画面（--bg #f7f8fb）との輝度比は 1.12。
+     色だけでは差が薄いため、縦帯（.main-admin .ph::before）と併用する。 */
+  --admin-surface: #e7edf5;
+  /* 上の面は暗いぶん、既定の --muted (#5f6e84) だとコントラストが 4.5 を割る。
+     設定画面ではこちらへ差し替える（実測 4.73）。 */
+  --admin-muted: #56657c;
   /* ヘッダーの色だけを分けて持つ。空色寄りの明るい青は消費者向けに見えるため、
      ヘッダーは彩度を落とした濃紺にする。サイドバー・現在地は --nav-accent のまま。 */
   --hdr-accent: #004098;
@@ -310,8 +319,9 @@ body.is-page-loading .hdr::after {
 }
 
 .sb-item:hover { background: var(--nav-hover); }
-/* 現在地はこの画面で唯一の彩色。ここだけ青にして、他は無彩色で抑える。 */
-.sb-item.active { background: var(--nav-active); color: var(--blue); font-weight: 900; }
+/* 現在地の彩色は 1 か所（--nav-accent）に集約する。ここに別の青を置くと、
+   同じ「現在地」に 2 つの色が存在することになる（VP-05）。定義は下の
+   `.sb-item.active` に一本化した。 */
 
 .sb-badge {
   display: inline-grid;
@@ -487,7 +497,7 @@ body.is-page-loading .hdr::after {
 }
 
 .sb-rail-item:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
-.sb-rail-item.active { background: #1975b8; border-color: rgba(255, 255, 255, 0.18); color: #fff; }
+.sb-rail-item.active { background: var(--nav-current); border-color: rgba(255, 255, 255, 0.18); color: #fff; }
 .sb-rail-item:focus-visible { outline: 2px solid #f8c56a; outline-offset: 2px; }
 .sb-rail-icon { font-size: 21px; }
 .sb-rail-label { display: block; margin-top: 3px; font-size: 10px; font-weight: 800; line-height: 1.25; text-align: center; white-space: nowrap; }
@@ -520,7 +530,8 @@ body.is-page-loading .hdr::after {
 
 .sb-item { gap: 8px; padding: 8px 9px; border-radius: 7px; font-size: 12px; }
 .sb-item:hover { background: #f1f5f8; }
-.sb-item.active { background: var(--nav-accent-soft); color: var(--nav-accent); }
+/* 現在地はこの画面で唯一の彩色。ここだけ青にして、他は無彩色で抑える。 */
+.sb-item.active { background: var(--nav-accent-soft); color: var(--nav-accent); font-weight: 900; }
 .sb-badge { display: inline-grid; width: 23px; height: 20px; border: 1px solid #d5e2ee; border-radius: 5px; background: #f8fafb; color: #4e6d88; font-size: 9px; }
 .sb-item.active .sb-badge { border-color: #a9cae3; background: #fff; color: var(--nav-accent); }
 .sb-item.dim { color: var(--nav-muted); }
@@ -583,6 +594,24 @@ body.is-page-loading .hdr::after {
 .ph-context .material-symbols-outlined { font-size: 16px; }
 .ph-context-admin { color: #28557f; }
 .ph-context-admin strong { color: var(--ink); }
+
+/* 管理・設定の画面は「アプリの裏側」であり、業務画面とは利用者も目的も違う。
+   ページヘッダーの面を寒色グレーに変え、開いた瞬間に別領域だと分かるようにする（VP-51）。
+   ナビゲーションと本文の構造は業務画面と揃えたまま、面の色だけで区別する。 */
+.main-admin .ph { position: relative; background: var(--admin-surface); border-bottom-color: #d3dde8; }
+.main-admin .pk { color: #28557f; }
+/* 面の色だけに頼らない。輝度でしか差が出ない手がかりは、色覚特性や画面設定で消える。
+   左端に帯を置き、形でも「裏側の画面」を示す。 */
+.main-admin .ph::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--nav-accent);
+}
+.main-admin .ps { color: var(--admin-muted); }
 .ph-context-scope { color: #526b82; }
 .ph-context-scope strong { color: var(--ink); }
 .ph-context-scope time { color: var(--muted); }
@@ -768,7 +797,20 @@ body.is-page-loading .hdr::after {
 .dashboard-alert-title { font-weight: 900; font-size: 12px; line-height: 1.35; color: var(--ink); overflow-wrap: anywhere; }
 .dashboard-alert-meta { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.4; }
 
-.dashboard-risk-wrap { overflow: auto; }
+/* 横方向だけに絞る。縦も許すと本文のスクロール領域と入れ子になり、
+   高さ制約が付いた時点でホイールが効かなくなる（VP-42）。
+   端の影は `.t-wrap` と同じ理由（続きがあることを示す / VP-49）。 */
+.dashboard-risk-wrap {
+  overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--surface) 40%, rgba(255, 255, 255, 0)) left center,
+    linear-gradient(to left, var(--surface) 40%, rgba(255, 255, 255, 0)) right center,
+    radial-gradient(farthest-side at 0 50%, rgba(15, 42, 71, 0.16), rgba(15, 42, 71, 0)) left center,
+    radial-gradient(farthest-side at 100% 50%, rgba(15, 42, 71, 0.16), rgba(15, 42, 71, 0)) right center;
+  background-repeat: no-repeat;
+  background-size: 36px 100%, 36px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
 .dashboard-risk-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 12px; }
 .dashboard-risk-table th {
   position: sticky;
@@ -786,9 +828,14 @@ body.is-page-loading .hdr::after {
 .dashboard-risk-table tr:last-child td { border-bottom: 0; }
 .dashboard-risk-table tbody tr:hover td { background: #f8fbff; }
 .dashboard-empty { padding: 12px; color: var(--muted); font-size: 12px; font-weight: 800; }
-.task-list-table { min-width: 780px; }
+/* 優先度をタスク名のセルへ入れた分、名前に必要な幅が増えた（VP-31）。
+   780px のままだと 760px 幅で名前が数 px はみ出す。表は横スクロールできるので、
+   名前が読める幅を確保する側に倒す。 */
+.task-list-table { min-width: 860px; }
 .task-list-name { min-width: 190px; }
-.task-list-name > a { display: block; font-weight: 800; }
+/* 優先度バッジを同じセルへ入れたぶん、名前に使える幅が縮んだ（VP-31 の列削減）。
+   折り返せない長い名前がセルからはみ出すため、最後の手段として任意位置で折る。 */
+.task-list-name > a { display: block; font-weight: 800; overflow-wrap: anywhere; }
 .task-list-name > span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.3; }
 .task-list-next { min-width: 160px; max-width: 30ch; }
 
@@ -849,7 +896,22 @@ body.is-page-loading .hdr::after {
 .t tbody tr { transition: background 0.12s ease; }
 .t tbody tr:hover td { background: #f7fafc; }
 .t a { color: var(--blue); font-weight: 800; }
-.t-wrap { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-gutter: stable both-edges; }
+/* 横スクロールできる表は、端に影を出して「まだ続きがある」ことを示す（VP-12）。
+   `background-attachment: local` の面が一緒に流れるため、端まで送ると影が自然に消える。
+   スクロールバーだけでは、表が切れていることに気づけない。 */
+.t-wrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable both-edges;
+  background:
+    linear-gradient(to right, var(--surface) 40%, rgba(255, 255, 255, 0)) left center,
+    linear-gradient(to left, var(--surface) 40%, rgba(255, 255, 255, 0)) right center,
+    radial-gradient(farthest-side at 0 50%, rgba(15, 42, 71, 0.16), rgba(15, 42, 71, 0)) left center,
+    radial-gradient(farthest-side at 100% 50%, rgba(15, 42, 71, 0.16), rgba(15, 42, 71, 0)) right center;
+  background-repeat: no-repeat;
+  background-size: 36px 100%, 36px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
 
 /* ── バッジ ─────────────────────────────────────────────── */
 

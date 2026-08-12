@@ -3,10 +3,10 @@
 {% block subtitle %}前回確認後の変化・判断待ち・未確認事項をまとめた下書きです。確認してから共有してください。{% endblock %}
 
 {% block header_actions %}
-  <div class="ph-action-group" aria-label="対象期間">
-    <a class="btn-out sm{% if not is_weekly %} is-active{% endif %}" href="{% url 'forecast:report' %}">日次</a>
-    <a class="btn-out sm{% if is_weekly %} is-active{% endif %}" href="{% url 'forecast:report' %}?range=weekly">週次</a>
-  </div>
+  {% comment %}
+  VP-16: 日次・週次は操作ではなく表示範囲の選択なので、ページヘッダーには置かない。
+  本文先頭の「対象期間」へ移し、ヘッダーには他画面へ移る操作だけを残す。
+  {% endcomment %}
   <a class="btn-b sm" href="{% url 'forecast:live' %}">ライブ着地予測へ</a>
 {% endblock %}
 
@@ -17,7 +17,13 @@
   外部へは送信しない（この画面が作るのは下書きまで）。
   {% endcomment %}
   {% comment %}テンプレートタグは改行をまたげないため、include は 1 行で書く。{% endcomment %}
-  {% include "partials/coachmark.html" with coach_key="forecast_report" step1="この画面が作るのは下書きだけです。外部システムへは送信しないので、まず内容を読んでください" step2="「前回からの変化」と「算定不能の項目」で、報告に載せる内容を決めます" step3="「未確認事項（確定していません）」の関連は、確定または否定するまで報告に載せないでください" step4="最後に「共有用の文面」をコピーし、編集してから共有します。日次と週次は右上で切り替えます" %}
+  {% include "partials/coachmark.html" with coach_key="forecast_report" step1="この画面が作るのは下書きだけです。外部システムへは送信しないので、まず内容を読んでください" step2="「前回からの変化」と「算定不能の項目」で、報告に載せる内容を決めます" step3="「未確認事項（確定していません）」の関連は、確定または否定するまで報告に載せないでください" step4="最後に「共有用の文面」をコピーし、編集してから共有します。日次と週次は本文先頭の「対象期間」で切り替えます" %}
+
+  <div class="quick-views" aria-label="対象期間">
+    <span class="quick-views-label">対象期間</span>
+    <a class="btn-out sm{% if not is_weekly %} is-active{% endif %}" href="{% url 'forecast:report' %}">日次</a>
+    <a class="btn-out sm{% if is_weekly %} is-active{% endif %}" href="{% url 'forecast:report' %}?range=weekly">週次</a>
+  </div>
 
   <div class="callout w">
     <p><strong>これは下書きです。</strong>未確認の関連と算定不能の項目を確認してから共有してください。この画面から外部システムへは送信しません。</p>

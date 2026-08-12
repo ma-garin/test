@@ -50,11 +50,15 @@
                   <input type="hidden" name="deliverable" value="{{ row.deliverable.pk }}">
                   {% if row.deliverable.status == 'pending_approval' %}
                     <div class="ps">次の操作: 内容を確認して承認する</div>
+                    {% comment %}
+                      この画面の存在理由そのものの操作。行ごとに繰り返されても種類は 1 つなので、
+                      主ボタンのまま残す（VP-16 は「種類の異なる主ボタン」を 1 つに絞る規律）。
+                    {% endcomment %}
                     <button type="submit" class="btn-b sm" name="decision" value="approved">承認</button>
                     <button type="submit" class="btn-ghost sm" name="decision" value="rejected">差し戻し</button>
                   {% else %}
                     <div class="ps">次の操作: 承認依頼を出す</div>
-                    <button type="submit" class="btn-b sm" name="decision" value="requested">承認依頼</button>
+                    <button type="submit" class="btn-out sm" name="decision" value="requested">承認依頼</button>
                   {% endif %}
                 </form>
               </td>

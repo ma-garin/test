@@ -7,9 +7,14 @@
   UXP-01: 主操作は本文の「次にやること」1 つに寄せる。検知の保存実行は
   「押す前に何が作られるか」を出せる予兆検知画面に置く（ここからは実行しない）。
   {% endcomment %}
+  {% comment %}
+  VP-16: ページヘッダーの操作は 3 つ未満にする。「PMOに相談する」は、この画面で
+  毎回行う操作ではなく、内訳を読んだあとに必要になったときだけ使う導線のため、
+  本文の「台帳へのショートカット」へ移した（検知結果・案件一覧へは、ここの数字を
+  確認する流れでそのまま使うため残す）。
+  {% endcomment %}
   <a class="btn-out sm" href="{% url 'dashboard:detection' %}">検知結果</a>
   <a class="btn-out sm" href="{% url 'projects:list' %}">案件一覧へ</a>
-  <a class="btn-out sm" href="{% url 'pmo:consultation' %}">PMOに相談する</a>
 {% endblock %}
 
 {% block content %}
@@ -225,6 +230,11 @@
           <span class="badge a">未解決</span>
           <a class="attention-name" href="{% url 'projects:issue_list' %}?status=open">課題 {{ overview.total_open_issues }}件</a>
           <span class="attention-meta">解決・完了になっていない課題</span>
+        </li>
+        <li class="attention-item">
+          <span class="badge n">相談</span>
+          <a class="attention-name" href="{% url 'pmo:consultation' %}">PMOに相談する</a>
+          <span class="attention-meta">判断に迷う項目を PMO に投げます</span>
         </li>
       </ul>
     </div>

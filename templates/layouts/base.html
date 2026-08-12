@@ -92,7 +92,8 @@
     </div>
   </nav>
 
-  <main class="main" aria-labelledby="page-heading">
+  {# 管理・設定は業務画面と別領域である（VP-51）。面の色を変えるための目印を付ける。 #}
+  <main class="main{% for section in nav_sections %}{% if section.key == 'admin' and section.is_current %} main-admin{% endif %}{% endfor %}" aria-labelledby="page-heading">
     <div class="ph">
       <div>
         <div class="pk">{% block kicker %}{{ page_kicker|default:"VERIRAG" }}{% endblock %}</div>

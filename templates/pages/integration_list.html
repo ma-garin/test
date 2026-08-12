@@ -65,7 +65,7 @@
                 {% if row.connection.can_pull_issues %}
                   <form method="post" action="{% url 'integrations:sync' row.connection.pk %}" data-submit-protection data-no-unsaved-warning data-confirm="外部連携の同期を開始します。外部側へは書き戻さず、外部からのデータを取り込みます。実行しますか？">
                     {% csrf_token %}
-                    <button type="submit" class="btn-b sm">同期実行</button>
+                    <button type="submit" class="btn-out sm">同期実行</button>
                   </form>
                   <div class="ps">
                     対象: {{ row.sync_target }} ／
