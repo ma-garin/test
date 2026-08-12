@@ -1,0 +1,14 @@
+# PMO自律運用 制御面の保護パス（docs/安全施策.md SC-01 / SA-01）
+#
+# 責任者は未定。docs/安全施策.md 11章3「CODEOWNERSのセキュリティ責任者、
+# PMO責任者、外部連携責任者」は人が決定する事項であり、以下は仮の
+# プレースホルダである。実際の GitHub ユーザー名／チームに置き換え、
+# リポジトリ設定で「保護ブランチ + レビュー必須」を有効化するまで、
+# このファイルはレビュー強制として機能しない。
+
+docs/安全施策.md                 @TODO-security-owner @TODO-pmo-owner
+docs/提案.md                      @TODO-security-owner @TODO-pmo-owner
+docs/agent/pmo_autopilot_*.json  @TODO-security-owner @TODO-pmo-owner
+tools/pmo_autopilot_harness/     @TODO-security-owner @TODO-pmo-owner
+.github/                          @TODO-security-owner
+.github/CODEOWNERS                @TODO-security-owner

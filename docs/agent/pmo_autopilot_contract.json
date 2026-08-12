@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "purpose": "PMO自律運用 P0 の不変条件。実装、テスト、レビューの全てはこの契約を弱めてはならない。",
+  "default_rollout_mode": "shadow",
+  "forbidden_in_p0": [
+    "未承認の外部システム書き込み",
+    "未承認の外部通知送信",
+    "期限・優先度・スコープ・担当者の自動確定",
+    "根拠不足または根拠競合時の自動完了",
+    "テナント境界をまたぐ読み書き",
+    "dry_runによるDB・監査・外部・ファイルへの書き込み"
+  ],
+  "automation_levels": {
+    "observe": "読み取り、検知、根拠収集、シミュレーションのみ。",
+    "internal_apply": "取り消せる内部下書き、再計算、内部確認依頼のみ。",
+    "confirm": "人の確認が必要。確認まで実行しない。",
+    "approve": "権限者の明示承認が必要。外部影響操作は必ずこれ。",
+    "prohibited": "自動実行しない。"
+  },
+  "states": [
+    "new",
+    "assessing",
+    "planned",
+    "auto_running",
+    "awaiting_confirmation",
+    "awaiting_approval",
+    "executing",
+    "retry_scheduled",
+    "completed",
+    "cancelled",
+    "hold",
+    "failed"
+  ],
+  "terminal_states": ["completed", "cancelled", "hold"],
+  "allowed_transitions": {
+    "new": ["assessing", "cancelled"],
+    "assessing": ["planned", "hold", "cancelled"],
+    "planned": ["auto_running", "awaiting_confirmation", "awaiting_approval", "hold", "cancelled"],
+    "auto_running": ["awaiting_confirmation", "awaiting_approval", "completed", "retry_scheduled", "hold", "failed"],
+    "awaiting_confirmation": ["planned", "awaiting_approval", "hold", "cancelled"],
+    "awaiting_approval": ["executing", "planned", "hold", "cancelled"],
+    "executing": ["completed", "retry_scheduled", "hold", "failed"],
+    "retry_scheduled": ["auto_running", "executing", "hold", "failed"],
+    "failed": ["retry_scheduled", "hold"],
+    "completed": [],
+    "cancelled": [],
+    "hold": ["planned"]
+  },
+  "transition_guards": {
+    "assessing_to_planned": ["tenant", "scope", "dedupe_key", "policy_snapshot", "evidence_bundle"],
+    "planned_to_auto_running": ["all_steps_are_observe_or_internal_apply"],
+    "planned_to_awaiting_confirmation": ["has_confirm_step_or_stale_or_conflicting_evidence"],
+    "awaiting_approval_to_executing": ["approval_is_approved", "approval_not_expired", "plan_version_matches", "evidence_hash_matches", "evidence_is_fresh", "actor_has_required_role", "actor_is_not_creator_or_last_executor"],
+    "any_to_completed": ["all_required_steps_succeeded_or_explicitly_skipped", "no_unresolved_evidence_conflict"],
+    "hold_to_planned": ["human_reason", "current_policy_re_evaluated"]
+  },
+  "failure_policy": {
+    "immediate_hold_categories": ["credential", "permission", "policy", "secrets"],
+    "retryable_categories": ["transient", "timeout", "unknown", "test"],
+    "max_same_category_attempts": 3,
+    "retry_schedule_seconds": [60, 300, 1800]
+  },
+  "approval_packet_sections": [
+    "requested_action",
+    "why_now",
+    "before_after_diff",
+    "evidence",
+    "impact_of_not_acting",
+    "automation_level_and_required_role",
+    "decision_and_reason"
+  ],
+  "required_work_item_fields": [
+    "tenant",
+    "project",
+    "kind",
+    "state",
+    "priority",
+    "risk_level",
+    "source_type",
+    "source_key",
+    "dedupe_key",
+    "policy_snapshot",
+    "correlation_id"
+  ],
+  "required_evidence_fields": [
+    "source_ref",
+    "scope",
+    "content_hash",
+    "captured_at",
+    "expires_at"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "execution_rule": "各 scenario の assertions と safety_assertions がすべて自動テストに対応するまで、対応 ticket を done にしてはならない。",
+  "scenarios": [
+    {"id":"H-01","ticket_id":"PA-04","title":"同一 Alert 再到着","arrange":"同じ tenant、project、dedupe_key の有効 Work Item がある。","act":"同じ Alert を再度 intake する。","assertions":["Work Item の総数は 1","既存 Work Item に WorkLink が追加される"],"safety_assertions":["別 tenant の Work Item は変わらない"]},
+    {"id":"H-02","ticket_id":"PA-01","title":"テナント越境拒否","arrange":"tenant A と tenant B に同じ dedupe_key がある。","act":"tenant A の Work Item を取得・更新する。","assertions":["A だけが取得・更新される"],"safety_assertions":["B の Work Item、Evidence、Approval、Audit は 0 件変更"]},
+    {"id":"H-03","ticket_id":"PA-02","title":"古い根拠","arrange":"EvidenceBundle.expires_at が現在より過去。","act":"approve Step の policy を評価する。","assertions":["結果は awaiting_confirmation または hold"],"safety_assertions":["executor と connector は呼ばれない"]},
+    {"id":"H-04","ticket_id":"PA-05","title":"根拠競合","arrange":"同じ conflict_group に相反する根拠がある。","act":"Plan を作成して実行可否を評価する。","assertions":["Work Item は awaiting_confirmation","競合する source_ref が承認パケットに両方表示される"],"safety_assertions":["completed にならない"]},
+    {"id":"H-05","ticket_id":"PA-06","title":"低リスク内部実行の冪等性","arrange":"internal_apply の下書き作成 Step が一件ある。","act":"同じ Step を二回 process する。","assertions":["下書きは一件","成功 Attempt は一件"],"safety_assertions":["外部コネクタ呼出は 0"]},
+    {"id":"H-06","ticket_id":"PA-06","title":"未承認外部更新拒否","arrange":"approve の外部更新 Step が未承認。","act":"process する。","assertions":["Work Item は awaiting_approval"],"safety_assertions":["fake connector 呼出回数は 0"]},
+    {"id":"H-07","ticket_id":"PA-03","title":"承認失効","arrange":"plan v1 と根拠 hash h1 が承認済み。","act":"plan を v2 または根拠を h2 に更新する。","assertions":["ApprovalRequest.status は expired"],"safety_assertions":["v1 承認で実行できない"]},
+    {"id":"H-08","ticket_id":"PA-03","title":"職務分掌","arrange":"高リスク Work Item の作成者または最後の実行者がいる。","act":"同じ利用者が承認する。","assertions":["サーバ側で拒否される"],"safety_assertions":["Approval と external receipt は作られない"]},
+    {"id":"H-09","ticket_id":"PA-06","title":"一時失敗の上限","arrange":"同じ Step が transient error を返す。","act":"再試行を三回行う。","assertions":["三回目に hold","次回再試行は作られない"],"safety_assertions":["四回目の executor 呼出は 0"]},
+    {"id":"H-10","ticket_id":"PA-06","title":"credential 失敗の即時停止","arrange":"Step が credential error を返す。","act":"一回実行する。","assertions":["一回目で hold"],"safety_assertions":["再試行予約は 0"]},
+    {"id":"H-11","ticket_id":"PA-08","title":"dry-run 不変","arrange":"DB、OperationLog、fake connector の前後スナップショットを取る。","act":"run_pmo_automation --dry-run を実行する。","assertions":["実行計画を返す"],"safety_assertions":["DB、Audit、connector、ファイルのスナップショットが完全一致"]},
+    {"id":"H-12","ticket_id":"PA-09","title":"報告サイクル","arrange":"締め時刻と対象データ、前回承認済み報告がある。","act":"report_cycle を実行する。","assertions":["新しい下書き、差分、事実チェック、ApprovalRequest が作られる"],"safety_assertions":["承認済み本文は変更されない"]},
+    {"id":"H-13","ticket_id":"PA-09","title":"算定不能の安全な修復","arrange":"勤務カレンダー未設定で予測が算定不能。","act":"forecast_review を intake する。","assertions":["data_quality_repair が作られる","必要入力と影響範囲を持つ"],"safety_assertions":["勤務日数・期日を推測して保存しない"]},
+    {"id":"H-14","ticket_id":"PA-07","title":"承認センターの操作","arrange":"確認待ち、承認待ち、失効、保留の Work Item が各一件ある。","act":"キーボードだけで詳細表示・理由入力・承認操作を行う。","assertions":["理由なしでは送信できない","成功後に状態と監査が表示される"],"safety_assertions":["権限外・失効済みは承認できない"]}
+  ]
+}

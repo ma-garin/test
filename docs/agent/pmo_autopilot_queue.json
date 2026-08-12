@@ -1,0 +1,678 @@
+{
+  "schema_version": 1,
+  "source": "docs/提案.md",
+  "contract": "docs/agent/pmo_autopilot_contract.json",
+  "decisions": "docs/agent/pmo_autopilot_decisions.json",
+  "scenarios": "docs/agent/pmo_autopilot_scenarios.json",
+  "states": [
+    "untouched",
+    "in_progress",
+    "done",
+    "hold",
+    "decision_required"
+  ],
+  "tickets": [
+    {
+      "id": "PA-01",
+      "priority": "P0",
+      "kind": "model",
+      "depends_on": [],
+      "state": "done",
+      "goal": "pmo_automation の独立モデルと migration を追加する。",
+      "allowed_paths": [
+        "apps/pmo_automation/",
+        "config/settings/",
+        "apps/core/tests/test_pmo_autopilot_harness.py",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "既存モデルの削除",
+        "既存テーブルの列名変更",
+        "外部接続"
+      ],
+      "acceptance": [
+        "PmoWorkItem、WorkPlan、WorkStep、EvidenceBundle、AutomationPolicy、ApprovalRequest、ExecutionAttempt、WorkLink を追加",
+        "tenant と dedupe_key の有効 Work Item 一意制約を持つ",
+        "既存 Alert、AgentRun、Deliverable を削除・移行しない",
+        "H-02 を自動テスト化"
+      ],
+      "required_scenarios": [
+        "H-02"
+      ],
+      "required_reviews": [
+        "migration",
+        "tenant_boundary",
+        "destructive_change"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-02"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "migration",
+          "tenant_boundary",
+          "destructive_change"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T03:52:17.246166+00:00"
+      }
+    },
+    {
+      "id": "PA-02",
+      "priority": "P0",
+      "kind": "service",
+      "depends_on": [
+        "PA-01"
+      ],
+      "state": "done",
+      "goal": "自動化ポリシー評価を純粋な一箇所のサービスとして実装する。",
+      "allowed_paths": [
+        "apps/pmo_automation/services/policy.py",
+        "apps/pmo_automation/tests/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "ビュー内のpolicy判定",
+        "外部コネクタ呼出",
+        "P0の既定権限を緩和"
+      ],
+      "acceptance": [
+        "contract の automation_levels と transition_guards を全て実装",
+        "評価結果は allow/deny だけでなく level、next_state、reason を返す",
+        "古い根拠・競合・権限外を安全側へ倒す",
+        "H-03 を自動テスト化"
+      ],
+      "required_scenarios": [
+        "H-03"
+      ],
+      "required_reviews": [
+        "policy_boundary",
+        "tenant_boundary"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation.tests.test_policy --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-03"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "policy_boundary",
+          "tenant_boundary"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T04:00:28.956764+00:00"
+      }
+    },
+    {
+      "id": "PA-03",
+      "priority": "P0",
+      "kind": "service",
+      "depends_on": [
+        "PA-01",
+        "PA-02"
+      ],
+      "state": "done",
+      "goal": "Work Item の状態機械、承認失効、職務分掌を実装する。",
+      "allowed_paths": [
+        "apps/pmo_automation/services/workflow.py",
+        "apps/pmo_automation/tests/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "QuerySet.update による状態遷移の迂回",
+        "自己承認の許可",
+        "承認済みplanの上書き",
+        "未承認の外部接続・外部送信"
+      ],
+      "acceptance": [
+        "contract の allowed_transitions 以外を拒否",
+        "根拠hash・plan版・policy版の変更で承認失効",
+        "作成者と最後の実行者の高リスク自己承認を拒否",
+        "H-07、H-08 を自動テスト化"
+      ],
+      "required_scenarios": [
+        "H-07",
+        "H-08"
+      ],
+      "required_reviews": [
+        "state_machine",
+        "separation_of_duties",
+        "concurrency"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation.tests.test_workflow --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-07",
+        "H-08"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "state_machine",
+          "separation_of_duties",
+          "concurrency"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T04:10:39.233191+00:00"
+      }
+    },
+    {
+      "id": "PA-04",
+      "priority": "P0",
+      "kind": "service",
+      "depends_on": [
+        "PA-01",
+        "PA-02"
+      ],
+      "state": "done",
+      "goal": "既存イベントから安全に Work Item を作る intake を実装する。",
+      "allowed_paths": [
+        "apps/pmo_automation/services/intake.py",
+        "apps/dashboard/services/detection/runner.py",
+        "apps/pmo_automation/tests/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "検知規則の意味変更",
+        "同一原因の重複作成",
+        "他テナントのevent取得",
+        "未承認の外部接続・外部送信"
+      ],
+      "acceptance": [
+        "Alert、算定不能、IntegrationJob失敗を入力にする",
+        "決定的dedupe_keyで有効WorkItemを統合",
+        "dry-runで保存しない",
+        "H-01 を自動テスト化"
+      ],
+      "required_scenarios": [
+        "H-01"
+      ],
+      "required_reviews": [
+        "idempotency",
+        "tenant_boundary",
+        "dry_run"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation.tests.test_intake --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-01"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "idempotency",
+          "tenant_boundary",
+          "dry_run"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T04:11:50.947782+00:00"
+      }
+    },
+    {
+      "id": "PA-05",
+      "priority": "P0",
+      "kind": "service",
+      "depends_on": [
+        "PA-03",
+        "PA-04"
+      ],
+      "state": "done",
+      "goal": "決定的なPlan、Step、EvidenceBundleを生成する。",
+      "allowed_paths": [
+        "apps/pmo_automation/services/planning.py",
+        "apps/pmo_automation/tests/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "LLM必須化",
+        "出所なし主張の保存",
+        "根拠競合の自動解消",
+        "未承認の外部アクセス・外部送信"
+      ],
+      "acceptance": [
+        "LLM無しで全P0種別のplanを作れる",
+        "根拠にsource_ref、scope、hash、期限を保存",
+        "競合はconfirmationへ遷移",
+        "H-04 を自動テスト化"
+      ],
+      "required_scenarios": [
+        "H-04"
+      ],
+      "required_reviews": [
+        "evidence_boundary",
+        "determinism"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation.tests.test_planning --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-04"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "evidence_boundary",
+          "determinism"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T04:16:41.888420+00:00"
+      }
+    },
+    {
+      "id": "PA-06",
+      "priority": "P0",
+      "kind": "service",
+      "depends_on": [
+        "PA-03",
+        "PA-05"
+      ],
+      "state": "done",
+      "goal": "safe Step executor、冪等性、失敗分類、再試行上限を実装する。",
+      "allowed_paths": [
+        "apps/pmo_automation/services/executor.py",
+        "apps/pmo_automation/services/failures.py",
+        "apps/pmo_automation/tests/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "P0での実外部送信",
+        "idempotency_key無しの再実行",
+        "credential失敗の再試行"
+      ],
+      "acceptance": [
+        "internal_applyだけを自動実行",
+        "同Stepを二度成功させない",
+        "failure_policy通りに停止・再試行",
+        "H-05、H-06、H-09、H-10 を自動テスト化"
+      ],
+      "required_scenarios": [
+        "H-05",
+        "H-06",
+        "H-09",
+        "H-10"
+      ],
+      "required_reviews": [
+        "external_side_effect",
+        "idempotency",
+        "failure_safety"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation.tests.test_executor --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-05",
+        "H-06",
+        "H-09",
+        "H-10"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "external_side_effect",
+          "idempotency",
+          "failure_safety"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T04:25:40.123773+00:00"
+      }
+    },
+    {
+      "id": "PA-07",
+      "priority": "P0",
+      "kind": "view",
+      "depends_on": [
+        "PA-03",
+        "PA-05"
+      ],
+      "state": "done",
+      "goal": "承認センターとWork Item詳細を実装する。",
+      "allowed_paths": [
+        "apps/pmo_automation/views.py",
+        "apps/pmo_automation/urls.py",
+        "templates/pages/pmo_approval_center.html",
+        "templates/pages/pmo_work_item_detail.html",
+        "apps/core/navigation.py",
+        "apps/pmo_automation/tests/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "画面だけの権限判定",
+        "理由なし承認",
+        "既存承認画面の削除",
+        "未承認の外部実行・外部送信"
+      ],
+      "acceptance": [
+        "承認パケット7節を固定順で表示",
+        "権限・失効・plan版をPOST時に再検証",
+        "キーボード操作と色以外の状態表現",
+        "H-14 を自動テスト化し4状態の画面証跡を残す"
+      ],
+      "required_scenarios": [
+        "H-14"
+      ],
+      "required_reviews": [
+        "authorization",
+        "accessibility",
+        "manual_ui"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation.tests.test_views --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-14"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "authorization",
+          "accessibility",
+          "manual_ui"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T04:54:52.729868+00:00"
+      }
+    },
+    {
+      "id": "PA-08",
+      "priority": "P0",
+      "kind": "service",
+      "depends_on": [
+        "PA-04",
+        "PA-06"
+      ],
+      "state": "done",
+      "goal": "定期実行用コマンドとdry-run不変契約を実装する。",
+      "allowed_paths": [
+        "apps/pmo_automation/management/commands/",
+        "apps/pmo_automation/tests/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "dry-runの保存",
+        "本番スケジューラ導入",
+        "外部接続"
+      ],
+      "acceptance": [
+        "run_pmo_automation、process_pmo_work、pmo_automation_statusを追加",
+        "dry-runがDB・Audit・connector・ファイルを不変にする",
+        "limitとtenant指定を必須にする",
+        "H-11 を自動テスト化"
+      ],
+      "required_scenarios": [
+        "H-11"
+      ],
+      "required_reviews": [
+        "dry_run",
+        "operational_safety"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation.tests.test_commands --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-11"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "dry_run",
+          "operational_safety"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T04:35:12.001443+00:00"
+      }
+    },
+    {
+      "id": "PA-09",
+      "priority": "P0",
+      "kind": "product_loop",
+      "depends_on": [
+        "PA-06",
+        "PA-08"
+      ],
+      "state": "done",
+      "goal": "報告サイクルと算定不能データ品質修復をP0経路へ接続する。",
+      "allowed_paths": [
+        "apps/pmo_automation/",
+        "apps/pmo/services/",
+        "apps/forecast/",
+        "apps/dashboard/",
+        "templates/pages/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "承認済み本文の変更",
+        "不足データの推測保存",
+        "未承認の外部通知・外部送信"
+      ],
+      "acceptance": [
+        "新しい報告下書きはsnapshot・差分・事実チェックを持つ",
+        "算定不能は入力依頼に変換し再計算を予約",
+        "実案件の周期設定はD-02まで作らない",
+        "H-12、H-13 を自動テスト化"
+      ],
+      "required_scenarios": [
+        "H-12",
+        "H-13"
+      ],
+      "required_reviews": [
+        "data_integrity",
+        "approval_boundary",
+        "manual_ui"
+      ],
+      "verification": [
+        ".venv/bin/python manage.py test apps.pmo_automation --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-12",
+        "H-13"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "data_integrity",
+          "approval_boundary",
+          "manual_ui"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T04:43:54.146218+00:00"
+      }
+    },
+    {
+      "id": "PA-10",
+      "priority": "P0",
+      "kind": "harness",
+      "depends_on": [
+        "PA-01",
+        "PA-02",
+        "PA-03",
+        "PA-04",
+        "PA-05",
+        "PA-06",
+        "PA-07",
+        "PA-08",
+        "PA-09"
+      ],
+      "state": "done",
+      "goal": "自律運用の契約、キュー、失敗停止、回帰ゲートを完成する。",
+      "allowed_paths": [
+        "tools/pmo_autopilot_harness/",
+        "apps/core/tests/test_pmo_autopilot_harness.py",
+        "docs/agent/",
+        "docs/提案.md"
+      ],
+      "forbidden_actions": [
+        "テスト失敗の握り潰し",
+        "自己レビューだけでdone",
+        "実外部サービスへの接続"
+      ],
+      "acceptance": [
+        "H-01からH-14が全て実テストに紐付く",
+        "queue、contract、decisions、scenariosの整合をvalidateで検査",
+        "migration一貫性をリリースゲートへ含める",
+        "既存agent_harness回帰を通す"
+      ],
+      "required_scenarios": [
+        "H-01",
+        "H-02",
+        "H-03",
+        "H-04",
+        "H-05",
+        "H-06",
+        "H-07",
+        "H-08",
+        "H-09",
+        "H-10",
+        "H-11",
+        "H-12",
+        "H-13",
+        "H-14"
+      ],
+      "required_reviews": [
+        "harness_integrity",
+        "independent_review"
+      ],
+      "verification": [
+        ".venv/bin/python -m tools.pmo_autopilot_harness.cli validate",
+        ".venv/bin/python manage.py test apps.core.tests.test_pmo_autopilot_harness --settings=config.settings.test"
+      ],
+      "evidence": [
+        "H-01",
+        "H-02",
+        "H-03",
+        "H-04",
+        "H-05",
+        "H-06",
+        "H-07",
+        "H-08",
+        "H-09",
+        "H-10",
+        "H-11",
+        "H-12",
+        "H-13",
+        "H-14"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "harness_integrity",
+          "independent_review"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T05:13:19.272483+00:00"
+      }
+    },
+    {
+      "id": "PA-11",
+      "priority": "P1",
+      "kind": "integration",
+      "depends_on": [
+        "PA-10"
+      ],
+      "state": "decision_required",
+      "hold_reason": "D-04: 最初に許可する承認付き外部反映が未決定。",
+      "goal": "承認済みOutboxと一つの限定external adapterを実装する。",
+      "allowed_paths": [
+        "apps/pmo_automation/",
+        "apps/integrations/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "D-04なしの実外部接続",
+        "承認なし送信"
+      ],
+      "acceptance": [
+        "外部操作を一つに限定",
+        "受領証跡と冪等性を持つ",
+        "承認失効時に送信しない"
+      ],
+      "required_scenarios": [],
+      "required_reviews": [
+        "security",
+        "external_side_effect"
+      ],
+      "verification": [],
+      "evidence": []
+    },
+    {
+      "id": "PA-12",
+      "priority": "P1",
+      "kind": "product_loop",
+      "depends_on": [
+        "PA-10"
+      ],
+      "state": "untouched",
+      "goal": "シナリオ予測、品質相関、RAG品質修復、フィードバック較正を一種別ずつ追加する。",
+      "allowed_paths": [
+        "apps/pmo_automation/",
+        "apps/forecast/",
+        "apps/graph/",
+        "apps/rag/",
+        "apps/audit/",
+        "docs/agent/"
+      ],
+      "forbidden_actions": [
+        "P0の契約緩和",
+        "複数種別の同時導入"
+      ],
+      "acceptance": [
+        "追加種別ごとにshadow比較、policy、scenario、KPIを持つ"
+      ],
+      "required_scenarios": [],
+      "required_reviews": [
+        "shadow_comparison",
+        "policy_boundary"
+      ],
+      "verification": [],
+      "evidence": []
+    },
+    {
+      "id": "PA-13",
+      "priority": "P1",
+      "kind": "product_loop",
+      "depends_on": [
+        "PA-10"
+      ],
+      "state": "decision_required",
+      "hold_reason": "D-01、D-02、D-05: 実案件の有効化範囲、周期、承認運用が未決定。",
+      "goal": "テナント単位の段階ロールアウトと切戻しを実施する。",
+      "allowed_paths": [
+        "apps/pmo_automation/",
+        "docs/agent/",
+        "docs/提案.md"
+      ],
+      "forbidden_actions": [
+        "決定なしの実案件有効化",
+        "stop switchなしの展開"
+      ],
+      "acceptance": [
+        "shadowからinternal_applyへの昇格条件を満たす",
+        "即時observeへの切戻しができる"
+      ],
+      "required_scenarios": [],
+      "required_reviews": [
+        "business_approval",
+        "rollout_safety"
+      ],
+      "verification": [],
+      "evidence": []
+    }
+  ]
+}

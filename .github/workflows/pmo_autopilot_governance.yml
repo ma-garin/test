@@ -1,0 +1,26 @@
+name: PMO Autopilot Governance
+
+# docs/安全施策.md SC-01 / SA-01: 保護パス変更時の必須ジョブ。
+#
+# 現時点で実装済みなのは contract-validation のみ。
+# governance-review（CODEOWNERS 二者承認の強制）、migration-check、
+# full-regression、security-diff-scan は未実装。
+# docs/安全施策.md 11章の責任者・CI基盤決定を待って追加する。
+
+on:
+  pull_request:
+    paths:
+      - "docs/安全施策.md"
+      - "docs/提案.md"
+      - "docs/agent/pmo_autopilot_*.json"
+      - "tools/pmo_autopilot_harness/**"
+
+jobs:
+  contract-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m tools.pmo_autopilot_harness.cli validate

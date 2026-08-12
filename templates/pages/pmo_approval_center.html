@@ -1,0 +1,65 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}自律運用{% endblock %}
+{% block subtitle %}確認待ち・承認待ち・保留の Work Item だけを、状態と期限順に並べます。理由の無い承認・却下は記録できません。{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">確認・承認が必要な Work Item</span>
+      <span class="card-act">{{ work_items|length }}件</span>
+    </div>
+    {% if not can_decide %}
+      <div class="callout w">
+        <p><strong>あなたのロールでは承認操作ができません。</strong>詳細は開けますが、承認・却下・差し戻しは承認権限のあるロールだけが行えます。</p>
+      </div>
+    {% endif %}
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Work Item</th>
+            <th>状態{% include "partials/hint.html" with label="状態" body="色だけでなく状態名のテキストでも表します。確認待ち・承認待ちは人の対応が必要、保留は理由の確認が必要です。" %}</th>
+            <th>優先度</th>
+            <th>期限</th>
+            <th>次の1操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for work_item in work_items %}
+            <tr>
+              <td>
+                <a href="{% url 'pmo_automation:work_item_detail' work_item.pk %}" style="color:var(--blue);font-weight:900">
+                  {{ work_item.get_kind_display }}
+                </a>
+                <div class="ps">{{ work_item.project.name }} ／ {{ work_item.dedupe_key }}</div>
+              </td>
+              <td class="nowrap">
+                {% if work_item.state == 'awaiting_confirmation' %}
+                  <span class="badge b">確認待ち</span>
+                {% elif work_item.state == 'awaiting_approval' %}
+                  <span class="badge b">承認待ち</span>
+                {% elif work_item.state == 'hold' %}
+                  <span class="badge r">保留</span>
+                {% else %}
+                  <span class="badge n">{{ work_item.get_state_display }}</span>
+                {% endif %}
+                {% if work_item.block_reason %}
+                  <div class="ps">{{ work_item.block_reason }}</div>
+                {% endif %}
+              </td>
+              <td>{{ work_item.get_priority_display }}</td>
+              <td class="nowrap">{{ work_item.due_at|date:"n/j H:i"|default:"—" }}</td>
+              <td>
+                <a class="btn-out sm" href="{% url 'pmo_automation:work_item_detail' work_item.pk %}">詳細を開いて判断する</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty">いま確認・承認が必要な Work Item はありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

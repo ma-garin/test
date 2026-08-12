@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "rule": "status が decision_required の項目は、blocks に列挙したチケットを開始してはならない。列挙されていない P0 の実装では safe_default を使用する。",
+  "decisions": [
+    {
+      "id": "D-01",
+      "question": "最初に有効化するテナント・案件はどれか。",
+      "status": "decision_required",
+      "safe_default": "shadow モードのまま、体験用テナント以外では有効化しない。",
+      "blocks": ["PA-13"],
+      "owner": "業務責任者"
+    },
+    {
+      "id": "D-02",
+      "question": "報告種別ごとの締め時刻、承認期限、承認ロールは何か。",
+      "status": "decision_required",
+      "safe_default": "周期設定のモデルとテストだけを実装し、実案件のジョブは登録しない。",
+      "blocks": ["PA-13"],
+      "owner": "PMO責任者"
+    },
+    {
+      "id": "D-03",
+      "question": "P0 で internal_apply として許可する操作は何か。",
+      "status": "resolved",
+      "safe_default": "内部下書き作成、内部再計算、内部確認依頼の作成だけ。既存レコードの確定値変更、外部アクセス、通知送信は含めない。",
+      "blocks": [],
+      "owner": "提案書で固定"
+    },
+    {
+      "id": "D-04",
+      "question": "P1 で最初に許可する承認付き外部反映は何か。",
+      "status": "decision_required",
+      "safe_default": "Outbox、偽コネクタ、dry-run のみ実装し、実コネクタを接続しない。",
+      "blocks": ["PA-11"],
+      "owner": "業務責任者・セキュリティ責任者"
+    },
+    {
+      "id": "D-05",
+      "question": "確認者、承認者、ポリシー管理者の実名またはロール運用は何か。",
+      "status": "decision_required",
+      "safe_default": "既存ロールで権限判定を実装し、実案件へのポリシー緩和はしない。",
+      "blocks": ["PA-13"],
+      "owner": "テナント管理者"
+    }
+  ]
+}

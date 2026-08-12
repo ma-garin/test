@@ -1,0 +1,167 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}自律運用{% endblock %}
+{% block subtitle %}承認パケットは常にこの7項目・この順で表示します。理由の無い決定は記録できません。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'pmo_automation:approval_center' %}">承認センターへ戻る</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">{{ work_item.get_kind_display }}</span>
+      <span class="card-act">
+        {% if work_item.state == 'awaiting_confirmation' %}<span class="badge b">確認待ち</span>
+        {% elif work_item.state == 'awaiting_approval' %}<span class="badge b">承認待ち</span>
+        {% elif work_item.state == 'hold' %}<span class="badge r">保留</span>
+        {% elif work_item.state == 'completed' %}<span class="badge g">完了</span>
+        {% else %}<span class="badge n">{{ work_item.get_state_display }}</span>{% endif %}
+      </span>
+    </div>
+
+    {% comment %} 1. requested_action {% endcomment %}
+    <section aria-labelledby="section-1">
+      <h3 id="section-1">1. 何を実行するか</h3>
+      <p>{{ work_item.get_kind_display }}（{{ work_item.project.name }}）</p>
+      {% if plan %}<p class="ps">計画 v{{ plan.version }}: {{ plan.summary }}</p>{% endif %}
+      {% if approval %}<p class="ps">要求操作: {{ approval.requested_action }}</p>{% endif %}
+    </section>
+
+    {% comment %} 2. why_now {% endcomment %}
+    <section aria-labelledby="section-2">
+      <h3 id="section-2">2. なぜ今必要か</h3>
+      <p>優先度: {{ work_item.get_priority_display }} ／ リスク: {{ work_item.get_risk_level_display }}</p>
+      <p>期限: {{ work_item.due_at|date:"n/j H:i"|default:"未設定" }} ／ 検知: {{ work_item.created_at|date:"n/j H:i" }}</p>
+    </section>
+
+    {% comment %} 3. before_after_diff {% endcomment %}
+    <section aria-labelledby="section-3">
+      <h3 id="section-3">3. 実行前後の差分</h3>
+      {% if approval and approval.diff_summary %}
+        <p>{{ approval.diff_summary }}</p>
+      {% else %}
+        <p class="ps">差分情報はまだありません。</p>
+      {% endif %}
+    </section>
+
+    {% comment %}
+      4. evidence — 鮮度・競合・不足を色だけでなくテキストでも表す。
+      承認パケットは最大5件（views.py の MAX_EVIDENCE_IN_PACKET）。
+    {% endcomment %}
+    <section aria-labelledby="section-4">
+      <h3 id="section-4">4. 根拠（最大5件）</h3>
+      {% if evidence_bundles %}
+        <div class="t-wrap">
+          <table class="t">
+            <thead><tr><th>出所</th><th>取得日時</th><th>鮮度・競合</th></tr></thead>
+            <tbody>
+              {% for evidence in evidence_bundles %}
+                <tr>
+                  <td>{{ evidence.source_ref }}</td>
+                  <td class="nowrap">{{ evidence.captured_at|date:"n/j H:i" }}</td>
+                  <td>
+                    {% if evidence.conflict_group %}<span class="badge r">競合あり（{{ evidence.conflict_group }}）</span>{% endif %}
+                    {% if evidence.expires_at %}<span class="ps">期限 {{ evidence.expires_at|date:"n/j H:i" }}</span>{% else %}<span class="ps">無期限</span>{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="callout w"><p><strong>根拠が登録されていません。</strong>不足のまま承認・完了はできません。</p></div>
+      {% endif %}
+    </section>
+
+    {% comment %} 5. impact_of_not_acting {% endcomment %}
+    <section aria-labelledby="section-5">
+      <h3 id="section-5">5. 実行しない場合の影響</h3>
+      {% if work_item.block_reason %}
+        <p>{{ work_item.block_reason }}</p>
+      {% else %}
+        <p class="ps">明示的な保留理由はありません。</p>
+      {% endif %}
+    </section>
+
+    {% comment %} 6. automation_level_and_required_role {% endcomment %}
+    <section aria-labelledby="section-6">
+      <h3 id="section-6">6. 自動化レベルと必要な承認ロール</h3>
+      <p>{% if plan %}{{ plan.get_automation_level_display }}{% else %}未計画{% endif %}
+        {% if approval and approval.required_role %} ／ 必要ロール: {{ approval.required_role }}{% endif %}</p>
+    </section>
+
+    {% comment %}
+      7. decision_and_reason — 権限・失効・plan版はサーバ側(views._decide)で
+      必ず再検証する。ここでのボタン非表示・disabled化は利便性のためであり、
+      検証をこの画面だけに頼らない（forbidden_actions: 画面だけの権限判定）。
+    {% endcomment %}
+    <section aria-labelledby="section-7">
+      <h3 id="section-7">7. 承認・差し戻し・却下・保留</h3>
+      {% if not approval %}
+        <p class="ps">いま判断待ちの承認依頼はありません。</p>
+      {% elif not can_decide %}
+        <div class="callout w"><p><strong>あなたのロールでは承認操作ができません。</strong></p></div>
+      {% else %}
+        <form method="post" action="{% url 'pmo_automation:work_item_detail' work_item.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="approval" value="{{ approval.pk }}">
+          <input type="hidden" name="plan_version" value="{{ plan.version|default:'' }}">
+          <label for="decision-reason">理由（必須）</label>
+          <textarea id="decision-reason" name="reason" required aria-required="true" rows="3" style="width:100%"></textarea>
+          <div style="margin-top:8px">
+            <button type="submit" class="btn-b sm" name="decision" value="approved">承認</button>
+            <button type="submit" class="btn-ghost sm" name="decision" value="rejected">却下</button>
+            <button type="submit" class="btn-out sm" name="decision" value="returned">差し戻し</button>
+            <button type="submit" class="btn-out sm" name="decision" value="hold">保留</button>
+          </div>
+        </form>
+      {% endif %}
+    </section>
+  </div>
+
+  {% comment %} 状態遷移・実行試行の監査（章14要求: 監査追跡） {% endcomment %}
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">関連するStep</span></div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>順序</th><th>種別</th><th>自動化レベル</th><th>状態</th><th>試行回数</th></tr></thead>
+        <tbody>
+          {% for step in steps %}
+            <tr>
+              <td>{{ step.order }}</td>
+              <td>{{ step.kind }}</td>
+              <td>{{ step.get_automation_level_display }}</td>
+              <td>{{ step.get_state_display }}</td>
+              <td>{{ step.attempt_count }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty">Stepはまだありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">承認履歴</span></div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>日時</th><th>状態</th><th>承認者</th><th>理由</th></tr></thead>
+        <tbody>
+          {% for history in approval_history %}
+            <tr>
+              <td class="nowrap">{{ history.updated_at|date:"n/j H:i" }}</td>
+              <td><span class="badge {% if history.status == 'approved' %}g{% elif history.status == 'rejected' %}r{% else %}b{% endif %}">{{ history.get_status_display }}</span></td>
+              <td class="nowrap">{{ history.decided_by|default:"—" }}</td>
+              <td>{{ history.decision_reason|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty">まだ判断履歴はありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}
