@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "source": "安全施策.md 11章「人が決める事項」。docs/agent/pmo_autopilot_decisions.json（提案.md由来のD-01〜D-05）とは別体系。harnessのcli validateは対象にしない（参照専用、queue.json等の機械可読契約ではない）。",
+  "rule": "status が decision_required の項目は、blocks に列挙したSC/SEC/SAをshadow・fake実装以外で有効化してはならない。",
+  "decisions": [
+    {
+      "id": "SD-01",
+      "question": "Authority、Broker、外部監査正本を、既存社内基盤・クラウドmanaged service・新規サービスのどれで提供するか。",
+      "status": "decision_required",
+      "current_state": "apps.pmo_authorityに開発用fake実装のみ存在（HMAC署名、DB上のhash chain）。本番相当の別workload identity・別credentialでの分離は無い。",
+      "blocks": ["SC-05", "SC-06", "SC-07", "SA-04", "SA-05", "SA-06"],
+      "owner": "業務責任者・セキュリティ責任者"
+    },
+    {
+      "id": "SD-02",
+      "question": "CI attestationとpolicy bundle署名に使うworkload identity／KMSの管理者は誰か。",
+      "status": "decision_required",
+      "current_state": "PMO_AUTHORITY_SIGNING_KEYは環境変数の開発用鍵のみ。KMS/HSM連携は未実装。CI attestation自体が未実装（SEC-04）。",
+      "blocks": ["SC-03", "SEC-04"],
+      "owner": "CI/インフラ責任者"
+    },
+    {
+      "id": "SD-03",
+      "question": "CODEOWNERSのセキュリティ責任者、PMO責任者、外部連携責任者は誰か。",
+      "status": "decision_required",
+      "current_state": ".github/CODEOWNERSはプレースホルダのまま。保護ブランチ（SC-01）はGitHub側で未有効化。",
+      "blocks": ["SC-01"],
+      "owner": "リポジトリ管理者"
+    },
+    {
+      "id": "SD-04",
+      "question": "監査の保存期間、個人情報・機密情報の最小化／マスキング／開示ルールは何か。",
+      "status": "decision_required",
+      "current_state": "AuditEvent（apps.pmo_authority）はhash chain付きでDBに無期限保存。保存期間・マスキング方針は未実装。",
+      "blocks": ["SC-07"],
+      "owner": "セキュリティ責任者・法務"
+    },
+    {
+      "id": "SD-05",
+      "question": "最初に許可するconnectorとoperationは何か（例: Slackの下書き作成のみ、実送信は含めない）。",
+      "status": "decision_required",
+      "note": "提案.md側のD-04と実質同一の決定事項。安全施策.md 11章5番目としても明記されているため重複記載する。",
+      "current_state": "apps.pmo_automation.services.outbox.ALLOWED_CONNECTORS = {'fake'}のみ。実connectorは一切未接続。",
+      "blocks": ["PA-11", "SC-06"],
+      "owner": "業務責任者・セキュリティ責任者"
+    },
+    {
+      "id": "SD-06",
+      "question": "tenant・project・connector・operationのrate limitと、kill switchを操作できるロールは何か。",
+      "status": "decision_required",
+      "current_state": "check_intake_rate_limitは既定値(100件/60秒)をコード内定数として持つのみで、tenant/connector/operation別の値、kill switch操作ロールの制御は未実装。KillSwitchモデル自体は5段階(global/tenant/project/connector/operation)で実装済みだが、誰が操作してよいかのロール制御は無い。",
+      "blocks": ["SC-08"],
+      "owner": "セキュリティ責任者・SRE"
+    }
+  ]
+}
