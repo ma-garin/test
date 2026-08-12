@@ -1,0 +1,1031 @@
+{
+  "version": 1,
+  "source_document": "docs/改善に.md",
+  "note": "AH-01 の機械可読な作業キュー。人が読む実行ログは docs/改善に.md の『実行ログ』表。state は untouched/in_progress/done/hold/decision_required。",
+  "states": [
+    "untouched",
+    "in_progress",
+    "done",
+    "hold",
+    "decision_required"
+  ],
+  "kinds": [
+    "harness",
+    "model",
+    "service",
+    "view",
+    "template",
+    "css",
+    "integration",
+    "product_loop",
+    "docs",
+    "decision"
+  ],
+  "tickets": [
+    {
+      "id": "AH-01",
+      "priority": "P0",
+      "kind": "harness",
+      "depends_on": [],
+      "state": "done",
+      "acceptance": "別セッションのエージェントが、未完了の最優先チケットと直前の失敗証跡を1か所で確認できる。",
+      "evidence": [
+        "apps.core.tests.test_agent_harness.TicketQueueTests (10件)",
+        "docs/agent/RESUME.md"
+      ]
+    },
+    {
+      "id": "AH-02",
+      "priority": "P0",
+      "kind": "harness",
+      "depends_on": [
+        "AH-01"
+      ],
+      "state": "done",
+      "acceptance": "『何を変えたら何を検証するか』が実行可能なチェックとして再利用できる。",
+      "evidence": [
+        "apps.core.tests.test_agent_harness.VerificationRegistryTests (4件)",
+        "tools/agent_harness/registry.py"
+      ]
+    },
+    {
+      "id": "AH-03",
+      "priority": "P0",
+      "kind": "harness",
+      "depends_on": [
+        "AH-01"
+      ],
+      "state": "done",
+      "acceptance": "同一失敗の無限再試行をせず、3回で保留・証跡化できる。",
+      "evidence": [
+        "apps.core.tests.test_agent_harness.FailureControlTests (8件)",
+        "cli fail で3回目に hold を返す"
+      ]
+    },
+    {
+      "id": "AH-04",
+      "priority": "P1",
+      "kind": "harness",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "テスト合格だけで完了せず、権限境界・破壊的変更・受入条件を確認する。",
+      "evidence": [
+        "apps.core.tests.test_agent_harness.ReviewGateTests (7件)"
+      ]
+    },
+    {
+      "id": "GE-01",
+      "priority": "P0",
+      "kind": "model",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "全リンクにテナント・案件・関係型・状態・出所があり、不正な型や別テナントの接続を保存できない。",
+      "evidence": [
+        "apps.graph.tests.test_ontology (18件)",
+        "migration graph/0001_initial"
+      ]
+    },
+    {
+      "id": "GE-02",
+      "priority": "P0",
+      "kind": "model",
+      "depends_on": [
+        "GE-01"
+      ],
+      "state": "done",
+      "acceptance": "直列・分岐・合流・循環依存をテストし、予測可能なDAGだけを計算へ渡せる。",
+      "evidence": [
+        "apps.graph.tests.test_schedule (25件: 直列/分岐/合流/循環/勤務日)",
+        "migration graph/0002"
+      ]
+    },
+    {
+      "id": "GE-03",
+      "priority": "P0",
+      "kind": "service",
+      "depends_on": [
+        "GE-02"
+      ],
+      "state": "done",
+      "acceptance": "画面・予測・報告が同じ経路と根拠を再利用し、N+1クエリや全件走査に依存しない。",
+      "evidence": [
+        "apps.graph.tests.test_queries (15件: 経路/出所/候補分離/クエリ数不変)"
+      ]
+    },
+    {
+      "id": "GE-04",
+      "priority": "P1",
+      "kind": "view",
+      "depends_on": [
+        "GE-03"
+      ],
+      "state": "done",
+      "acceptance": "PMOが経路の各エッジの出所・確認状態を開け、候補を確定情報と誤認しない。",
+      "evidence": [
+        "apps.graph.tests.test_quality_views.ImpactViewTests (7件)"
+      ]
+    },
+    {
+      "id": "GE-05",
+      "priority": "P1",
+      "kind": "view",
+      "depends_on": [
+        "GE-03"
+      ],
+      "state": "done",
+      "acceptance": "予測が弱い理由を、データ品質の作業として担当・期限つきで管理できる。",
+      "evidence": [
+        "apps.graph.tests.test_quality_views.GraphQualityTests (12件)"
+      ]
+    },
+    {
+      "id": "GE-06",
+      "priority": "P2",
+      "kind": "service",
+      "depends_on": [
+        "GE-03"
+      ],
+      "state": "done",
+      "acceptance": "ベクトル検索だけより根拠経路を説明でき、権限・鮮度・出所の条件を維持する。",
+      "evidence": [
+        "apps.graph.tests.test_graph_rag (17件: 確定リンクのみ・候補除外・テナント境界・無効Signal除外・グラフ経由/ベクトルのみの区別)"
+      ],
+      "hold_reason": "魅力的品質。仮説・比較指標・安全策を実行ログへ記録。コード未実装（GE-01〜05で前提は充足）"
+    },
+    {
+      "id": "LDF-01",
+      "priority": "P0",
+      "kind": "model",
+      "depends_on": [
+        "GE-02"
+      ],
+      "state": "done",
+      "acceptance": "1つの機能と必須WBS・マイルストーンを人が確定でき、循環依存を登録できない。",
+      "evidence": [
+        "apps.graph.tests.test_schedule (27件: 循環拒否・確認記録)",
+        "Feature/MilestoneTaskLink/WorkingCalendar"
+      ]
+    },
+    {
+      "id": "LDF-02",
+      "priority": "P0",
+      "kind": "model",
+      "depends_on": [
+        "GE-01"
+      ],
+      "state": "done",
+      "acceptance": "予測の任意の値から、根拠・確認者・前回予測へ戻れる。",
+      "evidence": [
+        "apps.forecast.tests.test_signals (24件: 冪等化・算定不能・根拠・レビュー)",
+        "migration forecast/0001"
+      ]
+    },
+    {
+      "id": "LDF-03",
+      "priority": "P0",
+      "kind": "service",
+      "depends_on": [
+        "LDF-01",
+        "LDF-02"
+      ],
+      "state": "done",
+      "acceptance": "2日後・1週間後・期日の予測、遅延／前倒し／算定不能を、テスト可能な規則で出せる。",
+      "evidence": [
+        "apps.forecast.tests.test_engine (25件: 依存なし/直列/分岐合流/CP/循環/休日/前倒し/算定不能)",
+        "test_recompute (8件)"
+      ]
+    },
+    {
+      "id": "LDF-04",
+      "priority": "P0",
+      "kind": "view",
+      "depends_on": [
+        "LDF-03"
+      ],
+      "state": "done",
+      "acceptance": "PMOが30秒以内に危険な着地・根拠・次アクションを確認できる。",
+      "evidence": [
+        "apps.forecast.tests.test_views (13件: 危険順・算定不能・空状態・テナント境界)",
+        "実画面 /forecast/ と /forecast/features/<id>/ 1440px"
+      ]
+    },
+    {
+      "id": "LDF-05",
+      "priority": "P0",
+      "kind": "integration",
+      "depends_on": [
+        "LDF-02"
+      ],
+      "state": "done",
+      "acceptance": "課題・不具合・テストが予測用Signalとして、時刻・URLつきで入る。",
+      "evidence": [
+        "apps.forecast.tests.test_test_evidence (12件) / apps.integrations.tests.test_signal_bridge (11件)",
+        "migration forecast/0005"
+      ]
+    },
+    {
+      "id": "LDF-06",
+      "priority": "P1",
+      "kind": "integration",
+      "depends_on": [
+        "LDF-05"
+      ],
+      "state": "done",
+      "acceptance": "会話から候補を拾えるが、確認前は予測の確定根拠に使われない。",
+      "evidence": [
+        "apps.integrations.tests.test_slack_ingest (17件: 許可チャンネル・DM拒否・抜粋上限・候補のまま)"
+      ]
+    },
+    {
+      "id": "LDF-07",
+      "priority": "P1",
+      "kind": "integration",
+      "depends_on": [
+        "LDF-05"
+      ],
+      "state": "done",
+      "acceptance": "テスト失敗・修正・再試験の事実がFeatureと不具合へ結び付く。",
+      "evidence": [
+        "apps.integrations.tests.test_evidence_connector (15件)"
+      ]
+    },
+    {
+      "id": "LDF-08",
+      "priority": "P1",
+      "kind": "view",
+      "depends_on": [
+        "LDF-04"
+      ],
+      "state": "done",
+      "acceptance": "前回との差分と根拠を含む報告を、確認後に共有できる。",
+      "evidence": [
+        "apps.forecast.tests.test_report (16件)"
+      ]
+    },
+    {
+      "id": "LDF-09",
+      "priority": "P2",
+      "kind": "service",
+      "depends_on": [
+        "LDF-08"
+      ],
+      "state": "done",
+      "acceptance": "AI候補の採否・誤差・実績が追え、閾値や規則の改善に使える。",
+      "evidence": [
+        "apps.forecast.tests.test_calibration (19件: 確信度別誤差・AI候補採否・効いた件数・サンプル不足)"
+      ],
+      "hold_reason": "魅力的品質。accuracy_report() で誤差と採否は測れる。閾値の自動調整は未実装（人が適用する設計）"
+    },
+    {
+      "id": "AH-05",
+      "priority": "P0",
+      "kind": "product_loop",
+      "depends_on": [
+        "LDF-02"
+      ],
+      "state": "done",
+      "acceptance": "同一イベントの再送で予測・通知が重複せず、差分と根拠が保存される。",
+      "evidence": [
+        "apps.forecast.tests.test_ingest (19件: 再送・順不同・失敗・テナント境界)"
+      ]
+    },
+    {
+      "id": "AH-06",
+      "priority": "P1",
+      "kind": "product_loop",
+      "depends_on": [
+        "AH-05"
+      ],
+      "state": "done",
+      "acceptance": "古い情報で予測を更新し続けず、重大悪化は設定した期限内に再評価される。",
+      "evidence": [
+        "apps.forecast.tests.test_freshness (18件: 鮮度切れ・確信度低下・デバウンス・重大即時)"
+      ]
+    },
+    {
+      "id": "AH-07",
+      "priority": "P1",
+      "kind": "product_loop",
+      "depends_on": [
+        "AH-05",
+        "LDF-04"
+      ],
+      "state": "done",
+      "acceptance": "採用／修正／却下と予測誤差が次回の評価に使える。",
+      "evidence": [
+        "apps.forecast.tests.test_review (14件: 採用/修正/却下・候補確定・予測誤差)"
+      ]
+    },
+    {
+      "id": "JT-01",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "1クリックで危険な対象へ絞り込め、条件をクリアで全件へ戻れる。",
+      "evidence": [
+        "test_task_triage quick_views系4件",
+        "実画面 /tasks/?status=blocked 1440/760px"
+      ]
+    },
+    {
+      "id": "JT-02",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "1行あたりの詳細導線が1つになり、横幅を次アクションへ返せる。",
+      "evidence": [
+        "test_row_has_single_detail_link / test_detail_button_is_removed_from_rows"
+      ]
+    },
+    {
+      "id": "JT-03",
+      "priority": "P0",
+      "kind": "css",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "危険行を横読みせず発見でき、色だけに依存しない。",
+      "evidence": [
+        "test_row_tone_marks_danger_rows_only / test_row_tone_is_rendered",
+        "実画面でブロック行の左罫線を確認"
+      ]
+    },
+    {
+      "id": "JT-04",
+      "priority": "P0",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "初回表示で最優先の対象と理由を確認でき、通常表より先に処理へ進める。",
+      "evidence": [
+        "test_task_triage attention系6件",
+        "実画面 /tasks/ 今すぐ確認3件"
+      ]
+    },
+    {
+      "id": "JT-05",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "ブロック中タスクを開いた直後に、次の一手と不足情報が分かる。",
+      "evidence": [
+        "test_detail_shows_next_action_card ほか2件",
+        "実画面 タスク詳細 WBS3.2"
+      ]
+    },
+    {
+      "id": "JT-06",
+      "priority": "P0",
+      "kind": "decision",
+      "depends_on": [],
+      "state": "hold",
+      "acceptance": "利用者承認済みの並び順ルールと、全件を確認する戻り方が定義される。",
+      "hold_reason": "判断済み・変更不要（現状維持が推奨。実装すべきコードが無い）"
+    },
+    {
+      "id": "JT-07",
+      "priority": "P1",
+      "kind": "decision",
+      "depends_on": [],
+      "state": "hold",
+      "acceptance": "何をシステム内で記録し、何を外部文書へのリンクにするかが決まる。",
+      "hold_reason": "判断済み・変更不要（内製もリンクも行わない。根拠メモとSignalで代替）"
+    },
+    {
+      "id": "JT-08",
+      "priority": "P1",
+      "kind": "decision",
+      "depends_on": [],
+      "state": "hold",
+      "acceptance": "誤更新の復旧方法と監査要件を含む仕様がある。",
+      "hold_reason": "判断済み・変更不要（一括更新は許可しない）"
+    },
+    {
+      "id": "UXP-01",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "危険がある場合、初回視線で対象名・理由・遷移先が分かる。",
+      "evidence": [
+        "apps.dashboard.tests.test_control_screens (4件)"
+      ]
+    },
+    {
+      "id": "UXP-03",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "初見の利用者が色・バー・空欄の意味を画面内で理解できる。",
+      "evidence": [
+        "apps.dashboard.tests.test_analysis_screens"
+      ]
+    },
+    {
+      "id": "UXP-04",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "実行前に何件が新規アラートになるかを説明文を読まずに分かる。",
+      "evidence": [
+        "apps.dashboard.tests.test_control_screens (3件)"
+      ]
+    },
+    {
+      "id": "UXP-05",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "各候補から詳細へ1クリックで移動できる。",
+      "evidence": [
+        "apps.dashboard.tests.test_control_screens (3件)"
+      ]
+    },
+    {
+      "id": "UXP-06",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "不合格・未計測の理由と次の確認先が各1クリックで分かる。",
+      "evidence": [
+        "apps.dashboard.tests.test_analysis_screens"
+      ]
+    },
+    {
+      "id": "UXP-07",
+      "priority": "P0",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "絞り込み状態、件数、条件クリアが画面内に表示される。",
+      "evidence": [
+        "apps.projects.tests.test_list_filters.IssueListFilterTests (5件)"
+      ]
+    },
+    {
+      "id": "UXP-08",
+      "priority": "P0",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "重大かつ未解決の不具合だけを抽出できる。",
+      "evidence": [
+        "apps.projects.tests.test_list_filters.DefectListFilterTests (5件)"
+      ]
+    },
+    {
+      "id": "UXP-09",
+      "priority": "P1",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "対策漏れと課題化候補を個別に確認できる。",
+      "evidence": [
+        "apps.dashboard.tests.test_analysis_screens"
+      ]
+    },
+    {
+      "id": "UXP-10",
+      "priority": "P0",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "判断待ちが先頭の操作導線から到達できる。",
+      "evidence": [
+        "apps.dashboard.tests.test_change_screens (5件)"
+      ]
+    },
+    {
+      "id": "UXP-11",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "一覧は比較専用、判断は1提案ずつの専用画面になる。",
+      "evidence": [
+        "apps.dashboard.tests.test_intervention_screens (5件)"
+      ]
+    },
+    {
+      "id": "UXP-12",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "数値が悪い・ないときに次の行動が空白にならない。",
+      "evidence": [
+        "apps.dashboard.tests.test_analysis_screens"
+      ]
+    },
+    {
+      "id": "UXP-13",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "意思決定に必要な条件を、全表を読まずに確認できる。",
+      "evidence": [
+        "apps.dashboard.tests.test_analysis_screens"
+      ]
+    },
+    {
+      "id": "UXP-14",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "初めての相談で入力内容の例が分かり、結果後の行動が1つに絞られる。",
+      "evidence": [
+        "apps.pmo.tests.test_pmo_screens (3件)"
+      ]
+    },
+    {
+      "id": "UXP-15",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "利用者がレビュー完了前に確定してよいか判断できる。",
+      "evidence": [
+        "apps.pmo.tests.test_pmo_screens (4件)"
+      ]
+    },
+    {
+      "id": "UXP-16",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "同時に複数の主要ボタンが見えない。",
+      "evidence": [
+        "apps.pmo.tests.test_pmo_screens (5件)"
+      ]
+    },
+    {
+      "id": "UXP-17",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "承認待ち対象と承認不可の理由が混ざらない。",
+      "evidence": [
+        "apps.pmo.tests.test_pmo_screens (4件)"
+      ]
+    },
+    {
+      "id": "UXP-18",
+      "priority": "P2",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "操作前にテンプレート選択の結果を理解できる。",
+      "evidence": [
+        "apps.pmo/apps.core tests.test_p2_screens"
+      ]
+    },
+    {
+      "id": "UXP-19",
+      "priority": "P2",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "学習画面から日常業務の入口へ進める。",
+      "evidence": [
+        "apps.pmo/apps.core tests.test_p2_screens"
+      ]
+    },
+    {
+      "id": "UXP-20",
+      "priority": "P0",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "再抽出が必要な文書だけを抽出できる。",
+      "evidence": [
+        "apps.documents.tests.test_document_screens (9件)"
+      ]
+    },
+    {
+      "id": "UXP-21",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "選択前に失敗条件が分かり、選択後に対象ファイルを見失わない。",
+      "evidence": [
+        "apps.documents.tests.test_document_screens (3件)"
+      ]
+    },
+    {
+      "id": "UXP-22",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "RAG対象外であることと、利用目的が混同されない。",
+      "evidence": [
+        "apps.documents.tests.test_document_screens (3件)"
+      ]
+    },
+    {
+      "id": "UXP-23",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "回答だけを事実と誤認しにくい。",
+      "evidence": [
+        "apps.rag.tests.test_rag_screens.SearchScreenTests (6件)"
+      ]
+    },
+    {
+      "id": "UXP-24",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "会話履歴を読んだとき、検証が必要な応答を識別できる。",
+      "evidence": [
+        "apps.rag.tests.test_rag_screens.ChatScreenTests (4件)"
+      ]
+    },
+    {
+      "id": "UXP-25",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "品質悪化を初回視線で発見できる。",
+      "evidence": [
+        "apps.rag.tests.test_rag_screens.EvaluationScreenTests (5件)"
+      ]
+    },
+    {
+      "id": "UXP-26",
+      "priority": "P1",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "失敗または根拠不足の実行だけを探せる。",
+      "evidence": [
+        "apps.agents.tests.test_run_screens (4件)"
+      ]
+    },
+    {
+      "id": "UXP-27",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "監査で最初に必要な結論を見失わない。",
+      "evidence": [
+        "apps.agents.tests.test_run_screens (3件)"
+      ]
+    },
+    {
+      "id": "UXP-28",
+      "priority": "P1",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "問題の操作を一覧から再現可能な条件で絞り込める。",
+      "evidence": [
+        "apps.audit.tests.test_audit_screens (4件)"
+      ]
+    },
+    {
+      "id": "UXP-29",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "直すべきフィードバックを優先順で確認できる。",
+      "evidence": [
+        "apps.audit.tests.test_audit_screens (4件)"
+      ]
+    },
+    {
+      "id": "UXP-30",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "一覧だけで優先して開く案件を選べる。",
+      "evidence": [
+        "apps.projects.tests.test_project_screens"
+      ]
+    },
+    {
+      "id": "UXP-31",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "案件詳細が台帳の終点ではなく、次の操作の入口になる。",
+      "evidence": [
+        "apps.projects.tests.test_project_screens"
+      ]
+    },
+    {
+      "id": "UXP-32",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "同期してよい対象かを実行前に判断できる。",
+      "evidence": [
+        "apps.integrations.tests.test_integration_screens (2件)"
+      ]
+    },
+    {
+      "id": "UXP-33",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "止まった同期を1画面で復旧に進める。",
+      "evidence": [
+        "apps.integrations.tests.test_integration_screens (3件)"
+      ]
+    },
+    {
+      "id": "UXP-34",
+      "priority": "P1",
+      "kind": "view",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "失敗ジョブを絞り込み、接続設定へ移動できる。",
+      "evidence": [
+        "apps.integrations.tests.test_job_list_screen"
+      ]
+    },
+    {
+      "id": "UXP-35",
+      "priority": "P2",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "利用者が編集不可の理由と依頼先を理解できる。",
+      "evidence": [
+        "apps.pmo/apps.core tests.test_p2_screens"
+      ]
+    },
+    {
+      "id": "UXP-36",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "切替で何が変わるかを確定前に分かる。",
+      "evidence": [
+        "apps.accounts/core tests.test_select_screens"
+      ]
+    },
+    {
+      "id": "UXP-37",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "どちらを選ぶべきか説明文だけに依存しない。",
+      "evidence": [
+        "apps.accounts/core tests.test_select_screens"
+      ]
+    },
+    {
+      "id": "UXP-38",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "JT-05"
+      ],
+      "state": "done",
+      "acceptance": "詳細を開いた直後に、更新が必要な情報を把握できる。",
+      "evidence": [
+        "apps.projects.tests.test_project_screens"
+      ]
+    },
+    {
+      "id": "UXP-39",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "通常更新中にアーカイブ操作を誤らない。",
+      "evidence": [
+        "apps.projects.tests.test_form_sections"
+      ]
+    },
+    {
+      "id": "UXP-40",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "課題登録で何をどの順番に書くか分かる。",
+      "evidence": [
+        "apps.projects.tests.test_form_sections"
+      ]
+    },
+    {
+      "id": "UXP-41",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "課題化前に影響を確認できる。",
+      "evidence": [
+        "apps.projects.tests.test_form_sections"
+      ]
+    },
+    {
+      "id": "UXP-42",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "重大度・検出工程・クローズ理由を混同しない。",
+      "evidence": [
+        "apps.projects.tests.test_form_sections"
+      ]
+    },
+    {
+      "id": "UXP-43",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "判断者が元の入力画面へ戻らずに決定できる。",
+      "evidence": [
+        "apps.dashboard.tests.test_change_screens (2件)"
+      ]
+    },
+    {
+      "id": "UXP-44",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "1回限りの判断を誤って記録しにくい。",
+      "evidence": [
+        "apps.dashboard.tests.test_intervention_screens (3件)"
+      ]
+    },
+    {
+      "id": "UXP-45",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "受け手が追加確認せずに再現できる情報を集められる。",
+      "evidence": [
+        "apps.audit.tests.test_feedback_form_screen"
+      ]
+    },
+    {
+      "id": "UXP-46",
+      "priority": "P0",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "初回接続の設定順を見失わない。",
+      "evidence": [
+        "apps.integrations.tests.test_integration_screens (2件)"
+      ]
+    },
+    {
+      "id": "UXP-47",
+      "priority": "P1",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "文書未登録の利用者が次に取る操作を理解できる。",
+      "evidence": [
+        "apps.documents.tests.test_document_screens (4件)"
+      ]
+    },
+    {
+      "id": "UXP-48",
+      "priority": "P2",
+      "kind": "template",
+      "depends_on": [
+        "AH-03"
+      ],
+      "state": "done",
+      "acceptance": "行き止まりの画面がない。",
+      "evidence": [
+        "apps.pmo/apps.core tests.test_p2_screens"
+      ]
+    }
+  ]
+}

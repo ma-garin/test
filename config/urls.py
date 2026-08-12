@@ -11,12 +11,19 @@ from django.urls import include, path
 
 from apps.core.views import healthz
 
+handler400 = "apps.core.views.bad_request"
+handler403 = "apps.core.views.permission_denied"
+handler404 = "apps.core.views.page_not_found"
+handler500 = "apps.core.views.server_error"
+
 urlpatterns = [
     path("", include("apps.dashboard.urls")),
     path("healthz/", healthz, name="healthz"),
     path("accounts/", include("apps.accounts.urls")),
     path("core/", include("apps.core.urls")),
     path("projects/", include("apps.projects.urls")),
+    path("forecast/", include("apps.forecast.urls")),
+    path("graph/", include("apps.graph.urls")),
     path("documents/", include("apps.documents.urls")),
     path("rag/", include("apps.rag.urls")),
     path("agents/", include("apps.agents.urls")),

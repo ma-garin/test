@@ -43,6 +43,8 @@ LOCAL_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.projects",
+    "apps.graph",
+    "apps.forecast",
     "apps.documents",
     "apps.rag",
     "apps.agents",
