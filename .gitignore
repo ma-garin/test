@@ -32,3 +32,6 @@ Thumbs.db
 
 # Playwright MCP の作業ディレクトリ
 .playwright-mcp/
+
+# 実画面確認で撮った検証用スクリーンショット（成果物ではない）
+/*.png
