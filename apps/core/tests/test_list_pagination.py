@@ -94,7 +94,7 @@ class ListPaginationTests(TestCase):
 
         self._assert_two_pages("agents:run_list", "runs")
 
-    def test_計画策定一覧は2ページに分かれる(self):
+    def test_計画ドラフト一覧は2ページに分かれる(self):
         self._create_drafts()
 
         self._assert_two_pages("pmo:planning", "drafts")
@@ -172,3 +172,19 @@ class ListPaginationTests(TestCase):
 
         self.assertEqual(self.client.get(url, {"page": "999"}).status_code, 200)
         self.assertEqual(self.client.get(url, {"page": "abc"}).status_code, 200)
+
+    def test_標準一覧の表示件数を切り替えられる(self):
+        """一覧の密度を変えても、ページ送りと選択状態が連動すること。"""
+
+        Issue.objects.bulk_create(
+            Issue(project=self.project, title=f"課題{index}") for index in range(TOTAL)
+        )
+
+        response = self.client.get(reverse("projects:issue_list"), {"per_page": 20})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["page"].paginator.per_page, 20)
+        self.assertEqual(len(response.context["issues"]), 20)
+        self.assertContains(response, 'value="20" selected')
+        self.assertContains(response, "先頭")
+        self.assertContains(response, "末尾")

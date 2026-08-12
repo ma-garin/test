@@ -224,7 +224,7 @@ def _evaluation_kwargs(document: GeneratedDocument) -> dict:
 
 
 def _record_plan_draft(project, document: GeneratedDocument, run) -> PlanDraft:
-    """計画ドラフトは計画策定画面からも参照できるよう `PlanDraft` にも残す。"""
+    """計画ドラフトは一覧画面からも参照できるよう `PlanDraft` にも残す。"""
 
     return PlanDraft.objects.create(
         project=project,

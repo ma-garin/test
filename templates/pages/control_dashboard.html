@@ -1,18 +1,43 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}選択中テナントの案件を集計し、危ない順に確認できます。{% endblock %}
 
 {% block header_actions %}
+  {% comment %}
+  UXP-01: 主操作は本文の「次にやること」1 つに寄せる。検知の保存実行は
+  「押す前に何が作られるか」を出せる予兆検知画面に置く（ここからは実行しない）。
+  {% endcomment %}
   <a class="btn-out sm" href="{% url 'dashboard:detection' %}">検知結果</a>
-  <form method="post" action="{% url 'dashboard:detection_run' %}" class="actions">
-    {% csrf_token %}
-    <button type="submit" class="btn-out sm">検知を実行</button>
-  </form>
-  <a class="btn-out sm" href="{% url 'projects:list' %}">案件管理へ</a>
-  <a class="btn-b sm" href="{% url 'pmo:consultation' %}">PMOに相談する</a>
+  <a class="btn-out sm" href="{% url 'projects:list' %}">案件一覧へ</a>
+  <a class="btn-out sm" href="{% url 'pmo:consultation' %}">PMOに相談する</a>
 {% endblock %}
 
 {% block content %}
+
+  {% comment %}テンプレートタグは改行をまたげないため、include は 1 行で書く。{% endcomment %}
+  {% include "partials/coachmark.html" with coach_key="control" step1="まず「次にやること」を見ます。いま最優先の1件だけが、理由と期限つきで出ます" step2="次に「PMOヘルス / 重要アラート」で、案件別ヘルスの低い順と重要アラートを確認します" step3="件数から台帳へ降りるときは「台帳へのショートカット」を使います。0件のときは対応不要という意味です" %}
+
+  <section class="card" aria-label="次にやること">
+    <div class="card-hdr">
+      <span class="card-t">次にやること</span>
+      <span class="card-act">最優先の1件だけ</span>
+    </div>
+    {% if next_action %}
+      <div class="callout w">
+        <p><strong>対象: {{ next_action.target }}</strong></p>
+        <dl class="dl">
+          <dt>理由</dt><dd>{{ next_action.reason }}</dd>
+          <dt>期限</dt><dd>{{ next_action.due_label }}</dd>
+        </dl>
+        <p><a class="btn-b sm" href="{{ next_action.url }}">{{ next_action.link_label }} →</a></p>
+      </div>
+    {% else %}
+      <div class="callout ok">
+        <p><strong>いま対応が必要な項目はありません。</strong></p>
+        <p>監視対象: 案件 {{ overview.project_count }}件 ／ 7日以内に期限を迎えるタスク {{ overview.total_due_soon }}件 ／ 未対応アラート {{ alert_rows|length }}件。</p>
+      </div>
+    {% endif %}
+  </section>
 
   {% if current_tenant %}
     <div class="project-strip">
@@ -43,7 +68,7 @@
       <div class="kpi-bar"><div class="kpi-fill r" style="width:{{ overview.risk_percent }}%"></div></div>
     </div>
     <div class="kpi">
-      <div class="kpi-l">AI介入提案</div>
+      <div class="kpi-l">AI介入提案{% include "partials/hint.html" with label="AI介入提案" body="検知結果からAIが作った対応案です。人が採用または却下を決めるまで実行されません。件数は判断待ちの数を示します。" %}</div>
       <div class="kpi-v" style="color:var(--blue)">{{ overview.proposal_count }}</div>
       <div class="kpi-s">人の判断待ち</div>
       <div class="kpi-bar"><div class="kpi-fill g" style="width:60%"></div></div>
@@ -66,7 +91,7 @@
         <div class="dashboard-metric dashboard-score">
           <div class="dashboard-score-ring {{ overview.tone }}" style="--score:{{ overview.health_score }}%">{{ overview.health_score }}</div>
           <div>
-            <span>Health score</span>
+            <span>Health score{% include "partials/hint.html" with label="Health score" body="WBS・課題・リスク・アラートの実データから機械的に算出する0〜100の健全度です。100が満点で、ブロック中・期限接近・オープン課題・オープンリスクの多さに応じて減点します。AIの推定は含みません。" %}</span>
             <strong>{{ overview.health_score }}</strong>
             <em>{{ overview.tone_label }}</em>
           </div>
@@ -96,24 +121,25 @@
       <div class="dashboard-alert-layout">
         <div class="dashboard-panel">
           <div class="dashboard-panel-head">
-            <strong>重要アラート Top {{ overview.ranked_alerts|length }}</strong>
-            <span>重要度順</span>
+            <strong>重要アラート Top {{ alert_rows|length }}</strong>
+            <span>重要度順・各行から台帳へ</span>
           </div>
           <div class="dashboard-alert-list">
-            {% for row in overview.ranked_alerts %}
+            {% for row in alert_rows %}
               <div class="dashboard-alert">
                 <div class="dashboard-alert-rank {{ row.tone }}">{{ row.rank }}</div>
                 <div>
-                  <div class="dashboard-alert-title">{{ row.alert.title }}</div>
+                  <a class="dashboard-alert-title" href="{{ row.url }}">{{ row.alert.title }}</a>
                   <div class="dashboard-alert-meta">
                     {{ row.alert.project.name }} ／ {{ row.alert.get_category_display }} ／
-                    {{ row.alert.detected_at|date:"n/j H:i" }} 検知
+                    {{ row.alert.detected_at|date:"n/j H:i" }} 検知 ／
+                    <a href="{{ row.url }}">{{ row.link_label }} →</a>
                   </div>
                 </div>
                 <span class="badge {{ row.tone }}">{{ row.alert.get_severity_display }}</span>
               </div>
             {% empty %}
-              <div class="dashboard-empty">未対応のアラートはありません。</div>
+              <div class="dashboard-empty">未対応のアラートはありません。監視対象は案件 {{ overview.project_count }}件です。</div>
             {% endfor %}
           </div>
         </div>
@@ -170,40 +196,37 @@
       {% endfor %}
     </div>
 
+    {% comment %}
+    UXP-01: 「次にやること」は最上部の 1 件だけ。ここは件数から台帳へ降りるための
+    索引に徹する（同じ見出しを 2 か所に置くと、どちらが最優先か分からなくなる）。
+    {% endcomment %}
     <div class="card">
       <div class="card-hdr">
-        <span class="card-t">次にやること</span>
+        <span class="card-t">台帳へのショートカット</span>
         <a class="card-act" href="{% url 'core:screen_map' %}">画面マップ →</a>
       </div>
-      {% if overview.proposal_count %}
-        <div class="callout w">
-          <p><strong>AIの介入提案が {{ overview.proposal_count }} 件、人の判断を待っています。</strong></p>
-          <p>判断されるまで採用されません。<a href="{% url 'dashboard:intervention' %}">提案を確認する →</a></p>
-        </div>
-      {% endif %}
-
-      {% if overview.total_blocked_tasks %}
-        <div class="callout d">
-          <p><strong>着手できないタスクが {{ overview.total_blocked_tasks }} 件あります。</strong></p>
-          <p>止まっている理由の解消が最優先です。<a href="{% url 'dashboard:tasks' %}?status=blocked">ブロック中を見る →</a></p>
-        </div>
-      {% endif %}
-
-      {% if overview.total_open_risks or overview.total_open_issues %}
-        <div class="callout">
-          <p>オープンリスク {{ overview.total_open_risks }} 件 ／ 未解決の課題 {{ overview.total_open_issues }} 件</p>
-          <p>
-            <a href="{% url 'dashboard:risk' %}">リスク一覧 →</a>
-            ／ <a href="{% url 'projects:issue_list' %}">課題一覧 →</a>
-          </p>
-        </div>
-      {% endif %}
-
-      {% if not overview.proposal_count and not overview.total_blocked_tasks and not overview.total_open_risks %}
-        <div class="callout ok">
-          <p><strong>判断待ち・ブロック中の項目はありません。</strong></p>
-        </div>
-      {% endif %}
+      <ul class="attention-list">
+        <li class="attention-item">
+          <span class="badge b">判断待ち</span>
+          <a class="attention-name" href="{% url 'dashboard:intervention' %}">AI介入提案 {{ overview.proposal_count }}件</a>
+          <span class="attention-meta">人が判断するまで採用されません</span>
+        </li>
+        <li class="attention-item">
+          <span class="badge r">ブロック中</span>
+          <a class="attention-name" href="{% url 'dashboard:tasks' %}?status=blocked">着手できないタスク {{ overview.total_blocked_tasks }}件</a>
+          <span class="attention-meta">止まっている理由の解消が先</span>
+        </li>
+        <li class="attention-item">
+          <span class="badge a">オープン</span>
+          <a class="attention-name" href="{% url 'dashboard:risk' %}">リスク {{ overview.total_open_risks }}件</a>
+          <span class="attention-meta">クローズしていないリスク</span>
+        </li>
+        <li class="attention-item">
+          <span class="badge a">未解決</span>
+          <a class="attention-name" href="{% url 'projects:issue_list' %}?status=open">課題 {{ overview.total_open_issues }}件</a>
+          <span class="attention-meta">解決・完了になっていない課題</span>
+        </li>
+      </ul>
     </div>
   </div>
 

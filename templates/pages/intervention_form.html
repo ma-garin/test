@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
-{% block subtitle %}判断者・判断日時・判断理由を残します。記録後の再判断はできません。{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
+{% block subtitle %}AIが出した「候補」に人の判断を記録します。判断者・判断日時・判断理由が残り、記録後の再判断はできません。{% endblock %}
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'dashboard:intervention' %}">一覧へ戻る</a>
@@ -8,25 +8,86 @@
 
 {% block content %}
 
+  {% comment %}
+  UXP-44: 判断に必要な材料（提案・根拠・現在の状態）を、フォームより上でまとめて読み切れるようにする。
+  一覧へ戻らないと根拠が分からない状態にしない。
+  {% endcomment %}
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">{{ proposal.title }}</span>
-      <span class="card-act">{{ proposal.project.name }}</span>
+      <span class="card-act"><span class="badge b">AIの候補（未確定）</span></span>
     </div>
     <dl class="dl">
+      <dt>案件</dt><dd>{{ proposal.project.name }}</dd>
+      <dt>現在の状態</dt><dd><span class="badge b">{{ proposal.get_status_display }}</span> ／ まだ人の判断は入っていません</dd>
       <dt>提案理由</dt><dd>{{ proposal.rationale|default:"—" }}</dd>
       <dt>推奨アクション</dt><dd>{{ proposal.recommended_action|default:"—" }}</dd>
       <dt>期待効果</dt><dd>{{ proposal.expected_effect|default:"—" }}</dd>
-      <dt>現在の状態</dt><dd>{{ proposal.get_status_display }}</dd>
+      <dt>信頼度</dt>
+      <dd>{% if confidence_percent is not None %}{{ confidence_percent }}%（AI自身が申告した値で、正しさの保証ではありません）{% else %}未算出（ルールベースの検知）{% endif %}</dd>
+      <dt>根拠</dt>
+      <dd>
+        {% if evidence_items %}
+          <ul class="ps">
+            {% for item in evidence_items %}<li>{{ item }}</li>{% endfor %}
+          </ul>
+        {% else %}
+          記録されていません
+        {% endif %}
+      </dd>
+      <dt>提案更新日時</dt><dd>{{ proposal.updated_at|date:"Y/n/j H:i" }}</dd>
     </dl>
+    {% if not evidence_items %}
+      <div class="callout w"><p>この候補には根拠が1件も記録されていません。採用する場合は、裏取りの結果を判断理由に必ず残してください。</p></div>
+    {% endif %}
+  </div>
+
+  {% comment %}
+  UXP-44: 何が起きるか・何が必須かを「選ぶ前」に置く。選んでからエラーで知らせると、
+  1 回限りの判断を焦って出させることになる。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">それぞれの判断で何が起きるか</span>
+      <span class="card-act">選ぶ前に確認してください</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr><th class="nowrap">判断</th><th>記録される内容</th><th>必須の入力</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="nowrap">採用</td>
+            <td>AIの推奨アクションを、そのまま実施する方針として記録します。実施そのものは自動化されません。</td>
+            <td>判断理由</td>
+          </tr>
+          <tr>
+            <td class="nowrap">修正して採用</td>
+            <td>人が書き換えた内容で実施する方針として記録します。AIの原案と修正後の本文は別々に残ります。</td>
+            <td>判断理由 ＋ 修正後のアクション</td>
+          </tr>
+          <tr>
+            <td class="nowrap">不採用</td>
+            <td>実施しないことを記録します。候補は消えず、不採用の理由つきで履歴に残ります。</td>
+            <td>判断理由</td>
+          </tr>
+          <tr>
+            <td class="nowrap">実施済み</td>
+            <td>すでに同じ対応を終えていることを記録します。新しい作業は発生しません。</td>
+            <td>判断理由</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div class="card">
     <div class="card-hdr"><span class="card-t">判断を記録する</span><span class="card-act">1回限り</span></div>
-    <form method="post" class="form">
+    <form method="post" class="form" data-confirm="このAI提案への判断を記録します。理由・判断者・日時は操作ログに残り、再判断はできません。実行しますか？">
       {% csrf_token %}
       {% if form.errors %}
-        <div class="callout d">
+        <div class="callout d" data-form-error-summary>
           <p>入力内容を確認してください。</p>
           {% for field in form %}
             {% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}
@@ -41,11 +102,15 @@
       <div>
         <label for="{{ form.decision_reason.id_for_label }}">{{ form.decision_reason.label }}</label>
         {{ form.decision_reason }}
+        <div class="ps">どの判断でも必須です。根拠のどこに納得した／しなかったかを残してください。</div>
       </div>
       <div>
         <label for="{{ form.modified_action.id_for_label }}">{{ form.modified_action.label }}</label>
         {{ form.modified_action }}
-        <div class="ps">「修正して採用」を選ぶ場合は必須です。AIの原案と区別して残します。</div>
+        <div class="ps">「修正して採用」を選ぶ場合だけ必須です。AIの原案と区別して残します。</div>
+      </div>
+      <div class="callout w">
+        <p><strong>この操作は1回限りです。</strong>記録すると判断者・判断日時・判断理由が監査ログに残り、あとから再判断はできません。</p>
       </div>
       <div class="actions">
         <button type="submit" class="btn-b">この内容で判断を記録する</button>

@@ -1,13 +1,15 @@
 {% extends "layouts/base.html" %}
 {% block kicker %}ナレッジ / RAG{% endblock %}
-{% block subtitle %}登録文書をハイブリッド検索します。回答だけでなく、引用元とスコアの内訳を表示します。{% endblock %}
+{% block subtitle %}登録文書を検索し、要点・引用元・スコアの見方の順に表示します。{% endblock %}
 
 {% block header_actions %}
-  <a class="btn-out sm" href="{% url 'documents:list' %}">ドキュメント登録へ</a>
+  <a class="btn-out sm" href="{% url 'documents:list' %}">ナレッジ一覧へ</a>
   <a class="btn-ghost sm" href="{% url 'rag:evaluation' %}">検索品質を評価する</a>
 {% endblock %}
 
 {% block content %}
+
+  {% include "partials/coachmark.html" with coach_key="rag-search" step1="質問を入れて検索します。結果は要点 → 引用元 → スコアの見方の順に出ます" step2="要点は検索結果の要約で、確定した回答ではありません。引用元の原文を開いて確かめてから使ってください" step3="引用が0件のときは「根拠なし」と出ます。該当する登録文書が無いという意味で、事実が無いことの証明ではありません" step4="スコアは順位を合成した値です。値が大きいほど正しい、という意味ではありません" %}
 
   <div class="card">
     <form method="get" class="search-row">
@@ -23,26 +25,59 @@
 
   {% if not scope.is_usable %}
     <div class="callout w">
-      <p><strong>検索インデックスが未構築です。</strong></p>
+      <p><strong>検索インデックスが未構築です。</strong>この状態では引用が 0 件になり、回答の根拠を示せません。</p>
       <p>次のコマンドで構築してください: <code>python manage.py rebuild_index --tenant &lt;テナントコード&gt;</code></p>
-    </div>
-  {% elif question and not hits %}
-    <div class="callout w">
-      <p><strong>該当する登録文書が見つかりませんでした。</strong></p>
-      <p>文書の登録状況（RAG対象になっているか）と、検索語を確認してください。</p>
     </div>
   {% elif not question %}
     <div class="callout">
       <p>質問を入力すると、ベクトル検索と語彙検索を組み合わせて根拠を探します。</p>
-      <p>スコアは順位合成（Reciprocal Rank Fusion）で算出し、内訳も併せて表示します。</p>
+      <p>結果は「回答の要点 → 引用元 → スコアの見方」の順に並びます。引用が 0 件のときは根拠なしと明示します。</p>
     </div>
   {% endif %}
 
-  {% if hits %}
+  {% if question and scope.is_usable %}
+
+    {# 1. 回答の要点 — 事実確認の前提（範囲・件数・十分性・取得時点）を要点と同じ位置に置く。 #}
     <div class="card">
       <div class="card-hdr">
-        <span class="card-t">検索結果 {{ hits|length }}件</span>
-        <span class="card-act">{{ scope.label }} / {{ index.chunk_count }}チャンク</span>
+        <span class="card-t">1. 回答の要点</span>
+        <span class="card-act">検索結果の要約であり、確定した回答ではありません</span>
+      </div>
+
+      {% if evidence.is_grounded %}
+        <div class="callout {% if evidence.level == 'ok' %}ok{% else %}w{% endif %}">
+          <p>
+            <span class="badge {% if evidence.level == 'ok' %}g{% else %}a{% endif %}">根拠の十分性: {{ evidence.label }}</span>
+            <strong>引用 {{ evidence.count }}件</strong>
+          </p>
+          <p>質問「{{ question }}」に対し、下の引用元に挙げた {{ evidence.count }}件の登録文書・業務データが一致しました。</p>
+          {% if evidence.level != 'ok' %}
+            <p><strong>この件数では裏取りが 1 系統に偏ります。</strong>断定の前に、原文と他の資料で必ず確認してください。</p>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="callout w">
+          <p><span class="badge r">根拠なし</span> <strong>引用 0件 — 回答を組み立てられませんでした。</strong></p>
+          <p>該当する登録文書が見つかりませんでした。文書の登録状況（RAG対象か）と検索語を確認してください。</p>
+          <p>ここに回答が出ていないことは「該当なし」を意味し、「そのような事実がない」ことの証明ではありません。</p>
+        </div>
+      {% endif %}
+
+      <dl class="dl">
+        <dt>対象範囲</dt>
+        <dd>{{ evidence.scope_label }}{% if index %} ／ {{ index.chunk_count }}チャンク{% endif %}</dd>
+        <dt>取得時点</dt>
+        <dd>{{ searched_at|date:"Y-m-d H:i" }}（この時点の索引の内容です。以降の更新は反映されていません）</dd>
+        <dt>根拠の十分性{% include "partials/hint.html" with label="根拠の十分性" body="引用として拾えた件数による判定です。0件なら根拠なしで、要点に書けることはありません。1〜2件は裏取りが1系統に偏っている状態で、断定の前に原文と他の資料での確認が必要です。" %}</dt>
+        <dd>引用 {{ evidence.count }}件 — {{ evidence.label }}。引用 3件以上で「複数の根拠あり」と表示します。</dd>
+      </dl>
+    </div>
+
+    {# 2. 引用元 — 主張ではなく原文。原文を開く導線を各件に置く。 #}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">2. 引用元 {{ hits|length }}件{% include "partials/hint.html" with label="引用" body="要点の裏付けに使った登録文書の該当箇所です。表示しているのは一致したチャンクだけで、前後の文脈は含みません。判断に使う前に原文を開いて確認してください。" %}</span>
+        <span class="card-act">{{ scope.label }}</span>
       </div>
 
       {% for hit in hits %}
@@ -59,6 +94,14 @@
             {% endif %}
           </div>
           <p class="result-text">{{ hit.chunk.text }}</p>
+          <div class="card-act">
+            {% if hit.chunk.is_business %}
+              <a class="btn-out sm" href="{% url 'projects:list' %}">原文を開く（{{ hit.chunk.get_source_type_display }}）</a>
+            {% else %}
+              <a class="btn-out sm" href="{% url 'documents:list' %}">原文を開く（{{ hit.chunk.source_title }} p.{{ hit.chunk.page_number }}）</a>
+            {% endif %}
+            <span class="ps">抜粋は該当チャンクのみです。前後の文脈は原文で確認してください。</span>
+          </div>
           <div class="result-scores">
             <span>統合 <b>{{ hit.final_score|floatformat:4 }}</b></span>
             <span>ベクトル <b>{% if hit.vector_score %}{{ hit.vector_score|floatformat:3 }}{% else %}—{% endif %}</b></span>
@@ -66,8 +109,31 @@
             {% if hit.matched_terms %}<span>一致語 <b>{{ hit.matched_terms|join:", " }}</b></span>{% endif %}
           </div>
         </article>
+      {% empty %}
+        <div class="empty">
+          <p>引用は 0 件です（根拠なし）。上の要点に回答が出ていないのはこのためです。</p>
+        </div>
       {% endfor %}
     </div>
+
+    {# 3. スコアの見方 — 数値の意味は最後。読み飛ばしても判断を誤らない順序にする。 #}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">3. スコアの見方{% include "partials/hint.html" with label="スコア" body="検索の順位を決めるための相対値です。正しさや確信度ではありません。スコアが高い引用でも内容が質問と噛み合わないことがあるため、必ず本文を読んで判断してください。" %}</span>
+        <span class="card-act">スコアは順位の合成値で、正しさの度合いではありません</span>
+      </div>
+      <dl class="dl">
+        <dt>統合</dt>
+        <dd>ベクトル検索と語彙検索の順位を合成した値（Reciprocal Rank Fusion）。相対順位を決めるためのもので、絶対的な確信度ではありません。</dd>
+        <dt>ベクトル</dt>
+        <dd>意味の近さ。語が一致しなくても内容が近ければ上がります。「—」は当該検索で拾えなかったことを表します。</dd>
+        <dt>語彙</dt>
+        <dd>語の一致度。固有名詞や型番の一致に強く、言い換えには弱いです。</dd>
+        <dt>一致語</dt>
+        <dd>語彙検索で実際に一致した語。ここが空でも、意味の近さだけで上位に来ることがあります。</dd>
+      </dl>
+    </div>
+
   {% endif %}
 
 {% endblock %}

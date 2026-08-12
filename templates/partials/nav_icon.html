@@ -1,0 +1,33 @@
+{% comment %}
+親カテゴリのアイコン。
+
+同梱の Material Symbols はサブセット化しており、収録済みの名前しか描けない
+（収録外を書くと、その文字列がそのまま画面へ出る）。フォントを増やすには
+再サブセット化＝外部取得が要り、オフライン同梱の前提を崩す。
+
+そのため、あとから増やしたカテゴリはインライン SVG で描く。外部取得は不要で、
+`currentColor` を継ぐので既存の配色をそのまま使える。
+
+- `section.icon` … 収録済みのリガチャ名（既存カテゴリ）
+- それ以外       … `section.key` に対応する SVG（下の分岐）
+{% endcomment %}
+{% if section.icon %}
+  <span class="material-symbols-outlined sb-rail-icon" aria-hidden="true">{{ section.icon }}</span>
+{% elif section.key == "quality" %}
+  <svg class="sb-rail-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 3 5 5.8v5.4c0 4.3 3 8.3 7 9.5 4-1.2 7-5.2 7-9.5V5.8L12 3Z"/>
+    <path d="m9 12 2.2 2.2L15.5 10"/>
+  </svg>
+{% elif section.key == "measure" %}
+  <svg class="sb-rail-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 20h16"/>
+    <path d="M7.5 20v-5.5"/>
+    <path d="M12 20V8"/>
+    <path d="M16.5 20v-8.5"/>
+  </svg>
+{% else %}
+  {# 万一どちらも無い場合でも無印にはしない。 #}
+  <span class="sb-rail-code" aria-hidden="true">{{ section.code|default:"??" }}</span>
+{% endif %}

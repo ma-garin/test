@@ -1,12 +1,15 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
-{% block subtitle %}AIの提案には必ず根拠・信頼度・人の判断が残ります。判断していない提案は採用されません。{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
+{% block subtitle %}ここに並ぶのはAIの候補です。人が判断した結果だけが記録されます。{% endblock %}
 
 {% block header_actions %}
+  <a class="btn-out sm" href="{% url 'dashboard:detection' %}">予兆検知へ</a>
   <a class="btn-out sm" href="{% url 'agents:run_list' %}">Agenticトレースへ</a>
 {% endblock %}
 
 {% block content %}
+
+  {% include "partials/coachmark.html" with coach_key="intervention" step1="まず「先に確認してください」を読みます。根拠が1件も記録されていない候補が並びます" step2="「介入提案の候補」の行から「根拠を確認して判断」へ進み、採用・修正して採用・不採用のいずれかを記録します" step3="ここに並ぶのはAIが出した候補で、確定した指示ではありません。判断待ちだけを見るときは「よく使う絞り込み」の「判断待ち」を押します" %}
 
   <div class="kpi-g">
     <div class="kpi">
@@ -35,11 +38,43 @@
     </div>
   </div>
 
+  {% comment %}
+  UXP-11: 根拠のない候補は、判断画面へのリンクより手前に出す。表の中の印だけでは
+  そのまま判断へ進まれる。ここにはリンクを置かない（読ませてから進ませる）。
+  {% endcomment %}
+  {% if evidence_gap_rows %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">先に確認してください</span>
+        <span class="card-act">根拠なしの候補 {{ evidence_gap_rows|length }}件</span>
+      </div>
+      <div class="callout w"><p>次の候補は、根拠が1件も記録されていません。判断へ進む前に一次情報で裏取りしてください。</p></div>
+      <ul class="attention-list">
+        {% for row in evidence_gap_rows %}
+          <li class="attention-item">
+            <span class="badge r">根拠なし</span>
+            <span class="attention-name">{{ row.proposal.title }}</span>
+            <span class="attention-meta">AIの候補（未確定） ／ {{ row.proposal.project.name }} ／ 信頼度 {% if row.confidence_percent is not None %}{{ row.confidence_percent }}%{% else %}未算出{% endif %} ／ 提案更新 {{ row.proposal.updated_at|date:"Y/m/d H:i" }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">介入提案</span>
+      <span class="card-t">絞り込み</span>
       {% if status %}<a class="card-act" href="{% url 'dashboard:intervention' %}">条件をクリア</a>{% endif %}
     </div>
+    <nav class="quick-views" aria-label="よく使う絞り込み">
+      <span class="quick-views-label">よく使う絞り込み</span>
+      <a class="quick-view{% if status == pending_status %} is-active{% endif %}"
+         href="{% url 'dashboard:intervention' %}?status={{ pending_status }}"
+         {% if status == pending_status %}aria-current="page"{% endif %}>判断待ち</a>
+      <a class="quick-view{% if not status %} is-active{% endif %}"
+         href="{% url 'dashboard:intervention' %}"
+         {% if not status %}aria-current="page"{% endif %}>すべて</a>
+    </nav>
     <form method="get" class="search-row">
       <select name="status">
         <option value="">状態（すべて）</option>
@@ -49,67 +84,64 @@
       </select>
       <button type="submit" class="btn-b sm">絞り込む</button>
     </form>
+  </div>
 
-    {% for row in report.rows %}
-      <div class="pb-row">
-        <div class="pb-lr">
-          <span class="pb-t">{{ row.proposal.title }}</span>
-          <span class="pb-v"><span class="badge {{ row.tone }}">{{ row.proposal.get_status_display }}</span></span>
-        </div>
-        <div class="ps">
-          {{ row.proposal.project.name }}
-          {% if row.confidence_percent is not None %} ／ 信頼度 {{ row.confidence_percent }}%{% endif %}
-          {% if row.proposal.decided_by %} ／ 判断者 {{ row.proposal.decided_by }}{% endif %}
-        </div>
-        {% if row.proposal.recommended_action %}
-          <div class="callout"><p><strong>推奨アクション:</strong> {{ row.proposal.recommended_action }}</p></div>
-        {% endif %}
-        {% if row.evidence_items %}
-          <div class="ps"><strong>根拠</strong></div>
-          <ul class="ps">
-            {% for item in row.evidence_items %}<li>{{ item }}</li>{% endfor %}
-          </ul>
-        {% else %}
-          <div class="callout w"><p>この提案には根拠が記録されていません。採用の前に必ず裏取りしてください。</p></div>
-        {% endif %}
-        {% if row.proposal.decision_reason %}
-          <div class="ps"><strong>判断理由:</strong> {{ row.proposal.decision_reason }}</div>
-        {% endif %}
-        {% if row.proposal.modified_action %}
-          <div class="ps"><strong>修正後のアクション:</strong> {{ row.proposal.modified_action }}</div>
-        {% endif %}
-        {% if row.proposal.status == "proposed" %}
-          <form method="post" class="form" action="{% url 'dashboard:intervention_decide' row.proposal.pk %}">
-            {% csrf_token %}
-            <div>
-              <label for="status-{{ row.proposal.pk }}">判断</label>
-              <select id="status-{{ row.proposal.pk }}" name="status">
-                <option value="accepted">採用</option>
-                <option value="modified">修正して採用</option>
-                <option value="rejected">不採用</option>
-                <option value="done">実施済み</option>
-              </select>
-            </div>
-            <div>
-              <label for="reason-{{ row.proposal.pk }}">判断理由（必須）</label>
-              <textarea id="reason-{{ row.proposal.pk }}" name="decision_reason" rows="2" required></textarea>
-            </div>
-            <div>
-              <label for="action-{{ row.proposal.pk }}">修正後のアクション（「修正して採用」の場合は必須）</label>
-              <textarea id="action-{{ row.proposal.pk }}" name="modified_action" rows="2"></textarea>
-            </div>
-            <div class="actions">
-              <button type="submit" class="btn-b sm">判断を記録する</button>
-              <a class="btn-out sm" href="{% url 'dashboard:intervention_decide' row.proposal.pk %}">根拠を確認して判断</a>
-            </div>
-          </form>
-        {% else %}
-          <div class="ps">判断済み（{{ row.proposal.decided_at|date:"Y/m/d H:i"|default:"日時不明" }}）。履歴を保つため再判断はできません。</div>
-        {% endif %}
-      </div>
-    {% empty %}
-      <div class="empty">{% if status %}条件に一致する提案がありません。{% else %}AIの介入提案はまだありません。{% endif %}</div>
-    {% endfor %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">介入提案の候補</span>
+      <span class="card-act">判断は候補ごとの専用画面で行います</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr>
+            <th>提案（すべてAIの候補）</th>
+            <th class="nowrap">根拠{% include "partials/hint.html" with label="根拠" body="その候補の裏付けとして記録されている件数です。「根拠なし」は裏付けが1件も無い状態で、判断の前に一次情報での確認が必要です。" %}</th>
+            <th class="nowrap">信頼度{% include "partials/hint.html" with label="信頼度" body="AIが出した候補の確からしさを 0〜100% で表した値です。AIを使わないルールベースの提案では「未算出」になります。確定した根拠ではありません。" %}</th>
+            <th class="nowrap">更新時刻</th>
+            <th class="nowrap">判断状態{% include "partials/hint.html" with label="修正して採用" body="AIの原案をそのまま実行せず、人が書き換えた内容で実行する判断です。修正後のアクション本文が必須で、AIの原案と区別して残ります。" %}</th>
+            <th class="nowrap">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in report.rows %}
+            <tr>
+              <td>
+                {{ row.proposal.title }}
+                <div class="ps">{{ row.proposal.project.name }}{% if row.proposal.recommended_action %} ／ 推奨アクション: {{ row.proposal.recommended_action }}{% endif %}</div>
+              </td>
+              <td class="nowrap">
+                {% if row.evidence_items %}
+                  <span class="badge n">{{ row.evidence_items|length }}件</span>
+                {% else %}
+                  <span class="badge r">根拠なし</span>
+                {% endif %}
+              </td>
+              <td class="nowrap">{% if row.confidence_percent is not None %}{{ row.confidence_percent }}%{% else %}未算出{% endif %}</td>
+              <td class="nowrap">{{ row.proposal.updated_at|date:"Y/m/d H:i" }}</td>
+              <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.proposal.get_status_display }}</span></td>
+              <td class="nowrap">
+                {% if row.proposal.status == pending_status %}
+                  <a class="btn-out sm" href="{% url 'dashboard:intervention_decide' row.proposal.pk %}">根拠を確認して判断</a>
+                {% else %}
+                  <span class="ps">判断済み {{ row.proposal.decided_at|date:"Y/m/d H:i"|default:"日時不明" }}{% if row.proposal.decided_by %} ／ {{ row.proposal.decided_by }}{% endif %}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                <div class="empty empty-state">
+                  {% if status %}条件に一致する候補がありません。<a href="{% url 'dashboard:intervention' %}">条件をクリア</a>{% else %}AIの介入提案はまだありません。予兆検知を実行すると候補が作られます。{% endif %}
+                  <a href="{% url 'dashboard:detection' %}">予兆検知へ</a>
+                  <a href="{% url 'pmo:consultation' %}">PMOに相談する</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% include "partials/pager.html" %}
   </div>
 

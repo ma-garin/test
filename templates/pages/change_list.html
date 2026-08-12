@@ -1,8 +1,10 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}変更要求の影響範囲・工数・スケジュール影響と、判断の状態を記録します。{% endblock %}
 
 {% block content %}
+
+  {% include "partials/coachmark.html" with coach_key="change" step1="まず「判断待ち」の件数を見ます。人の判断を待っている変更要求の数です" step2="「よく使う絞り込み」で判断待ちに絞り、行の「判断」から承認・却下を記録します" step3="「要補完」が付いた行は判断材料が足りません。未入力の項目を埋めてから判断してください。承認・却下は1回限りで取り消せません" %}
 
   <div class="kpi-g">
     <div class="kpi">
@@ -34,9 +36,25 @@
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">変更要求一覧</span>
-      <a class="card-act" href="{% url 'projects:change_create' %}">新規作成</a>
+      <a class="card-act" href="{% url 'projects:change_create' %}?next={{ request.get_full_path|urlencode }}">新規作成</a>
       {% if status %}<a class="card-act" href="{% url 'dashboard:change' %}">条件をクリア</a>{% endif %}
     </div>
+    {% comment %}
+    UXP-10: 判断待ちへ 1 クリックで到達する導線。既存の GET 条件（status）だけを
+    使うので、「すべて」で必ず全件へ戻れる。ここに新しい絞り込み軸を足さない。
+    {% endcomment %}
+    <nav class="quick-views" aria-label="よく使う絞り込み">
+      <span class="quick-views-label">よく使う絞り込み</span>
+      {% for quick in change_quick_views %}
+        <a class="quick-view{% if quick.is_active %} is-active{% endif %}"
+           href="{% url 'dashboard:change' %}?{{ quick.query }}"
+           data-quick-view="{{ quick.query }}"
+           {% if quick.is_active %}aria-current="page"{% endif %}>{{ quick.label }}</a>
+      {% endfor %}
+      <a class="quick-view{% if not status %} is-active{% endif %}"
+         href="{% url 'dashboard:change' %}"
+         {% if not status %}aria-current="page"{% endif %}>すべて</a>
+    </nav>
     <form method="get" class="search-row">
       <select name="status">
         <option value="">状態（すべて）</option>
@@ -49,29 +67,79 @@
     <div class="dashboard-risk-wrap">
       <table class="dashboard-risk-table">
         <thead>
-          <tr><th>案件</th><th>変更要求</th><th>影響範囲</th><th>工数</th><th>日程影響</th><th>状態</th><th>判断者</th><th>操作</th></tr>
+          <tr><th>案件</th><th>変更要求</th><th>影響範囲{% include "partials/hint.html" with label="影響範囲" body="その変更が及ぶ対象です。未入力の行は「未入力」と表示され、判断材料が足りない印になります。" %}</th><th>工数</th><th>日程影響{% include "partials/hint.html" with label="日程影響" body="変更を受け入れた場合にスケジュールが動く日数です。正の値なら遅延方向を意味し、影響工数とは分けて記録します。" %}</th><th>状態</th><th>判断者</th><th>操作{% include "partials/hint.html" with label="判断" body="承認・却下を記録する操作です。対象は「承認待ち」の行だけで、判断は1回限り。判断済みの変更要求を再判断することはできません。" %}</th></tr>
         </thead>
         <tbody>
-          {% for row in report.rows %}
+          {% for entry in change_rows %}
             <tr>
-              <td>{{ row.change.project.code }}</td>
-              <td>{{ row.change.title }}</td>
-              <td>{{ row.change.impact_scope|truncatechars:36|default:"—" }}</td>
-              <td class="nowrap">{{ row.change.effort_days|floatformat:"-1"|default:"—" }}</td>
-              <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.change.schedule_impact_days|default:0 }}日</span></td>
+              <td>{{ entry.change.project.code }}</td>
               <td>
-                <span class="badge {% if row.is_pending %}a{% else %}n{% endif %}">{{ row.change.get_status_display }}</span>
+                {{ entry.change.title }}
+                {% if entry.has_missing %}
+                  <span class="badge a">要補完</span>
+                  <div class="ps" data-change-missing="{{ entry.change.pk }}">未入力: {{ entry.missing_labels|join:"・" }} — 判断材料が足りません</div>
+                {% endif %}
               </td>
-              <td>{{ row.change.decided_by|default:"—" }}</td>
+              <td>
+                {% if entry.change.impact_scope %}
+                  {{ entry.change.impact_scope|join:"・"|truncatechars:36 }}
+                {% else %}
+                  <span class="badge a">未入力</span>
+                {% endif %}
+              </td>
               <td class="nowrap">
-                <a class="btn-ghost sm" href="{% url 'projects:change_edit' row.change.pk %}">編集</a>
-                {% if user.can_approve %}
-                  <a class="btn-out sm" href="{% url 'projects:change_decide' row.change.pk %}">判断</a>
+                {% if entry.change.estimated_effort_days is None %}
+                  <span class="badge a">未入力</span>
+                {% else %}
+                  {{ entry.change.estimated_effort_days|floatformat:"-1" }}
+                {% endif %}
+              </td>
+              <td class="nowrap">
+                {% if entry.change.schedule_impact_days is None %}
+                  <span class="badge a">未入力</span>
+                {% else %}
+                  <span class="badge {{ entry.tone }}">{{ entry.change.schedule_impact_days }}日</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge {% if entry.is_pending %}a{% else %}n{% endif %}">{{ entry.change.get_status_display }}</span>
+              </td>
+              <td>{{ entry.change.decided_by|default:"—" }}</td>
+              <td>
+                {% comment %}
+                UXP-10: 判断できる人には「判断」を主操作（btn-b）として先頭に置く。
+                承認可否は案件ロールまで見ないと決まらないため、ビュー側で 1 行ずつ
+                確定させた `can_decide` を使う。権限が無い人にはボタンを出さず、
+                誰に回すかを文言で示す（押してから 403 に当たらせない）。
+                {% endcomment %}
+                {% if entry.can_decide %}
+                  <a class="btn-b sm" href="{% url 'projects:change_decide' entry.change.pk %}?next={{ request.get_full_path|urlencode }}" data-change-decide="{{ entry.change.pk }}">判断</a>
+                  <a class="btn-ghost sm" href="{% url 'projects:change_edit' entry.change.pk %}?next={{ request.get_full_path|urlencode }}">編集</a>
+                {% else %}
+                  <a class="btn-out sm" href="{% url 'projects:change_edit' entry.change.pk %}?next={{ request.get_full_path|urlencode }}">編集</a>
+                  {% if entry.is_pending %}
+                    <div class="ps" data-change-decide-denied="{{ entry.change.pk }}">判断できません（{{ entry.denied_reason }}）。次の確認先: {{ entry.change.project.code }} の案件責任者・案件PMO</div>
+                  {% else %}
+                    <div class="ps">判断済み — 再判断はできません</div>
+                  {% endif %}
                 {% endif %}
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="dashboard-empty">{% if status %}条件に一致する変更要求がありません。{% else %}登録された変更要求がありません。{% endif %}</div></td></tr>
+            <tr>
+              <td colspan="8">
+                <div class="dashboard-empty empty-state" data-change-empty>
+                  {% if status %}
+                    条件に一致する変更要求がありません。<a href="{% url 'dashboard:change' %}">条件をクリア</a>
+                  {% else %}
+                    登録された変更要求がありません。
+                  {% endif %}
+                  <br>
+                  判断フロー: 起票 → 影響分析中 → 承認待ち → 承認済み / 却下。判断の対象になるのは「承認待ち」の行だけで、承認・却下は 1 回限り（取り消し不可）です。
+                  <a href="{% url 'projects:change_create' %}?next={{ request.get_full_path|urlencode }}">変更要求を登録する</a>
+                </div>
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>

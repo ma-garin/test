@@ -1,0 +1,120 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}プロジェクト管理{% endblock %}
+{% block subtitle %}前回確認後の変化・判断待ち・未確認事項をまとめた下書きです。確認してから共有してください。{% endblock %}
+
+{% block header_actions %}
+  <div class="ph-action-group" aria-label="対象期間">
+    <a class="btn-out sm{% if not is_weekly %} is-active{% endif %}" href="{% url 'forecast:report' %}">日次</a>
+    <a class="btn-out sm{% if is_weekly %} is-active{% endif %}" href="{% url 'forecast:report' %}?range=weekly">週次</a>
+  </div>
+  <a class="btn-b sm" href="{% url 'forecast:live' %}">ライブ着地予測へ</a>
+{% endblock %}
+
+{% block content %}
+
+  {% comment %}
+  LDF-08: AI の推定を確定事項として載せない。未確認事項を必ず分けて出し、
+  外部へは送信しない（この画面が作るのは下書きまで）。
+  {% endcomment %}
+  {% comment %}テンプレートタグは改行をまたげないため、include は 1 行で書く。{% endcomment %}
+  {% include "partials/coachmark.html" with coach_key="forecast_report" step1="この画面が作るのは下書きだけです。外部システムへは送信しないので、まず内容を読んでください" step2="「前回からの変化」と「算定不能の項目」で、報告に載せる内容を決めます" step3="「未確認事項（確定していません）」の関連は、確定または否定するまで報告に載せないでください" step4="最後に「共有用の文面」をコピーし、編集してから共有します。日次と週次は右上で切り替えます" %}
+
+  <div class="callout w">
+    <p><strong>これは下書きです。</strong>未確認の関連と算定不能の項目を確認してから共有してください。この画面から外部システムへは送信しません。</p>
+  </div>
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">通知すべき変化{% include "partials/hint.html" with label="通知すべき変化" body="悪化と算定不能化だけを数えます。改善は相手の判断を変えないため通知の対象にしません。件数が0でも、未確認事項と判断待ちは残っていることがあります。" %}</div>
+      <div class="kpi-v" style="color:var(--red)">{{ notification_total }}</div>
+      <div class="kpi-s">悪化・算定不能化のみ（改善では通知しない）</div>
+      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">対象案件</div>
+      <div class="kpi-v">{{ drafts|length }}</div>
+      <div class="kpi-s">{% if is_weekly %}直近7日{% else %}直近24時間{% endif %}</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  {% for draft in drafts %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">{{ draft.project.code }} {{ draft.project.name }}</span>
+        <span class="card-act">{{ draft.since|date:"n/j H:i" }} 〜 {{ draft.until|date:"n/j H:i" }}</span>
+      </div>
+
+      {% if draft.is_quiet %}
+        <div class="empty">この期間に報告すべき変化はありません。算定不能の項目もありません。</div>
+      {% else %}
+        <div class="card-hdr"><span class="card-t">前回からの変化</span></div>
+        <ul class="attention-list">
+          {% for change in draft.notable_changes %}
+            <li class="attention-item">
+              <span class="badge {% if change.direction == '悪化' %}r{% elif change.direction == '算定不能化' %}n{% elif change.direction == '改善' %}g{% else %}b{% endif %}">{{ change.direction }}</span>
+              <span class="attention-name">{{ change.target_name }}</span>
+              <span class="attention-meta">{{ change.describe }}</span>
+            </li>
+          {% empty %}
+            <li><div class="empty">変化はありません。</div></li>
+          {% endfor %}
+        </ul>
+        {% if draft.hidden_change_count %}
+          <div class="ps">ほか {{ draft.hidden_change_count }} 件を省略しています（悪化・算定不能化を先に表示しています）。</div>
+        {% endif %}
+
+        <div class="card-hdr" style="margin-top:14px"><span class="card-t">算定不能の項目</span></div>
+        <ul class="attention-list">
+          {% for snapshot in draft.undeterminable %}
+            <li class="attention-item">
+              <span class="badge n">算定不能</span>
+              <span class="attention-name">{{ snapshot.target }}</span>
+              <span class="attention-meta">不足: {{ snapshot.missing_input_labels|join:"、" }}</span>
+            </li>
+          {% empty %}
+            <li><div class="empty">算定不能の項目はありません。</div></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <div class="card-hdr" style="margin-top:14px"><span class="card-t">未確認事項（確定していません）{% include "partials/hint.html" with label="未確認事項" body="AIまたは自動処理が見つけただけで、人が確定していない関連です。事実として扱わず、確定または否定してから報告に載せてください。" %}</span></div>
+      <ul class="attention-list">
+        {% for link in draft.unconfirmed_links %}
+          <li class="attention-item">
+            <span class="badge a">未確認</span>
+            <span class="attention-name">{{ link.from_object }} → {{ link.to_object }}</span>
+            <span class="attention-meta">出所 {{ link.get_provenance_display }} ／ 確定または否定するまで報告には載せないでください。</span>
+          </li>
+        {% empty %}
+          <li><div class="empty">未確認の関連はありません。</div></li>
+        {% endfor %}
+      </ul>
+
+      <div class="card-hdr" style="margin-top:14px"><span class="card-t">判断待ちの予測</span></div>
+      <ul class="attention-list">
+        {% for snapshot in draft.pending_reviews %}
+          <li class="attention-item">
+            <span class="badge a">判断待ち</span>
+            <span class="attention-name">{{ snapshot.target }}</span>
+            <span class="attention-meta">{{ snapshot.get_horizon_display }} {{ snapshot.display_date }}</span>
+            <form method="post" action="{% url 'forecast:review_snapshot' snapshot.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button type="submit" name="decision" value="adopt" class="btn-out sm">採用</button>
+              <button type="submit" name="decision" value="reject" class="btn-ghost sm">却下</button>
+            </form>
+          </li>
+        {% empty %}
+          <li><div class="empty">判断待ちの予測はありません。</div></li>
+        {% endfor %}
+      </ul>
+
+      <div class="card-hdr" style="margin-top:14px"><span class="card-t">共有用の文面（編集してから使ってください）</span></div>
+      <pre class="ps" style="white-space:pre-wrap">{{ draft.as_text }}</pre>
+    </div>
+  {% empty %}
+    <div class="card"><div class="empty">参照できる案件がありません。</div></div>
+  {% endfor %}
+
+{% endblock %}

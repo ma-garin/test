@@ -1,0 +1,149 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}機能の状態・着地{% endblock %}
+{% block subtitle %}{{ feature.project.code }} {{ feature.project.name }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{{ return_to }}">ライブ着地予測へ</a>
+{% endblock %}
+
+{% block content %}
+
+  {% comment %}
+  受入条件: 「いま誰が何をしているか」と「いつ何日遅れる／前倒しになるか」が
+  原文確認を含めて分かること。まず次アクション、次に3時点の着地を出す。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">次アクション</span>
+      <span class="card-act"><span class="badge n">{{ feature.get_status_display }}</span></span>
+    </div>
+    <dl class="dl">
+      <dt>次にすること</dt><dd>{{ detail.next_action }}</dd>
+      <dt>責任者</dt><dd>{% if feature.owner %}{{ feature.owner }}{% else %}<span class="badge a">未設定</span> 機能の責任者が未登録です。{% endif %}</dd>
+      <dt>リリース対象</dt><dd>{{ feature.release_target|default:"—" }}</dd>
+      <dt>未確認の関連</dt><dd>{% if detail.unconfirmed_links %}<span class="badge a">{{ detail.unconfirmed_links }}件</span> 確定または否定するまで、予測の根拠には使いません。{% else %}なし{% endif %}</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">2日後・1週間後・最終期日の着地</span>
+      <span class="card-act">確定した根拠だけで計算</span>
+    </div>
+    {% if detail.has_forecast %}
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th class="nowrap">時点</th><th>対象</th><th class="nowrap">基準日</th><th class="nowrap">予測日</th><th class="nowrap">差分</th><th class="nowrap">確信度</th><th>説明</th></tr></thead>
+          <tbody>
+            {% for item in detail.horizons %}
+              <tr>
+                <td class="nowrap"><strong>{{ item.horizon_label }}</strong></td>
+                <td>{{ item.target }}</td>
+                <td class="nowrap">{{ item.baseline_date|date:"n/j"|default:"—" }}</td>
+                <td class="nowrap">{% if item.forecast_date %}{{ item.forecast_date|date:"n/j" }}{% else %}<span class="badge n">算定不能</span>{% endif %}</td>
+                <td class="nowrap">
+                  {% if item.variance_business_days is None %}—
+                  {% elif item.variance_business_days > 0 %}<span class="badge r">{{ item.variance_business_days }}営業日 遅延</span>
+                  {% elif item.variance_business_days < 0 %}<span class="badge g">前倒し</span>
+                  {% else %}<span class="badge g">予定どおり</span>{% endif %}
+                </td>
+                <td class="nowrap"><span class="badge {% if item.confidence == 'unknown' %}n{% elif item.confidence == 'low' %}r{% elif item.confidence == 'medium' %}a{% else %}g{% endif %}">{{ item.confidence_label }}</span></td>
+                <td>
+                  {{ item.summary }}
+                  {% if item.missing_inputs %}<div class="ps">不足: {{ item.missing_input_labels|join:"、" }}</div>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">この機能に紐づく必須WBSとマイルストーンが確認されていないため、着地を算定できません。WBSとの関連を確定してください。</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">工程の現在地</span>
+      <span class="card-act">確定した関連のWBS {{ detail.tasks|length }}件</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th class="nowrap">WBS</th><th>作業</th><th class="nowrap">状態</th><th>担当／ボール保持者</th><th class="nowrap">予測終了日</th><th>根拠</th></tr></thead>
+        <tbody>
+          {% for item in detail.tasks %}
+            <tr class="{% if item.task.status == 'blocked' %}row-blocked{% endif %}">
+              <td class="nowrap">{{ item.task.wbs_code }}</td>
+              <td><a href="{% url 'projects:task_detail' item.task.pk %}?next={{ request.get_full_path|urlencode }}">{{ item.task.name }}</a></td>
+              <td class="nowrap"><span class="badge {% if item.task.status == 'blocked' %}r{% else %}n{% endif %}">{{ item.task.get_status_display }}</span></td>
+              <td>{{ item.task.ball_holder|default:item.task.owner|default:"—" }}</td>
+              <td class="nowrap">{% if item.forecast_end %}{{ item.forecast_end|date:"n/j" }}{% else %}<span class="badge n">算定不能</span>{% endif %}</td>
+              <td>
+                {{ item.basis_label }}
+                {% if item.driven_by %}<div class="ps">押し出し元: {{ item.driven_by|join:"、" }}</div>{% endif %}
+                {% if item.missing_inputs %}<div class="ps">不足: {{ item.missing_input_labels|join:"、" }}</div>{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="empty">確定した WBS の関連がありません。機能とWBSを紐付けると、工程と着地を出せます。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sg">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">未解決の不具合</span>
+        <span class="card-act">{{ detail.defects|length }}件</span>
+      </div>
+      <ul class="attention-list">
+        {% for defect in detail.defects %}
+          <li class="attention-item">
+            <span class="badge r">{{ defect.get_severity_display }}</span>
+            <span class="attention-name">{{ defect.title }}</span>
+            <span class="attention-meta">{{ defect.get_status_display }} ／ 検出 {{ defect.detected_on|date:"n/j"|default:"—" }}</span>
+          </li>
+        {% empty %}
+          <li><div class="empty">この機能に紐づく未解決の不具合はありません。</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">根拠タイムライン</span>
+        <span class="card-act">事実（Signal）</span>
+      </div>
+      <ul class="attention-list">
+        {% for item in detail.evidence %}
+          <li class="attention-item">
+            <span class="badge {{ item.tone }}">{{ item.state_label }}</span>
+            <span class="attention-name">{{ item.signal.summary }}</span>
+            <span class="attention-meta">
+              {{ item.signal.get_source_display }} ／ {{ item.signal.occurred_at|date:"n/j H:i" }}
+              {% if item.signal.permalink %} ／ <a href="{{ item.signal.permalink }}" rel="noopener noreferrer" target="_blank">原文を開く</a>{% endif %}
+            </span>
+            {% comment %}
+            AH-07: 候補は人が確定・否定するまで予測の根拠に使わない。
+            外部システムへは一切書き込まない（内部の関連状態だけを更新する）。
+            {% endcomment %}
+            {% if not item.is_confirmed and item.link_id %}
+              <form method="post" action="{% url 'forecast:review_work_link' item.link_id %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" name="action" value="confirm" class="btn-out sm">この関連を確定する</button>
+                <button type="submit" name="action" value="reject" class="btn-ghost sm">関係ないと記録する</button>
+              </form>
+            {% endif %}
+          </li>
+        {% empty %}
+          <li><div class="empty">紐づく Signal がありません。外部連携を設定するか、手動で登録してください。</div></li>
+        {% endfor %}
+      </ul>
+      <div class="callout w"><p>Signal は事実です。未確認の候補は予測の確定根拠に使いません。状態を確認してから報告へ載せてください。</p></div>
+    </div>
+  </div>
+
+{% endblock %}

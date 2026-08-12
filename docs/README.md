@@ -8,6 +8,10 @@
 | `domain_model.md` | 概念データモデルと実装テーブルの対応、設計判断 |
 | `rag_flow.md` | 文書登録 → 索引 → 検索 → Agentic 実行の流れ |
 | `screen_map.md` | 画面一覧と移植状況、画面ごとの受入条件 |
+| `UIDesign.md` | 参照画像から整理した画面設計の原則と受入基準 |
+| `UIDesign_ToDo.md` | UI設計基準に基づく検証結果と対応ToDo |
+| `DesignSystem.md` | 業務画面用の色・余白・文字・状態・動きの共通ルール |
+| `改善に.md` | 画面別の使い勝手改善ポイントと、軽量モデル向け実装バックログ |
 | `api_contract.md` | エンドポイント一覧、応答の約束、API 化の方針 |
 | `requirements/p0_scope.md` | P0/P1 のスコープ、実装済み／未実装、推奨する実装順序 |
 | `open_questions.md` | 未確定事項 |

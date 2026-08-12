@@ -100,3 +100,38 @@ class RoleVisibilityTests(TestCase):
         response = self.client.get(reverse("dashboard:control"))
 
         self.assertContains(response, reverse("core:settings"))
+
+
+class SettingsPermissionTests(TestCase):
+    """設定画面はナビ定義どおり管理者限定。宣言だけでビューが素通しだと権限境界が形だけになる。"""
+
+    def setUp(self) -> None:
+        self.tenant = Tenant.objects.create(code="acme", name="ACME")
+        self.admin = User.objects.create_user(
+            username="admin-user",
+            email="admin@example.com",
+            password="pw",
+            tenant=self.tenant,
+            role=Role.TENANT_ADMIN,
+        )
+        self.member = User.objects.create_user(
+            username="pmo-user",
+            email="pmo@example.com",
+            password="pw",
+            tenant=self.tenant,
+            role=Role.PMO,
+        )
+
+    def test_管理者は設定画面を開ける(self) -> None:
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("core:settings"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_管理者以外はURL直打ちでも開けない(self) -> None:
+        self.client.force_login(self.member)
+        response = self.client.get(reverse("core:settings"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_未ログインはログインへ送る(self) -> None:
+        response = self.client.get(reverse("core:settings"))
+        self.assertEqual(response.status_code, 302)

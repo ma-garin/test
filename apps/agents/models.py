@@ -53,7 +53,7 @@ class AgentRun(TimeStampedModel):
         RAG_SEARCH = "rag_search", "RAG検索"
         RAG_CHAT = "rag_chat", "RAGチャット"
         PMO_CONSULTATION = "pmo_consultation", "PMO相談"
-        PLANNING = "planning", "計画策定"
+        PLANNING = "planning", "計画ドラフト"
         DELIVERABLE = "deliverable", "成果物生成"
 
     class Status(models.TextChoices):

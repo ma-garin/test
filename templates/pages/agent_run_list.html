@@ -4,10 +4,54 @@
 
 {% block content %}
   <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">絞り込み</span>
+      {% if filters.is_active %}<a class="card-act" href="{% url 'agents:run_list' %}">条件をクリア</a>{% endif %}
+    </div>
+    {% comment %}
+    UXP-26: 監査で最初に見るのは「失敗した実行」と「根拠が足りない実行」。
+    既存の GET 条件だけで表現しているので、条件をクリアで必ず全件へ戻れる。
+    {% endcomment %}
+    <nav class="quick-views" aria-label="よく使う絞り込み">
+      <span class="quick-views-label">よく使う絞り込み</span>
+      {% for quick in quick_views %}
+        <a class="quick-view{% if quick.is_active %} is-active{% endif %}"
+           href="{% url 'agents:run_list' %}?{{ quick.query }}"
+           {% if quick.is_active %}aria-current="page"{% endif %}>{{ quick.label }}</a>
+      {% endfor %}
+      <a class="quick-view{% if not filters.is_active %} is-active{% endif %}" href="{% url 'agents:run_list' %}">すべて</a>
+    </nav>
+    <form method="get" class="search-row">
+      <select name="area" aria-label="実行画面">
+        <option value="">画面（すべて）</option>
+        {% for value, label in area_choices %}
+          <option value="{{ value }}"{% if filters.area == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="status" aria-label="成否">
+        <option value="">成否（すべて）</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="evidence" aria-label="根拠評価">
+        <option value="">根拠評価（すべて）</option>
+        {% for value, label in evidence_choices %}
+          <option value="{{ value }}"{% if filters.evidence == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-b sm">絞り込む</button>
+    </form>
+    <div class="ps">
+      該当 {{ page.paginator.count }}件 ／ 適用条件: {% if filters.is_active %}{{ filters.label_text }}{% else %}なし（全件）{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-hdr"><span class="card-t">Agentic 実行履歴</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>日時</th><th>画面</th><th>入力</th><th>意図</th><th>状態</th><th>信頼度</th><th>所要</th></tr></thead>
+        <thead><tr><th>日時</th><th>画面</th><th>入力</th><th>意図</th><th>状態</th><th>根拠</th><th>所要</th><th>詳細</th></tr></thead>
         <tbody>
           {% for run in runs %}
             <tr>
@@ -18,13 +62,14 @@
               <td class="nowrap"><span class="badge {% if run.status == 'succeeded' %}g{% elif run.status == 'failed' %}r{% else %}n{% endif %}">{{ run.get_status_display }}</span></td>
               <td class="nowrap">
                 {% if run.evidence %}
-                  <span class="badge {% if run.evidence.blocks_approval %}r{% elif run.evidence.confidence >= 0.75 %}g{% else %}a{% endif %}">{{ run.evidence.confidence }}</span>
+                  <span class="badge {% if run.evidence.blocks_approval %}r{% elif run.evidence.confidence >= 0.75 %}g{% else %}a{% endif %}">{% if run.evidence.blocks_approval %}根拠不足 {% endif %}{{ run.evidence.confidence }}</span>
                 {% else %}<span class="muted">—</span>{% endif %}
               </td>
               <td class="nowrap muted">{{ run.elapsed_ms }}ms</td>
+              <td class="nowrap"><a class="btn-ghost sm" href="{% url 'agents:run_detail' run.pk %}">トレースを見る →</a></td>
             </tr>
           {% empty %}
-            <tr><td colspan="7"><div class="empty">実行履歴はまだありません。</div></td></tr>
+            <tr><td colspan="8"><div class="empty">{% if filters.is_active %}この条件に合う実行はありません。条件をクリアすると全件に戻ります。{% else %}実行履歴はまだありません。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

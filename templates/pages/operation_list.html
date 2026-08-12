@@ -4,10 +4,48 @@
 
 {% block content %}
   <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">絞り込み</span>
+      {% if filters.is_active %}<a class="card-act" href="{% url 'audit:operation_list' %}">条件をクリア</a>{% endif %}
+    </div>
+    <form method="get" class="search-row">
+      <select name="period" aria-label="期間">
+        {% for days, label in period_choices %}
+          <option value="{{ days }}"{% if days == filters.days %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="user" aria-label="操作者">
+        <option value="">操作者（すべて）</option>
+        {% for option in actor_options %}
+          <option value="{{ option.id }}"{% if option.id == filters.user_id %} selected{% endif %}>{{ option.label }}（{{ option.count }}件）</option>
+        {% endfor %}
+      </select>
+      <select name="action" aria-label="対象種別">
+        <option value="">対象種別（すべての操作）</option>
+        {% for value in action_options %}
+          <option value="{{ value }}"{% if filters.action == value %} selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="target" value="{{ filters.target }}" placeholder="対象名（部分一致）">
+      <select name="result" aria-label="成否">
+        <option value="">成否（すべて）</option>
+        {% for value, label in result_choices %}
+          <option value="{{ value }}"{% if filters.result == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-b sm">絞り込む</button>
+    </form>
+    <div class="ps">
+      該当 {{ page.paginator.count }}件 ／ 適用条件:
+      {% if filter_labels %}{% for label in filter_labels %}{{ label }}{% if not forloop.last %} ／ {% endif %}{% endfor %}{% else %}なし（全期間・全件）{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-hdr"><span class="card-t">操作ログ</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>日時</th><th>操作</th><th>対象</th><th>成否</th><th>実施者</th><th>案件</th></tr></thead>
+        <thead><tr><th>日時</th><th>操作</th><th>対象</th><th>成否</th><th>失敗理由</th><th>実施者</th><th>案件</th></tr></thead>
         <tbody>
           {% for log in logs %}
             <tr>
@@ -15,11 +53,17 @@
               <td>{{ log.action }}</td>
               <td class="muted">{{ log.target|default:"—" }}</td>
               <td><span class="badge {% if log.succeeded %}g{% else %}r{% endif %}">{% if log.succeeded %}OK{% else %}NG{% endif %}</span></td>
+              {% comment %}
+              失敗理由は失敗行だけに出す。成功時の詳細まで並べると、監査で
+              追うべき行が埋もれるうえ、表示する本文量を無意味に増やす。
+              本文は保存時に mask_secrets() を通した後の値。
+              {% endcomment %}
+              <td>{% if log.succeeded %}<span class="muted">—</span>{% else %}{{ log.detail|default:"理由の記録なし"|truncatechars:80 }}{% endif %}</td>
               <td class="nowrap">{{ log.user|default:"—" }}</td>
               <td class="nowrap">{{ log.project.name|default:"—" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty">操作ログはありません。</div></td></tr>
+            <tr><td colspan="7"><div class="empty">{% if filters.is_active %}この条件に合う操作ログはありません。条件をクリアすると全件に戻ります。{% else %}操作ログはありません。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

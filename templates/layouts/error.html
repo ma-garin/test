@@ -1,0 +1,22 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}画面を表示できません{% endblock %} | VeriRAG PMO Agent</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <main class="error-page" aria-labelledby="error-heading">
+    <div class="error-card">
+      <p class="pk">VeriRAG PMO Agent</p>
+      <h1 class="pt" id="error-heading">{% block heading %}画面を表示できません{% endblock %}</h1>
+      <p class="ps">{% block message %}時間をおいて再度お試しください。{% endblock %}</p>
+      <div class="error-actions">
+        <a class="btn-b" href="{% url 'accounts:login' %}">ログイン画面へ</a>
+        <a class="btn-out" href="{% url 'dashboard:control' %}">ダッシュボードへ</a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

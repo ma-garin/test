@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 {% block kicker %}ナレッジ / RAG{% endblock %}
-{% block subtitle %}形式・サイズ・空ファイル・重複を登録前に検証します。検証に通らないものは登録しません。{% endblock %}
+{% block subtitle %}文書を登録します。形式・サイズ・空ファイル・重複を検証し、通らないものは登録しません。{% endblock %}
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'documents:list' %}">文書台帳へ</a>
@@ -25,9 +25,28 @@
     {% endif %}
   {% endif %}
 
+  {% comment %}
+  UXP-21: 受入条件はファイル選択欄より前に置く。選んでから弾かれるのは手戻り。
+  ここは静的なテキストだけで完結させる（JavaScript を必須にしない）。
+  {% endcomment %}
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">文書アップロード</span>
+      <span class="card-t">受入条件（選択する前に確認してください）</span>
+      <span class="card-act">上限 {{ max_size_mb }}MB</span>
+    </div>
+    <dl class="dl">
+      <dt>対応形式</dt>
+      <dd>{{ accepted_extensions }}</dd>
+      <dt>サイズ上限</dt>
+      <dd>1ファイル {{ max_size_mb }}MB まで。空ファイル（0バイト）は登録できません。</dd>
+      <dt>重複時の扱い</dt>
+      <dd>同一内容（同じハッシュ）の文書が既にある場合も<strong>登録します</strong>。エラーにはせず警告を出すので、版管理は登録者が判断してください。</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">ナレッジ登録</span>
       <span class="card-act">上限 {{ max_size_mb }}MB</span>
     </div>
 
@@ -58,11 +77,70 @@
     </form>
   </div>
 
+  {% comment %}
+  UXP-21: 選択後の「これから何が検証され、次に何が起きるか」を 1 か所に集める。
+  値の反映は JavaScript による補助で、無効でも既定文が読める形にしてある。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">検証予定（送信すると何が起きるか）</span></div>
+    <dl class="dl">
+      <dt>ファイル名</dt>
+      <dd id="preview-name">未選択です。選択したファイル名がここに出ます（文書名が空ならこの名前を使います）。</dd>
+      <dt>サイズ</dt>
+      <dd id="preview-size">未選択です。上限 {{ max_size_mb }}MB を超えるファイルは登録しません。</dd>
+      <dt>対象案件</dt>
+      <dd id="preview-project">テナント共通ナレッジ（参照範囲を選ぶとここに出ます）</dd>
+      <dt>次に起きること</dt>
+      <dd>形式・サイズ・空ファイル・重複を検証 → 通れば文書台帳へ登録 → <strong>本文抽出とインデックス構築は別操作</strong>です。台帳の「本文を抽出」を実行するまで RAG 検索には出ません。</dd>
+    </dl>
+  </div>
+
   <div class="callout">
     <p><strong>検証内容</strong>（<code>apps/documents/services/validation.py</code>）</p>
     <p>・対応形式: {{ accepted_extensions }}</p>
     <p>・サイズ上限: {{ max_size_mb }}MB／空ファイルは登録不可</p>
     <p>・同一ハッシュの文書がある場合はエラーではなく警告。版管理は利用者の判断に委ねます。</p>
   </div>
+
+  {% if readiness_steps %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">検索できるまでの準備</span>
+        <span class="card-act">4ステップ</span>
+      </div>
+      <div class="empty-state">
+        <p>まだ 1 件も登録されていません。次の順に進みます。</p>
+        <ol>
+          {% for step in readiness_steps %}
+            <li>{{ step.number }}. {{ step.label }} — <span class="badge {{ step.tone }}">{{ step.state }}</span></li>
+          {% endfor %}
+        </ol>
+        <a class="btn-out sm" href="{% url 'documents:list' %}">文書台帳へ</a>
+      </div>
+    </div>
+  {% endif %}
+
+  <script>
+    (function () {
+      var file = document.getElementById("file");
+      var project = document.getElementById("project");
+      var name = document.getElementById("preview-name");
+      var size = document.getElementById("preview-size");
+      var scope = document.getElementById("preview-project");
+
+      if (!file || !project) { return; }
+
+      file.addEventListener("change", function () {
+        var picked = file.files && file.files[0];
+        if (!picked) { return; }
+        name.textContent = picked.name;
+        size.textContent = (picked.size / 1024 / 1024).toFixed(2) + "MB（上限 {{ max_size_mb }}MB）";
+      });
+
+      project.addEventListener("change", function () {
+        scope.textContent = project.options[project.selectedIndex].text;
+      });
+    })();
+  </script>
 
 {% endblock %}

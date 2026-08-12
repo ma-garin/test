@@ -1,33 +1,82 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}{{ form_subtitle }}{% endblock %}
 
 {% block header_actions %}
-  <a class="btn-ghost sm" href="{% url 'dashboard:risk' %}">リスク一覧へ戻る</a>
+  <a class="btn-ghost sm" href="{{ return_to }}">リスク一覧へ戻る</a>
 {% endblock %}
 
 {% block content %}
 
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">{{ form_title }}</span>
-    </div>
-    <form method="post" class="form">
-      {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="callout d">{{ form.non_field_errors|join:" " }}</div>
-      {% endif %}
-      {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+  {% if form.non_field_errors %}
+    <div class="callout d" data-form-error-summary>{{ form.non_field_errors|join:" " }}</div>
+  {% endif %}
+
+  <form method="post" class="form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ return_to }}">
+
+    {% with content="|project|title|description|status|" score="|impact|probability|" plan="|mitigation|owner|due_date|" %}
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">リスクの内容</span></div>
+        <p class="ps">{{ form_title }}。どの案件で、何が起こりうるのかを書きます。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in content %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
         </div>
-      {% endfor %}
-      <button type="submit" class="btn-b">{{ submit_label|default:"保存する" }}</button>
-    </form>
-  </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">評価（影響度 × 発生確率）</span></div>
+        <div class="callout w">
+          <p>スコアは <strong>影響度 × 発生確率</strong> で自動計算します。どちらも 1〜5 で入力します（スコアは最大 25）。</p>
+          <p>スコア 9 以上は注意、<strong>16 以上は高リスク</strong>として扱われ、ダッシュボードの要対応に上がります。この場合は下の「対応方針」と担当・対応期限の記入が必須です。</p>
+        </div>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in score %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+        {% if risk %}<p class="ps">現在のスコア: {{ risk.impact }} × {{ risk.probability }} = {{ risk.score }}</p>{% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">対応方針・担当</span></div>
+        <p class="ps">スコアが高いリスクは、誰が何をいつまでにやるかまで決めて初めて下がります。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in plan %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key not in content and key not in score and key not in plan %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+      </div>
+    {% endwith %}
+
+    <button type="submit" class="btn-b">{{ submit_label|default:"保存する" }}</button>
+  </form>
 
   {% if risk %}
     <div class="card">
@@ -39,11 +88,20 @@
           <div>現在の状態</div><div><span class="badge n">{{ risk.get_status_display }}</span></div>
           <div>スコア</div><div>{{ risk.impact }} × {{ risk.probability }} = {{ risk.score }}</div>
         </div>
-        <form method="post" action="{% url 'projects:risk_close' risk.pk %}" class="form">
+        <div class="callout w">
+          <p>ここから先は上の「{{ submit_label|default:"保存する" }}」とは別の操作です。押すとすぐに実行されます。</p>
+          <p>クローズすると継続監視の対象から外れ、既定の一覧に表示されなくなります。</p>
+        </div>
+        <form method="post" action="{% url 'projects:risk_close' risk.pk %}" class="form" data-confirm="このリスクをクローズします。継続監視が不要であることを確認しましたか？">
           {% csrf_token %}
+          <input type="hidden" name="next" value="{{ return_to }}">
           <button type="submit" class="btn-out">クローズする</button>
         </form>
-        <a class="btn-out" href="{% url 'projects:risk_promote' risk.pk %}">課題へ転換する</a>
+        <div class="callout w">
+          <p>課題へ転換すると、<strong>リスク名・内容・担当・対応期限</strong>を引き継いだ課題が新しく起票されます。重大度と外部キーは転換画面で入力します。</p>
+          <p>元のリスクは削除されません。状態が「顕在化」に変わってリスク台帳に残ります。</p>
+        </div>
+        <a class="btn-out" href="{% url 'projects:risk_promote' risk.pk %}?next={{ return_to|urlencode }}">課題へ転換する</a>
       </div>
     </div>
   {% endif %}

@@ -10,43 +10,57 @@
 
 {% block content %}
 
-  <div class="kpi-g">
-    <div class="kpi"><div class="kpi-l">意図</div><div class="kpi-v" style="font-size:16px">{{ run.get_intent_display }}</div><div class="kpi-s">確信度 {{ run.intent_confidence }}</div></div>
-    <div class="kpi"><div class="kpi-l">状態</div><div class="kpi-v" style="font-size:16px">{{ run.get_status_display }}</div><div class="kpi-s">ループ {{ run.loop_count }}回</div></div>
-    <div class="kpi"><div class="kpi-l">信頼度</div><div class="kpi-v" style="font-size:16px">{% if run.evidence %}{{ run.evidence.confidence }}{% else %}—{% endif %}</div><div class="kpi-s">{% if run.evidence %}{{ run.evidence.get_recommendation_display }}{% endif %}</div></div>
-    <div class="kpi"><div class="kpi-l">所要時間</div><div class="kpi-v" style="font-size:16px">{{ run.elapsed_ms }}<small>ms</small></div><div class="kpi-s">総処理時間</div></div>
+  {% comment %}
+  UXP-27: 監査で最初に必要な結論は「成否・根拠は足りていたか・人が確認したか」の 3 点。
+  経過（ステップ・入力・外部原文）は下で折りたたみ、結論を押し流さないようにする。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">この実行の要約</span>
+      <span class="card-act">監査で最初に見る 3 点</span>
+    </div>
+    <dl class="dl">
+      <dt>成否</dt>
+      <dd>
+        <span class="badge {% if run.status == 'succeeded' %}g{% elif run.status == 'failed' %}r{% else %}n{% endif %}">{{ run.get_status_display }}</span>
+        {% if run.error_message %}<span class="ps">{{ run.error_message }}</span>{% endif %}
+      </dd>
+      <dt>根拠の十分性</dt>
+      <dd>
+        {% if run.evidence %}
+          <span class="badge {% if run.evidence.blocks_approval %}r{% else %}g{% endif %}">{% if run.evidence.blocks_approval %}根拠不足{% else %}根拠十分{% endif %}</span>
+          {{ run.evidence.get_recommendation_display }}（確信度 {{ run.evidence.confidence }}）
+        {% else %}
+          <span class="badge n">評価なし</span>
+        {% endif %}
+      </dd>
+      <dt>人の確認</dt>
+      <dd>
+        {% if latest_review %}
+          <span class="badge {% if latest_review.decision == 'pending' %}a{% elif latest_review.decision == 'rejected' %}r{% else %}g{% endif %}">{{ latest_review.get_decision_display }}</span>
+          {{ latest_review.reviewer|default:"確認者未記録" }} ／ {{ latest_review.reviewed_at|date:"Y-m-d H:i"|default:"日時未記録" }}
+        {% else %}
+          <span class="badge a">未確認</span>まだ人による確認は記録されていません。
+        {% endif %}
+      </dd>
+      <dt>意図 / 所要</dt>
+      <dd>{{ run.get_intent_display }}（確信度 {{ run.intent_confidence }}） ／ {{ run.elapsed_ms }}ms ／ ループ {{ run.loop_count }}回</dd>
+    </dl>
+    {% if run.status == 'failed' or run.evidence.blocks_approval %}
+      <div class="callout w">この実行は失敗、または根拠が不足しています。成果物へ反映する前に人の確認が必要です。</div>
+    {% else %}
+      <div class="callout ok">成否・根拠ともに承認を止める要因は検出されていません。</div>
+    {% endif %}
   </div>
 
   <div class="card">
-    <div class="card-hdr"><span class="card-t">入力</span></div>
-    <div class="ai-bubble">{{ run.user_input }}</div>
-  </div>
-
-  <div class="sg">
-    <div class="card">
-      <div class="card-hdr"><span class="card-t">実行計画</span><span class="card-act">REQ-AG-003</span></div>
-      <dl class="dl">
-        <dt>検索要否</dt><dd>{% if run.plan.search_required %}必要{% else %}不要{% endif %}</dd>
-        <dt>使用ツール</dt><dd>{{ run.plan.tools|join:" → " }}</dd>
-        <dt>検索クエリ</dt><dd>{% for q in run.plan.search_queries %}<div>{{ q }}</div>{% endfor %}</dd>
-        <dt>期待する出力</dt><dd>{{ run.plan.expected_output }}</dd>
-      </dl>
-    </div>
-
-    <div class="card">
-      <div class="card-hdr"><span class="card-t">処理ステップ</span><span class="card-act">REQ-AG-009</span></div>
-      <ol class="steps">
-        {% for step in run.steps.all %}
-          <li>
-            <span class="n">{{ step.order }}</span>
-            <div>
-              <div class="tool">{{ step.tool_name }} <span class="badge {% if step.status == 'ok' %}g{% elif step.status == 'failed' %}r{% else %}n{% endif %}">{{ step.get_status_display }}</span></div>
-              {% if step.output_summary %}<div class="out">{{ step.output_summary }}</div>{% endif %}
-            </div>
-          </li>
-        {% endfor %}
-      </ol>
-    </div>
+    <div class="card-hdr"><span class="card-t">実行計画</span><span class="card-act">REQ-AG-003</span></div>
+    <dl class="dl">
+      <dt>検索要否</dt><dd>{% if run.plan.search_required %}必要{% else %}不要{% endif %}</dd>
+      <dt>使用ツール</dt><dd>{{ run.plan.tools|join:" → " }}</dd>
+      <dt>検索クエリ</dt><dd>{% for q in run.plan.search_queries %}<div>{{ q }}</div>{% endfor %}</dd>
+      <dt>期待する出力</dt><dd>{{ run.plan.expected_output }}</dd>
+    </dl>
   </div>
 
   {% if run.evidence %}
@@ -69,6 +83,35 @@
     </div>
   {% endif %}
 
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">処理ステップ</span><span class="card-act">REQ-AG-009</span></div>
+    <details>
+      <summary>処理ステップを開く（{{ run.steps.all|length }}件）</summary>
+      <ol class="steps">
+        {% for step in run.steps.all %}
+          <li>
+            <span class="n">{{ step.order }}</span>
+            <div>
+              <div class="tool">{{ step.tool_name }} <span class="badge {% if step.status == 'ok' %}g{% elif step.status == 'failed' %}r{% else %}n{% endif %}">{{ step.get_status_display }}</span></div>
+              {% if step.input_summary %}<div class="ps">入力: {{ step.input_summary }}</div>{% endif %}
+              {% if step.output_summary %}<div class="out">{{ step.output_summary }}</div>{% endif %}
+            </div>
+          </li>
+        {% empty %}
+          <li><div class="empty">ステップは記録されていません。</div></li>
+        {% endfor %}
+      </ol>
+    </details>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">入力</span><span class="card-act">利用者の質問</span></div>
+    <details>
+      <summary>入力全文を開く</summary>
+      <div class="ai-bubble">{{ run.user_input }}</div>
+    </details>
+  </div>
+
   {% external_sources run as external_records %}
   {% if external_records %}
     <div class="card">
@@ -76,23 +119,26 @@
         <span class="card-t">外部原文（出所候補）</span>
         <span class="card-act">REQ-AU-002</span>
       </div>
-      <div class="t-wrap">
-        <table class="t">
-          <thead><tr><th>連携先</th><th>外部キー</th><th>種別</th><th>最終同期</th><th>原文</th></tr></thead>
-          <tbody>
-            {% for record in external_records %}
-              <tr>
-                <td class="nowrap">{{ record.connection.get_provider_display }}</td>
-                <td class="nowrap">{{ record.external_key|default:record.external_id }}</td>
-                <td class="nowrap">{{ record.get_entity_type_display }}</td>
-                <td class="nowrap">{{ record.last_synced_at|date:"n/j H:i"|default:"—" }}</td>
-                <td class="nowrap"><a class="btn-ghost sm" href="{{ record.external_url }}" target="_blank" rel="noopener noreferrer">開く →</a></td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="ps">この実行と同じ案件の接続から取り込んだレコードです。実行が実際に参照した保証はないため、出所の候補として示しています。</div>
+      <details>
+        <summary>外部原文の一覧を開く（{{ external_records|length }}件）</summary>
+        <div class="t-wrap">
+          <table class="t">
+            <thead><tr><th>連携先</th><th>外部キー</th><th>種別</th><th>最終同期</th><th>原文</th></tr></thead>
+            <tbody>
+              {% for record in external_records %}
+                <tr>
+                  <td class="nowrap">{{ record.connection.get_provider_display }}</td>
+                  <td class="nowrap">{{ record.external_key|default:record.external_id }}</td>
+                  <td class="nowrap">{{ record.get_entity_type_display }}</td>
+                  <td class="nowrap">{{ record.last_synced_at|date:"n/j H:i"|default:"—" }}</td>
+                  <td class="nowrap"><a class="btn-ghost sm" href="{{ record.external_url }}" target="_blank" rel="noopener noreferrer">開く →</a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="ps">この実行と同じ案件の接続から取り込んだレコードです。実行が実際に参照した保証はないため、出所の候補として示しています。</div>
+      </details>
     </div>
   {% endif %}
 

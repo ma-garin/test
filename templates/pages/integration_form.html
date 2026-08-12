@@ -16,35 +16,63 @@
 
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">{{ form_title }}</span>
+      <span class="card-t">設定の手順</span>
+      <span class="card-act">現在: ステップ{{ current_step }}</span>
     </div>
-    <form method="post" class="form">
-      {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="callout d">{{ form.non_field_errors|join:" " }}</div>
-      {% endif %}
-      {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
-        </div>
-      {% endfor %}
-      <button type="submit" class="btn-b">保存する</button>
-    </form>
+    <ol class="ps">
+      <li>ステップ1: 接続先{% if current_step == 1 %} <span class="badge b">現在のステップ</span>{% endif %}</li>
+      <li>ステップ2: 認証の参照名{% if current_step == 2 %} <span class="badge b">現在のステップ</span>{% endif %}</li>
+      <li>ステップ3: 取込範囲{% if current_step == 3 %} <span class="badge b">現在のステップ</span>{% endif %}</li>
+      <li>ステップ4: 疎通確認{% if current_step == 4 %} <span class="badge b">現在のステップ</span>{% endif %}</li>
+    </ol>
   </div>
 
-  {% if connection %}
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-t">この接続への操作</span>
+  <form method="post" class="form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="callout d" data-form-error-summary>{{ form.non_field_errors|join:" " }}</div>
+    {% endif %}
+
+    {% for step in form_steps %}
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">ステップ{{ step.number }}: {{ step.title }}</span>
+          {% if current_step == step.number %}<span class="card-act">現在のステップ</span>{% endif %}
+        </div>
+        <p class="ps">{{ step.hint }}</p>
+        {% if step.number == 2 %}
+          <div class="callout w">
+            保存するのは<strong>参照名（環境変数の名前）だけ</strong>です。値そのものは入力させず、画面にも表示しません。
+          </div>
+        {% endif %}
+        {% for field in step.fields %}
+          <div>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+            {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+          </div>
+        {% endfor %}
       </div>
-      <form method="post" action="{% url 'integrations:check' connection.pk %}" class="form">
+    {% endfor %}
+
+    <button type="submit" class="btn-b">保存する</button>
+  </form>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">ステップ4: 疎通確認</span>
+      {% if current_step == 4 %}<span class="card-act">現在のステップ</span>{% endif %}
+    </div>
+    {% if connection %}
+      <p class="ps">保存した設定で接続できるかを試します。データは取り込まず、結果はメッセージで返ります。</p>
+      <form method="post" action="{% url 'integrations:check' connection.pk %}" class="form" data-submit-protection>
         {% csrf_token %}
         <button type="submit" class="btn-out">疎通確認する</button>
       </form>
-    </div>
-  {% endif %}
+    {% else %}
+      <p class="ps">保存すると疎通確認ができるようになります。まずはステップ1から順に入力してください。</p>
+    {% endif %}
+  </div>
 
 {% endblock %}

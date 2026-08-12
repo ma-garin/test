@@ -1,0 +1,22 @@
+{% comment %}
+説明ツールチップ。用語や指標の意味を、その場で開けるようにする。
+
+使い方:
+  {% include "partials/hint.html" with label="確信度" body="入力の品質から機械的に決めます。..." %}
+
+設計の理由:
+- ホバーだけで出さない。`:focus-visible` でも出すので、キーボードだけでも読める。
+- JavaScript を使わない。JS が落ちても説明が読めなくなってはいけない。
+- `title` 属性は使わない。表示まで遅く、拡大表示で読めず、読み上げも実装依存になる。
+- **`aria-describedby` と id を使わない。** id を `{{ label|slugify }}` から作ると、
+  日本語ラベルでは slugify が空文字を返し（`slugify("確信度") == ""`）、
+  同じ画面に 2 つ置いた時点で id が重複して参照先が壊れる。
+  代わりに、説明文そのものをボタンの読み上げ名（`aria-label`）に載せる。
+  見えているツールチップは装飾なので `aria-hidden` にし、二重読み上げを防ぐ。
+{% endcomment %}
+<span class="hint">
+  <button type="button" class="hint-mark" aria-label="{{ label }}の説明。{{ body }}">?</button>
+  <span class="hint-body" aria-hidden="true">
+    <strong>{{ label }}</strong>{{ body }}
+  </span>
+</span>

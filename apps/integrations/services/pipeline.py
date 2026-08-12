@@ -124,7 +124,7 @@ def _job_timestamp(job: SyncJob) -> datetime:
 
 
 def build_pipeline_overview(user, tenant, now: datetime | None = None) -> PipelineOverview:
-    """パイプライン監視画面の集計を作る。
+    """同期の稼働状況画面の集計を作る。
 
     クエリ数を接続数に比例させないため、直近ジョブ・直近成功ジョブは
     それぞれ 1 クエリでまとめて引いてから辞書に落とす。

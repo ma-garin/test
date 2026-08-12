@@ -3,6 +3,12 @@
 {% block subtitle %}ドキュメントとコードのずれを見つけるための画面です。定義元は apps/core/navigation.py。{% endblock %}
 
 {% block content %}
+  {# 一覧だけ置くと読んだ後に行き先が無くなる。目的と次の操作を先に書く。 #}
+  <div class="callout ok">
+    <p><strong>この画面の利用目的。</strong>ナビゲーションに出る全画面の移植状況を1か所で確認し、docs の記載とコードのずれを見つけるための点検用の一覧です。日常のPMO業務では使いません。</p>
+    <p><strong>次の操作。</strong>「実装済み」の画面は画面名の行のURL名から辿れます。「未移植」の画面を開くと未実装ページが出ます（404 ではありません）。ずれを見つけたら apps/core/navigation.py と docs/screen_map.md の両方を直します。</p>
+  </div>
+
   <div class="card">
     <div class="card-hdr"><span class="card-t">画面と移植状況</span><span class="card-act">{{ items|length }}画面</span></div>
     <div class="t-wrap">
@@ -21,6 +27,15 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">点検が終わったら</span><span class="card-act">戻り先</span></div>
+    <p class="ps">この一覧に操作はありません。業務に戻るか、設定値の出所を確認してください。</p>
+    <div class="card-act">
+      <a class="btn-b sm" href="{% url 'dashboard:control' %}">管制ダッシュボードへ戻る</a>
+      <a class="btn-out sm" href="{% url 'core:settings' %}">設定（参照専用）を見る</a>
     </div>
   </div>
 {% endblock %}

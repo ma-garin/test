@@ -1,40 +1,86 @@
 {% extends "layouts/base.html" %}
 {% load integration_links %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}{{ form_subtitle }}{% endblock %}
 
 {% block header_actions %}
-  <a class="btn-ghost sm" href="{% url 'projects:issue_list' %}">課題一覧へ戻る</a>
+  <a class="btn-ghost sm" href="{{ return_to }}">課題一覧へ戻る</a>
 {% endblock %}
 
 {% block content %}
 
   {% if risk %}
     <div class="callout w">
-      リスク「{{ risk.title }}」を課題へ転換します。保存すると、このリスクは「顕在化」状態になります。
+      <p>リスク「{{ risk.title }}」を課題へ転換します。リスク名・内容・担当・対応期限を引き継いだ課題を新しく起票します。</p>
+      <p>元のリスクは削除されません。保存すると状態が「顕在化」に変わり、リスク台帳に残ります。</p>
     </div>
   {% endif %}
 
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">{{ form_title }}</span>
-    </div>
-    <form method="post" class="form">
-      {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="callout d">{{ form.non_field_errors|join:" " }}</div>
-      {% endif %}
-      {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+  {% if form.non_field_errors %}
+    <div class="callout d" data-form-error-summary>{{ form.non_field_errors|join:" " }}</div>
+  {% endif %}
+
+  <form method="post" class="form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ return_to }}">
+
+    {% with fact="|project|title|description|severity|" action="|owner|due_date|status|" trace="|external_key|" %}
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">事象（何が起きたか）</span></div>
+        <p class="ps">{{ form_title }}。いま何が起きていて、どれくらい重いのかを書きます。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in fact %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
         </div>
-      {% endfor %}
-      <button type="submit" class="btn-b">{{ submit_label|default:"保存する" }}</button>
-    </form>
-  </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">対応（誰がいつまでに）</span></div>
+        <p class="ps">誰が引き取り、いつまでに決着させるかを決めます。担当と期限が空の課題は放置されます。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in action %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">追跡情報（どこで追うか）</span></div>
+        <p class="ps">外部の課題管理システムで追う場合に、その参照先を残します。空欄でも保存できます。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in trace %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key not in fact and key not in action and key not in trace %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+      </div>
+    {% endwith %}
+
+    <button type="submit" class="btn-b">{{ submit_label|default:"保存する" }}</button>
+  </form>
 
   {% if issue %}
     <div class="card">
@@ -45,8 +91,13 @@
       {% if issue_link %}
         <div class="ps">外部原文: {{ issue_link }}</div>
       {% endif %}
-      <form method="post" action="{% url 'projects:issue_close' issue.pk %}" class="form">
+      <div class="callout w">
+        <p>クローズは上の「{{ submit_label|default:"保存する" }}」とは別の操作です。押すとすぐに実行されます。</p>
+        <p>クローズすると課題は既定の一覧から外れます。未完了の対応が残っていないか確認してから実行してください。</p>
+      </div>
+      <form method="post" action="{% url 'projects:issue_close' issue.pk %}" class="form" data-confirm="この課題をクローズします。未完了の対応がないことを確認しましたか？">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ return_to }}">
         <button type="submit" class="btn-out">クローズする</button>
       </form>
     </div>

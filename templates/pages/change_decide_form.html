@@ -1,22 +1,63 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}承認・却下は監査対象です。判断者・判断日時・理由を記録します。{% endblock %}
 
 {% block content %}
 
-  <div class="card">
+  {% comment %}
+  UXP-43: 判断材料をこの画面の先頭へ固定表示する。判断者が元の入力画面へ戻って
+  内容を確かめ直す必要をなくすため、内容・影響・工数・日程影響・未入力項目を
+  ここに全部出す。未入力は空欄ではなく警告として名指しする（一覧の行内警告と
+  同じ 3 項目 = 工数 / 日程影響 / 影響範囲）。
+  {% endcomment %}
+  <div class="card" style="position:sticky;top:8px;z-index:2">
     <div class="card-hdr">
       <span class="card-t">{{ change.title }}</span>
-      <a class="card-act" href="{% url 'dashboard:change' %}">一覧へ戻る</a>
+      <span class="badge {% if change.decided_at %}n{% else %}a{% endif %}">{{ change.get_status_display }}</span>
+      <a class="card-act" href="{{ return_to }}">一覧へ戻る</a>
     </div>
+    {% if change.estimated_effort_days is None or change.schedule_impact_days is None or not change.impact_scope %}
+      <div class="callout w" data-change-missing>
+        未入力の判断材料:
+        {% if change.estimated_effort_days is None %}工数{% endif %}
+        {% if change.schedule_impact_days is None %}／日程影響{% endif %}
+        {% if not change.impact_scope %}／影響範囲{% endif %}
+        — 空欄のまま承認すると、影響量が記録されないまま確定します。
+      </div>
+    {% endif %}
     <dl class="dl">
       <dt>案件</dt><dd>{{ change.project.code }} {{ change.project.name }}</dd>
-      <dt>現在の状態</dt><dd><span class="badge n">{{ change.get_status_display }}</span></dd>
       <dt>起票者</dt><dd>{{ change.requested_by|default:"—" }}</dd>
-      <dt>内容</dt><dd>{{ change.description|default:"—"|linebreaksbr }}</dd>
-      <dt>影響分析</dt><dd>{{ change.impact_summary|default:"—"|linebreaksbr }}</dd>
-      <dt>影響工数</dt><dd>{{ change.estimated_effort_days|floatformat:"-1"|default:"—" }} 人日</dd>
-      <dt>日程影響</dt><dd>{{ change.schedule_impact_days|default:0 }} 日</dd>
+      <dt>内容</dt><dd>{{ change.description|default:"（未入力）"|linebreaksbr }}</dd>
+      <dt>影響分析</dt><dd>{{ change.impact_summary|default:"（未入力）"|linebreaksbr }}</dd>
+      <dt>影響範囲</dt>
+      <dd>
+        {% if change.impact_scope %}
+          {{ change.impact_scope|join:"・" }}
+        {% else %}
+          <span class="badge a">未入力</span>
+        {% endif %}
+      </dd>
+      <dt>影響工数</dt>
+      <dd>
+        {% if change.estimated_effort_days is None %}
+          <span class="badge a">未入力</span>
+        {% else %}
+          {{ change.estimated_effort_days|floatformat:"-1" }} 人日
+        {% endif %}
+      </dd>
+      <dt>日程影響</dt>
+      <dd>
+        {% if change.schedule_impact_days is None %}
+          <span class="badge a">未入力</span>
+        {% else %}
+          {{ change.schedule_impact_days }} 日
+        {% endif %}
+      </dd>
+      <dt>影響を受けるタスク</dt>
+      <dd>
+        {% for task in change.affected_tasks.all %}{{ task }}{% if not forloop.last %} / {% endif %}{% empty %}—{% endfor %}
+      </dd>
       {% if change.decided_at %}
         <dt>前回の判断</dt>
         <dd>{{ change.decided_by|default:"—" }} / {{ change.decided_at }} / {{ change.decision_reason|default:"—" }}</dd>
@@ -27,16 +68,25 @@
   <div class="card">
     <div class="card-hdr"><span class="card-t">判断を記録する</span></div>
     <div class="callout w">この操作は操作ログに残ります。理由は必須です。</div>
-    <form method="post" class="form">
+    <form method="post" class="form" data-confirm="この判断を確定します。判断者・理由・日時は操作ログに記録され、再判断はできません。実行しますか？">
       {% csrf_token %}
+      <input type="hidden" name="next" value="{{ return_to }}">
       {% for field in form %}
         <div>
           <label for="{{ field.id_for_label }}">{{ field.label }}</label>
           {{ field }}
           {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% for error in field.errors %}<div class="callout d">{{ error }}</div>{% endfor %}
+          {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
         </div>
       {% endfor %}
+      {% comment %}
+      判断は 1 回限りの不可逆操作。押す直前に「何を・どうして・戻せるか」を置く。
+      {% endcomment %}
+      <div class="callout w" data-decision-warning>
+        対象: {{ change.project.code }}／{{ change.title }}<br>
+        結果: 承認なら「承認済み」、却下なら「却下」に確定し、判断者・日時・理由が操作ログに残ります。<br>
+        取り消し: できません（再判断は不可）。内容の修正が要る場合は、判断せず一覧から編集してください。
+      </div>
       <button type="submit" class="btn-b">判断を確定する</button>
     </form>
   </div>

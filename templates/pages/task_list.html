@@ -1,14 +1,18 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}参照できる案件の WBS タスクを、期限の危ない順に確認できます。{% endblock %}
 
 {% block header_actions %}
-  {% include "partials/task_view_tabs.html" %}
-  <a class="btn-out sm" href="{% url 'dashboard:progress' %}">進捗予測へ</a>
-  <a class="btn-b sm" href="{% url 'projects:task_create' %}">タスクを新規作成</a>
+  <div class="ph-action-group" aria-label="表示と分析">
+    {% include "partials/task_view_tabs.html" %}
+    <a class="btn-out sm" href="{% url 'dashboard:progress' %}">進捗予測へ</a>
+  </div>
+  <a class="btn-b sm" href="{% url 'projects:task_create' %}?next={{ request.get_full_path|urlencode }}">タスクを新規作成</a>
 {% endblock %}
 
 {% block content %}
+
+  {% include "partials/coachmark.html" with coach_key="tasks" step1="まず「今すぐ確認」を見ます。ブロック中・期限超過・期限接近の上位3件が、理由と担当つきで出ます" step2="対象を絞るときは「よく使う絞り込み」を1クリック。「すべて」でいつでも全件へ戻れます" step3="行のタスク名から詳細へ。次の一手と、判断に足りていない情報が先頭に出ます" %}
 
   <div class="kpi-g">
     <div class="kpi">
@@ -30,11 +34,35 @@
       <div class="kpi-bar"><div class="kpi-fill a" style="width:{{ board.blocked }}%"></div></div>
     </div>
     <div class="kpi">
-      <div class="kpi-l">完了率</div>
+      <div class="kpi-l">完了率{% include "partials/hint.html" with label="完了率" body="アーカイブを除いた対象タスクのうち、状態が「完了」のものの割合です。絞り込み中は、その条件の中での割合になります。" %}</div>
       <div class="kpi-v" style="color:var(--green)">{{ board.done_percent }}<small>%</small></div>
       <div class="kpi-s">完了 {{ board.done }}件 / 進行中 {{ board.in_progress }}件</div>
       <div class="kpi-bar"><div class="kpi-fill g" style="width:{{ board.done_percent }}%"></div></div>
     </div>
+  </div>
+
+  {% comment %}
+  JT-04: 表を読む前に、いま処理すべき対象と理由を出す。件数は KPI が持つので
+  ここは「どれを・なぜ・誰が」に絞る。0 件のときは安心状態として出す。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">今すぐ確認</span>
+      <span class="card-act">ブロック中・期限超過・期限接近から最大{{ board.attention|length }}件</span>
+    </div>
+    {% if board.attention %}
+      <ul class="attention-list">
+        {% for item in board.attention %}
+          <li class="attention-item">
+            <span class="badge {{ item.tone }}">{{ item.reason }}</span>
+            <a class="attention-name" href="{% url 'projects:task_detail' item.task.pk %}?next={{ request.get_full_path|urlencode }}">{{ item.task.name }}</a>
+            <span class="attention-meta">担当 {{ item.task.owner|default:"未設定" }} ／ 期限 {{ item.task.planned_end|date:"n/j"|default:"未設定" }} ／ {{ item.task.project.code }} WBS {{ item.task.wbs_code }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">ブロック中・期限超過・7日以内のタスクはありません。通常の一覧から進めてください。</div>
+    {% endif %}
   </div>
 
   {% include "partials/task_filters.html" %}
@@ -42,35 +70,40 @@
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">タスク一覧</span>
-      <span class="card-act">期限の近い順</span>
+      <span class="card-act">期限の近い順{% if board.latest_updated_at %} ／ データ更新 {{ board.latest_updated_at|date:"Y/m/d H:i" }}{% endif %}</span>
     </div>
     <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+      <table class="dashboard-risk-table task-list-table">
         <thead>
           <tr>
-            <th>案件</th><th>WBS</th><th>タスク</th><th>担当</th><th>期限</th>
-            <th>進捗</th><th>状態</th><th>優先度</th><th>次アクション</th><th>操作</th>
+            <th>タスク</th><th>担当</th><th>期限</th><th>進捗</th>
+            <th>状態</th><th>優先度</th><th>次アクション</th><th>操作</th>
           </tr>
         </thead>
         <tbody>
           {% for row in board.rows %}
-            <tr>
-              <td>{{ row.task.project.code }}</td>
-              <td class="nowrap">{{ row.task.wbs_code }}</td>
-              <td><a href="{% url 'projects:task_detail' row.task.pk %}">{{ row.task.name }}</a></td>
+            {% comment %}JT-03: 危険行だけを左罫線と弱い背景で強調する。判定は services/tasks.py にある。{% endcomment %}
+            <tr class="{{ row.row_tone }}">
+              <td class="task-list-name">
+                <a href="{% url 'projects:task_detail' row.task.pk %}?next={{ request.get_full_path|urlencode }}">{{ row.task.name }}</a>
+                <span>{{ row.task.project.code }} ／ WBS {{ row.task.wbs_code }}</span>
+              </td>
               <td>{{ row.task.owner|default:"—" }}</td>
               <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.task.planned_end|date:"n/j"|default:"未設定" }}</span></td>
               <td class="nowrap">{{ row.task.progress_percent|floatformat:0 }}%</td>
               <td><span class="badge {{ row.status_tone }}">{{ row.task.get_status_display }}</span></td>
               <td><span class="badge {{ row.priority_tone }}">{{ row.task.get_priority_display }}</span></td>
-              <td>{{ row.task.next_action|default:"—" }}</td>
+              <td class="task-list-next">{{ row.task.next_action|default:"—" }}</td>
+              {% comment %}
+              JT-02: 詳細への導線はタスク名リンク 1 つに絞る。同じ URL のボタンを
+              並べても幅を使うだけで、行の主操作が 2 つに見える。
+              {% endcomment %}
               <td class="nowrap">
-                <a class="btn-ghost sm" href="{% url 'projects:task_detail' row.task.pk %}">詳細</a>
-                <a class="btn-ghost sm" href="{% url 'projects:task_edit' row.task.pk %}">編集</a>
+                <a class="btn-ghost sm" href="{% url 'projects:task_edit' row.task.pk %}?next={{ request.get_full_path|urlencode }}">編集</a>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="10"><div class="dashboard-empty">{% if board.filters.is_active %}条件に一致するタスクがありません。{% else %}参照できるタスクがありません。{% endif %}</div></td></tr>
+          <tr><td colspan="8"><div class="dashboard-empty empty-state">{% if board.filters.is_active %}条件に一致するタスクがありません。<a href="{% url 'dashboard:tasks' %}">条件をクリア</a>{% else %}参照できるタスクがありません。対象案件または参照権限を確認してください。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

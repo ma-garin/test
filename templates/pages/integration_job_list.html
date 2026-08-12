@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 {% block kicker %}管理・設定{% endblock %}
-{% block subtitle %}同期の実行履歴です。合計ではなく内訳で残すため、「動いているのに何も取り込めていない」状態を見分けられます。{% endblock %}
+{% block subtitle %}同期の実行履歴です。合計ではなく内訳で残し、空振りを見分けられます。{% endblock %}
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'integrations:list' %}">接続一覧へ</a>
@@ -8,9 +8,54 @@
 
 {% block content %}
 
+  {% comment %}
+  UXP-34: 履歴は「どの接続が・いつ・どう失敗したか」で読む。条件は GET だけで表し、
+  「条件をクリア」で必ず全件へ戻れるようにする。件数と適用条件を同じ場所に出さないと、
+  絞り込んだ結果なのかデータが無いのかを利用者が区別できない。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">絞り込み</span>
+      {% if filters.is_active %}<a class="card-act" href="{% url 'integrations:job_list' %}">条件をクリア</a>{% endif %}
+    </div>
+    <nav class="quick-views" aria-label="よく使う絞り込み">
+      <span class="quick-views-label">よく使う絞り込み</span>
+      <a class="quick-view{% if filters.result == 'ng' %} is-active{% endif %}"
+         href="{% url 'integrations:job_list' %}?result=ng"
+         {% if filters.result == 'ng' %}aria-current="page"{% endif %}>失敗・一部失敗</a>
+      <a class="quick-view{% if filters.period == '7' %} is-active{% endif %}"
+         href="{% url 'integrations:job_list' %}?period=7"
+         {% if filters.period == '7' %}aria-current="page"{% endif %}>直近 7 日</a>
+      <a class="quick-view" href="{% url 'integrations:job_list' %}">すべて</a>
+    </nav>
+    <form method="get" class="search-row">
+      <select name="connection" aria-label="接続">
+        <option value="">接続（すべて）</option>
+        {% for connection in connections %}
+          <option value="{{ connection.pk }}"{% if filters.connection == connection.pk|stringformat:"s" %} selected{% endif %}>{{ connection.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="result" aria-label="成否">
+        <option value="">成否（すべて）</option>
+        {% for value, label in result_choices %}
+          <option value="{{ value }}"{% if filters.result == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="period" aria-label="期間">
+        <option value="">期間（すべて）</option>
+        {% for value, label in period_choices %}
+          <option value="{{ value }}"{% if filters.period == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-b sm">絞り込む</button>
+    </form>
+    <div class="ps">該当 {{ match_count }} 件 ／ 適用中の条件: {% if applied_labels %}{{ applied_labels|join:" ・ " }}{% else %}なし（すべての履歴）{% endif %}</div>
+  </div>
+
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">同期履歴</span>
+      <span class="card-act">{{ match_count }} 件</span>
     </div>
     <div class="t-wrap">
       <table class="t">
@@ -38,10 +83,24 @@
                 {% if job.detail.failures %}
                   <div class="ps">失敗 {{ job.detail.failures|length }} 件（先頭: {{ job.detail.failures.0.key|default:job.detail.failures.0.external_id }}）。</div>
                 {% endif %}
+                {% comment %}
+                失敗は接続設定（URL・資格情報・対応表）が原因のことが多い。履歴から
+                設定画面へ直接行けないと、接続一覧で該当行を探し直すことになる。
+                {% endcomment %}
+                {% if job.status == "failed" or job.status == "partial" %}
+                  <div class="ps"><a href="{% url 'integrations:edit' job.connection.pk %}">接続設定「{{ job.connection.name }}」を見直す</a></div>
+                {% endif %}
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="11"><div class="empty">同期の実行履歴がありません。</div></td></tr>
+            <tr><td colspan="11">
+              <div class="empty">
+                {% if filters.is_active %}条件に一致する同期履歴がありません。{% else %}同期の実行履歴がありません。{% endif %}
+              </div>
+              {% if filters.is_active %}
+                <div class="ps"><a href="{% url 'integrations:job_list' %}">条件をクリアして全件を見る</a></div>
+              {% endif %}
+            </td></tr>
           {% endfor %}
         </tbody>
       </table>

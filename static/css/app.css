@@ -6,6 +6,8 @@
  */
 
 :root {
+  /* ブランドと情報階層を崩さないための基礎トークン。画面固有の数値はここへ増やさない。 */
+  --font-sans: "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
   --bg: #f7f8fb;
   --surface: #ffffff;
   --ink: #172033;
@@ -19,13 +21,23 @@
   --nav-text: #374151;
   --nav-muted: #9ca3af;
   --nav-hover: #f3f4f6;
-  --nav-active: #eef4ff;
+  --nav-active: #eaf3fb;
   --nav-line: #e5e7eb;
+  --nav-accent: #0b4f8a;
+  --nav-accent-soft: #eaf3fb;
+  /* ヘッダーの色だけを分けて持つ。空色寄りの明るい青は消費者向けに見えるため、
+     ヘッダーは彩度を落とした濃紺にする。サイドバー・現在地は --nav-accent のまま。 */
+  --hdr-accent: #004098;
+  /* ヘッダーの面。ベリサーブのロゴ（logo.svg）の基調色をそのまま使う。
+     白文字とのコントラストは 9.6、補助文（白66%相当）でも 4.79 で AA を満たす。 */
+  --hdr-bg: #004098;
+  --hdr-line: #002f70;
+  --hdr-muted: #b9c8e2;
   /* ログイン画面など、濃い面が要る場所だけで使う。 */
   --nav-dark: #111827;
 
-  --blue: #2563eb;
-  --blue-soft: #eaf2ff;
+  --blue: #0b63a3;
+  --blue-soft: #eaf3fb;
   --red: #dc2626;
   --red-soft: #fef2f2;
   --green: #15803d;
@@ -38,19 +50,65 @@
   --purple-soft: #f3e8ff;
 
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --sidebar-w: 252px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 30px;
+  --content-pad: var(--space-7);
+  --focus-ring: #f8c56a;
+  --motion-fast: 100ms;
+  --rail-w: 80px;
+  --sidebar-w: 316px;
   --header-h: 52px;
   --r-sm: 8px;
   --r-md: 10px;
   --r-lg: 12px;
 }
 
+/* Google Material Symbols をサブセット化して同梱。画面表示時に外部通信しない。 */
+@font-face {
+  font-family: "Material Symbols Outlined";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("../fonts/MaterialSymbolsOutlined-subset.woff2") format("woff2");
+}
+
+.material-symbols-outlined {
+  display: inline-block;
+  font-family: "Material Symbols Outlined";
+  font-size: 24px;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
+
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 
 html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); }
 
 body {
-  font-family: "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.6;
   color: var(--ink);
@@ -74,13 +132,16 @@ a { color: inherit; text-decoration: none; }
 /* ── ヘッダー ───────────────────────────────────────────── */
 
 .hdr {
+  position: relative;
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 10px;
   padding-right: 16px;
-  background: var(--nav);
-  border-bottom: 1px solid var(--nav-line);
+  /* ロゴの基調色をヘッダーの面に使う。文字は白へ反転させる。 */
+  background: var(--hdr-bg);
+  border-bottom: 1px solid var(--hdr-line);
+  color: #fff;
   z-index: 10;
 }
 
@@ -99,8 +160,9 @@ a { color: inherit; text-decoration: none; }
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: var(--blue);
-  color: #fff;
+  /* 面と同色だと輪郭が消えるため白抜きにする。 */
+  background: #fff;
+  color: var(--hdr-bg);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.5px;
@@ -109,8 +171,8 @@ a { color: inherit; text-decoration: none; }
 
 /* ブランド名は 2 行固定。折り返すと "AI" が 1 行目へ回り込んで読めなくなる。 */
 .hdr-title { display: block; min-width: 0; }
-.hdr-name { display: block; color: var(--ink); font-size: 13px; font-weight: 800; line-height: 1.25; white-space: nowrap; }
-.hdr-sub { display: block; color: var(--nav-muted); font-size: 10px; font-weight: 600; white-space: nowrap; }
+.hdr-name { display: block; color: #fff; font-size: 13px; font-weight: 800; line-height: 1.25; white-space: nowrap; }
+.hdr-sub { display: block; color: var(--hdr-muted); font-size: 10px; font-weight: 600; white-space: nowrap; }
 .hdr-spacer { flex: 1; }
 .hdr-chips { display: flex; gap: 6px; align-items: center; }
 
@@ -120,7 +182,7 @@ a { color: inherit; text-decoration: none; }
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 4px 11px;
-  border: 1px solid var(--nav-line);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 7px;
   background: var(--surface);
   color: var(--ink);
@@ -130,23 +192,54 @@ a { color: inherit; text-decoration: none; }
 
 .hdr-project:hover { background: var(--nav-hover); }
 /* 案件で絞り込んでいる状態。数字が全案件のものでないことを、色で気づかせる。 */
-.hdr-project.on { background: var(--blue-soft); border-color: #bfdbfe; color: var(--blue); }
+.hdr-project.on { background: var(--nav-accent-soft); border-color: #a9c8d8; color: var(--hdr-accent); }
 
 .hdr-chip {
   padding: 4px 11px;
-  border: 1px solid var(--nav-line);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 7px;
   background: var(--surface);
   color: var(--nav-text);
   font-size: 11px;
   font-weight: 800;
-  transition: background 0.15s;
+  transition: background var(--motion-fast);
+}
+
+/* 画面切替中も旧画面を残し、細い進行線だけを出す。全画面の白転を避ける。 */
+body.is-page-loading .hdr::after {
+  position: absolute;
+  right: 0;
+  bottom: -2px;
+  left: 0;
+  height: 2px;
+  content: "";
+  transform-origin: left;
+  background: linear-gradient(90deg, #7fb2e5, #ffffff, #7fb2e5);
+  animation: navigation-progress 0.7s linear infinite;
+}
+
+.shell[aria-busy="true"] .main { cursor: progress; }
+
+/* 進行線。伸びるだけにする。明滅させると画面がフェードしているように見える。 */
+@keyframes navigation-progress {
+  0% { transform: scaleX(0.2); }
+  70% { transform: scaleX(0.9); }
+  100% { transform: scaleX(1); }
+}
+
+/* 画面切替にアニメーションは掛けない。
+   View Transitions を使うと、指定の有無にかかわらず旧画面と新画面が重なる時間ができ、
+   ふわっと滲んで見える。切替は即座に行い、読み込み中は上の進行線だけで示す。
+   （`templates/layouts/base.html` の `replaceShell` も startViewTransition を呼ばない） */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
 }
 
 .hdr-chip:hover { background: var(--nav-hover); }
 
-.hdr-user { color: var(--nav-text); font-size: 11px; font-weight: 800; }
-.hdr-user span { color: var(--nav-muted); font-weight: 600; }
+.hdr-user { color: #fff; font-size: 11px; font-weight: 800; }
+.hdr-user span { color: var(--hdr-muted); font-weight: 600; }
 
 .hdr-badge { padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 900; }
 .hdr-badge.g { background: var(--green-soft); color: var(--green); }
@@ -233,7 +326,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .sb-item.active .sb-badge { background: var(--blue-soft); }
-.sb-label { min-width: 0; flex: 1; line-height: 1.25; }
+.sb-label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25; }
 .sb-tags { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; flex-shrink: 0; }
 
 .sb-tag {
@@ -349,15 +442,163 @@ a { color: inherit; text-decoration: none; }
 .sb-item.dim { color: rgba(255, 255, 255, 0.38); font-weight: 600; }
 .sb-item.dim:hover { background: rgba(255, 255, 255, 0.06); }
 
+/* ── 二階層ナビゲーション ──────────────────────────────────
+   親カテゴリは色面の縦レール、遷移先は白い子メニューへ分離する。
+   参照画像のように、情報の階層と現在選択中の範囲を一目で区別できる。 */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sb {
+  display: grid;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  background: var(--surface);
+}
+
+.sb-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 10px 7px;
+  background: var(--nav-accent);
+}
+
+.sb-rail-item {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 58px;
+  padding: 6px 2px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #c4d4de;
+  text-decoration: none;
+}
+
+.sb-rail-item:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.sb-rail-item.active { background: #1975b8; border-color: rgba(255, 255, 255, 0.18); color: #fff; }
+.sb-rail-item:focus-visible { outline: 2px solid #f8c56a; outline-offset: 2px; }
+.sb-rail-icon { font-size: 21px; }
+.sb-rail-label { display: block; margin-top: 3px; font-size: 10px; font-weight: 800; line-height: 1.25; text-align: center; white-space: nowrap; }
+.sb-rail-toggle {
+  margin-top: auto;
+  min-height: 38px;
+  padding: 5px 2px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.sb-rail-toggle:hover { background: rgba(255, 255, 255, 0.16); }
+.sb-rail-toggle:focus-visible { outline: 2px solid #f8c56a; outline-offset: 2px; }
+
+.sb-panel { display: flex; min-width: 0; flex-direction: column; background: var(--surface); }
+.sb-panel-head { flex-shrink: 0; padding: 15px 15px 10px; border-bottom: 1px solid var(--nav-line); }
+.sb-panel-caption { display: block; margin-bottom: 1px; color: var(--nav-muted); font-size: 10px; font-weight: 800; letter-spacing: 0.05em; }
+.sb-panel-title { display: block; color: var(--ink); font-size: 13px; font-weight: 900; line-height: 1.35; }
+.sb-scroll { padding: 8px; }
+
+.sb-sec { display: none; margin: 0; }
+.sb-sec.open { display: block; }
+.sb-hd { display: none; }
+.sb-sec-body { display: block; margin: 0; padding: 0; border: 0; }
+
+.sb-item { gap: 8px; padding: 8px 9px; border-radius: 7px; font-size: 12px; }
+.sb-item:hover { background: #f1f5f8; }
+.sb-item.active { background: var(--nav-accent-soft); color: var(--nav-accent); }
+.sb-badge { display: inline-grid; width: 23px; height: 20px; border: 1px solid #d5e2ee; border-radius: 5px; background: #f8fafb; color: #4e6d88; font-size: 9px; }
+.sb-item.active .sb-badge { border-color: #a9cae3; background: #fff; color: var(--nav-accent); }
+.sb-item.dim { color: var(--nav-muted); }
+.sb-item.dim:hover { background: #f8fafb; }
+
+.sb-collapse { justify-content: center; padding: 10px; color: #4e6d88; font-size: 11px; }
+.sb-collapse:hover { background: var(--nav-hover); color: var(--nav-accent); }
+.sb-collapse-ico { font-size: 11px; font-weight: 800; }
+
+.shell.nav-collapsed { grid-template-columns: var(--rail-w) 1fr; }
+.nav-collapsed .hdr-brand { width: var(--rail-w); padding: 0 23px; }
+.nav-collapsed .hdr-title { display: none; }
+.nav-collapsed .sb { grid-template-columns: var(--rail-w); }
+.nav-collapsed .sb-panel { display: none; }
+
+/* 管理・設定でナビの色を変えていたが、同じ役割の要素が画面によって別の色になり、
+   「この画面だけ違う」という誤読を生んでいた。区別はカテゴリ名と現在地で足りる。
+   色は全画面で統一する（`shell--admin` はテンプレート側で付くが、色は変えない）。 */
+
+@media (max-width: 760px) {
+  .shell { grid-template-columns: var(--rail-w) minmax(0, 1fr); }
+  .hdr-brand { width: var(--rail-w); padding: 0 23px; }
+  .hdr-title { display: none; }
+  .sb { position: relative; grid-template-columns: var(--rail-w); }
+  .sb-panel { position: absolute; inset: 0 auto 0 var(--rail-w); width: 236px; z-index: 20; box-shadow: 8px 0 18px rgba(23, 32, 51, 0.16); }
+  .hdr-user { display: none; }
+  .hdr-project { max-width: 130px; }
+}
+
 /* ── メイン ─────────────────────────────────────────────── */
 
-.main { overflow-y: auto; background: var(--bg); padding: 20px 24px 40px; }
+.main {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
 
-.ph { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.ph {
+  position: relative;
+  z-index: 7;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: 18px var(--content-pad) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  box-shadow: 0 5px 10px rgba(23, 32, 51, 0.04);
+}
 .pk { font-size: 10px; font-weight: 900; color: var(--blue); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
 .pt { font-size: 18px; font-weight: 900; color: var(--ink); margin: 0 0 3px; }
-.ps { color: var(--muted); font-size: 12px; margin: 0; }
-.ph-right { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+.ps { max-width: 72ch; color: var(--muted); font-size: 12px; line-height: 1.7; margin: 0; }
+.ph-right { display: flex; max-width: 58%; flex-wrap: wrap; justify-content: flex-end; gap: 8px; flex-shrink: 0; align-items: center; }
+.ph-action-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ph-context { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 10px; margin: 10px 0 0; font-size: 11px; line-height: 1.45; }
+.ph-context .material-symbols-outlined { font-size: 16px; }
+.ph-context-admin { color: #28557f; }
+.ph-context-admin strong { color: var(--ink); }
+.ph-context-scope { color: #526b82; }
+.ph-context-scope strong { color: var(--ink); }
+.ph-context-scope time { color: var(--muted); }
+.main-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 26px var(--content-pad) 48px;
+}
+
+@media (max-width: 760px) {
+  .ph { flex-direction: column; gap: 12px; padding: 14px 16px 13px; }
+  .ph-right { width: 100%; max-width: none; justify-content: flex-start; }
+  .main-scroll { padding: 20px 16px 32px; }
+}
 
 .project-strip {
   display: flex;
@@ -387,13 +628,13 @@ a { color: inherit; text-decoration: none; }
 
 /* ── KPI ────────────────────────────────────────────────── */
 
-.kpi-g { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.kpi-g { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: var(--space-4); }
 
 .kpi {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 14px 16px;
+  padding: 14px var(--space-4);
   box-shadow: var(--shadow);
 }
 
@@ -414,13 +655,13 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 14px 16px;
+  padding: var(--space-4) 18px;
   box-shadow: var(--shadow);
-  margin-bottom: 14px;
+  margin-bottom: var(--space-4);
 }
 
-.card-hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-.card-t { font-size: 13px; font-weight: 900; color: var(--ink); }
+.card-hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.card-t { font-size: 14px; font-weight: 900; color: var(--ink); }
 .card-act { font-size: 11px; font-weight: 800; color: var(--blue); padding: 3px 8px; border-radius: 5px; background: var(--blue-soft); }
 
 .sg { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
@@ -545,16 +786,70 @@ a { color: inherit; text-decoration: none; }
 .dashboard-risk-table tr:last-child td { border-bottom: 0; }
 .dashboard-risk-table tbody tr:hover td { background: #f8fbff; }
 .dashboard-empty { padding: 12px; color: var(--muted); font-size: 12px; font-weight: 800; }
+.task-list-table { min-width: 780px; }
+.task-list-name { min-width: 190px; }
+.task-list-name > a { display: block; font-weight: 800; }
+.task-list-name > span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; line-height: 1.3; }
+.task-list-next { min-width: 160px; max-width: 30ch; }
+
+/* JT-03: 危険行の強調。色だけに頼らず左罫線という形でも区別する。
+   完了行は強調しない（常時色が付くと警告の意味が失われる）。 */
+.task-list-table tbody tr.row-blocked td,
+.task-list-table tbody tr.row-overdue td { background: var(--red-soft); }
+.task-list-table tbody tr.row-blocked td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+.task-list-table tbody tr.row-overdue td:first-child { box-shadow: inset 3px 0 0 var(--orange); }
+.task-list-table tbody tr.row-blocked:hover td,
+.task-list-table tbody tr.row-overdue:hover td { background: #fde8e8; }
+/* 強調行の背景とバッジの地色が同系色になり、バッジの輪郭が消えるのを防ぐ。 */
+.task-list-table tbody tr.row-blocked .badge,
+.task-list-table tbody tr.row-overdue .badge { background: var(--surface); }
+
+/* JT-01: よく使う絞り込み。既存の GET 条件へ 1 クリックで移動するだけの導線。 */
+.quick-views { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.quick-views-label { color: var(--muted); font-size: 11px; font-weight: 800; margin-right: 2px; }
+.quick-view {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.quick-view:hover { border-color: var(--blue); color: var(--blue); }
+.quick-view.is-active { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
+.quick-view.is-active::before { content: "✓"; margin-right: 4px; font-weight: 900; }
+
+/* JT-04: 今すぐ確認。理由 → 対象 → 補足の順で、横読みせずに処理へ進める。 */
+.attention-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.attention-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-soft, #f8fbff);
+}
+.attention-name { font-size: 13px; font-weight: 900; color: var(--blue); }
+.attention-meta { color: var(--muted); font-size: 11px; font-weight: 700; }
 
 /* ── テーブル ───────────────────────────────────────────── */
 
 .t { width: 100%; border-collapse: collapse; font-size: 12px; }
-.t th { font-size: 10px; font-weight: 900; color: var(--muted); text-transform: uppercase; padding: 0 8px 8px; text-align: left; border-bottom: 1px solid var(--line); }
-.t td { padding: 8px; border-bottom: 1px solid var(--line); color: var(--ink); vertical-align: middle; }
+.t th { font-size: 10px; font-weight: 900; color: var(--muted); text-transform: uppercase; padding: 0 10px 9px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.t td { padding: 10px; border-bottom: 1px solid var(--line); color: var(--ink); vertical-align: middle; }
+.t td:first-child { font-weight: 800; }
 .t tr:last-child td { border-bottom: 0; }
-.t tbody tr:hover td { background: #f8fbff; }
+.t tbody tr { transition: background 0.12s ease; }
+.t tbody tr:hover td { background: #f7fafc; }
 .t a { color: var(--blue); font-weight: 800; }
-.t-wrap { overflow-x: auto; }
+.t-wrap { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-gutter: stable both-edges; }
 
 /* ── バッジ ─────────────────────────────────────────────── */
 
@@ -608,7 +903,7 @@ a { color: inherit; text-decoration: none; }
 .btn-ghost { padding: 5px 11px; border-radius: 7px; background: transparent; color: var(--muted); border: 1px solid var(--line); font-size: 11px; font-weight: 800; }
 .btn-ghost:hover { background: #f1f5f9; }
 
-.form { display: grid; gap: 10px; }
+.form { display: grid; gap: 12px; max-width: 920px; }
 .form label { font-size: 11px; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
 .form input, .form select, .form textarea {
   width: 100%;
@@ -625,9 +920,27 @@ a { color: inherit; text-decoration: none; }
 .form .actions { display: flex; gap: 8px; }
 .form .helptext, .form .errorlist { font-size: 11px; color: var(--muted); }
 .form .errorlist { color: var(--red); list-style: none; padding: 0; margin: 0; font-weight: 800; }
+.field-error { margin-top: 5px; color: var(--red); font-size: 11px; font-weight: 800; line-height: 1.45; }
+.form.is-submitting { opacity: 0.7; }
+.form.is-submitting button[type="submit"] { cursor: progress; }
 
-.search-row { display: flex; gap: 8px; align-items: center; }
-.search-row input { flex: 1; }
+.search-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.search-row input { flex: 1 1 220px; min-width: 180px; }
+.search-row select { flex: 0 1 auto; max-width: 100%; }
+
+/* 子メニューを開いた状態でも、絞り込みの操作を画面外へ追い出さない。 */
+@media (max-width: 1180px) {
+  .search-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .search-row input { grid-column: 1 / -1; width: 100%; min-width: 0; }
+  .search-row select { width: 100%; min-width: 0; }
+  .search-row .btn-b { width: max-content; }
+}
+
+/* 本体・ナビ・横長の一覧はスクロール領域を分離し、二重スクロールの起点を見失わせない。 */
+.main, .sb-scroll, .t-wrap { scrollbar-color: #a9bbc7 transparent; scrollbar-width: thin; }
+.main::-webkit-scrollbar, .sb-scroll::-webkit-scrollbar, .t-wrap::-webkit-scrollbar { width: 9px; height: 9px; }
+.main::-webkit-scrollbar-thumb, .sb-scroll::-webkit-scrollbar-thumb, .t-wrap::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 99px; background-clip: padding-box; background-color: #a9bbc7; }
+.main::-webkit-scrollbar-track, .sb-scroll::-webkit-scrollbar-track, .t-wrap::-webkit-scrollbar-track { background: transparent; }
 
 /* ── ページ送り ─────────────────────────────────────────── */
 
@@ -663,6 +976,19 @@ a { color: inherit; text-decoration: none; }
 .pager-btn.on { background: var(--blue); border-color: var(--blue); color: #fff; }
 .pager-btn.off { color: var(--muted); opacity: 0.5; }
 
+.pager-summary { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pager-size { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; font-weight: 800; }
+.pager-size select { height: 28px; padding: 0 24px 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
+.pager-size select:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.pager-step { min-width: 42px; }
+.pager-edge { min-width: 38px; color: var(--muted); }
+.pager-gap { display: inline-grid; place-items: center; width: 18px; color: var(--muted); font-weight: 900; }
+
+@media (max-width: 640px) {
+  .pager { align-items: flex-start; flex-direction: column; }
+  .pager-links { width: 100%; overflow-x: auto; padding-bottom: 2px; }
+}
+
 /* ── AIパネル ───────────────────────────────────────────── */
 
 .ai-p { border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 14px; }
@@ -690,7 +1016,10 @@ a { color: inherit; text-decoration: none; }
 .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
 .steps li { display: grid; grid-template-columns: 24px 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
 .steps li:last-child { border-bottom: 0; }
-.steps .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 900; }
+/* 手順番号のバッジ。`li` の直下に限定する。
+   `.steps .n` のままだと、中立色のバッジ（`class="badge n"`）にも当たり、
+   22px へ潰されて文字がはみ出す（成果物支援の「未着手」で実際に起きた）。 */
+.steps li > .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 900; }
 .steps .tool { font-weight: 900; }
 .steps .out { color: var(--muted); margin-top: 2px; }
 
@@ -701,6 +1030,8 @@ a { color: inherit; text-decoration: none; }
 /* ── 空状態・補助 ───────────────────────────────────────── */
 
 .empty { padding: 22px; text-align: center; color: var(--muted); font-size: 12px; font-weight: 800; }
+.empty-state { line-height: 1.7; }
+.empty-state a { margin-left: 8px; color: var(--blue); font-weight: 900; }
 .muted { color: var(--muted); }
 .nowrap { white-space: nowrap; }
 .stack { display: grid; gap: 4px; }
@@ -716,8 +1047,174 @@ a { color: inherit; text-decoration: none; }
 .auth-card .btn-b { width: 100%; padding: 9px; }
 .auth-note { margin-top: 14px; font-size: 11px; color: var(--muted); line-height: 1.6; }
 
+/* ── 例外画面 ───────────────────────────────────────────── */
+
+.error-page { display: grid; min-height: 100vh; place-items: center; padding: 24px; background: linear-gradient(135deg, #edf5fb, #f7f9fc); }
+.error-card { width: min(100%, 560px); padding: 32px; border: 1px solid var(--line); border-top: 4px solid var(--blue); border-radius: var(--r-lg); background: var(--surface); box-shadow: 0 14px 36px rgba(23, 32, 51, 0.12); }
+.error-card .pt { margin-bottom: 10px; font-size: 23px; }
+.error-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+
+/* OS とブラウザのアクセシビリティ設定を尊重する。 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+
+@media (forced-colors: active) {
+  .badge, .btn-b, .btn-out, .btn-ghost, .callout, .error-card { border: 1px solid currentColor; }
+  .btn-b { forced-color-adjust: none; background: ButtonFace; color: ButtonText; }
+}
+
 @media (max-width: 1180px) {
   .kpi-g { grid-template-columns: repeat(2, 1fr); }
   .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-alert-layout, .sg, .sg-r { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .btn-b, .btn-out, .btn-ghost, .pager-btn { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; }
+  .btn-b.sm, .btn-out.sm, .btn-ghost.sm { min-height: 34px; }
+  .error-page { padding: 16px; }
+  .error-card { padding: 24px 20px; }
+}
+
+/* アイコンを持たないカテゴリのレール表示。
+   Material Symbols はサブセット同梱のため、収録外の名前を書くと文字が出てしまう。
+   新しいカテゴリはアイコンを増やさず、2 文字の識別子で示す。 */
+.sb-rail-code {
+  display: inline-grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+/* あとから増やしたカテゴリのアイコン。フォントを増やさずインライン SVG で描く。
+   大きさと色は Material Symbols 側（.sb-rail-icon）に合わせる。 */
+.sb-rail-svg { width: 21px; height: 21px; display: block; }
+
+/* 和文の改行位置。既定では「目/的」のように語の途中で折れる。
+   `auto-phrase` は文節単位で折るが Chrome / Edge にしか無い。
+   Safari / Firefox では `keep-all` で任意位置の改行を止め、改行してよい位置だけを
+   JavaScript が挿入する <wbr> で与える（base.html の initMainEnhancements）。
+   許可点が一つも無い長い文字列は `overflow-wrap: anywhere` で最後の手段として折る。
+   `text-wrap: pretty` は最終行に 1〜2 文字だけ残る形（泣き別れ）を減らす。 */
+.ps,
+.empty,
+.empty-state,
+.attention-meta,
+.callout p,
+.dl dd,
+.card-t,
+.kpi-s,
+.sb-panel-title,
+.muted {
+  /* 順序に意味がある。`auto-phrase` を解釈できないブラウザは 2 行目を捨て、
+     `keep-all` が残る。解釈できるブラウザは `auto-phrase` を採る。 */
+  word-break: keep-all;
+  word-break: auto-phrase;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+/* ── 説明ツールチップ ───────────────────────────────────── */
+/* ホバーだけで出すと、キーボード利用者と触屏では読めない。`:focus-visible` と
+   `:hover` の両方で出す。JS は使わない（落ちても説明が消えないため）。 */
+.hint { position: relative; display: inline-flex; vertical-align: middle; margin-left: 4px; }
+
+.hint-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.hint-mark:hover { border-color: var(--blue); color: var(--blue); }
+
+.hint-body {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 30;
+  visibility: hidden;
+  width: max-content;
+  max-width: 300px;
+  transform: translateX(-50%);
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgba(23, 32, 51, 0.16);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.7;
+  text-align: left;
+  white-space: normal;
+}
+
+.hint-body strong { display: block; margin-bottom: 2px; font-weight: 900; }
+.hint:hover .hint-body,
+.hint-mark:focus-visible + .hint-body { visibility: visible; }
+
+/* 画面右端で切れないよう、右寄りの位置では左へ寄せる。 */
+.hint:last-child .hint-body { left: auto; right: 0; transform: none; }
+
+/* ── コーチマーク ───────────────────────────────────────── */
+/* 画面を覆わない。内容の直前に置く帯にして、読まずに下へ進めるようにする。 */
+.coach {
+  display: block;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--blue-soft);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--r-sm);
+  background: var(--blue-soft);
+}
+
+.coach[hidden] { display: none; }
+.coach-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.coach-title { color: var(--blue); font-size: 12px; font-weight: 900; }
+
+.coach-close {
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.coach-close:hover { border-color: var(--blue); color: var(--blue); }
+.coach-steps { margin: 8px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.85; }
+.coach-steps li { margin-bottom: 2px; }
+
+/* ページ見出しの説明文。本文の読み幅（72ch＝約47字）だと、1〜2文の短い案内でも
+   文の途中で折れる。実測: RAG評価の 60 字が 568px の枠に収まらず「詳細表は／
+   後ろに置きます。」と述語の途中で分断されていた。
+   説明文は最大 68 字なので、読み幅を広げて 1 行に収める。 */
+.ph .ps {
+  max-width: 96ch;
+  /* それでも折れる場合に備え、改行できる位置を句読点だけに限定する。
+     `keep-all` で任意改行を止め、句読点の直後にだけ <wbr> を入れる
+     （挿入は base.html の initMainEnhancements）。
+     どこにも改行位置が無い長文は anywhere で最後の手段として折る。 */
+  word-break: keep-all;
+  /* `anywhere` にすると、行を目一杯まで詰めてから任意の位置で折るため、
+     せっかく句読点に置いた改行位置が使われない（実測で3画面が文の途中で折れた）。
+     `break-word` は「その塊が1行に収まらないときだけ」折るので、
+     通常は句読点で折れ、極端に長い一文のときだけ最後の手段として働く。 */
+  overflow-wrap: break-word;
 }

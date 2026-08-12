@@ -8,6 +8,8 @@
 
 {% block content %}
 
+  {% include "partials/coachmark.html" with coach_key="pmo-consultation" step1="まず「良い相談文の例」を読みます。事実・期間・判断したいことを1文に入れると、意図の判定が安定します" step2="送信すると、結論・確認観点・根拠・次の操作が上から順に出ます。結論は候補であり、確定した回答ではありません" step3="読む順は逆にします。根拠に挙がった文書を先に確かめ、原文と合っていることを確認してから結論を使ってください" step4="根拠が足りないと表示されたときは、そのまま成果物の承認へは進めません。文書を足すか、確認観点に答えてから再実行します" %}
+
   <div class="ai-p">
     <div class="ai-ph">
       <span class="ai-pm">AI</span>
@@ -18,8 +20,24 @@
     </div>
     <div class="ai-pb">
       <form method="get" class="form">
+        {% comment %}
+          入力欄の直上に、書き方の手本と検索対象を出す（UXP-14）。
+          何を書けば答えが返るのかが分からないまま空欄を見せない。
+        {% endcomment %}
+        <div class="callout w">
+          <p><strong>良い相談文の例</strong>（事実・期間・判断したいことを 1 文に入れる）</p>
+          <ul class="ps">
+            {% for example in examples %}<li>{{ example }}</li>{% endfor %}
+          </ul>
+          <p>
+            <strong>対象になる案件:</strong> 参照できる {{ target_project_count }}件
+            {% for project in target_projects %}／ {{ project.name }}{% empty %}（参照できる案件がありません）{% endfor %}
+            {% if target_project_count > 5 %}ほか{% endif %}
+          </p>
+          <p>登録文書に根拠が無い主張は回答に載せません。根拠が足りない場合は不足として返します。</p>
+        </div>
         <div>
-          <label for="q">相談内容</label>
+          <label for="q">相談内容</label>{% include "partials/hint.html" with label="AIの回答" body="この画面が返す結論・観点は、登録文書の検索結果から機械的に組み立てた候補です。確定情報ではありません。下の根拠の欄に挙がった原文で確かめてから使ってください。" %}
           <textarea name="q" id="q" rows="3" placeholder="例: 結合試験が5日遅れています。どう整理すべきですか。">{{ question }}</textarea>
         </div>
         {% if screen %}
@@ -42,6 +60,10 @@
   {% if result %}
     {% with evidence=result.evidence %}
 
+      {% comment %}
+        根拠不足の警告は回答本文より上に出す（UXP-14）。読み終えてから
+        「実は使えません」と伝えると、その時点で判断が動いてしまうため。
+      {% endcomment %}
       {% if evidence.blocks_approval %}
         <div class="callout d">
           <p><strong>根拠が不足しています。</strong>この結果のまま成果物を承認へ進めることはできません。</p>
@@ -49,16 +71,23 @@
         </div>
       {% endif %}
 
-      {% if result.answer %}
-        <div class="card">
-          <div class="card-hdr">
-            <span class="card-t">回答</span>
-            <span class="card-act">
+      {% comment %}
+        以降は「結論 → 確認観点 → 根拠 → 次の操作」の固定順（UXP-14）。
+        相談の種類が変わっても並びは変えない。読む順番を毎回探させないため。
+      {% endcomment %}
+
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">1. 結論</span>
+          <span class="card-act">
+            <span class="badge b">AI生成・人の確認前</span>
+            {% if result.answer %}
               主張 {{ result.answer.claim_count }}件 ／ 出所あり {{ result.answer.grounded_claims|length }}件
               （根拠率 {{ result.answer.grounded_ratio }}%）
-            </span>
-          </div>
-
+            {% endif %}
+          </span>
+        </div>
+        {% if result.answer %}
           {% comment %}
             出所を持たない主張は組み立て段階で弾かれている（ADR-0004 第1層）。
             節ごとに出すのは、どの主張がどの性質のものかを読み手が区別できるようにするため。
@@ -85,71 +114,49 @@
               {% endif %}
             </div>
           {% endfor %}
-
-          <div class="sg">
-            <div>
-              <div class="pb-t">推奨アクション</div>
-              <ul class="ps">
-                {% for action in result.answer.recommended_actions %}<li>{{ action }}</li>
-                {% empty %}<li>該当なし</li>{% endfor %}
-              </ul>
-            </div>
-            <div>
-              <div class="pb-t">追加確認事項</div>
-              <ul class="ps">
-                {% for item in result.answer.follow_up_questions %}<li>{{ item }}</li>
-                {% empty %}<li>該当なし</li>{% endfor %}
-              </ul>
-            </div>
-          </div>
-        </div>
-      {% endif %}
-
-      <div class="sg-r">
-        <div class="card">
-          <div class="card-hdr">
-            <span class="card-t">判断サマリ</span>
-            <span class="badge b">{{ result.run.get_intent_display }}</span>
-          </div>
-          <dl class="dl">
-            <dt>意図分類</dt>
-            <dd>{{ result.run.get_intent_display }}（確信度 {{ result.run.intent_confidence }}）</dd>
-            <dt>一致キーワード</dt>
-            <dd>{{ result.intent.matched_keywords|join:" / "|default:"—" }}</dd>
-            <dt>確認観点</dt>
-            <dd>{{ result.intent.viewpoints|join:" / " }}</dd>
-            <dt>期待する出力</dt>
-            <dd>{{ result.plan.expected_output }}</dd>
-          </dl>
-        </div>
-
-        <div class="card">
-          <div class="card-hdr">
-            <span class="card-t">根拠評価</span>
-            <span class="badge {% if evidence.blocks_approval %}r{% elif evidence.recommendation == 'answer' %}g{% else %}a{% endif %}">
-              {{ evidence.get_recommendation_display }}
-            </span>
-          </div>
-          <div class="pb-row">
-            <div class="pb-lr"><span class="pb-t">信頼度</span><span class="pb-v">{{ evidence.confidence }}</span></div>
-            <div class="pb-tr">
-              <div class="pb-f {% if evidence.confidence < 0.5 %}r{% elif evidence.confidence < 0.75 %}a{% else %}g{% endif %}"
-                   style="width:{% widthratio evidence.confidence 1 100 %}%"></div>
-            </div>
-          </div>
-          <dl class="dl">
-            <dt>関連度</dt><dd>{{ evidence.get_relevance_display }}</dd>
-            <dt>網羅度</dt><dd>{{ evidence.get_coverage_display }}</dd>
-            <dt>根拠の内訳</dt><dd>{{ evidence.notes }}</dd>
-          </dl>
-        </div>
+        {% else %}
+          <div class="empty">出所のある主張が無いため、結論は組み立てられませんでした。</div>
+        {% endif %}
       </div>
 
       <div class="card">
         <div class="card-hdr">
-          <span class="card-t">参照根拠</span>
-          <span class="card-act">登録文書から取得</span>
+          <span class="card-t">2. 確認観点</span>
+          <span class="badge b">{{ result.run.get_intent_display }}</span>
         </div>
+        <ul class="ps">
+          {% for viewpoint in result.intent.viewpoints %}<li>{{ viewpoint }}</li>
+          {% empty %}<li>確認観点は特定できませんでした。</li>{% endfor %}
+        </ul>
+        <dl class="dl">
+          <dt>意図分類{% include "partials/hint.html" with label="意図分類" body="相談文に含まれる語から、どの種類の相談かを機械的に判定した結果です。判定が意図と違う場合は、相談文に事実と判断したいことを書き足して再実行してください。" %}</dt>
+          <dd>{{ result.run.get_intent_display }}（確信度 {{ result.run.intent_confidence }}）</dd>
+          <dt>一致キーワード</dt>
+          <dd>{{ result.intent.matched_keywords|join:" / "|default:"—" }}</dd>
+          <dt>期待する出力</dt>
+          <dd>{{ result.plan.expected_output }}</dd>
+        </dl>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">3. 根拠{% include "partials/hint.html" with label="根拠評価" body="回答の裏付けに使えた登録文書を、関連度と網羅度で評価した結果です。評価が低い場合、結論は裏取りできていません。承認へは進めず、文書の追加か確認観点への回答が必要です。" %}</span>
+          <span class="badge {% if evidence.blocks_approval %}r{% elif evidence.recommendation == 'answer' %}g{% else %}a{% endif %}">
+            {{ evidence.get_recommendation_display }}
+          </span>
+        </div>
+        <div class="pb-row">
+          <div class="pb-lr"><span class="pb-t">信頼度</span><span class="pb-v">{{ evidence.confidence }}</span></div>
+          <div class="pb-tr">
+            <div class="pb-f {% if evidence.confidence < 0.5 %}r{% elif evidence.confidence < 0.75 %}a{% else %}g{% endif %}"
+                 style="width:{% widthratio evidence.confidence 1 100 %}%"></div>
+          </div>
+        </div>
+        <dl class="dl">
+          <dt>関連度</dt><dd>{{ evidence.get_relevance_display }}</dd>
+          <dt>網羅度</dt><dd>{{ evidence.get_coverage_display }}</dd>
+          <dt>根拠の内訳</dt><dd>{{ evidence.notes }}</dd>
+        </dl>
         {% for hit in result.hits %}
           <article class="result">
             <div class="result-hdr">
@@ -164,9 +171,36 @@
         {% endfor %}
       </div>
 
-      <div class="callout">
-        <p><strong>AI が作成した内容です。</strong>人が確認・承認するまでは確定情報として扱いません。</p>
-        <p>処理の詳細は <a href="{% url 'agents:run_detail' result.run.pk %}" style="color:var(--blue);font-weight:900">トレース</a> で確認できます。</p>
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">4. 次の操作</span>
+          <span class="card-act">人が判断する部分</span>
+        </div>
+        {% if evidence.blocks_approval %}
+          <div class="callout w">
+            <p><strong>まず根拠を足してください。</strong>この結果のままでは成果物の承認へ進めません。</p>
+          </div>
+        {% endif %}
+        <div class="sg">
+          <div>
+            <div class="pb-t">推奨アクション</div>
+            <ul class="ps">
+              {% for action in result.answer.recommended_actions %}<li>{{ action }}</li>
+              {% empty %}<li>該当なし</li>{% endfor %}
+            </ul>
+          </div>
+          <div>
+            <div class="pb-t">追加確認事項</div>
+            <ul class="ps">
+              {% for item in result.answer.follow_up_questions %}<li>{{ item }}</li>
+              {% empty %}<li>該当なし</li>{% endfor %}
+            </ul>
+          </div>
+        </div>
+        <div class="callout w">
+          <p><strong>AI が作成した内容です。</strong>人が確認・承認するまでは確定情報として扱いません。</p>
+          <p>処理の詳細は <a href="{% url 'agents:run_detail' result.run.pk %}" style="color:var(--blue);font-weight:900">トレース</a> で確認できます。</p>
+        </div>
       </div>
 
     {% endwith %}

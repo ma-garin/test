@@ -95,6 +95,9 @@ class Screen:
 SCREENS: tuple[Screen, ...] = (
     # ── 管制 ─────────────────────────────────────────────
     Screen("dashboard:control"),
+    Screen("forecast:live"),
+    Screen("forecast:report"),
+    Screen("graph:quality"),
     Screen("dashboard:tasks", query={"status": "in_progress"}),
     Screen("dashboard:detection"),
     Screen("dashboard:progress"),
@@ -137,7 +140,7 @@ SCREENS: tuple[Screen, ...] = (
     Screen("integrations:pipeline"),
     Screen("integrations:job_list"),
     Screen("integrations:create", writable=True, admin_only=True),
-    Screen("core:settings"),
+    Screen("core:settings", admin_only=True),
     Screen("core:screen_map"),
     Screen("accounts:select_tenant"),
     Screen("accounts:select_project"),

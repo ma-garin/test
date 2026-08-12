@@ -8,6 +8,19 @@
     <span class="card-t">絞り込み</span>
     {% if board.filters.is_active %}<a class="card-act" href="{% url 'dashboard:tasks' %}?view={{ view_mode }}">条件をクリア</a>{% endif %}
   </div>
+  {% comment %}
+  JT-01: 危険な対象へ 1 クリックで到達する導線。既存の GET 条件だけを使うので、
+  `条件をクリア` で必ず全件へ戻れる。ここに新しい絞り込み軸を足さない。
+  {% endcomment %}
+  <nav class="quick-views" aria-label="よく使う絞り込み">
+    <span class="quick-views-label">よく使う絞り込み</span>
+    {% for quick in board.quick_views %}
+      <a class="quick-view{% if quick.is_active %} is-active{% endif %}"
+         href="{% url 'dashboard:tasks' %}?{{ quick.query }}&amp;view={{ view_mode }}"
+         {% if quick.is_active %}aria-current="page"{% endif %}>{{ quick.label }}</a>
+    {% endfor %}
+    <a class="quick-view" href="{% url 'dashboard:tasks' %}?view={{ view_mode }}">すべて</a>
+  </nav>
   <form method="get" class="search-row">
     <input type="hidden" name="view" value="{{ view_mode }}">
     <input type="text" name="owner" value="{{ board.filters.owner }}" placeholder="担当者">

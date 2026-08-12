@@ -8,6 +8,47 @@
 
 {% block content %}
 
+  {% comment %}
+  UXP-45: 「役に立たなかった」だけの投稿は改善に使えない。何を書けば再現できるのかを
+  入力例で示し、事実誤認を選ぶ前に必須情報が読める位置へ置く。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">コメントの書き方（入力例）</span>
+      <span class="card-act">4 項目そろうと再現できます</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>項目</th><th>書くこと</th><th>入力例</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th class="nowrap">再現手順</th>
+            <td>同じ結果を出すための操作を番号で</td>
+            <td>1) 課題一覧を開く 2) 重大度「高」で絞る 3) AI に「遅延の原因は」と尋ねる</td>
+          </tr>
+          <tr>
+            <th class="nowrap">期待結果</th>
+            <td>本来どう表示されるべきだったか</td>
+            <td>回答に、根拠となった課題 ID（ISS-102）が引用される</td>
+          </tr>
+          <tr>
+            <th class="nowrap">実際の結果</th>
+            <td>実際に何が起きたか。表示された文言はそのまま写す</td>
+            <td>「該当なし」と返り、引用が 0 件だった</td>
+          </tr>
+          <tr>
+            <th class="nowrap">影響範囲</th>
+            <td>誰の・どの判断に響くか</td>
+            <td>PMO の週次報告。遅延 3 件を見落とす</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="ps">この 4 項目をそのままコメント欄へ貼り付けて構いません。</div>
+  </div>
+
   <div class="card">
     <div class="card-hdr"><span class="card-t">フィードバックを投稿する</span><span class="card-act">自テナントのみ</span></div>
     <form method="post" class="form">
@@ -33,6 +74,10 @@
         <label for="{{ form.agent_run.id_for_label }}">{{ form.agent_run.label }}</label>
         {{ form.agent_run }}
       </div>
+      <div class="callout w">
+        <p><strong>「事実誤認があった」を選ぶ前に</strong>チェックを入れると、コメントが必須になります（未記入では送信できません）。</p>
+        <p>必要な再現情報は<strong>再現手順・期待結果・実際の結果・影響範囲</strong>の 4 点です。加えて、誤りと判断した根拠（正しい値と、その出所の画面名や資料名）を添えてください。ここが空だと「事実誤認 0 件」の判定を覆せません。</p>
+      </div>
       <div>
         <label for="{{ form.has_fact_error.id_for_label }}">{{ form.has_fact_error.label }}</label>
         {{ form.has_fact_error }}
@@ -42,6 +87,7 @@
         {{ form.comment }}
         <div class="ps">「役に立たなかった」または事実誤認ありの場合は必須です。</div>
       </div>
+      <div class="ps">送信するとフィードバック集計（一覧）へ戻ります。投稿は受入条件「事実誤認 0 件」の集計に加算されるため、戻った先の一覧で自分の投稿が反映されたことを確認できます。</div>
       <div class="actions">
         <button type="submit" class="btn-b">フィードバックを送る</button>
         <a class="btn-ghost" href="{% url 'audit:feedback_list' %}">やめる</a>

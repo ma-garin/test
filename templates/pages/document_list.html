@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 {% block kicker %}ナレッジ / RAG{% endblock %}
-{% block subtitle %}登録前に形式・サイズ・重複を検証します。除外・削除した文書は検索対象から外れます。{% endblock %}
+{% block subtitle %}登録済みの文書と、検索に出るまでの状態を確認します。登録は「ナレッジ登録」から行います。{% endblock %}
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'rag:search' %}">RAG検索へ</a>
@@ -8,15 +8,58 @@
 {% endblock %}
 
 {% block content %}
+
+  {% include "partials/coachmark.html" with coach_key="documents-list" step1="「文書台帳」で各文書の状態を見ます。本文抽出・最終インデックス・再構築の3列が、検索に出るかどうかを決めます" step2="アップロードしただけでは検索に出ません。「本文を抽出」を実行し、そのあとインデックス構築まで進めてください" step3="「再構築」が「要」の行は、いまの本文が索引に入っていません。構築し直すまで検索結果に出ません" %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">絞り込み</span>
+      {% if is_filtered %}<a class="card-act" href="{% url 'documents:list' %}">条件をクリア</a>{% endif %}
+    </div>
+    <form method="get" class="search-row">
+      <select name="status" aria-label="文書状態">
+        <option value="">文書状態（すべて）</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="project" aria-label="案件">
+        <option value="">案件（すべて）</option>
+        <option value="shared"{% if filters.project == "shared" %} selected{% endif %}>テナント共通ナレッジ</option>
+        {% for project in projects %}
+          <option value="{{ project.pk }}"{% if filters.project == project.pk|stringformat:"s" %} selected{% endif %}>{{ project.code }} / {{ project.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="reindex" aria-label="再抽出要否">
+        <option value="">再抽出要否（すべて）</option>
+        <option value="yes"{% if filters.reindex == "yes" %} selected{% endif %}>再抽出が必要</option>
+        <option value="no"{% if filters.reindex == "no" %} selected{% endif %}>再抽出は不要</option>
+      </select>
+      <button type="submit" class="btn-b sm">絞り込む</button>
+    </form>
+    <p class="ps">適用中の条件: {% if applied_filters %}{{ applied_filters|join:" / " }}{% else %}なし（すべて表示）{% endif %} ／ 表示 {{ page.paginator.count }}件（全 {{ total_count }}件）</p>
+  </div>
+
   <div class="card">
     <div class="card-hdr"><span class="card-t">文書台帳</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>文書名</th><th>種別</th><th>参照範囲</th><th>状態</th><th>本文抽出</th><th>最終インデックス</th><th>再構築</th></tr></thead>
+        <thead><tr><th>文書名</th><th>種別</th><th>参照範囲</th><th>状態</th><th>本文抽出{% include "partials/hint.html" with label="本文抽出" body="登録した原本から文字を取り出し、ページ単位で保存する処理です。ここまでは検索用の索引に入りません。抽出しただけでは検索結果に出ない点に注意してください。" %}</th><th>最終インデックス{% include "partials/hint.html" with label="インデックス" body="抽出した本文を検索できる形に変換した索引と、その構築時刻です。「未実施」の文書は検索対象になりません。構築は rebuild_index で行います。" %}</th><th>再構築{% include "partials/hint.html" with label="再構築" body="いまの本文が索引に反映されていない状態を「要」で示します。抽出をやり直した文書や、索引の構築後に内容が変わった文書が該当し、構築し直すまで検索結果には古い内容しか出ません。" %}</th></tr></thead>
         <tbody>
           {% for row in rows %}
             <tr>
-              <td>{{ row.document.title }}</td>
+              <td>
+                {% comment %}
+                原本へは直リンクしない。`file.url` はメディア配信であり、テナント・案件の
+                権限判定を通らない。権限判定つきの配信経路ができるまでは、
+                「保管されている」ことだけを示し、偽リンクも直リンクも置かない。
+                {% endcomment %}
+                {{ row.document.title }}
+                {% if row.document.file %}
+                  <div class="ps">原本を保管済み（{{ row.document.file.name|cut:"documents/" }}）。原文の閲覧は権限つきの配信経路を用意してから開放します。</div>
+                {% else %}
+                  <div class="ps">原本のファイルが見つかりません</div>
+                {% endif %}
+              </td>
               <td class="nowrap"><span class="badge n">{{ row.document.get_file_type_display }}</span></td>
               <td class="nowrap">{{ row.document.project.name|default:"テナント共通" }}</td>
               <td><span class="badge {% if row.document.status == 'active' %}g{% elif row.document.status == 'error' %}r{% else %}n{% endif %}">{{ row.document.get_status_display }}</span></td>
@@ -29,7 +72,7 @@
               <td>{% if row.document.needs_reindex %}<span class="badge a">要</span>{% else %}<span class="muted">—</span>{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="7"><div class="empty">文書が登録されていません。</div></td></tr>
+            <tr><td colspan="7"><div class="empty">{% if is_filtered %}条件に一致する文書がありません。{% else %}文書が登録されていません。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -37,8 +80,28 @@
     {% include "partials/pager.html" %}
   </div>
 
+  {% if readiness_steps %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">検索できるまでの準備</span>
+        <span class="card-act">4ステップ</span>
+      </div>
+      <div class="empty-state">
+        <p>{% if is_filtered %}条件に一致する文書がありません。条件をクリアすると全件に戻ります。{% else %}まだ文書が登録されていません。アップロードから始めてください。{% endif %}</p>
+        <ol>
+          {% for step in readiness_steps %}
+            <li>{{ step.number }}. {{ step.label }} — <span class="badge {{ step.tone }}">{{ step.state }}</span></li>
+          {% endfor %}
+        </ol>
+        <p class="ps">アップロードしただけでは検索に出ません。本文抽出とインデックス構築まで進めてください。</p>
+        <a class="btn-b sm" href="{% url 'documents:upload' %}">文書をアップロード</a>
+        {% if is_filtered %}<a class="btn-out sm" href="{% url 'documents:list' %}">条件をクリア</a>{% endif %}
+      </div>
+    </div>
+  {% endif %}
+
   <div class="callout">
-    <p><strong>登録は <a href="{% url 'documents:upload' %}">文書アップロード</a> から行います。</strong>形式・サイズ・空ファイル・重複を検証してから登録します。</p>
+    <p><strong>登録は <a href="{% url 'documents:upload' %}">ナレッジ登録</a> から行います。</strong>形式・サイズ・空ファイル・重複を検証してから登録します。</p>
     <p>検証ロジックは <code>apps/documents/services/validation.py</code> にあります。インデックス構築は <code>python manage.py rebuild_index</code> です。</p>
   </div>
 {% endblock %}

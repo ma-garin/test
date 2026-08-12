@@ -1,0 +1,34 @@
+{% comment %}
+コーチマーク。初回にだけ「この画面の見方」を示し、閉じたら出さない。
+
+使い方（ビューの変更は不要。テンプレートだけで完結する）:
+
+  {% include "partials/coachmark.html" with coach_key="画面ごとの一意キー" step1="最初に見る場所と、そこで分かること" step2="次にする操作" step3="値が無いときの読み方" %}
+
+`coach_key` は画面ごとに一意にする（閉じた状態の保存キーになる）。
+`step4` `step5` まで使える。`coach_title` で見出しを変えられる。
+
+**必ず 1 行で書くこと。** Django のタグ正規表現は `re.DOTALL` を付けておらず
+（`django/template/base.py` の `tag_re`）、改行をまたぐ `{% %}` はタグとして
+認識されない。複数行で書くと、テンプレートの原文がそのまま画面へ出る。
+
+設計の理由:
+- 画面を覆うオーバーレイにしない。作業を止めるうえ、閉じ方が分からないと詰む。
+  内容の直前に置く帯にして、読まずに下へ進める形にする。
+- 閉じた状態は端末側（localStorage）に置き、個人データをサーバーへ持たない
+  （教育支援と同じ方針）。
+- JavaScript が動かない場合は開いたまま。読めるだけで害はない。
+{% endcomment %}
+<aside class="coach" data-coach="{{ coach_key }}" aria-label="{{ coach_title|default:'この画面の見方' }}">
+  <div class="coach-head">
+    <span class="coach-title">{{ coach_title|default:"この画面の見方" }}</span>
+    <button type="button" class="coach-close" data-coach-close aria-label="この案内を閉じる">閉じる</button>
+  </div>
+  <ol class="coach-steps">
+    {% if step1 %}<li>{{ step1 }}</li>{% endif %}
+    {% if step2 %}<li>{{ step2 }}</li>{% endif %}
+    {% if step3 %}<li>{{ step3 }}</li>{% endif %}
+    {% if step4 %}<li>{{ step4 }}</li>{% endif %}
+    {% if step5 %}<li>{{ step5 }}</li>{% endif %}
+  </ol>
+</aside>

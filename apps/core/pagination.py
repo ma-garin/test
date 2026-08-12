@@ -15,6 +15,9 @@ from django.http import HttpRequest
 #: 1 ページあたりの既定件数。業務一覧は 1 画面で俯瞰したいので多めに取る。
 PAGE_SIZE = 50
 
+#: 利用者が一覧の密度を選ぶときの候補。任意の巨大値を受け付けない。
+PAGE_SIZE_OPTIONS = (20, PAGE_SIZE, 100)
+
 #: ページャに並べる前後のページ数。
 WINDOW = 2
 
@@ -25,6 +28,15 @@ def paginate(queryset: QuerySet, request: HttpRequest, per_page: int = PAGE_SIZE
     不正な値でも 404 にしない。URL を手で編集した程度で画面が落ちると、
     一覧から詳細へ戻る導線が壊れるため、範囲外は端のページへ寄せる。
     """
+
+    # カード一覧など個別に密度を決めた画面は、指定値を優先する。
+    # 標準一覧だけは ?per_page= で 20 / 50 / 100 件に切り替えられる。
+    if per_page == PAGE_SIZE:
+        try:
+            requested_size = int(request.GET.get("per_page", PAGE_SIZE))
+        except (TypeError, ValueError):
+            requested_size = PAGE_SIZE
+        per_page = requested_size if requested_size in PAGE_SIZE_OPTIONS else PAGE_SIZE
 
     paginator = Paginator(queryset, per_page)
 

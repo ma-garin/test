@@ -22,9 +22,9 @@ from apps.core.navigation import all_items
 
 
 def _screen_urls() -> list[tuple[str, str]]:
-    """ナビゲーションに載っている画面の (キー, URL) 一覧。"""
+    """ナビゲーションに載っている画面の (キー, URL, 必要ロール) 一覧。"""
 
-    return [(item.key, reverse(item.url_name)) for item in all_items()]
+    return [(item.key, reverse(item.url_name), item.roles) for item in all_items()]
 
 
 class TenantlessUserScreenTests(TestCase):
@@ -41,13 +41,20 @@ class TenantlessUserScreenTests(TestCase):
         self.client.force_login(self.user)
 
     def test_テナント未選択でも全画面が壊れない(self):
+        """ロール限定の画面は 403。それ以外は 200。どちらにせよ 500 にしない。
+
+        ナビが「管理者だけ」と宣言している画面は、ビューも同じ条件を強制する。
+        ここで 200 を期待すると、宣言と実際のアクセス可否がずれても気づけない。
+        """
+
         self.assertIsNone(self.user.tenant)
 
-        for key, url in _screen_urls():
+        for key, url, roles in _screen_urls():
             with self.subTest(screen=key):
                 response = self.client.get(url)
+                expected = 403 if roles and self.user.role not in roles else 200
 
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, expected)
 
     def test_テナント未選択なら監査データを何も見せない(self):
         response = self.client.get(reverse("audit:feedback_list"))
@@ -80,9 +87,14 @@ class CrossTenantIsolationTests(TestCase):
         self.client.force_login(self.user)
 
     def test_全画面に他テナントの案件名が出ない(self):
-        for key, url in _screen_urls():
+        for key, url, roles in _screen_urls():
             with self.subTest(screen=key):
                 response = self.client.get(url)
+
+                if roles and self.user.role not in roles:
+                    # 開けない画面は、そもそも中身を出さない。
+                    self.assertEqual(response.status_code, 403)
+                    continue
 
                 self.assertEqual(response.status_code, 200)
                 self.assertNotContains(response, self.OTHER_PROJECT_NAME)

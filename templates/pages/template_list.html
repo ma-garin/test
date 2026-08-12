@@ -12,6 +12,7 @@
   <div class="callout w">
     <p><strong>ひな型は RAG 対象外です。</strong>ここに登録したファイルの本文は検索・引用されません。</p>
     <p>検索対象になるのは <a href="{% url 'documents:list' %}">文書台帳</a> の「RAG対象」文書だけです。ひな型は回答の書き出し先としてのみ使います。</p>
+    <p>混同しやすい違い: <strong>文書＝根拠として読む対象</strong>／<strong>ひな型＝回答を書き込む先</strong>。同じファイルを両方に使いたい場合は、それぞれに登録してください。</p>
   </div>
 
   <div class="kpi-g">
@@ -27,22 +28,28 @@
     </div>
   </div>
 
-  {% for card in cards %}
+  {% for item in cards %}
     <div class="card">
       <div class="card-hdr">
-        <span class="card-t">{{ card.template.name }}</span>
+        <span class="card-t">{{ item.card.template.name }}</span>
         <span class="card-act">
-          <span class="badge {{ card.tone }}">{{ card.template.get_mapping_status_display }}</span>
+          <span class="badge {{ item.card.tone }}">項目マッピング: {{ item.card.template.get_mapping_status_display }}（{{ item.card.mapped_count }}項目）</span>
         </span>
       </div>
 
       <dl class="dl">
+        <dt>用途</dt>
+        <dd>回答の出力先（Excel ひな型）。検索の根拠としては読みません。</dd>
+        <dt>出力先</dt>
+        <dd>{{ item.card.template.file.name|default:"—" }}{% if item.card.sheets %} ／ シート: {{ item.card.sheets|join:" / " }}{% endif %}</dd>
+        <dt>項目マッピングの状態</dt>
+        <dd><span class="badge {{ item.card.tone }}">{{ item.card.template.get_mapping_status_display }}</span> ／ {{ item.card.mapped_count }}項目が設定済み</dd>
+        <dt>次の設定作業</dt>
+        <dd>{{ item.next_action }}</dd>
         <dt>説明</dt>
-        <dd>{{ card.template.description|default:"—" }}</dd>
+        <dd>{{ item.card.template.description|default:"—" }}</dd>
         <dt>検索キーワード</dt>
-        <dd>{{ card.template.keywords|default:"—" }}</dd>
-        <dt>シート構成</dt>
-        <dd>{% if card.sheets %}{{ card.sheets|join:" / " }}{% else %}未取得{% endif %}</dd>
+        <dd>{{ item.card.template.keywords|default:"—" }}（ひな型を選ぶための語です。RAG 検索には使いません）</dd>
         <dt>RAG対象</dt>
         <dd>含まれません（出力先としてのみ使用）</dd>
       </dl>
@@ -51,7 +58,7 @@
         <table class="t">
           <thead><tr><th>回答項目</th><th>書き込み先セル</th></tr></thead>
           <tbody>
-            {% for row in card.rows %}
+            {% for row in item.card.rows %}
               <tr>
                 <td>{{ row.field_name }}</td>
                 <td class="nowrap"><code>{{ row.cell }}</code></td>
@@ -66,7 +73,7 @@
   {% empty %}
     <div class="card">
       <div class="card-hdr"><span class="card-t">ひな型台帳</span><span class="card-act">0件</span></div>
-      <div class="empty">ひな型が登録されていません。</div>
+      <div class="empty">ひな型が登録されていません。ひな型は回答の出力先です。検索対象の文書は <a href="{% url 'documents:upload' %}">ナレッジ登録</a> から登録してください。</div>
     </div>
   {% endfor %}
 

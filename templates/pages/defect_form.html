@@ -2,28 +2,82 @@
 {% block kicker %}品質管理{% endblock %}
 {% block subtitle %}不具合の内容・重大度・状態・検出工程を記録します。{% endblock %}
 
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{{ return_to }}">一覧へ戻る</a>
+{% endblock %}
+
 {% block content %}
 
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">{{ form_title }}</span>
-      <a class="card-act" href="{% url 'projects:defect_list' %}">一覧へ戻る</a>
-    </div>
-    <form method="post" class="form">
-      {% csrf_token %}
-      {% if form.errors %}
-        <div class="callout d">入力内容を確認してください。</div>
-      {% endif %}
-      {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% for error in field.errors %}<div class="callout d">{{ error }}</div>{% endfor %}
+  {% if form.errors %}
+    <div class="callout d" data-form-error-summary>入力内容を確認してください。</div>
+  {% endif %}
+
+  <form method="post" class="form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ return_to }}">
+
+    {% with found="|project|title|description|phase|detected_on|" impact="|severity|" resolution="|status|closed_on|" %}
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">発見内容</span>
+          <a class="card-act" href="{{ return_to }}">一覧へ戻る</a>
         </div>
-      {% endfor %}
-      <button type="submit" class="btn-b">保存する</button>
-    </form>
-  </div>
+        <p class="ps">{{ form_title }}。何が、どの工程で、いつ見つかったかを記録します。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in found %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">影響</span></div>
+        <p class="ps">利用者と後続工程にどれだけ響くかを決めます。重大度は対応順序の根拠になります。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in impact %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">解決確認</span></div>
+        <div class="callout w">
+          <p>状態を「クローズ」にする前に、次の4点を確認してください。</p>
+          <p>1. 修正が対象環境に反映されている　2. 検出時の手順で再発しない　3. 原因と対策を「内容」欄に追記した　4. クローズ日を入力した</p>
+        </div>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in resolution %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key not in found and key not in impact and key not in resolution %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+      </div>
+    {% endwith %}
+
+    <button type="submit" class="btn-b">保存する</button>
+  </form>
 
 {% endblock %}

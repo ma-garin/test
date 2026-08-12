@@ -44,9 +44,39 @@
     <div class="card">
       <div class="card-hdr">
         <span class="card-t">レビュー観点</span>
-        <span class="card-act">確定前チェック</span>
+        <span class="card-act">未確認 {{ unconfirmed_count }}件 ／ 全{{ review_items|length }}件</span>
       </div>
       {% if selected %}
+        {% comment %}
+          確定してよい条件と、確定した後どこへ行くのかを先に出す（UXP-15）。
+          チェックを付ける機能はまだ無いので、確認済みかどうかは表示だけの判定。
+        {% endcomment %}
+        <div class="callout {% if can_finalize %}ok{% else %}w{% endif %}">
+          <p><strong>確定してよい条件:</strong> 未確認のレビュー観点が 0 件であること。</p>
+          {% if can_finalize %}
+            <p>未確認は 0 件です。この計画は確定できます。</p>
+          {% else %}
+            <p>未確認があと <strong>{{ unconfirmed_count }}件</strong> 残っています。確定はできません。</p>
+          {% endif %}
+          <p>
+            <strong>確定後の遷移先:</strong>
+            <a href="{% url 'pmo:deliverables' %}" style="color:var(--blue);font-weight:900">成果物支援</a>
+            で報告書を生成し、
+            <a href="{% url 'pmo:approvals' %}" style="color:var(--blue);font-weight:900">報告生成・承認</a>
+            で承認申請します。
+          </p>
+          <p>{{ review_basis }}</p>
+        </div>
+        <div class="steps">
+          {% for item in review_items %}
+            <div class="pb-row">
+              <span class="pb-t">{{ item.text }}</span>
+              <span class="badge {% if item.confirmed %}g{% else %}a{% endif %}">{% if item.confirmed %}確認済み{% else %}未確認{% endif %}</span>
+            </div>
+          {% empty %}
+            <div class="empty">レビュー観点が登録されていません。</div>
+          {% endfor %}
+        </div>
         <dl class="dl">
           <dt>計画名</dt><dd>{{ selected.title }}</dd>
           <dt>案件</dt><dd>{{ selected.project.name }}</dd>
@@ -54,13 +84,6 @@
           <dt>生成元</dt>
           <dd>{% if selected.agent_run %}<a href="{% url 'agents:run_detail' selected.agent_run.pk %}" style="color:var(--blue)">処理トレース</a>{% else %}AI未使用{% endif %}</dd>
         </dl>
-        <div class="steps">
-          {% for point in selected.review_points %}
-            <div class="pb-row"><span class="pb-t">{{ point }}</span></div>
-          {% empty %}
-            <div class="empty">レビュー観点が登録されていません。</div>
-          {% endfor %}
-        </div>
       {% else %}
         <div class="empty">表示できる計画がありません。</div>
       {% endif %}
@@ -70,7 +93,18 @@
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">計画本文</span>
-      <span class="card-act">{% if selected %}{{ selected.get_status_display }}{% else %}—{% endif %}</span>
+      <span class="card-act">
+        {% if selected %}
+          {% if selected.status == 'finalized' %}
+            <span class="badge g">人が確定した本文</span>
+          {% elif selected.agent_run %}
+            <span class="badge b">AI生成・人の確認前</span>
+          {% else %}
+            <span class="badge n">人が作成・未確定</span>
+          {% endif %}
+          {{ selected.get_status_display }}
+        {% else %}—{% endif %}
+      </span>
     </div>
     {% if selected and selected.body %}
       <div class="result-text">{{ selected.body|linebreaksbr }}</div>

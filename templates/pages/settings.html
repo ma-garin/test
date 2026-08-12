@@ -8,11 +8,18 @@
     <p><strong>認証情報はマスクして表示しています。</strong>生の値は画面・ログ・エクスポートに含めません。</p>
   </div>
 
+  {# UXP-35: 値だけでは「誰に何を頼めば変わるか」が分からない。依頼先と手順を併記する。 #}
+  <div class="callout w">
+    <p><strong>この画面は参照専用です。</strong>すべての設定は環境変数で決まります。画面から書き換える手段はありません（誤操作で生成の実行先が変わるのを防ぐため）。</p>
+    <p><strong>管理者:</strong> システム管理者（インフラ担当）。<strong>変更を依頼する先:</strong> 同じシステム管理者へ、変更したい環境変数名と新しい値を伝えてください。</p>
+    <p><strong>変更方法:</strong> 環境変数を書き換えてアプリを再起動します。<strong>反映タイミング:</strong> 再起動後の最初のリクエストから。稼働中の画面には自動反映されません。</p>
+  </div>
+
   <div class="kpi-g">
-    <div class="kpi"><div class="kpi-l">AIプロバイダ</div><div class="kpi-v" style="font-size:15px">{{ ai_settings.provider_label }}</div><div class="kpi-s">生成・Embedding の実行先</div></div>
-    <div class="kpi"><div class="kpi-l">既定 Top-K</div><div class="kpi-v">{{ ai_settings.rag.default_top_k }}</div><div class="kpi-s">検索結果の取得件数</div></div>
-    <div class="kpi"><div class="kpi-l">ループ上限</div><div class="kpi-v">{{ ai_settings.agent.max_loops }}</div><div class="kpi-s">NFR-AG-002</div></div>
-    <div class="kpi"><div class="kpi-l">タイムアウト</div><div class="kpi-v">{{ ai_settings.agent.timeout_seconds }}<small>秒</small></div><div class="kpi-s">NFR-AG-004</div></div>
+    <div class="kpi"><div class="kpi-l">AIプロバイダ</div><div class="kpi-v" style="font-size:15px">{{ ai_settings.provider_label }}</div><div class="kpi-s">生成・Embedding の実行先 / AI_PROVIDER</div></div>
+    <div class="kpi"><div class="kpi-l">既定 Top-K</div><div class="kpi-v">{{ ai_settings.rag.default_top_k }}</div><div class="kpi-s">検索結果の取得件数 / RAG_DEFAULT_TOP_K</div></div>
+    <div class="kpi"><div class="kpi-l">ループ上限</div><div class="kpi-v">{{ ai_settings.agent.max_loops }}</div><div class="kpi-s">NFR-AG-002 / AGENT_MAX_LOOPS</div></div>
+    <div class="kpi"><div class="kpi-l">タイムアウト</div><div class="kpi-v">{{ ai_settings.agent.timeout_seconds }}<small>秒</small></div><div class="kpi-s">NFR-AG-004 / AGENT_TIMEOUT_SECONDS</div></div>
   </div>
 
   <div class="sg">
@@ -24,6 +31,18 @@
         <dt>プロジェクトID</dt><dd><code>{{ ai_settings.openai.project_id }}</code></dd>
         <dt>回答モデル</dt><dd>{{ ai_settings.openai.model }}</dd>
         <dt>Embedding</dt><dd>{{ ai_settings.openai.embedding_model }}</dd>
+        <dt>状態</dt>
+        <dd>
+          {% if ai_settings.openai.api_key == "未設定" %}
+            <span class="badge n">未設定</span> APIキーが入っていないため、OpenAI では生成できません。
+          {% else %}
+            <span class="badge g">設定済み</span> APIキーは登録済みです。値は表示しません。
+          {% endif %}
+        </dd>
+        <dt>管理者</dt><dd>システム管理者（インフラ担当）。利用者は変更できません。</dd>
+        <dt>変更方法</dt>
+        <dd>環境変数 <code>OPENAI_API_KEY</code> / <code>OPENAI_ORG_ID</code> / <code>OPENAI_PROJECT_ID</code> / <code>OPENAI_MODEL</code> / <code>OPENAI_EMBEDDING_MODEL</code> を書き換え、アプリを再起動します。</dd>
+        <dt>反映タイミング</dt><dd>再起動後の最初のリクエストから。</dd>
       </dl>
     </div>
 
@@ -34,18 +53,45 @@
         <dt>回答モデル</dt><dd>{{ ai_settings.ollama.model }}</dd>
         <dt>Embedding</dt><dd>{{ ai_settings.ollama.embedding_model }}</dd>
         <dt>ローカルEmbedding</dt><dd>{{ ai_settings.local_hash.model }}（{{ ai_settings.local_hash.dim }}次元）</dd>
+        <dt>状態</dt>
+        <dd>
+          {% if ai_settings.ollama.base_url %}
+            <span class="badge g">設定済み</span> 接続先URLは登録済みです。
+          {% else %}
+            <span class="badge n">未設定</span> 接続先URLが無いため、Ollama では生成できません。
+          {% endif %}
+        </dd>
+        <dt>管理者</dt><dd>システム管理者（インフラ担当）。利用者は変更できません。</dd>
+        <dt>変更方法</dt>
+        <dd>環境変数 <code>OLLAMA_BASE_URL</code> / <code>OLLAMA_MODEL</code> / <code>OLLAMA_EMBEDDING_MODEL</code> / <code>LOCAL_HASH_EMBEDDING_MODEL</code> / <code>LOCAL_HASH_EMBEDDING_DIM</code> を書き換え、アプリを再起動します。</dd>
+        <dt>反映タイミング</dt><dd>再起動後の最初のリクエストから。</dd>
       </dl>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-hdr"><span class="card-t">検索設定</span></div>
+    <div class="card-hdr"><span class="card-t">検索設定</span><span class="card-act">参照専用</span></div>
     <table class="t">
-      <thead><tr><th>項目</th><th>値</th><th>説明</th></tr></thead>
+      <thead><tr><th>項目</th><th>値</th><th>説明</th><th>変更方法（環境変数）</th></tr></thead>
       <tbody>
-        <tr><td>既定 Top-K</td><td><span class="badge b">{{ ai_settings.rag.default_top_k }}</span></td><td class="muted">1回の検索で取得するチャンク数</td></tr>
-        <tr><td>LLMリランク</td><td><span class="badge {% if ai_settings.rag.use_llm_rerank %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_llm_rerank|yesno:"有効,無効" }}</span></td><td class="muted">LLM 必須。未設定時は計画から除外される</td></tr>
-        <tr><td>クエリ拡張</td><td><span class="badge {% if ai_settings.rag.use_query_expansion %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_query_expansion|yesno:"有効,無効" }}</span></td><td class="muted">意図分類の定型語で検索語を補強</td></tr>
+        <tr>
+          <td>既定 Top-K</td>
+          <td><span class="badge b">{{ ai_settings.rag.default_top_k }}</span></td>
+          <td class="muted">1回の検索で取得するチャンク数</td>
+          <td class="muted"><code>RAG_DEFAULT_TOP_K</code> を変更して再起動</td>
+        </tr>
+        <tr>
+          <td>LLMリランク</td>
+          <td><span class="badge {% if ai_settings.rag.use_llm_rerank %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_llm_rerank|yesno:"有効,無効" }}</span></td>
+          <td class="muted">LLM 必須。未設定時は計画から除外される</td>
+          <td class="muted"><code>RAG_USE_LLM_RERANK</code> を変更して再起動</td>
+        </tr>
+        <tr>
+          <td>クエリ拡張</td>
+          <td><span class="badge {% if ai_settings.rag.use_query_expansion %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_query_expansion|yesno:"有効,無効" }}</span></td>
+          <td class="muted">意図分類の定型語で検索語を補強</td>
+          <td class="muted"><code>RAG_USE_QUERY_EXPANSION</code> を変更して再起動</td>
+        </tr>
       </tbody>
     </table>
   </div>

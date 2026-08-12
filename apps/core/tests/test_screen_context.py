@@ -25,13 +25,13 @@ class ScreenContextStoreTests(TestCase):
         self.request.session = {}
 
     def test_記録して取り出せる(self) -> None:
-        screen_context.remember(self.request, "projects:list", "案件管理")
+        screen_context.remember(self.request, "projects:list", "案件一覧")
 
         context = screen_context.current(self.request)
 
         self.assertIsNotNone(context)
-        self.assertEqual(context.label, "案件管理")
-        self.assertIn("案件管理", context.describe())
+        self.assertEqual(context.label, "案件一覧")
+        self.assertIn("案件一覧", context.describe())
 
     def test_相談画面自身は記録しない(self) -> None:
         screen_context.remember(self.request, "pmo:consultation", "PMO相談・状況整理")
@@ -42,7 +42,7 @@ class ScreenContextStoreTests(TestCase):
         stale = timezone.now() - timedelta(minutes=screen_context.MAX_AGE_MINUTES + 1)
         self.request.session[screen_context.SESSION_KEY] = {
             "url_name": "projects:list",
-            "label": "案件管理",
+            "label": "案件一覧",
             "path": "/projects/",
             "recorded_at": stale.isoformat(),
         }
@@ -50,12 +50,12 @@ class ScreenContextStoreTests(TestCase):
         self.assertIsNone(screen_context.current(self.request))
 
     def test_壊れた記録で落ちない(self) -> None:
-        self.request.session[screen_context.SESSION_KEY] = {"label": "案件管理"}
+        self.request.session[screen_context.SESSION_KEY] = {"label": "案件一覧"}
 
         self.assertIsNone(screen_context.current(self.request))
 
     def test_消せる(self) -> None:
-        screen_context.remember(self.request, "projects:list", "案件管理")
+        screen_context.remember(self.request, "projects:list", "案件一覧")
         screen_context.clear(self.request)
 
         self.assertIsNone(screen_context.current(self.request))

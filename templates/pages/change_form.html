@@ -1,5 +1,5 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}変更要求の内容・影響範囲・工数・スケジュール影響を記録します。{% endblock %}
 
 {% block content %}
@@ -7,21 +7,71 @@
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">{{ form_title }}</span>
-      <a class="card-act" href="{% url 'dashboard:change' %}">一覧へ戻る</a>
+      <a class="card-act" href="{{ return_to }}">一覧へ戻る</a>
     </div>
+    {% comment %}
+    UXP-43: 入力項目を「内容 / 影響 / 追跡」の 3 区分に分ける。1 枚の長い列に
+    並べると、どこまで書けば判断に回せるのかが分からない。区分は判断画面の
+    要約（変更内容・影響・未入力項目）と同じ並びにしてある。
+    節に入らない項目は最後の「その他」へ出す。フォームへ項目を足したときに
+    画面から消えないようにするため。
+    {% endcomment %}
     <form method="post" class="form">
       {% csrf_token %}
+      <input type="hidden" name="next" value="{{ return_to }}">
       {% if form.errors %}
-        <div class="callout d">入力内容を確認してください。</div>
+        <div class="callout d" data-form-error-summary>入力内容を確認してください。</div>
       {% endif %}
-      {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% for error in field.errors %}<div class="callout d">{{ error }}</div>{% endfor %}
-        </div>
-      {% endfor %}
+      {% with content_fields="project,title,description,requested_by" impact_fields="impact_summary,impact_scope,estimated_effort_days,schedule_impact_days" tracking_fields="status,affected_tasks" %}
+        <div class="card-hdr"><span class="card-t">1. 内容 — 何を変えるか</span></div>
+        {% for field in form %}
+          {% if field.name in content_fields %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <div class="card-hdr"><span class="card-t">2. 影響 — 判断に使う材料</span></div>
+        <div class="ps">影響範囲・工数・日程影響が空欄だと、一覧と判断画面で「未入力」の警告が出ます。</div>
+        {% for field in form %}
+          {% if field.name in impact_fields %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <div class="card-hdr"><span class="card-t">3. 追跡 — 状態と関連づけ</span></div>
+        <div class="ps">承認・却下はこの画面では行いません。状態を「承認待ち」にすると、一覧のクイックビュー「判断待ち」に出ます。</div>
+        {% for field in form %}
+          {% if field.name in tracking_fields %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        {% for field in form %}
+          {% if field.name not in content_fields and field.name not in impact_fields and field.name not in tracking_fields %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endwith %}
       <button type="submit" class="btn-b">保存する</button>
     </form>
   </div>

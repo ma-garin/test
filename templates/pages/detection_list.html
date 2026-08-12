@@ -1,98 +1,127 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}実データをルールで検査した結果です。何を検知し、何をなぜ見送ったかを両方表示します。AIは使っていません。{% endblock %}
 
 {% block header_actions %}
-  <form method="post" action="{% url 'dashboard:detection_run' %}" class="actions">
-    {% csrf_token %}
-    <button type="submit" class="btn-b sm">検知を実行してアラートを作成</button>
-  </form>
+  {% comment %}
+  UXP-04: 保存実行は本文の「保存して実行」1 か所だけに置く。件数と取り消し可否を
+  読む前に押せる場所を残さない。
+  {% endcomment %}
   <a class="btn-out sm" href="{% url 'dashboard:control' %}">管制ダッシュボードへ</a>
 {% endblock %}
 
 {% block content %}
 
-  <div class="kpi-g">
-    <div class="kpi">
-      <div class="kpi-l">検知</div>
-      <div class="kpi-v" style="color:var(--red)">{{ result.finding_count }}</div>
-      <div class="kpi-s">案件 {{ result.project_count }}件を検査</div>
-      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">判定不能</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ result.undetermined|length }}</div>
-      <div class="kpi-s">観測数が足りない項目</div>
-      <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">重複で見送り</div>
-      <div class="kpi-v">{{ result.duplicate_count }}</div>
-      <div class="kpi-s">未対応アラートが残っている対象</div>
-      <div class="kpi-bar"><div class="kpi-fill b" style="width:40%"></div></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">見送り合計</div>
-      <div class="kpi-v">{{ result.skips|length }}</div>
-      <div class="kpi-s">理由つきで記録</div>
-      <div class="kpi-bar"><div class="kpi-fill g" style="width:50%"></div></div>
-    </div>
-  </div>
+  {% comment %}テンプレートタグは改行をまたげないため、include は 1 行で書く。{% endcomment %}
+  {% include "partials/coachmark.html" with coach_key="detection" step1="上の「実行前プレビュー」は検査しただけの結果です。まだ保存していないので、何も作られていません" step2="「検知した項目」を読み、内容に納得したら「保存して実行」でアラートと介入提案を作成します" step3="検知されなかった理由は「見送り理由」に出ます。判定不能は、必要なデータを埋めると判定できるようになります" %}
 
-  <div class="callout w">
-    <p><strong>この一覧は保存していません。</strong>「検知を実行してアラートを作成」を押すまで、アラートも介入提案も作られません。</p>
-    <p>しきい値は設定（DETECTION_RULES）で変更できます。同じ対象に未対応のアラートが残っている場合は重複して作りません。</p>
-  </div>
+  <section class="card" aria-label="実行前プレビュー">
+    <div class="card-hdr">
+      <span class="card-t">実行前プレビュー{% include "partials/hint.html" with label="実行前プレビュー" body="いま検査した結果を表示しているだけの状態です。アラートも介入提案もまだ作られていません。作成されるのは、下の「保存して実行」を押したときだけです。" %}</span>
+      <span class="card-act">保存していません</span>
+    </div>
 
-  <div class="card">
+    <div class="callout w">
+      <p><strong>この一覧は保存していません。</strong>下の「保存して実行」を押すまで、アラートも介入提案も作られません。</p>
+      <p>しきい値は設定（DETECTION_RULES）で変更できます。同じ対象に未対応のアラートが残っている場合は重複して作りません。</p>
+    </div>
+
+    <div class="kpi-g">
+      <div class="kpi">
+        <div class="kpi-l">検知</div>
+        <div class="kpi-v" style="color:var(--red)">{{ result.finding_count }}</div>
+        <div class="kpi-s">案件 {{ result.project_count }}件を検査</div>
+        <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-l">判定不能{% include "partials/hint.html" with label="判定不能" body="しきい値と比べるために必要なデータが欠けていて、危険とも安全とも言えない項目です。安全という意味ではありません。不足しているデータは「見送り理由」の必要なデータ列に出ます。" %}</div>
+        <div class="kpi-v" style="color:var(--yellow)">{{ result.undetermined|length }}</div>
+        <div class="kpi-s">データ不足で判定できない項目</div>
+        <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-l">重複で見送り{% include "partials/hint.html" with label="重複で見送り" body="同じ対象に未対応のアラートがすでに残っているため、新しく作らない項目です。既存のアラートを対応済みにすると、次回から再び作成の対象になります。" %}</div>
+        <div class="kpi-v">{{ result.duplicate_count }}</div>
+        <div class="kpi-s">未対応アラートが残っている対象</div>
+        <div class="kpi-bar"><div class="kpi-fill b" style="width:40%"></div></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-l">見送り合計</div>
+        <div class="kpi-v">{{ result.skips|length }}</div>
+        <div class="kpi-s">理由つきで記録</div>
+        <div class="kpi-bar"><div class="kpi-fill g" style="width:50%"></div></div>
+      </div>
+    </div>
+
     <div class="card-hdr">
       <span class="card-t">検知した項目</span>
-      <span class="card-act">重要度順</span>
+      <span class="card-act">重要度順・各行から台帳へ</span>
     </div>
-    {% for label, finding in finding_rows %}
-      <div class="pb-row">
-        <div class="pb-lr">
-          <span class="pb-t">{{ finding.title }}</span>
-          <span class="pb-v">
-            <span class="badge {% if finding.severity == 'critical' %}r{% elif finding.severity == 'warning' %}a{% else %}n{% endif %}">
-              {% if finding.severity == 'critical' %}重大{% elif finding.severity == 'warning' %}注意{% else %}情報{% endif %}
+    {% if finding_rows %}
+      <ul class="attention-list">
+        {% for row in finding_rows %}
+          <li class="attention-item">
+            <span class="badge {% if row.finding.severity == 'critical' %}r{% elif row.finding.severity == 'warning' %}a{% else %}n{% endif %}">{% if row.finding.severity == 'critical' %}重大{% elif row.finding.severity == 'warning' %}注意{% else %}情報{% endif %}</span>
+            <a class="attention-name" href="{{ row.url }}">{{ row.finding.title }}</a>
+            <span class="attention-meta">
+              {{ row.finding.project.name }} ／ {{ row.label }} ／ 判定根拠 {{ row.finding.reason }} ／
+              <a href="{{ row.url }}">{{ row.link_label }} →</a>
             </span>
-          </span>
-        </div>
-        <div class="ps">{{ finding.project.name }} ／ {{ label }}</div>
-        <div class="ps">判定根拠: {{ finding.reason }}</div>
-      </div>
-    {% empty %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
       <div class="empty">しきい値を超えた項目はありません。</div>
-    {% endfor %}
-  </div>
+    {% endif %}
+  </section>
 
-  <div class="card">
+  <section class="card" aria-label="保存して実行">
     <div class="card-hdr">
-      <span class="card-t">検知しなかった項目と理由</span>
-      <span class="card-act">判定不能はデータ不足</span>
+      <span class="card-t">保存して実行</span>
+      <span class="card-act">高影響操作</span>
+    </div>
+    <div class="callout w">
+      <p><strong>対象:</strong> いま表示している案件 {{ result.project_count }}件。</p>
+      <dl class="dl">
+        <dt>新規作成予定</dt><dd>{{ result.finding_count }}件（アラートと、対応する介入提案を作成します）</dd>
+        <dt>重複除外</dt><dd>{{ result.duplicate_count }}件（同じ対象に未対応アラートが残っているため作成しません）</dd>
+        <dt>判定不能</dt><dd>{{ result.undetermined|length }}件（必要なデータが足りないため作成しません）</dd>
+      </dl>
+      <p><strong>取り消し:</strong> 作成したアラートと介入提案は、この画面からまとめて取り消せません。取り消す場合は、作成後に各アラートを個別に「対象外」にしてください。</p>
+    </div>
+    <form method="post" action="{% url 'dashboard:detection_run' %}" class="actions">
+      {% csrf_token %}
+      <button type="submit" class="btn-b" data-confirm="検知結果を保存します。アラート {{ result.finding_count }}件と介入提案を作成し、まとめて取り消すことはできません。">保存して実行（アラート {{ result.finding_count }}件を作成）</button>
+    </form>
+  </section>
+
+  <section class="card" aria-label="見送り理由">
+    <div class="card-hdr">
+      <span class="card-t">見送り理由</span>
+      <span class="card-act">判定不能は必要なデータを表示</span>
     </div>
     <div class="t-wrap">
       <table class="t">
         <thead>
-          <tr><th>案件</th><th>検知</th><th>結果</th><th>理由</th></tr>
+          <tr><th>案件</th><th>検知</th><th>結果</th><th>理由</th><th>必要なデータ</th></tr>
         </thead>
         <tbody>
-          {% for label, skip in skip_rows %}
+          {% for row in skip_rows %}
             <tr>
-              <td>{{ skip.project.name }}</td>
-              <td class="nowrap">{{ label }}</td>
+              <td>{{ row.skip.project.name }}</td>
+              <td class="nowrap">{{ row.label }}</td>
               <td class="nowrap">
-                <span class="badge {% if skip.is_undetermined %}a{% else %}n{% endif %}">{{ skip.reason_label }}</span>
+                <span class="badge {% if row.skip.is_undetermined %}a{% else %}n{% endif %}">{{ row.skip.reason_label }}</span>
               </td>
-              <td>{{ skip.detail }}</td>
+              <td>{{ row.skip.detail }}</td>
+              <td>{{ row.data_need|default:"—" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="4"><div class="empty">見送った項目はありません。</div></td></tr>
+            <tr><td colspan="5"><div class="empty">見送った項目はありません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 
 {% endblock %}

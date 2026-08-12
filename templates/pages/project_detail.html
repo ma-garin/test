@@ -16,6 +16,29 @@
     <em>進捗 {{ project.progress_percent|floatformat:0 }}%</em>
   </div>
 
+  {% comment %}
+  UXP-31: 台帳を読む前に「この案件で次に対応すべきこと」を 1 件だけ出す。
+  複数並べると優先順位の判断が利用者へ戻るので、件数は下の各カードに任せる。
+  判定は views.py の _project_next_action（期限超過 → ブロック中 → 判断待ち）。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">次に対応すべきこと</span>
+      <span class="card-act">期限超過・ブロック中・判断待ちから1件</span>
+    </div>
+    {% if next_action %}
+      <ul class="attention-list">
+        <li class="attention-item">
+          <span class="badge {{ next_action.tone }}">{{ next_action.reason }}</span>
+          <a class="attention-name" href="{{ next_action.url }}">{{ next_action.title }}</a>
+          <span class="attention-meta">{{ next_action.meta }}</span>
+        </li>
+      </ul>
+    {% else %}
+      <div class="empty">期限超過・ブロック中・判断待ちはありません。下の台帳から確認してください。</div>
+    {% endif %}
+  </div>
+
   <div class="kpi-g">
     <div class="kpi"><div class="kpi-l">進捗率</div><div class="kpi-v">{{ project.progress_percent|floatformat:0 }}<small>%</small></div><div class="kpi-s">計画に対する実績</div><div class="kpi-bar"><div class="kpi-fill b" style="width:{{ project.progress_percent|floatformat:0 }}%"></div></div></div>
     <div class="kpi"><div class="kpi-l">PM</div><div class="kpi-v" style="font-size:16px">{{ project.project_manager|default:"—" }}</div><div class="kpi-s">プロジェクト責任者</div></div>
@@ -25,7 +48,8 @@
 
   <div class="sg">
     <div class="card">
-      <div class="card-hdr"><span class="card-t">課題</span><span class="card-act">{{ project.issue_set.count }}件</span></div>
+      {% comment %}UXP-31: 各セクションは先頭10件の抜粋。続きは台帳へ送る。{% endcomment %}
+      <div class="card-hdr"><span class="card-t">課題</span><span class="card-act">{{ project.issue_set.count }}件 ／ <a href="{% url 'projects:issue_list' %}">全件を見る（課題一覧）</a></span></div>
       <table class="t">
         <thead><tr><th>課題</th><th>重大度</th><th>状態</th><th>期限</th></tr></thead>
         <tbody>
@@ -44,7 +68,7 @@
     </div>
 
     <div class="card">
-      <div class="card-hdr"><span class="card-t">リスク</span><span class="card-act">{{ project.risk_set.count }}件</span></div>
+      <div class="card-hdr"><span class="card-t">リスク</span><span class="card-act">{{ project.risk_set.count }}件 ／ <a href="{% url 'dashboard:risk' %}">全件を見る（リスク一覧）</a></span></div>
       <table class="t">
         <thead><tr><th>リスク</th><th>確率</th><th>影響</th><th>スコア</th><th>状態</th></tr></thead>
         <tbody>
@@ -66,7 +90,7 @@
 
   <div class="sg">
     <div class="card">
-      <div class="card-hdr"><span class="card-t">WBSタスク</span><span class="card-act">{{ project.wbstask_set.count }}件</span></div>
+      <div class="card-hdr"><span class="card-t">WBSタスク</span><span class="card-act">{{ project.wbstask_set.count }}件 ／ <a href="{% url 'dashboard:tasks' %}">全件を見る（タスク一覧）</a></span></div>
       <table class="t">
         <thead><tr><th>WBS</th><th>タスク</th><th>状態</th><th>優先度</th><th>ボール保持者</th></tr></thead>
         <tbody>
@@ -86,7 +110,7 @@
     </div>
 
     <div class="card">
-      <div class="card-hdr"><span class="card-t">変更要求 / 不具合</span></div>
+      <div class="card-hdr"><span class="card-t">変更要求 / 不具合</span><span class="card-act"><a href="{% url 'dashboard:change' %}">全件を見る（変更要求）</a> ／ <a href="{% url 'projects:defect_list' %}">全件を見る（不具合一覧）</a></span></div>
       <table class="t">
         <thead><tr><th>種別</th><th>内容</th><th>状態</th></tr></thead>
         <tbody>

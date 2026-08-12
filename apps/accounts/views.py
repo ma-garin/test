@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -69,6 +70,13 @@ def select_tenant(request: HttpRequest) -> HttpResponse:
     else:
         tenants = Tenant.objects.filter(pk=request.user.tenant_id, is_active=True)
 
+    # 「切り替えると何が見えるようになるのか」を選ぶ前に読めるようにする。
+    # 件数は 1 クエリで一緒に取る（選択肢ごとに数えると N+1 になる）。
+    tenants = tenants.annotate(
+        project_count=Count("projects", distinct=True),
+        user_count=Count("users", distinct=True),
+    ).order_by("name")
+
     if request.method == "POST":
         tenant_id = request.POST.get("tenant")
 
@@ -83,7 +91,13 @@ def select_tenant(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "pages/select_tenant.html",
-        {"tenants": tenants, "page_title": "テナント選択"},
+        {
+            "tenants": tenants,
+            # 切替後は必ずコントロールタワーへ行く。`next` を受け取っても使わないので、
+            # 指定があることと使われないことを画面で明示する。
+            "next_target": _safe_next(request),
+            "page_title": "テナント選択",
+        },
     )
 
 

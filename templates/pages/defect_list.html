@@ -3,40 +3,99 @@
 {% block kicker %}品質管理{% endblock %}
 {% block subtitle %}検出した不具合の状態・重大度・検出工程を追跡します。{% endblock %}
 
+{% block header_actions %}
+  <a class="btn-b sm" href="{% url 'projects:defect_create' %}?next={{ request.get_full_path|urlencode }}">新規作成</a>
+{% endblock %}
+
 {% block content %}
+
+  {% include "partials/coachmark.html" with coach_key="defects" step1="まず「よく使う絞り込み」の「未解決かつ重大」を押します。先に潰すべき不具合だけが残ります" step2="不具合名から内容を確認し、直したものは行の「クローズ」を押します" step3="「条件をクリア」でいつでも全件へ戻れます。クローズは取り消せないので、対象名と現在の状態を確かめてから押してください" %}
+
+  {% comment %}
+  UXP-08: クイックビューも通常の絞り込みも GET だけで表現する。
+  URL を共有でき、「条件をクリア」で必ず全件へ戻れる状態を壊さない。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">絞り込み</span>
+      {% if is_filtered %}<a class="card-act" href="{% url 'projects:defect_list' %}">条件をクリア</a>{% endif %}
+    </div>
+    <nav class="quick-views" aria-label="よく使う絞り込み">
+      <span class="quick-views-label">よく使う絞り込み</span>
+      <a class="quick-view{% if filters.quick %} is-active{% endif %}"
+         href="{% url 'projects:defect_list' %}?quick=unresolved_critical"
+         {% if filters.quick %}aria-current="page"{% endif %}>未解決かつ重大</a>
+      <a class="quick-view" href="{% url 'projects:defect_list' %}">すべて</a>
+    </nav>
+    <form method="get" class="search-row">
+      <select name="status" aria-label="状態で絞り込む">
+        <option value="">状態（すべて）</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="severity" aria-label="重大度で絞り込む">
+        <option value="">重大度（すべて）</option>
+        {% for value, label in severity_choices %}
+          <option value="{{ value }}"{% if filters.severity == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="phase" aria-label="検出工程で絞り込む">
+        <option value="">検出工程（すべて）</option>
+        {% for value, label in phase_choices %}
+          <option value="{{ value }}"{% if filters.phase == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-out sm">絞り込む</button>
+      <a class="btn-ghost sm" href="{% url 'projects:defect_list' %}">条件をクリア</a>
+    </form>
+  </div>
 
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">不具合一覧</span>
-      <a class="card-act" href="{% url 'projects:defect_create' %}">新規作成</a>
+      <span class="ps">{{ total_count }}件 ／ 並び順: {{ ordering_label }} ／ 絞り込み: {% if filters.applied %}{{ filters.applied|join:"、" }}{% else %}なし{% endif %}</span>
     </div>
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap">
+      <table class="t">
         <thead>
-          <tr><th>案件</th><th>不具合</th><th>重大度</th><th>状態</th><th>検出工程</th><th>検出日</th><th>原文</th><th>操作</th></tr>
+          <tr><th>案件</th><th>不具合</th><th>重大度{% include "partials/hint.html" with label="重大度" body="不具合の影響の大きさの区分です。「緊急」「高」は赤い印で表示し、「未解決かつ重大」の絞り込みの対象になります。" %}</th><th>状態</th><th>検出工程{% include "partials/hint.html" with label="検出工程" body="その不具合を見つけた工程です。未入力の行は「—」と表示され、工程での絞り込みに掛かりません。" %}</th><th>検出日</th><th>原文</th><th>操作{% include "partials/hint.html" with label="クローズ" body="不具合を解決済みとして閉じる操作です。この操作は取り消せません。押す前に対象の不具合名と現在の状態を確認してください。" %}</th></tr>
         </thead>
         <tbody>
           {% for defect in defects %}
             <tr>
               <td>{{ defect.project.code }}</td>
-              <td>{{ defect.title }}</td>
+              <td>
+                {% comment %}タイトルは内容確認の導線。編集はボタンとして別に置き、押し間違いを避ける。{% endcomment %}
+                <a href="{% url 'projects:defect_edit' defect.pk %}?next={{ request.get_full_path|urlencode }}" title="内容を確認">{{ defect.title }}</a>
+              </td>
               <td class="nowrap"><span class="badge {% if defect.severity == 'critical' or defect.severity == 'high' %}r{% else %}n{% endif %}">{{ defect.get_severity_display }}</span></td>
               <td class="nowrap"><span class="badge {% if defect.status == 'closed' %}g{% else %}a{% endif %}">{{ defect.get_status_display }}</span></td>
               <td>{{ defect.phase|default:"—" }}</td>
               <td class="nowrap">{{ defect.detected_on|date:"Y-m-d"|default:"—" }}</td>
               <td class="nowrap">{% external_link defect external_links as defect_link %}{% if defect_link %}{{ defect_link }}{% else %}—{% endif %}</td>
-              <td class="nowrap">
-                <a class="btn-ghost sm" href="{% url 'projects:defect_edit' defect.pk %}">編集</a>
+              <td>
+                <a class="btn-ghost sm" href="{% url 'projects:defect_edit' defect.pk %}?next={{ request.get_full_path|urlencode }}">編集する</a>
                 {% if defect.status != 'closed' %}
-                  <form method="post" action="{% url 'projects:defect_close' defect.pk %}" style="display:inline">
+                  <form method="post" action="{% url 'projects:defect_close' defect.pk %}" style="display:inline" data-confirm="「{{ defect.title }}」（現在: {{ defect.get_status_display }}）をクローズします。この操作は取り消せません。">
                     {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
                     <button type="submit" class="btn-out sm">クローズ</button>
                   </form>
+                  <span class="ps">対象: {{ defect.title }}／現在: {{ defect.get_status_display }}／クローズは取り消せません。</span>
                 {% endif %}
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="dashboard-empty">登録された不具合がありません。</div></td></tr>
+            <tr>
+              <td colspan="8">
+                {% if is_filtered %}
+                  <div class="empty">絞り込み条件に一致する不具合がありません。<a href="{% url 'projects:defect_list' %}">条件をクリア</a>すると全件に戻ります。</div>
+                {% else %}
+                  <div class="empty">不具合はまだ未登録です。「新規作成」から登録してください。</div>
+                {% endif %}
+              </td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>

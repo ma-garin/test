@@ -15,7 +15,6 @@ from apps.projects.models import Project
 from apps.rag.models import Chunk, RetrievalQuery, VectorIndex
 from apps.rag.services.answer import (
     GENERAL_DISCLAIMER,
-    AssembledAnswer,
     Claim,
     Section,
     assemble,

@@ -8,6 +8,28 @@
     <p>設計と受入条件は <code>docs/screen_map.md</code>、UI の正は <code>docs/screens/VeriRAG_PMO_Agent_MVP.html</code> を参照してください。</p>
   </div>
 
+  {# 行き止まりにしない。戻り先と、代わりに今できる操作を必ず置く。 #}
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">戻り先</span><span class="card-act">元の作業に戻る</span></div>
+    <p class="ps">この画面には表示する内容がありません。次のどちらかへ戻ってください。</p>
+    <div class="card-act">
+      <a class="btn-b sm" href="{% url 'dashboard:control' %}">管制ダッシュボードへ戻る</a>
+      <a class="btn-out sm" href="{% url 'core:screen_map' %}">画面マップで移植状況を見る</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">次の操作</span><span class="card-act">代わりにできること</span></div>
+    <dl class="dl">
+      <dt>この画面でやろうとしていたことを進めたい</dt>
+      <dd>PMO相談で、必要な情報を質問として投げてください。<a href="{% url 'pmo:consultation' %}">PMO相談を開く</a></dd>
+      <dt>案件の数字をいま確認したい</dt>
+      <dd>案件一覧から、課題・リスク・WBSをたどれます。<a href="{% url 'projects:list' %}">案件一覧を開く</a></dd>
+      <dt>いつ使えるようになるか知りたい</dt>
+      <dd>移植の順番は docs/requirements/p0_scope.md の「推奨する実装順序」に書かれています。前倒しの依頼はPMO運用担当へ。</dd>
+    </dl>
+  </div>
+
   <div class="card">
     <div class="card-hdr"><span class="card-t">この画面の位置づけ</span></div>
     <dl class="dl">

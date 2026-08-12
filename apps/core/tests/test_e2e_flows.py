@@ -17,6 +17,7 @@ JavaScript が動かずサイドバーが開かない、ボタンが要素の下
 from __future__ import annotations
 
 import os
+import unittest
 from datetime import timedelta
 
 # playwright の同期 API はイベントループ上で動くため、Django が「非同期文脈から
@@ -46,7 +47,26 @@ from apps.projects.models import (
 )
 
 #: 環境が用意している Chromium。playwright 側のバージョン固定と食い違うため明示する。
-CHROMIUM_PATH = os.environ.get("E2E_CHROMIUM", "/opt/pw-browsers/chromium")
+#: 既定のパスが 1 つだけだと、そこに無い開発機では E2E が丸ごと動かないまま
+#: 「テストは通っている」状態になる（実際にこの取り違えが起きた）。候補を順に探す。
+CHROMIUM_CANDIDATES = (
+    os.environ.get("E2E_CHROMIUM", ""),
+    "/opt/pw-browsers/chromium",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/usr/bin/chromium",
+    "/usr/bin/google-chrome",
+)
+
+
+def _find_chromium() -> str:
+    for path in CHROMIUM_CANDIDATES:
+        if path and os.path.exists(path):
+            return path
+    return ""
+
+
+CHROMIUM_PATH = _find_chromium()
 
 #: 要素の出現待ち（ミリ秒）。固定 sleep は使わない。
 TIMEOUT_MS = 10_000
@@ -67,7 +87,19 @@ class BrowserFlowTests(StaticLiveServerTestCase):
     def setUpClass(cls) -> None:
         super().setUpClass()
 
-        from playwright.sync_api import sync_playwright
+        # 足りないものを名指しで飛ばす。ImportError や起動失敗のまま落とすと、
+        # 「E2E が 1 件も動いていない」ことに気づかず完了扱いにしてしまう。
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:  # pragma: no cover - 環境依存
+            raise unittest.SkipTest(
+                "playwright 未導入。`pip install -r requirements/dev.txt` を実行してください。"
+            ) from None
+
+        if not CHROMIUM_PATH:
+            raise unittest.SkipTest(
+                "Chromium が見つかりません。E2E_CHROMIUM に実行ファイルのパスを指定してください。"
+            )
 
         cls._playwright = sync_playwright().start()
         cls.browser = cls._playwright.chromium.launch(executable_path=CHROMIUM_PATH)
@@ -156,13 +188,15 @@ class BrowserFlowTests(StaticLiveServerTestCase):
         self.page.click(selector, timeout=TIMEOUT_MS)
         self.page.wait_for_load_state("networkidle", timeout=TIMEOUT_MS)
 
-    def submit(self, selector: str = "button[type='submit']") -> None:
+    def submit(self, selector: str = "button[type='submit']", *, confirm: bool = False) -> None:
         """本文領域の送信ボタンを押す。
 
         ヘッダにもログアウトの `button[type=submit]` があり、DOM 上はそちらが先。
         範囲を `main` に限定しないと、保存したつもりでログアウトしている。
         """
 
+        if confirm:
+            self.page.once("dialog", lambda dialog: dialog.accept())
         self.click_and_wait(f"main {selector}")
 
     def body_text(self) -> str:
@@ -174,7 +208,7 @@ class BrowserFlowTests(StaticLiveServerTestCase):
         self.login()
 
         self.assertIn("/", self.page.url)
-        self.assertIn("管制ダッシュボード", self.body_text())
+        self.assertIn("プロジェクトダッシュボード", self.body_text())
         self.assertIn("基幹刷新", self.body_text())
 
     def test_フロー02_サイドバーを操作して目的の画面へ移動できる(self) -> None:
@@ -187,12 +221,12 @@ class BrowserFlowTests(StaticLiveServerTestCase):
         self.page.wait_for_load_state("networkidle", timeout=TIMEOUT_MS)
         self.assertIn("タスク一覧", self.body_text())
 
-        # サイドバー全体の折りたたみ。畳んでもリンクは押せる状態で残ること。
+        # 子メニューを畳んでも、親カテゴリのレールは残り、再度開けること。
         self.page.click("#nav-collapse", timeout=TIMEOUT_MS)
         self.page.wait_for_timeout(200)
-        self.assertTrue(
-            self.page.is_visible(".sb-item"), "折りたたむとリンクが消えてしまった"
-        )
+        self.assertTrue(self.page.is_visible("#nav-rail-toggle"))
+        self.page.click("#nav-rail-toggle", timeout=TIMEOUT_MS)
+        self.assertTrue(self.page.is_visible(".sb-item"), "子メニューを再表示できない")
 
     def test_フロー03_タスクを作って編集してアーカイブする(self) -> None:
         self.login()
@@ -217,7 +251,7 @@ class BrowserFlowTests(StaticLiveServerTestCase):
 
         # アーカイブすると一覧から消えること。
         self.go(f"/projects/tasks/{task.pk}/edit/")
-        self.submit("form[action*='archive'] button")
+        self.submit("form[action*='archive'] button", confirm=True)
 
         task.refresh_from_db()
         self.assertEqual(task.status, WbsTask.Status.ARCHIVED)
@@ -261,7 +295,7 @@ class BrowserFlowTests(StaticLiveServerTestCase):
 
         issue = Issue.objects.get(title="テスト環境が確保できない")
         self.go(f"/projects/issues/{issue.pk}/edit/")
-        self.submit("form[action*='close'] button")
+        self.submit("form[action*='close'] button", confirm=True)
 
         issue.refresh_from_db()
         self.assertEqual(issue.status, Issue.Status.CLOSED)
@@ -309,7 +343,7 @@ class BrowserFlowTests(StaticLiveServerTestCase):
 
         self.page.check("input[name='decision'][value='approved']")
         self.page.fill("textarea[name='reason']", "影響範囲が限定的なため承認する")
-        self.submit()
+        self.submit(confirm=True)
 
         change.refresh_from_db()
         self.assertEqual(change.status, ChangeRequest.Status.APPROVED)
@@ -336,7 +370,7 @@ class BrowserFlowTests(StaticLiveServerTestCase):
 
         self.page.select_option("select[name='status']", InterventionProposal.Status.ACCEPTED)
         self.page.fill("textarea[name='decision_reason']", "根拠が妥当なため採用する")
-        self.submit()
+        self.submit(confirm=True)
 
         proposal.refresh_from_db()
         self.assertEqual(proposal.status, InterventionProposal.Status.ACCEPTED)

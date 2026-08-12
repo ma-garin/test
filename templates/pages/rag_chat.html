@@ -9,6 +9,8 @@
 
 {% block content %}
 
+  {% include "partials/coachmark.html" with coach_key="rag-chat" step1="質問すると、登録文書を検索した結果から応答を組み立てます。応答のすぐ下に、どこを探したか・裏付けの件数・確かめられなかった点が出ます" step2="「0件（根拠なし）」や「要検証」が付いた応答は未確定です。確定情報として扱わないでください" step3="示された抜粋は該当箇所だけです。判断に使う前に、元の文書で前後の文脈を確認してください" %}
+
   {% if not scope.is_usable %}
     <div class="callout w">
       <p><strong>検索インデックスが未構築です。</strong>応答は根拠なしとなり、確認を促す文面のみを返します。</p>
@@ -44,17 +46,36 @@
             <div class="ai-ph">
               <span class="ai-pm">AI</span>
               <span>
-                <span class="ai-pt">VeriRAG 応答</span><br>
+                <span class="ai-pt">VeriRAG 応答</span>
+                {% if message.answer and not message.answer.unverified_points %}
+                  <span class="badge n">引用 {{ message.answer.citations.count }}件</span>
+                {% else %}
+                  <span class="badge a">要検証</span>
+                {% endif %}
+                <br>
                 <span class="ai-ps">検索 → 根拠評価 → ルールベース応答（{{ message.created_at|date:"n/j H:i" }}）</span>
               </span>
             </div>
             <div class="ai-pb">
               <div class="ai-bubble">{{ message.content|linebreaksbr }}</div>
 
+              {# 応答の直下に、対象範囲・引用数・根拠不足を必ず置く。折りたたまない。 #}
+              <div class="result-scores">
+                <span>対象範囲{% include "partials/hint.html" with label="対象範囲" body="その応答が検索した先です。登録文書と、会話に案件が結び付いている場合はその案件の業務データに限られます。ここに含まれない資料の内容は応答に反映されていません。" %} <b>{% if message.answer %}登録文書{% if session.project %}・案件「{{ session.project.name }}」{% endif %}{% else %}該当なし{% endif %}</b></span>
+                <span>引用 <b>{% if message.answer %}{{ message.answer.citations.count }}件{% else %}0件（根拠なし）{% endif %}</b></span>
+                <span>根拠不足{% include "partials/hint.html" with label="根拠不足" body="応答のうち、登録文書では裏付けられなかった箇所があることを示します。「あり」の応答は未確定です。該当箇所を確定情報として扱わず、原文か担当者に確認してください。" %} <b>{% if not message.answer %}あり（回答は未確定）{% elif message.answer.unverified_points %}あり（下記）{% else %}記載なし{% endif %}</b></span>
+                <span>取得時点 <b>{{ message.created_at|date:"Y-m-d H:i" }}</b></span>
+              </div>
+
               {% if message.answer %}
+                {% if message.answer.unverified_points %}
+                  <div class="callout w">
+                    <p><strong>資料上は確認できないこと</strong>（この部分は未検証です。確定情報として扱わないでください）</p>
+                    <p>{{ message.answer.unverified_points|linebreaksbr }}</p>
+                  </div>
+                {% endif %}
                 <div class="result-scores">
                   <span>判断 <b>{{ message.answer.summary }}</b></span>
-                  <span>引用 <b>{{ message.answer.citations.count }}件</b></span>
                 </div>
                 {% for citation in message.answer.citations.all %}
                   <article class="result">
@@ -70,16 +91,13 @@
                     </div>
                     <p class="result-text">{{ citation.quoted_text }}</p>
                   </article>
+                {% empty %}
+                  <div class="empty">引用は 0 件です（根拠なし）。</div>
                 {% endfor %}
-                {% if message.answer.unverified_points %}
-                  <div class="callout w">
-                    <p><strong>資料上は確認できないこと</strong></p>
-                    <p>{{ message.answer.unverified_points|linebreaksbr }}</p>
-                  </div>
-                {% endif %}
               {% else %}
-                <div class="callout d">
-                  <p><strong>根拠となる登録文書が見つかりませんでした。</strong>断定は避け、上の確認事項へご回答ください。</p>
+                <div class="callout w">
+                  <p><strong>根拠なし — 根拠となる登録文書が見つかりませんでした。</strong>断定は避け、上の確認事項へご回答ください。</p>
+                  <p>この応答は登録文書に基づいていません。確定情報として引用しないでください。</p>
                 </div>
               {% endif %}
             </div>

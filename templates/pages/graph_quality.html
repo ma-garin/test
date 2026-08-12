@@ -1,0 +1,96 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}プロジェクト管理{% endblock %}
+{% block subtitle %}予測が弱い理由を、データ整備の作業として担当・期限つきで管理できます。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-b sm" href="{% url 'forecast:live' %}">ライブ着地予測へ</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">整備が必要な項目</div>
+      <div class="kpi-v" style="color:var(--orange)">{{ repair_total }}</div>
+      <div class="kpi-s">直すと予測の確信度が上がる</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">循環依存</div>
+      <div class="kpi-v" style="color:var(--red)">{{ cycle_total }}</div>
+      <div class="kpi-s">1件でもあると予測を停止する</div>
+      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">対象案件</div>
+      <div class="kpi-v">{{ reports|length }}</div>
+      <div class="kpi-s">参照できる案件</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">この画面の使い方</div>
+      <div class="kpi-v" style="font-size:14px">整備 → 再計算</div>
+      <div class="kpi-s">整備すると次の再計算で確信度に反映される</div>
+    </div>
+  </div>
+
+  {% for report in reports %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">{{ report.project.code }} {{ report.project.name }}</span>
+        <span class="card-act">{% if report.blocks_forecast %}予測に影響あり{% else %}指標は基準内{% endif %}</span>
+      </div>
+
+      {% if report.cycles %}
+        <div class="callout w">
+          <p><strong>循環依存があります。</strong>予測を停止しています。次の経路のいずれかを切ってください。</p>
+          {% for path in report.cycles %}<p>{{ path|join:" → " }}</p>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>指標</th><th class="nowrap">値</th><th class="nowrap">判定</th><th>悪化したときに起きること</th></tr></thead>
+          <tbody>
+            {% for metric in report.metrics %}
+              <tr>
+                <td>{{ metric.label }}</td>
+                <td class="nowrap">{{ metric.display }}</td>
+                <td class="nowrap">
+                  {% if not metric.is_measurable %}<span class="badge n">{{ metric.verdict }}</span>
+                  {% elif metric.is_degraded %}<span class="badge r">{{ metric.verdict }}</span>
+                  {% elif not metric.has_threshold %}<span class="badge b">{{ metric.verdict }}</span>
+                  {% else %}<span class="badge g">{{ metric.verdict }}</span>{% endif %}
+                </td>
+                <td>{{ metric.consequence }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card-hdr" style="margin-top:14px">
+        <span class="card-t">データ整備キュー</span>
+        <span class="card-act">{{ report.repairs|length }}件</span>
+      </div>
+      <ul class="attention-list">
+        {% for item in report.repairs %}
+          <li class="attention-item">
+            <span class="badge a">{{ item.label }}</span>
+            {% if item.url_name and item.target_id %}
+              <a class="attention-name" href="{% url item.url_name item.target_id %}?next={{ request.get_full_path|urlencode }}">{{ item.target }}</a>
+            {% else %}
+              <span class="attention-name">{{ item.target }}</span>
+            {% endif %}
+            <span class="attention-meta">{{ item.reason }}</span>
+          </li>
+        {% empty %}
+          <li><div class="empty">この案件に整備が必要な項目はありません。</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% empty %}
+    <div class="card"><div class="empty">参照できる案件がありません。案件の参照権限を確認してください。</div></div>
+  {% endfor %}
+
+{% endblock %}

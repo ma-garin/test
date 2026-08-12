@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.documents.models import Document
 from apps.rag import scopes, selectors
@@ -25,6 +26,36 @@ TITLE_LENGTH = 60
 
 #: 評価画面の既定スイート。
 DEFAULT_SUITE = EvaluationSuite.RETRIEVAL
+
+#: 「根拠が十分」と表示するために必要な引用件数。これ未満は限定的として扱う。
+MIN_SUFFICIENT_HITS = 3
+
+
+def _evidence_summary(question: str, scope, hits: list) -> dict:
+    """検索結果の十分性を、要点の近くに出すための表示用まとめ。
+
+    判定は引用件数だけで行う。検索・生成ロジックには手を入れず、表示の責務に閉じる。
+    引用が 0 件のときは「根拠なし」と言い切る。無いものを弱い肯定で濁さないため。
+    """
+
+    count = len(hits)
+
+    if not question:
+        level, label = "none", "未検索"
+    elif count == 0:
+        level, label = "none", "根拠なし"
+    elif count < MIN_SUFFICIENT_HITS:
+        level, label = "weak", "根拠が限定的"
+    else:
+        level, label = "ok", "複数の根拠あり"
+
+    return {
+        "count": count,
+        "level": level,
+        "label": label,
+        "scope_label": scope.label,
+        "is_grounded": count > 0,
+    }
 
 
 def _current_tenant(request: HttpRequest):
@@ -58,6 +89,9 @@ def search_view(request: HttpRequest) -> HttpResponse:
             "scope": scope,
             "scope_choices": scopes.SCOPE_CHOICES,
             "hits": hits,
+            "evidence": _evidence_summary(question, scope, list(hits)),
+            # 取得時点を出さないと、いつの索引に基づく結果かを読み手が確かめられない。
+            "searched_at": timezone.now(),
             "page_title": "RAG検索",
         },
     )
@@ -144,6 +178,10 @@ def evaluation_view(request: HttpRequest) -> HttpResponse:
 
     suite = _resolved_suite(request.GET.get("suite"))
     run = selectors.latest_evaluation_run(tenant, suite)
+    deltas = metric_deltas(run)
+    cases = list(run.cases.all()) if run is not None else []
+    failed_cases = [case for case in cases if case.evaluable and not case.passed]
+    only_failed = request.GET.get("cases") == "failed"
 
     return render(
         request,
@@ -152,8 +190,13 @@ def evaluation_view(request: HttpRequest) -> HttpResponse:
             "suites": EvaluationSuite.choices,
             "suite": suite,
             "run": run,
-            "deltas": metric_deltas(run),
-            "cases": list(run.cases.all()) if run is not None else [],
+            "deltas": deltas,
+            # 悪化した指標だけを先頭へ集約する。良い数字に埋もれさせない。
+            "regressions": [delta for delta in deltas if delta.tone == "r"],
+            "cases": failed_cases if only_failed else cases,
+            "case_total": len(cases),
+            "failed_count": len(failed_cases),
+            "only_failed": only_failed,
             "history": list(selectors.evaluation_runs_for(tenant)[:10]),
             "golden_rows": golden_service.golden_overview(tenant),
             "documents": selectors.document_choices_for(tenant),

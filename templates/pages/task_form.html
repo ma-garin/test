@@ -3,48 +3,81 @@
 {% block subtitle %}{% if task %}登録済みタスクの内容を更新します。{% else %}参照できる案件に、新しいタスクを追加します。{% endif %}{% endblock %}
 
 {% block header_actions %}
-  <a class="btn-out sm" href="{% url 'dashboard:tasks' %}">タスク一覧へ</a>
+  <a class="btn-out sm" href="{{ return_to }}">タスク一覧へ</a>
 {% endblock %}
 
 {% block content %}
 
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">{% if task %}タスクを編集{% else %}タスクを新規作成{% endif %}</span>
-      {% if task %}<a class="card-act" href="{% url 'projects:task_detail' task.pk %}">詳細を見る</a>{% endif %}
-    </div>
-
-    {% if form.errors %}
-      <div class="callout d">
-        <p>入力内容を確認してください。</p>
-        {% for field in form %}
-          {% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}
-        {% endfor %}
-        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-      </div>
-    {% endif %}
-
-    <form method="post" class="form">
-      {% csrf_token %}
+  {% if form.errors %}
+    <div class="callout d" data-form-error-summary>
+      <p>入力内容を確認してください。</p>
       {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<p class="ps">{{ field.help_text }}</p>{% endif %}
-        </div>
+        {% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}
       {% endfor %}
-      <button type="submit" class="btn-b">{% if task %}更新する{% else %}作成する{% endif %}</button>
-    </form>
-  </div>
+      {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" class="form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ return_to }}">
+
+    {% with basic="|project|wbs_code|name|planned_start|planned_end|priority|" progress="|owner|ball_holder|status|progress_percent|follow_up_state|next_action|evidence_note|" %}
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">基本情報</span>
+          {% if task %}<a class="card-act" href="{% url 'projects:task_detail' task.pk %}?next={{ return_to|urlencode }}">詳細を見る</a>{% endif %}
+        </div>
+        <p class="ps">どの案件の、いつまでの作業かを決めます。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in basic %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<p class="ps">{{ field.help_text }}</p>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">進捗・担当</span></div>
+        <p class="ps">いま誰がボールを持っていて、次に何をするかを記録します。</p>
+        <div class="form">
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key in progress %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<p class="ps">{{ field.help_text }}</p>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+          {% for field in form %}{% with key="|"|add:field.name|add:"|" %}{% if key not in basic and key not in progress %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<p class="ps">{{ field.help_text }}</p>{% endif %}
+              {% if field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+          {% endif %}{% endwith %}{% endfor %}
+        </div>
+      </div>
+    {% endwith %}
+
+    <button type="submit" class="btn-b">{% if task %}更新する{% else %}作成する{% endif %}</button>
+  </form>
 
   {% if task and not task.is_archived %}
     <div class="card">
-      <div class="card-hdr"><span class="card-t">アーカイブ</span></div>
+      <div class="card-hdr"><span class="card-t">危険な操作</span></div>
       <div class="callout w">
-        <p>アーカイブしてもデータは削除されません。状態が「アーカイブ」になり、一覧の既定表示から外れます。</p>
+        <p>ここから先は、上の「{% if task %}更新する{% else %}作成する{% endif %}」とは別の操作です。押すとすぐに実行されます。</p>
+        <p>アーカイブしてもデータは削除されません。状態が「アーカイブ」になり、一覧の既定表示から外れます。元に戻すには編集画面から状態を変更します。</p>
       </div>
-      <form method="post" action="{% url 'projects:task_archive' task.pk %}" class="form">
+      <form method="post" action="{% url 'projects:task_archive' task.pk %}" class="form" data-confirm="このタスクをアーカイブします。データは削除されませんが、一覧の既定表示から外れます。実行しますか？">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ return_to }}">
         <button type="submit" class="btn-out">このタスクをアーカイブする</button>
       </form>
     </div>

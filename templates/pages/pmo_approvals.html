@@ -8,59 +8,113 @@
 
 {% block content %}
 
-  <div class="project-strip">
-    <span>判断待ち</span>
-    <strong>{{ report.total }}件</strong>
-    <em>承認ブロック中 {{ report.blocked_count }}件</em>
-  </div>
+  {% include "partials/coachmark.html" with coach_key="pmo-approvals" step1="「承認待ち（いま操作できるもの）」から見ます。各行に本文の出所と根拠の充足状況が並びます" step2="本文の出所が「AI生成のまま」の行は、人がまだ確定していません。成果物支援で確定本文を保存してから承認してください" step3="「いま承認できないもの」には、できない理由の区分が出ます。ロールによる制限か根拠不足かで、次にやることが変わります" %}
 
-  {% if report.blocked_count %}
-    <div class="callout d">
-      <p><strong>根拠不足の成果物が {{ report.blocked_count }}件あります。</strong>根拠評価が「追加確認を求める」または矛盾ありの成果物は、承認ボタンを無効にしています。</p>
-    </div>
-  {% endif %}
-
+  {% comment %}
+    最初のカードに「いま承認できるもの」だけを集める（UXP-17）。
+    承認できないものを同じ表に混ぜると、押せない行を毎回読み飛ばすことになる。
+  {% endcomment %}
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">承認待ちの成果物</span>
-      <span class="card-act">HITL承認</span>
+      <span class="card-t">承認待ち（いま操作できるもの）</span>
+      <span class="card-act">{{ actionable_rows|length }}件 ／ 判断待ち全{{ report.total }}件</span>
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>成果物</th><th>案件</th><th>状態</th><th>赤字率</th><th>根拠</th><th>操作</th></tr></thead>
+        <thead><tr><th>成果物</th><th>案件</th><th>本文の出所{% include "partials/hint.html" with label="本文の出所" body="その成果物の本文を人が確定させたのか、AI生成のまま置いているのかの区別です。「AI生成のまま」は未確認の記述が残っている可能性があります。承認前に確定本文を保存してください。" %}</th><th>根拠の充足状況{% include "partials/hint.html" with label="根拠の充足状況" body="本文の裏付けに使える登録文書がそろっているかの判定です。「不足」の成果物には承認操作を出しません。文書を追加するか、確認事項に回答して再評価してください。" %}</th><th>次の1操作</th></tr></thead>
         <tbody>
-          {% for row in page.object_list %}
+          {% for row in actionable_rows %}
             <tr>
               <td>
                 <a href="{% url 'pmo:deliverables' %}?deliverable={{ row.deliverable.pk }}" style="color:var(--blue);font-weight:900">{{ row.deliverable.title }}</a>
-                <div class="ps">{{ row.deliverable.get_kind_display }} ／ v{{ row.deliverable.version }}</div>
+                <div class="ps">{{ row.deliverable.get_kind_display }} ／ v{{ row.deliverable.version }} ／ {{ row.deliverable.get_status_display }}</div>
               </td>
               <td>{{ row.deliverable.project.name }}</td>
-              <td><span class="badge {{ row.status_tone }}">{{ row.deliverable.get_status_display }}</span></td>
-              <td class="nowrap">{% if row.correction_percent is None %}<span class="muted">—</span>{% else %}<span class="badge {{ row.tone }}">{{ row.correction_percent }}%</span>{% endif %}</td>
               <td>
-                {% if row.can_approve %}
-                  <span class="badge g">十分</span>
+                {% if row.deliverable.body %}
+                  <span class="badge g">人が確定</span>
+                {% elif row.deliverable.ai_generated_body %}
+                  <span class="badge b">AI生成のまま</span>
                 {% else %}
-                  <span class="badge r">不足</span>
-                  <div class="ps">{{ row.blocking_reason }}</div>
+                  <span class="badge n">本文なし</span>
                 {% endif %}
+                <div class="ps">赤字率 {% if row.correction_percent is None %}—{% else %}{{ row.correction_percent }}%{% endif %}</div>
+              </td>
+              <td>
+                <span class="badge g">十分</span>
+                <div class="ps">根拠評価を通過しています。</div>
               </td>
               <td>
                 <form method="post" action="{% url 'pmo:approvals' %}">
                   {% csrf_token %}
                   <input type="hidden" name="deliverable" value="{{ row.deliverable.pk }}">
                   {% if row.deliverable.status == 'pending_approval' %}
-                    <button type="submit" class="btn-b sm" name="decision" value="approved" {% if not row.can_approve %}disabled title="{{ row.blocking_reason }}"{% endif %}>承認</button>
-                    <button type="submit" class="btn-out sm" name="decision" value="rejected">差し戻し</button>
+                    <div class="ps">次の操作: 内容を確認して承認する</div>
+                    <button type="submit" class="btn-b sm" name="decision" value="approved">承認</button>
+                    <button type="submit" class="btn-ghost sm" name="decision" value="rejected">差し戻し</button>
                   {% else %}
-                    <button type="submit" class="btn-b sm" name="decision" value="requested" {% if not row.can_approve %}disabled title="{{ row.blocking_reason }}"{% endif %}>承認依頼</button>
+                    <div class="ps">次の操作: 承認依頼を出す</div>
+                    <button type="submit" class="btn-b sm" name="decision" value="requested">承認依頼</button>
                   {% endif %}
                 </form>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="empty">判断待ちの成果物はありません。</div></td></tr>
+            <tr><td colspan="5"><div class="empty">いま承認・承認依頼を出せる成果物はありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% comment %}
+    承認できないものは理由の区分（権限／根拠不足）ごとに、承認待ちとは別カードで出す。
+    無効化したボタンだけを見せても、何をすれば進むのかが分からないため。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">いま承認できないもの</span>
+      <span class="card-act">{{ blocked_rows|length }}件</span>
+    </div>
+    {% if not can_decide %}
+      <div class="callout w">
+        <p><strong>あなたのロールでは承認操作ができません。</strong>{{ permission_note }}</p>
+      </div>
+    {% endif %}
+    {% if report.blocked_count %}
+      <div class="callout w">
+        <p><strong>根拠不足の成果物が {{ report.blocked_count }}件あります。</strong>根拠評価が「追加確認を求める」または矛盾ありの成果物は、承認操作を出しません。</p>
+      </div>
+    {% endif %}
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>成果物</th><th>案件</th><th>できない理由の区分{% include "partials/hint.html" with label="できない理由の区分" body="承認操作を出せない原因の分類です。ロールによる制限は権限の付与が必要で、根拠不足は文書の追加や再評価で解消します。区分によって次にやることが変わります。" %}</th><th>根拠の充足状況</th><th>次の1操作</th></tr></thead>
+        <tbody>
+          {% for blocked in blocked_rows %}
+            <tr>
+              <td>
+                <a href="{% url 'pmo:deliverables' %}?deliverable={{ blocked.row.deliverable.pk }}" style="color:var(--blue);font-weight:900">{{ blocked.row.deliverable.title }}</a>
+                <div class="ps">{{ blocked.row.deliverable.get_kind_display }} ／ v{{ blocked.row.deliverable.version }}</div>
+              </td>
+              <td>{{ blocked.row.deliverable.project.name }}</td>
+              <td class="nowrap"><span class="badge r">{{ blocked.category }}</span></td>
+              <td>
+                {% if blocked.row.can_approve %}
+                  <span class="badge g">十分</span>
+                {% else %}
+                  <span class="badge r">不足</span>
+                {% endif %}
+                <div class="ps">{{ blocked.reason }}</div>
+              </td>
+              <td>
+                <div class="ps">次の操作: {{ blocked.next_action }}</div>
+                <button type="button" class="btn-out sm" disabled title="{{ blocked.reason }}">
+                  {% if blocked.row.deliverable.status == 'pending_approval' %}承認{% else %}承認依頼{% endif %}
+                </button>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty">承認できない成果物はありません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

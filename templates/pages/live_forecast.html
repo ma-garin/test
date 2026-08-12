@@ -1,0 +1,147 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}プロジェクト管理{% endblock %}
+{% block subtitle %}2日後・1週間後・期日の着地を、遅延日数と確信度つきで示します。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'dashboard:tasks' %}">タスク一覧へ</a>
+  <a class="btn-b sm" href="{% url 'dashboard:progress' %}">進捗予測へ</a>
+{% endblock %}
+
+{% block content %}
+
+  {% comment %}テンプレートタグは改行をまたげないため、include は 1 行で書く。{% endcomment %}
+  {% include "partials/coachmark.html" with coach_key="forecast_live" step1="まず「最終期日の着地（危険な順）」を見ます。差分が大きいマイルストーンほど、期日に間に合わない見込みです" step2="次に「2日後の見込み」「1週間後の見込み」で、近い時点でどれが危険になるかを確認します" step3="確信度が低い行は、根拠・不足入力の列にある不足項目を埋めると精度が上がります" step4="算定不能は危険ではなく入力不足です。日数を出せる状態になっていないという意味なので、まず不足入力を埋めてください" %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">期日が遅れる見込み</div>
+      <div class="kpi-v" style="color:var(--red)">{{ board.delayed_count }}</div>
+      <div class="kpi-s">マイルストーン {{ board.rows|length }}件中</div>
+      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">算定不能{% include "partials/hint.html" with label="算定不能" body="日数を計算するための前提が欠けていて、予測日を出せない状態です。遅れていないという意味ではありません。不足している入力は、下の表の根拠・不足入力の列に出ます。" %}</div>
+      <div class="kpi-v" style="color:var(--muted)">{{ board.undeterminable_count }}</div>
+      <div class="kpi-s">入力不足で日数を出せない</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">2日後・1週間後の危険{% include "partials/hint.html" with label="2日後・1週間後の危険" body="いまの入力のままで2営業日後、または1週間後を迎えたときに、遅れる見込みか算定できない状態になる件数です。最終期日ではなく、その時点での見込みを表します。" %}</div>
+      <div class="kpi-v" style="color:var(--orange)">{{ board.horizon_risk_count }}</div>
+      <div class="kpi-s">その時点で遅れる／算定できない</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">確信度 低</div>
+      <div class="kpi-v" style="color:var(--yellow)">{{ board.low_confidence_count }}</div>
+      <div class="kpi-s">{% if board.latest_snapshot_at %}最終記録 {{ board.latest_snapshot_at|date:"n/j H:i" }}{% else %}記録なし（画面表示時に計算）{% endif %}</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  {% if board.projects_without_calendar %}
+    <div class="callout w">
+      <p><strong>勤務カレンダー未設定の案件があります（{{ board.projects_without_calendar|join:"、" }}）。</strong>
+      暦日を営業日として扱わないため、これらの案件は日数を算定していません。案件設定でカレンダーを登録してください。</p>
+    </div>
+  {% endif %}
+
+  {% comment %}
+  受入条件: 案件を開いて 30 秒以内に、どこで危険になるかと確信度を区別できること。
+  そのため最上部は「最終期日の着地」を危険な順に最大5件だけ出す。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">最終期日の着地（危険な順）</span>
+      <span class="card-act">上位{{ board.top_risks|length }}件 / 全{{ board.rows|length }}件</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>マイルストーン</th><th class="nowrap">予定日</th><th class="nowrap">予測日</th><th class="nowrap">差分{% include "partials/hint.html" with label="差分" body="予定日と予測日のずれを営業日で数えます。暦日ではないため、土日祝や勤務カレンダーの休日は数えません。カレンダー未設定の案件は算定しません。" %}</th><th class="nowrap">確信度{% include "partials/hint.html" with label="確信度" body="入力の品質から機械的に決めます。高は依存関係と解消見込みが確認済み、低は根拠となる入力が古いか粗い状態、算定不能は日数計算の前提そのものが欠けている状態です。" %}</th><th>根拠・不足入力</th></tr>
+        </thead>
+        <tbody>
+          {% for row in board.top_risks %}
+            <tr>
+              <td>
+                <strong>{{ row.target_name }}</strong>
+                <div class="ps">{{ row.project.code }} {{ row.project.name }}</div>
+              </td>
+              <td class="nowrap">{{ row.forecast.baseline_date|date:"Y/n/j"|default:"—" }}</td>
+              <td class="nowrap">{% if row.forecast.forecast_date %}{{ row.forecast.forecast_date|date:"Y/n/j" }}{% else %}<span class="badge n">算定不能</span>{% endif %}</td>
+              <td class="nowrap">
+                <span class="badge {{ row.tone }}">{{ row.variance_label }}</span>
+                {% if row.change_from_previous %}<div class="ps">前回比 {{ row.change_from_previous }} 営業日</div>{% endif %}
+              </td>
+              <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.forecast.confidence_label }}</span></td>
+              <td>
+                {{ row.forecast.summary }}
+                {% if row.forecast.critical_path %}<div class="ps">クリティカルパス: {{ row.forecast.critical_path|join:" → " }}</div>{% endif %}
+                {% if row.forecast.missing_inputs %}<div class="ps">不足: {{ row.forecast.missing_input_labels|join:"、" }}</div>{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="empty">着地を計算できるマイルストーンがありません。マイルストーンと必須WBSの紐付けを登録してください。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sg">
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">2日後の見込み</span></div>
+      <ul class="attention-list">
+        {% for row in board.two_day %}
+          <li class="attention-item">
+            <span class="badge {{ row.tone }}">{{ row.variance_label }}</span>
+            <span class="attention-name">{{ row.target_name }}</span>
+            <span class="attention-meta">{{ row.forecast.summary }}</span>
+          </li>
+        {% empty %}
+          <li><div class="empty">対象がありません。</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">1週間後の見込み</span></div>
+      <ul class="attention-list">
+        {% for row in board.one_week %}
+          <li class="attention-item">
+            <span class="badge {{ row.tone }}">{{ row.variance_label }}</span>
+            <span class="attention-name">{{ row.target_name }}</span>
+            <span class="attention-meta">{{ row.forecast.summary }}</span>
+          </li>
+        {% empty %}
+          <li><div class="empty">対象がありません。</div></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">機能台帳</span>
+      <span class="card-act">{{ features|length }}件</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>機能</th><th>案件</th><th class="nowrap">状態</th><th>責任者</th><th class="nowrap">リリース対象</th></tr></thead>
+        <tbody>
+          {% for feature in features %}
+            <tr>
+              <td><a href="{% url 'forecast:feature_detail' feature.pk %}?next={{ request.get_full_path|urlencode }}">{{ feature.name }}</a></td>
+              <td>{{ feature.project.code }}</td>
+              <td class="nowrap"><span class="badge n">{{ feature.get_status_display }}</span></td>
+              <td>{{ feature.owner|default:"—" }}</td>
+              <td class="nowrap">{{ feature.release_target|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty">機能が登録されていません。機能を登録し、WBS・マイルストーンと紐付けると、機能単位の着地を出せます。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

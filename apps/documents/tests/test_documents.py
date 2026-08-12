@@ -1,4 +1,4 @@
-"""ひな型管理画面と文書アップロードの回帰テスト。
+"""ひな型一覧画面とナレッジ登録の回帰テスト。
 
 アップロードは実ファイルを書くため、MEDIA_ROOT を一時ディレクトリへ差し替える。
 """
@@ -87,7 +87,7 @@ class DocumentUploadTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "文書アップロード")
+        self.assertContains(response, "ナレッジ登録")
 
     def test_検証を通れば文書が登録される(self):
         response = self.client.post(self.url, {"file": _pdf(), "title": "品質管理標準"})

@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 {% load l10n %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}絞り込んだタスクの計画期間と進捗を、時間軸の上で確認できます。{% endblock %}
 
 {% block header_actions %}
@@ -41,12 +41,53 @@
     .gantt-line svg { width: 100%; height: 100%; }
     .gantt-line polyline { fill: none; stroke: var(--purple, #7c3aed); stroke-width: 2; vector-effect: non-scaling-stroke; }
     .gantt-line circle { fill: var(--purple, #7c3aed); }
-    .gantt-legend { font-size: 11px; color: var(--muted, #64748b); margin-top: 12px; }
+    .gantt-legend { font-size: 12px; margin: 0; }
+    .gantt-legend li { padding: 2px 0; }
     .gantt-undated { margin-top: 8px; font-size: 12px; }
     .gantt-undated li { padding: 2px 0; }
   </style>
 
   {% include "partials/task_filters.html" %}
+
+  {% comment %}
+  UXP-03: 凡例は図の下ではなく上に置く。読み方が分からないまま図を見ると、
+  破線や色の意味を利用者が推測することになる。色だけに意味を持たせず、必ず文字を添える。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">この図の読み方（凡例）</span>
+      <span class="card-act">色だけでなく文字でも示しています</span>
+    </div>
+    <ul class="gantt-legend">
+      <li><strong>今日の基準線（赤い破線）</strong>：本日の位置です。線より左が過去、右が未来です。</li>
+      <li><strong>期限超過（赤い棒）</strong>：計画終了日を過ぎたタスクです。棒の中の数値は進捗率です。</li>
+      <li><strong>期限接近（橙の棒）</strong>：期限が近いタスクです。</li>
+      <li><strong>通常（青い棒）</strong>：期限まで余裕があるタスクです。</li>
+      <li><strong>期限未設定（未計画リスト）</strong>：計画開始日または計画終了日が無いタスクです。期間が決まらないため図には描けません。この画面の下部「未計画リスト」にまとめています。</li>
+      <li><strong>稲妻線（紫の折れ線）</strong>：各タスクが進捗率のぶん進んだ地点を結んだ線です。今日の基準線より左へ張り出したタスクが遅れです。</li>
+    </ul>
+  </div>
+
+  {% comment %}
+  UXP-03: 図で気付いた「止まっている・遅れている」を、そのまま件数と一覧へつなぐ。
+  リンク先は表形式のタスク一覧で、絞り込み条件は既存の GET 条件だけを使う。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">いま手当てが要るタスク</span>
+      <span class="card-act">対象 {{ board.total }}件</span>
+    </div>
+    <ul class="gantt-legend">
+      <li>
+        <strong>期限超過 {{ board.overdue }}件</strong>
+        ／ <a href="{% url 'dashboard:tasks' %}?due=overdue">期限超過のタスク一覧へ戻る</a>
+      </li>
+      <li>
+        <strong>ブロック中 {{ board.blocked }}件</strong>
+        ／ <a href="{% url 'dashboard:tasks' %}?status=blocked">ブロック中のタスク一覧へ戻る</a>
+      </li>
+    </ul>
+  </div>
 
   <div class="card">
     <div class="card-hdr">
@@ -100,33 +141,47 @@
             {% endfor %}
           </div>
         </div>
-        <div class="gantt-legend">
-          棒の塗りは進捗率。赤=期限超過 / 橙=期限接近 / 青=通常。破線は本日。
-          {% if chart.has_progress_line %}
-            {% with line=chart.progress_line %}
-              紫の折れ線が稲妻線（進捗線）で、各タスクが進捗率のぶん進んだ地点を結んでいます。
-              本日線より<strong>左へ張り出したタスクが遅れ</strong>、右なら先行です。
-              遅れ {{ line.behind_count }}件 / 先行 {{ line.ahead_count }}件{% if line.worst %}
+        {% if chart.has_progress_line %}
+          {% with line=chart.progress_line %}
+            <div class="ps">
+              稲妻線の読み方：遅れ {{ line.behind_count }}件 / 先行 {{ line.ahead_count }}件{% if line.worst %}
               ／ 最も遅れているのは {{ line.worst.bar.task.wbs_code }} {{ line.worst.bar.task.name }}{% endif %}。
-            {% endwith %}
-          {% endif %}
-        </div>
+            </div>
+          {% endwith %}
+        {% endif %}
       {% endif %}
+    {% endif %}
+  </div>
 
-      {% if chart.undated %}
-        <div class="callout w">
-          <p>期間未設定（計画開始日または計画終了日がないため棒を描けません）: {{ chart.undated|length }}件</p>
-          <ul class="gantt-undated">
-            {% for row in chart.undated %}
-              <li>
-                <span class="gantt-code">{{ row.task.project.code }} / {{ row.task.wbs_code }}</span>
-                <a href="{% url 'projects:task_detail' row.task.pk %}">{{ row.task.name }}</a>
-                <span class="badge {{ row.status_tone }}">{{ row.task.get_status_display }}</span>
-              </li>
-            {% endfor %}
-          </ul>
-        </div>
-      {% endif %}
+  {% comment %}
+  UXP-03: 期間未設定のタスクを図の外の注意書きで終わらせない。
+  「未計画リスト」という独立した一覧にして、計画を入れる対象として扱えるようにする。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">未計画リスト（期間未設定のタスク）</span>
+      <span class="card-act">{{ chart.undated|length }}件</span>
+    </div>
+    {% if chart.undated %}
+      <div class="callout w">
+        <p>計画開始日または計画終了日が入っていないため、ガントに描けていません。日付を入れると上の図に現れます。</p>
+      </div>
+      <ul class="attention-list">
+        {% for row in chart.undated %}
+          <li class="attention-item">
+            <span class="attention-name">
+              <span class="gantt-code">{{ row.task.project.code }} / {{ row.task.wbs_code }}</span>
+              <a href="{% url 'projects:task_detail' row.task.pk %}">{{ row.task.name }}</a>
+            </span>
+            <span class="attention-meta">
+              <span class="badge {{ row.status_tone }}">{{ row.task.get_status_display }}</span>
+              期限未設定
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">期間未設定のタスクはありません。表示中のタスクはすべて計画期間が入っています。</div>
     {% endif %}
   </div>
 {% endblock %}

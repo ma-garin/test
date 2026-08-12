@@ -4,8 +4,8 @@
 {% block subtitle %}{{ task.project.code }} {{ task.project.name }}{% endblock %}
 
 {% block header_actions %}
-  <a class="btn-out sm" href="{% url 'dashboard:tasks' %}">タスク一覧へ</a>
-  <a class="btn-b sm" href="{% url 'projects:task_edit' task.pk %}">編集する</a>
+  <a class="btn-out sm" href="{{ return_to }}">タスク一覧へ</a>
+  <a class="btn-b sm" href="{% url 'projects:task_edit' task.pk %}?next={{ return_to|urlencode }}">編集する</a>
 {% endblock %}
 
 {% block content %}
@@ -32,6 +32,34 @@
       <div class="kpi-v" style="font-size:16px">{{ task.get_priority_display }}</div>
       <div class="kpi-s">{{ task.get_follow_up_state_display }}</div>
     </div>
+  </div>
+
+  {% comment %}
+  JT-05: 属性一覧を読む前に「次の一手と、その判断に足りていないもの」を出す。
+  同じ値は下の一覧にも残す（この画面が唯一の出所になると、項目の追加時にずれる）。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">次アクション</span>
+      <a class="card-act" href="{% url 'projects:task_edit' task.pk %}?next={{ return_to|urlencode }}">次アクション・期限・担当を更新する</a>
+    </div>
+    <dl class="dl">
+      <dt>状態</dt>
+      <dd><span class="badge {% if task.status == 'blocked' %}r{% else %}n{% endif %}">{{ task.get_status_display }}</span></dd>
+      <dt>次にすること</dt>
+      <dd>{% if task.next_action %}{{ task.next_action }}{% else %}<span class="badge a">未記入</span> 次アクションが空です。編集画面で登録してください。{% endif %}</dd>
+      {% comment %}UXP-38: 状態・担当・期限・次アクションを、属性一覧より前にここで揃える。{% endcomment %}
+      <dt>担当</dt>
+      <dd>{% if task.owner %}{{ task.owner }}{% else %}<span class="badge a">未設定</span> 担当が登録されていません。{% endif %}</dd>
+      <dt>実施者</dt>
+      <dd>{% if task.ball_holder %}{{ task.ball_holder }}<div class="ps">ボール保持者。担当（{{ task.owner|default:"未設定" }}）と分けて管理しています。</div>{% elif task.owner %}{{ task.owner }}<div class="ps">ボール保持者は未設定です。</div>{% else %}<span class="badge a">未設定</span> 担当もボール保持者も登録されていません。{% endif %}</dd>
+      <dt>期限</dt>
+      <dd>{% if task.planned_end %}{{ task.planned_end|date:"Y/n/j" }}{% if task.delay_days %}<span class="badge r">遅れ {{ task.delay_days }}日</span>{% endif %}{% else %}<span class="badge a">未設定</span> 期限がないため、遅延検知の対象になりません。{% endif %}</dd>
+      <dt>PMOフォロー</dt>
+      <dd>{{ task.get_follow_up_state_display }}</dd>
+      <dt>判断の根拠</dt>
+      <dd>{% if task.evidence_note %}登録あり（下の「根拠メモ」で全文を確認できます）{% else %}<span class="badge a">未登録</span> 根拠メモがありません。判断の裏付けを残してください。{% endif %}</dd>
+    </dl>
   </div>
 
   {% if task.is_archived %}
@@ -78,7 +106,8 @@
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">関連タスク</span>
-      <span class="card-act">子タスク {{ child_tasks|length }}件</span>
+      {% comment %}UXP-38: 関係の内訳を出す。どちらも名前から詳細へ入れる。{% endcomment %}
+      <span class="card-act">関連 {{ related_tasks|length }}件 ／ 子タスク {{ child_tasks|length }}件</span>
     </div>
     <div class="t-wrap">
       <table class="t">

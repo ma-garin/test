@@ -35,7 +35,7 @@ class PersonaCatalogTests(TestCase):
         expected = len(SCREENS) * len(PERSONAS) * PER_PERSONA
 
         self.assertEqual(len(self.scenarios), expected)
-        self.assertEqual(len(self.scenarios), 2480)
+        self.assertEqual(len(self.scenarios), 2600)
 
     def test_全画面が台帳に載っている(self) -> None:
         covered = {scenario.screen for scenario in self.scenarios}

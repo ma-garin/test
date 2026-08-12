@@ -3,16 +3,62 @@
 {% block subtitle %}参照するテナントを選びます。所属外のテナントは選択できません。{% endblock %}
 
 {% block content %}
+
+  {% comment %}
+  UXP-36: 切替は「戻れない操作」ではないが、案件の絞り込みが外れるため数字の見え方が変わる。
+  何が変わるか・どこへ着地するかを、確定（送信）前に読める位置へ置く。
+  権限の判定は変えていない。ここで増やしているのは説明だけ。
+  {% endcomment %}
+  <div class="callout w">
+    <p><strong>切り替えると何が変わるか（確定する前に確認してください）</strong></p>
+    <ul>
+      <li>コントロールタワー・タスク・リスク・課題・不具合・変更要求・KPI・連携が、切替先テナントのデータだけになります。</li>
+      <li>いま選んでいる<strong>対象案件の絞り込みは解除</strong>され、全案件を横断した集計に戻ります。</li>
+      <li>参照できる範囲は所属と権限で決まります。この画面で範囲が広がることはありません。</li>
+    </ul>
+    <p><strong>戻り先（next）について:</strong> この画面は <code>next</code> を使いません。切り替えると必ず<strong>コントロールタワー</strong>へ移動します{% if next_target %}（指定されている戻り先 <code>{{ next_target }}</code> へは戻りません）{% endif %}。元の画面に戻したいときは、切替後にもう一度その画面を開いてください。案件の切替画面は <code>next</code> で元の画面へ戻ります。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">選べるテナントと参照できる範囲</span>
+      <span class="card-act">現在: {{ current_tenant.name|default:"未選択" }}</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>テナント</th><th>参照できる範囲</th><th>切替後の遷移先</th></tr>
+        </thead>
+        <tbody>
+          {% for tenant in tenants %}
+            <tr>
+              <td>
+                {{ tenant.name }}
+                {% if current_tenant and current_tenant.pk == tenant.pk %}<span class="badge b">選択中</span>{% endif %}
+              </td>
+              <td>案件 {{ tenant.project_count }} 件 ／ 利用者 {{ tenant.user_count }} 名（コード: {{ tenant.code }}）</td>
+              <td class="nowrap">コントロールタワー（案件の絞り込みなし）</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3"><div class="empty">選べるテナントがありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="card" style="max-width:520px">
     <form method="post" class="form">
       {% csrf_token %}
       <div>
         <label for="tenant">テナント</label>
         <select name="tenant" id="tenant">
-          {% for tenant in tenants %}<option value="{{ tenant.pk }}">{{ tenant.name }}</option>{% endfor %}
+          {% for tenant in tenants %}<option value="{{ tenant.pk }}">{{ tenant.name }}（案件 {{ tenant.project_count }} 件）</option>{% endfor %}
         </select>
+        <div class="ps">上の表と同じ並びです。選んだテナントの範囲が、次の画面から適用されます。</div>
       </div>
       <div class="actions"><button type="submit" class="btn-b">切り替える</button></div>
     </form>
   </div>
+
 {% endblock %}

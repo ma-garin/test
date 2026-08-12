@@ -7,17 +7,30 @@
 {% endcomment %}
 {% if page.paginator.num_pages > 1 %}
   <nav class="pager" aria-label="ページ送り">
-    <span class="pager-info">
-      {{ page.start_index }}–{{ page.end_index }} 件 / 全 {{ page.paginator.count }} 件
-    </span>
+    <div class="pager-summary">
+      <span class="pager-info">{{ page.start_index }}–{{ page.end_index }} 件 / 全 {{ page.paginator.count }} 件</span>
+      <label class="pager-size">1ページ
+        <select aria-label="1ページあたりの表示件数" onchange="var pageUrl = new window.URL(window.location.href); pageUrl.searchParams.set('per_page', this.value); pageUrl.searchParams.delete('page'); if (window.VeriRagUi && window.VeriRagUi.visit) { window.VeriRagUi.visit(pageUrl.toString()); } else { window.location.assign(pageUrl.toString()); }">
+          <option value="20"{% if page.paginator.per_page == 20 %} selected{% endif %}>20件</option>
+          <option value="50"{% if page.paginator.per_page == 50 %} selected{% endif %}>50件</option>
+          <option value="100"{% if page.paginator.per_page == 100 %} selected{% endif %}>100件</option>
+        </select>
+      </label>
+    </div>
 
     <span class="pager-links">
       {% if page.has_previous %}
-        <a class="pager-btn" href="?{{ page_query }}page={{ page.previous_page_number }}" rel="prev">前へ</a>
+        <a class="pager-btn pager-edge" href="?{{ page_query }}page=1">先頭</a>
       {% else %}
-        <span class="pager-btn off">前へ</span>
+        <span class="pager-btn pager-edge off">先頭</span>
+      {% endif %}
+      {% if page.has_previous %}
+        <a class="pager-btn pager-step" href="?{{ page_query }}page={{ page.previous_page_number }}" rel="prev">前へ</a>
+      {% else %}
+        <span class="pager-btn pager-step off">前へ</span>
       {% endif %}
 
+      {% if page_window.0 > 1 %}<span class="pager-gap" aria-hidden="true">…</span>{% endif %}
       {% for number in page_window %}
         {% if number == page.number %}
           <span class="pager-btn on" aria-current="page">{{ number }}</span>
@@ -25,11 +38,17 @@
           <a class="pager-btn" href="?{{ page_query }}page={{ number }}">{{ number }}</a>
         {% endif %}
       {% endfor %}
+      {% if page_window|last < page.paginator.num_pages %}<span class="pager-gap" aria-hidden="true">…</span>{% endif %}
 
       {% if page.has_next %}
-        <a class="pager-btn" href="?{{ page_query }}page={{ page.next_page_number }}" rel="next">次へ</a>
+        <a class="pager-btn pager-step" href="?{{ page_query }}page={{ page.next_page_number }}" rel="next">次へ</a>
       {% else %}
-        <span class="pager-btn off">次へ</span>
+        <span class="pager-btn pager-step off">次へ</span>
+      {% endif %}
+      {% if page.has_next %}
+        <a class="pager-btn pager-edge" href="?{{ page_query }}page={{ page.paginator.num_pages }}">末尾</a>
+      {% else %}
+        <span class="pager-btn pager-edge off">末尾</span>
       {% endif %}
     </span>
   </nav>

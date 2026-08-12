@@ -54,7 +54,23 @@
     </div>
 
     <div class="card">
-      <div class="card-hdr"><span class="card-t">絞り込み</span><span class="card-act">期間・利用者</span></div>
+      <div class="card-hdr">
+        <span class="card-t">絞り込み</span>
+        <a class="card-act" href="{% url 'audit:feedback_list' %}">条件をリセット</a>
+      </div>
+      {% comment %}
+      UXP-29: 直すべきフィードバック＝事実誤認あり、次いで低評価。
+      既存の GET 条件だけで表現しているので、条件をリセットで全件へ戻れる。
+      {% endcomment %}
+      <nav class="quick-views" aria-label="よく使う絞り込み">
+        <span class="quick-views-label">よく使う絞り込み</span>
+        {% for quick in quick_views %}
+          <a class="quick-view{% if quick.is_active %} is-active{% endif %}"
+             href="{% url 'audit:feedback_list' %}?{{ quick.query }}"
+             {% if quick.is_active %}aria-current="page"{% endif %}>{{ quick.label }}</a>
+        {% endfor %}
+        <a class="quick-view{% if not view_filters.is_active %} is-active{% endif %}" href="{% url 'audit:feedback_list' %}">すべて</a>
+      </nav>
       <form method="get" class="form">
         <div>
           <label for="period">期間</label>
@@ -73,32 +89,82 @@
             {% endfor %}
           </select>
         </div>
+        <div>
+          <label for="fact">事実誤認</label>
+          <select id="fact" name="fact">
+            <option value="">すべて</option>
+            {% for value, label in fact_choices %}
+              <option value="{{ value }}" {% if view_filters.fact == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="rating">評価</label>
+          <select id="rating" name="rating">
+            <option value="">すべて</option>
+            {% for value, label in rating_choices %}
+              <option value="{{ value }}" {% if view_filters.rating == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="sort">並び</label>
+          <select id="sort" name="sort">
+            {% for value, label in sort_choices %}
+              <option value="{{ value }}" {% if view_filters.sort == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
         <div class="actions">
           <button class="btn-b sm" type="submit">この条件で集計</button>
           <a class="btn-out sm" href="{% url 'audit:feedback_list' %}">条件をリセット</a>
         </div>
       </form>
+      <div class="ps">上の KPI は期間・利用者の条件だけで集計します。事実誤認・評価の絞り込みは下の明細にだけ効きます。</div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-hdr"><span class="card-t">フィードバック明細</span><span class="card-act">{{ page.paginator.count }}件</span></div>
-    <table class="t">
-      <thead><tr><th>日時</th><th>評価</th><th>事実誤認</th><th>コメント</th><th>投稿者</th></tr></thead>
-      <tbody>
-        {% for feedback in feedbacks %}
-          <tr>
-            <td class="nowrap">{{ feedback.created_at|date:"m/d H:i" }}</td>
-            <td><span class="badge {% if feedback.rating == 3 %}g{% elif feedback.rating == 1 %}r{% else %}n{% endif %}">{{ feedback.get_rating_display }}</span></td>
-            <td>{% if feedback.has_fact_error %}<span class="badge r">あり</span>{% else %}<span class="muted">なし</span>{% endif %}</td>
-            <td>{{ feedback.comment|truncatechars:80 }}</td>
-            <td class="nowrap">{{ feedback.user|default:"—" }}</td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="5"><div class="empty">フィードバックはありません。</div></td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="card-hdr">
+      <span class="card-t">フィードバック明細</span>
+      <span class="card-act">{{ page.paginator.count }}件</span>
+    </div>
+    <div class="ps">
+      適用条件: {% for label in view_filters.labels %}{{ label }}{% if not forloop.last %} ／ {% endif %}{% endfor %}
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>日時</th><th>評価</th><th>事実誤認</th><th>再現情報</th><th>対応状況</th><th>コメント</th><th>投稿者</th></tr></thead>
+        <tbody>
+          {% for feedback in feedbacks %}
+            <tr>
+              <td class="nowrap">{{ feedback.created_at|date:"m/d H:i" }}</td>
+              <td><span class="badge {% if feedback.rating == 3 %}g{% elif feedback.rating == 1 %}r{% else %}n{% endif %}">{{ feedback.get_rating_display }}</span></td>
+              <td>{% if feedback.has_fact_error %}<span class="badge r">あり</span>{% else %}<span class="muted">なし</span>{% endif %}</td>
+              <td class="nowrap">{% if feedback.has_repro %}<span class="badge g">あり</span>{% else %}<span class="badge a">不足</span>{% endif %}</td>
+              <td class="nowrap">
+                {% with review=feedback.agent_run.reviews.all|first %}
+                  {% if not review %}
+                    <span class="badge a">未対応</span>
+                  {% elif review.decision == 'pending' %}
+                    <span class="badge n">確認中</span>
+                  {% elif review.decision == 'rejected' %}
+                    <span class="badge n">不採用で決着</span>
+                  {% else %}
+                    <span class="badge g">対応済み</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td>{{ feedback.comment|truncatechars:80 }}</td>
+              <td class="nowrap">{{ feedback.user|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7"><div class="empty">この条件に合うフィードバックはありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="ps">再現情報は「対象の回答・実行が特定でき、かつコメント本文がある」ことで判定します。対応状況は対象実行の人による確認記録から判定します。</div>
     {% include "partials/pager.html" %}
   </div>
 

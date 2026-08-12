@@ -3,8 +3,12 @@
 {% block content %}
   <form method="post" class="form">
     {% csrf_token %}
+    {# 失敗しても入力は消さない。バインド済みフォームを再描画するので値が残る。 #}
     {% if error or form.errors %}
-      <div class="callout d">{{ error|default:"メールアドレスの形式が正しくありません。" }}</div>
+      <div class="callout d">
+        <p>{{ error|default:"メールアドレスの形式が正しくありません。" }}</p>
+        <p>入力したメールアドレスはそのまま残しています。綴りを直して「ログイン」をもう一度押してください。回数制限はありません。</p>
+      </div>
     {% endif %}
     <div>
       <label for="{{ form.email.id_for_label }}">メールアドレス</label>
@@ -15,5 +19,10 @@
   <p class="auth-note">
     パスワードは使いません。初めてのメールアドレスは、その場で利用者を作成します。<br>
     体験用データは <code>pmo@example.com</code> に紐づいています。
+  </p>
+  <p class="auth-note">
+    何度直しても入れないときは、利用者が無効化されている可能性があります。<br>
+    有効化・無効化はテナント管理者の担当です。所属テナントの管理者へ連絡してください。<br>
+    パスワードを扱わない仕組みのため、システム側でのパスワード再発行はありません。
   </p>
 {% endblock %}

@@ -4,10 +4,34 @@
 
 {% block header_actions %}
   <a class="btn-out sm" href="{% url 'pmo:prompt_library' %}">プロンプト集</a>
-  <a class="btn-b sm" href="{% url 'pmo:approvals' %}">承認へ進む</a>
+  <a class="{% if current_step.key == 'approve' %}btn-b{% else %}btn-out{% endif %} sm" href="{% url 'pmo:approvals' %}">承認へ進む</a>
 {% endblock %}
 
 {% block content %}
+
+  {% include "partials/coachmark.html" with coach_key="pmo-deliverables" step1="上の「手順」で、いまどの段階かを確認します。生成→比較→確定→承認申請と進みます" step2="AIが作る本文は下書きです。人が確認・修正して確定本文の欄に保存した内容だけが、正式な本文になります" step3="差分と事実チェックの表で、本文の数値が実データと一致するか確かめます。不一致を残したまま承認へ進めないでください" %}
+
+  {% comment %}
+    「生成 → 比較 → 確定 → 承認申請」を画面の最上部に常に同じ形で出す（UXP-16）。
+    選択の有無で並びは変えない。いまどこにいるかを毎回探させないため。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">手順</span>
+      <span class="card-act">現在 {{ current_step.index }}/4 — {{ current_step.label }}</span>
+    </div>
+    <div class="steps">
+      {% for step in steps %}
+        <div class="pb-row">
+          <span class="pb-t">{{ step.index }}. {{ step.label }}</span>
+          <span class="badge {% if step.is_current %}b{% elif step.is_done %}g{% else %}n{% endif %}">{{ step.state }}</span>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="callout w">
+      <p><strong>いま行う操作:</strong> {{ current_step.action }}</p>
+    </div>
+  </div>
 
   <div class="kpi-g">
     <div class="kpi">
@@ -35,7 +59,7 @@
 
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">成果物を生成する</span>
+      <span class="card-t">1. 成果物を生成する</span>
       <span class="card-act">登録済みの実データから組み立てます</span>
     </div>
     <form class="form" method="post" action="{% url 'pmo:deliverables' %}">
@@ -47,7 +71,7 @@
       <div class="search-row">
         <label>案件<br>{{ generate_form.project }}</label>
         <label>種類<br>{{ generate_form.generator }}</label>
-        <button class="btn-b" type="submit">生成する</button>
+        <button class="{% if current_step.key == 'generate' %}btn-b{% else %}btn-out{% endif %}" type="submit">生成する</button>
       </div>
       {% if generate_form.project.errors %}<div class="callout d">{{ generate_form.project.errors }}</div>{% endif %}
       <div class="stack">
@@ -67,7 +91,7 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>タイトル</th><th>案件</th><th>種別</th><th>版</th><th>状態</th><th>赤字率</th><th>承認可否</th></tr></thead>
+        <thead><tr><th>タイトル</th><th>案件</th><th>種別</th><th>版</th><th>状態</th><th>赤字率</th><th>承認可否{% include "partials/hint.html" with label="承認申請" body="確定本文を保存したうえで、承認者へ判断を求める操作です。申請しただけでは承認されません。根拠が不足している成果物は申請できず、この列が「ブロック」になります。" %}</th></tr></thead>
         <tbody>
           {% for row in page.object_list %}
             <tr>
@@ -98,8 +122,8 @@
     <div class="sg">
       <div class="card">
         <div class="card-hdr">
-          <span class="card-t">AI生成本文</span>
-          <span class="card-act">未確定</span>
+          <span class="card-t">2. AI生成本文{% include "partials/hint.html" with label="AI生成本文" body="機械が作った下書きで、未確定です。この欄の文言はそのままでは成果物になりません。人が確認・修正して「確定本文」に保存した内容だけが正式な本文です。" %}</span>
+          <span class="card-act"><span class="badge b">AI生成・未確定</span></span>
         </div>
         {% if selected.deliverable.ai_generated_body %}
           <div class="result-text">{{ selected.deliverable.ai_generated_body|linebreaksbr }}</div>
@@ -110,8 +134,11 @@
 
       <div class="card">
         <div class="card-hdr">
-          <span class="card-t">確定本文（人が編集）</span>
-          <span class="card-act">{% if selected.correction_percent is None %}—{% else %}赤字率 {{ selected.correction_percent }}%{% endif %}</span>
+          <span class="card-t">3. 確定本文（人が編集）{% include "partials/hint.html" with label="確定本文" body="人が確認・修正して保存した本文です。承認や出力の対象になるのはこちらだけです。AI生成本文を無編集で保存すると、確認していない記述が確定扱いになります。" %}</span>
+          <span class="card-act">
+            <span class="badge g">人が確定</span>
+            {% if selected.correction_percent is None %}—{% else %}赤字率 {{ selected.correction_percent }}%{% endif %}
+          </span>
         </div>
         {% if can_edit %}
           <form class="form" method="post" action="{% url 'pmo:deliverables' %}">
@@ -127,7 +154,7 @@
               <label>確定本文<br>{{ edit_form.body }}</label>
             </div>
             <div class="actions">
-              <button class="btn-b" type="submit">確定本文を保存</button>
+              <button class="{% if current_step.is_edit_step %}btn-b{% else %}btn-out{% endif %}" type="submit">確定本文を保存</button>
               <a class="btn-ghost" href="?deliverable={{ selected.deliverable.pk }}">編集を取り消す</a>
             </div>
           </form>
@@ -224,7 +251,7 @@
                 {% endfor %}
               </select>
             </label>
-            <button class="btn-b" type="submit">出力する</button>
+            <button class="btn-out" type="submit">出力する</button>
           </div>
           <div class="callout w">
             <p>数式セルと未マッピング項目は書き換えません。飛ばした項目は出力後にメッセージで表示します。</p>
@@ -250,7 +277,7 @@
           {% endif %}
         {% endwith %}
       {% else %}
-        <div class="empty">ひな型が登録されていません。ひな型管理から Excel ひな型を登録してください。</div>
+        <div class="empty">ひな型が登録されていません。ひな型一覧から Excel ひな型を登録してください。</div>
       {% endif %}
     </div>
   {% endif %}

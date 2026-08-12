@@ -1,14 +1,16 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}影響度 × 発生確率のスコア順に並べています。対策が無いリスクは強調しています。{% endblock %}
 
 {% block header_actions %}
-  <a class="btn-b sm" href="{% url 'projects:risk_create' %}">新規作成</a>
+  <a class="btn-b sm" href="{% url 'projects:risk_create' %}?next={{ request.get_full_path|urlencode }}">新規作成</a>
   <a class="btn-out sm" href="{% url 'projects:issue_list' %}">課題一覧へ</a>
   <a class="btn-out sm" href="{% url 'dashboard:change' %}">変更影響へ</a>
 {% endblock %}
 
 {% block content %}
+
+  {% include "partials/coachmark.html" with coach_key="risk" step1="まず「高スコア」の件数を見ます。スコアは影響 × 確率で、大きいほど先に対策するものです" step2="「よく使う絞り込み」で対象を絞り、「対策なし（この画面内の一覧へ）」から対応方針が空のリスクへ移動します" step3="顕在化したリスクは行の「課題化」へ。元のリスクは一覧に残り、自動ではクローズされません" %}
 
   <div class="kpi-g">
     <div class="kpi">
@@ -24,7 +26,7 @@
       <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
     </div>
     <div class="kpi">
-      <div class="kpi-l">顕在化</div>
+      <div class="kpi-l">顕在化{% include "partials/hint.html" with label="顕在化" body="リスクが実際に起きた状態です。この画面では課題へ移すべきものとして数えています。" %}</div>
       <div class="kpi-v" style="color:var(--orange)">{{ report.materialized_count }}</div>
       <div class="kpi-s">課題へ移すべきもの</div>
       <div class="kpi-bar"><div class="kpi-fill a" style="width:70%"></div></div>
@@ -37,11 +39,53 @@
     </div>
   </div>
 
+  {% comment %}
+  UXP-09: 期限が無い高スコアリスクは、一覧の並び順では気付けない。
+  期限切れの警告とは別の話なので、独立した警告として先に出す。
+  {% endcomment %}
+  {% if risk_no_due_rows %}
+    <div class="callout w">
+      <p><strong>期限なしの高スコアリスクが {{ risk_no_due_rows|length }}件あります。</strong>
+      期限が無いリスクは、遅れとして検知されないまま放置されます。対応期限を入れてください。</p>
+      <ul class="attention-list">
+        {% for row in risk_no_due_rows %}
+          <li class="attention-item">
+            <span class="attention-name">{{ row.risk.project.code }} ／ {{ row.risk.title }}</span>
+            <span class="attention-meta">
+              <span class="badge r">スコア {{ row.risk.risk_score }}</span>
+              期限未設定
+              <a href="{% url 'projects:risk_edit' row.risk.pk %}?next={{ request.get_full_path|urlencode }}">期限を設定する</a>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">リスク一覧</span>
       {% if status %}<a class="card-act" href="{% url 'dashboard:risk' %}">条件をクリア</a>{% endif %}
     </div>
+
+    {% comment %}
+    UXP-09: 危険な対象へ 1 クリックで到達する導線。既存の GET 条件（status）だけを使うので、
+    「すべて」で必ず全件へ戻れる。「対策なし」は status では表せないため、
+    この画面内の一覧へ移動するリンクにしている（存在しない絞り込みを作らない）。
+    {% endcomment %}
+    <nav class="quick-views" aria-label="よく使う絞り込み">
+      <span class="quick-views-label">よく使う絞り込み</span>
+      {% for quick in risk_quick_views %}
+        <a class="quick-view{% if quick.is_active %} is-active{% endif %}"
+           href="{% url 'dashboard:risk' %}?{{ quick.query }}"
+           {% if quick.is_active %}aria-current="page"{% endif %}>{{ quick.label }}</a>
+      {% endfor %}
+      <a class="quick-view" href="#risk-no-mitigation">対策なし（この画面内の一覧へ）</a>
+      <a class="quick-view" href="{% url 'dashboard:risk' %}">すべて</a>
+    </nav>
+
+    <p class="ps">スコアの計算式：<strong>スコア = 影響 × 確率</strong>（値が大きいほど優先度が高い）。並び順もこのスコア順です。</p>
+
     <form method="get" class="search-row">
       <select name="status">
         <option value="">状態（すべて）</option>
@@ -51,10 +95,21 @@
       </select>
       <button type="submit" class="btn-b sm">絞り込む</button>
     </form>
+
+    {% comment %}
+    UXP-09: 「課題化」を押すと何が起きるかを、押す前に読める位置へ置く。
+    元のリスクが消えると誤解されると、二重管理を恐れて押されなくなる。
+    {% endcomment %}
+    <div class="callout w">
+      <p><strong>「課題化」を押すとどうなるか：</strong>
+      リスクのタイトル・内容・案件が課題として引き継がれ、課題一覧に新しい課題ができます。
+      元のリスクはこの一覧に残ります（自動ではクローズされません）。状態は必要に応じて手動で更新してください。</p>
+    </div>
+
     <div class="dashboard-risk-wrap">
       <table class="dashboard-risk-table">
         <thead>
-          <tr><th>案件</th><th>リスク</th><th>影響</th><th>確率</th><th>スコア</th><th>対策</th><th>期限</th><th>状態</th><th>操作</th></tr>
+          <tr><th>案件</th><th>リスク</th><th>影響</th><th>確率</th><th>スコア（影響×確率）{% include "partials/hint.html" with label="スコア" body="影響度（1-5）と発生確率（1-5）を掛けた値です。大きいほど優先度が高く、一覧の並び順もこのスコア順です。" %}</th><th>対策</th><th>期限</th><th>状態</th><th>操作{% include "partials/hint.html" with label="課題化" body="リスクのタイトル・内容・案件を引き継いだ課題を、課題一覧に新しく作ります。元のリスクはこの一覧に残り、状態は手動で更新します。" %}</th></tr>
         </thead>
         <tbody>
           {% for row in report.rows %}
@@ -68,8 +123,8 @@
               <td class="nowrap">{{ row.risk.due_date|date:"n/j"|default:"—" }}</td>
               <td><span class="badge n">{{ row.risk.get_status_display }}</span></td>
               <td class="nowrap">
-                <a class="btn-ghost sm" href="{% url 'projects:risk_edit' row.risk.pk %}">編集</a>
-                <a class="btn-ghost sm" href="{% url 'projects:risk_promote' row.risk.pk %}">課題化</a>
+                <a class="btn-ghost sm" href="{% url 'projects:risk_edit' row.risk.pk %}?next={{ request.get_full_path|urlencode }}">編集</a>
+                <a class="btn-ghost sm" href="{% url 'projects:risk_promote' row.risk.pk %}?next={{ request.get_full_path|urlencode }}">課題化</a>
               </td>
             </tr>
           {% empty %}
@@ -79,6 +134,29 @@
       </table>
     </div>
     {% include "partials/pager.html" %}
+  </div>
+
+  <div class="card" id="risk-no-mitigation">
+    <div class="card-hdr">
+      <span class="card-t">対策なしのリスク（このページ内）</span>
+      <span class="card-act">{{ risk_no_mitigation_rows|length }}件</span>
+    </div>
+    {% if risk_no_mitigation_rows %}
+      <ul class="attention-list">
+        {% for row in risk_no_mitigation_rows %}
+          <li class="attention-item">
+            <span class="attention-name">{{ row.risk.project.code }} ／ {{ row.risk.title }}</span>
+            <span class="attention-meta">
+              <span class="badge {{ row.tone }}">スコア {{ row.risk.risk_score }}</span>
+              対応方針が未記入
+              <a href="{% url 'projects:risk_edit' row.risk.pk %}?next={{ request.get_full_path|urlencode }}">対策を書く</a>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty">このページに表示中のリスクは、すべて対応方針が記入されています。</div>
+    {% endif %}
   </div>
 
 {% endblock %}

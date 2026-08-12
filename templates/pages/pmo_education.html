@@ -15,32 +15,35 @@
         <span class="card-t">最初の1週間の進め方</span>
         <span class="card-act">操作導線</span>
       </div>
+      {# ステップ名そのものをリンクにする。説明を読んだ位置から直接その画面へ入れるようにするため。 #}
       <div class="steps">
         <div class="pb-row">
-          <div class="pb-lr"><span class="pb-t">1. 状況を掴む</span><span class="pb-v">管制ダッシュボード</span></div>
-          <div class="ps">ヘルススコアと重要アラートで、危ない案件から確認します。<a href="{% url 'dashboard:control' %}" style="color:var(--blue)">開く</a></div>
+          <div class="pb-lr"><a class="pb-t" href="{% url 'dashboard:control' %}">1. 状況を掴む</a><span class="pb-v">管制ダッシュボード</span></div>
+          <div class="ps">担当している案件のヘルススコアと重要アラートを一覧し、危ない案件から確認する画面です。</div>
         </div>
         <div class="pb-row">
-          <div class="pb-lr"><span class="pb-t">2. 案件を読む</span><span class="pb-v">案件管理</span></div>
-          <div class="ps">課題・リスク・WBSを見て、遅れの原因を自分の言葉にします。<a href="{% url 'projects:list' %}" style="color:var(--blue)">開く</a></div>
+          <div class="pb-lr"><a class="pb-t" href="{% url 'projects:list' %}">2. 案件を読む</a><span class="pb-v">案件一覧</span></div>
+          <div class="ps">案件ごとの課題・リスク・WBSをたどり、遅れの原因を自分の言葉にするための画面です。</div>
         </div>
         <div class="pb-row">
-          <div class="pb-lr"><span class="pb-t">3. 相談する</span><span class="pb-v">PMO相談</span></div>
-          <div class="ps">プロンプト集のテンプレートに前提を足して相談します。<a href="{% url 'pmo:prompt_library' %}" style="color:var(--blue)">開く</a></div>
+          <div class="pb-lr"><a class="pb-t" href="{% url 'pmo:prompt_library' %}">3. 相談する</a><span class="pb-v">プロンプトライブラリ</span></div>
+          <div class="ps">PMOタスク別のテンプレートを選び、前提を足してPMO相談へ渡す画面です。</div>
         </div>
         <div class="pb-row">
-          <div class="pb-lr"><span class="pb-t">4. 計画に落とす</span><span class="pb-v">計画策定</span></div>
-          <div class="ps">レビュー観点を1つずつ潰してから確定します。<a href="{% url 'pmo:planning' %}" style="color:var(--blue)">開く</a></div>
+          <div class="pb-lr"><a class="pb-t" href="{% url 'pmo:planning' %}">4. 計画に落とす</a><span class="pb-v">計画ドラフト</span></div>
+          <div class="ps">相談結果を計画案にまとめ、レビュー観点を1つずつ潰してから確定する画面です。</div>
         </div>
         <div class="pb-row">
-          <div class="pb-lr"><span class="pb-t">5. 報告を作る</span><span class="pb-v">成果物支援</span></div>
-          <div class="ps">AI生成本文を必ず読み、事実と異なる箇所を直します。<a href="{% url 'pmo:deliverables' %}" style="color:var(--blue)">開く</a></div>
+          <div class="pb-lr"><a class="pb-t" href="{% url 'pmo:deliverables' %}">5. 報告を作る</a><span class="pb-v">成果物支援</span></div>
+          <div class="ps">AIが生成した報告本文を読み、事実と異なる箇所を人が直すための画面です。</div>
         </div>
         <div class="pb-row">
-          <div class="pb-lr"><span class="pb-t">6. 承認する</span><span class="pb-v">報告生成・承認</span></div>
-          <div class="ps">承認して初めて確定情報になります。<a href="{% url 'pmo:approvals' %}" style="color:var(--blue)">開く</a></div>
+          <div class="pb-lr"><a class="pb-t" href="{% url 'pmo:approvals' %}">6. 承認する</a><span class="pb-v">報告生成・承認</span></div>
+          <div class="ps">根拠評価を確認したうえで承認し、報告を確定情報にするための画面です。</div>
         </div>
       </div>
+      {# 学習状況は個人データになるため、記録も表示もしない。 #}
+      <div class="ps">この手順は読み物です。誰がどのステップまで進んだかは記録も表示もしません。何度でも好きな順で開けます。</div>
     </div>
 
     <div class="card">

@@ -13,7 +13,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ctext x='16' y='22' font-family='Helvetica,Arial,sans-serif' font-size='15' font-weight='bold' fill='%23ffffff' text-anchor='middle'%3EVR%3C/text%3E%3C/svg%3E">
 </head>
 <body>
-<div class="shell">
+<div class="shell{% for section in nav_sections %}{% if section.key == 'admin' and section.is_current %} shell--admin{% endif %}{% endfor %}">
 
   <header class="hdr">
     <a class="hdr-brand" href="{% url 'dashboard:control' %}">
@@ -43,113 +43,432 @@
     </div>
   </header>
 
-  <nav class="sb" id="sidebar">
-    <div class="sb-scroll">
+  <nav class="sb" id="sidebar" aria-label="メインナビゲーション">
+    {# 親カテゴリを色面、子メニューを白い面に分けて、現在どの階層を操作しているかを明確にする。 #}
+    <div class="sb-rail" aria-label="機能カテゴリ">
       {% for section in nav_sections %}
-        <div class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}">
-          <button class="sb-hd" type="button">
-            {{ section.label }}
-            <span class="sb-caret" aria-hidden="true">▶</span>
-          </button>
-          {# 畳んだときだけ出る見出し。区切り線だけだと、どの領域を見ているか分からなくなる。 #}
-          <div class="sb-mini-hd" aria-hidden="true" title="{{ section.label }}">{{ section.label|slice:":2" }}</div>
-          {% comment %}
-            全項目を並べる。以前は使用頻度の低い画面を「その他」へ畳んでいたが、
-            利用者が自分の使う画面を探せないほうが問題である。
-            高さは 1 項目あたりを詰めて吸収する。
-          {% endcomment %}
-          <div class="sb-sec-body">
-            {% for item in section.items %}
-              <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
-                 href="{% url item.url_name %}" title="{{ item.label }}">
-                <span class="sb-badge" aria-hidden="true">{{ item.code }}</span>
-                <span class="sb-label">{{ item.label }}</span>
-              </a>
-            {% endfor %}
-          </div>
-        </div>
+        <a class="sb-rail-item{% if section.is_current %} active{% endif %}"
+           href="{% url section.items.0.url_name %}"
+           data-parent-link="true"
+           aria-label="{{ section.label }}"
+           title="{{ section.label }}">
+          {% include "partials/nav_icon.html" %}
+          <span class="sb-rail-label">{{ section.short_label|default:section.label }}</span>
+        </a>
       {% endfor %}
+      <button class="sb-rail-toggle" type="button" id="nav-rail-toggle" data-nav-toggle
+              aria-controls="nav-panel" aria-expanded="true" title="子メニューを隠す">
+        <span aria-hidden="true">メニュー</span>
+        <span class="sr-only">子メニューを隠す</span>
+      </button>
     </div>
 
-    <button class="sb-collapse" type="button" id="nav-collapse" aria-expanded="true">
-      <span class="sb-collapse-ico" aria-hidden="true">‹</span>
-      <span class="sb-label">折りたたむ</span>
-    </button>
+    <div class="sb-panel" id="nav-panel">
+      <div class="sb-panel-head">
+        <span class="sb-panel-caption">機能カテゴリ</span>
+        <strong class="sb-panel-title" id="nav-section-title">{% for section in nav_sections %}{% if section.is_current %}{{ section.label }}{% endif %}{% endfor %}</strong>
+      </div>
+
+      <div class="sb-scroll">
+        {% for section in nav_sections %}
+          <section class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}" aria-label="{{ section.label }}">
+            <h2 class="sb-hd">{{ section.label }}</h2>
+            <div class="sb-sec-body">
+              {% for item in section.items %}
+                <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
+                   href="{% url item.url_name %}" title="{{ item.label }}"{% if item.url_name == current_url_name %} aria-current="page"{% endif %}>
+                  <span class="sb-badge" aria-hidden="true">{{ item.code }}</span>
+                  <span class="sb-label">{{ item.label }}</span>
+                </a>
+              {% endfor %}
+            </div>
+          </section>
+        {% endfor %}
+      </div>
+
+      <button class="sb-collapse" type="button" id="nav-collapse" data-nav-toggle aria-controls="nav-panel" aria-expanded="true">
+        <span class="sb-collapse-ico" aria-hidden="true">子メニューを隠す</span>
+      </button>
+    </div>
   </nav>
 
-  <main class="main">
+  <main class="main" aria-labelledby="page-heading">
     <div class="ph">
       <div>
         <div class="pk">{% block kicker %}{{ page_kicker|default:"VERIRAG" }}{% endblock %}</div>
-        <h1 class="pt">{% block heading %}{{ page_title }}{% endblock %}</h1>
+        <h1 class="pt" id="page-heading">{% block heading %}{{ page_title }}{% endblock %}</h1>
         <p class="ps">{% block subtitle %}{{ page_subtitle }}{% endblock %}</p>
+        <p class="ph-context ph-context-scope" role="status">
+          <span><strong>表示範囲</strong> {{ page_scope_label }}</span>
+          <time datetime="{{ page_rendered_at|date:'c' }}">画面表示 {{ page_rendered_at|date:"Y/n/j H:i" }}</time>
+        </p>
+        {% for section in nav_sections %}{% if section.key == 'admin' and section.is_current %}
+          <p class="ph-context ph-context-admin" role="note">
+            <span class="material-symbols-outlined" aria-hidden="true">settings</span>
+            <span><strong>管理対象</strong> {% if current_tenant %}{{ current_tenant.name }}{% else %}システム全体{% endif %}{% if current_project %} ／ {{ current_project.code }} {{ current_project.name }}{% endif %}</span>
+            <span>変更は利用者と連携設定に影響します。</span>
+          </p>
+        {% endif %}{% endfor %}
       </div>
       <div class="ph-right">{% block header_actions %}{% endblock %}</div>
     </div>
 
-    {% for message in messages %}
-      <div class="callout{% if message.tags == 'error' %} d{% elif message.tags == 'warning' %} w{% elif message.tags == 'success' %} ok{% endif %}">{{ message }}</div>
-    {% endfor %}
+    {# ヘッダーは本文のスクロール領域から分離する。本文がヘッダーの裏へ回り込まない。 #}
+    <div class="main-scroll">
+      {% for message in messages %}
+        <div class="callout{% if message.tags == 'error' %} d{% elif message.tags == 'warning' %} w{% elif message.tags == 'success' %} ok{% endif %}"{% if message.tags == 'error' or message.tags == 'warning' %} role="alert"{% else %} role="status"{% endif %}>{{ message }}</div>
+      {% endfor %}
 
-    {% block content %}{% endblock %}
+      {% block content %}{% endblock %}
+    </div>
   </main>
 
 </div>
 
+<div class="sr-only" id="page-navigation-status" role="status" aria-live="polite"></div>
+
 <script>
-// サイドバー全体の折りたたみ。畳んだ状態では 2 文字コードだけを残す。
+window.VeriRagUi = window.VeriRagUi || {};
+
+// 子メニューだけを折りたたむ。親カテゴリは常に残し、画面移動先を見失わせない。
 (function () {
-  var shell = document.querySelector('.shell');
-  var button = document.getElementById('nav-collapse');
+  function initNavigation(root) {
+    var shell = root.querySelector('.shell');
+    var buttons = shell ? shell.querySelectorAll('[data-nav-toggle]') : [];
+    if (!shell || !buttons.length) { return; }
 
-  if (!shell || !button) { return; }
+    var KEY = 'verirag.nav.collapsed';
+    function apply(collapsed) {
+      shell.classList.toggle('nav-collapsed', collapsed);
+      buttons.forEach(function (button) {
+        var action = collapsed ? '子メニューを表示' : '子メニューを隠す';
+        button.setAttribute('aria-expanded', String(!collapsed));
+        button.setAttribute('title', action);
+        var srOnly = button.querySelector('.sr-only');
+        if (srOnly) { srOnly.textContent = action; }
+      });
+    }
 
-  var KEY = 'verirag.nav.collapsed';
-
-  function apply(collapsed) {
-    shell.classList.toggle('nav-collapsed', collapsed);
-    button.setAttribute('aria-expanded', String(!collapsed));
-  }
-
-  try { apply(localStorage.getItem(KEY) === '1'); } catch (e) { /* 保存できなくても動く */ }
-
-  button.addEventListener('click', function () {
-    var collapsed = !shell.classList.contains('nav-collapsed');
-    apply(collapsed);
-
-    try { localStorage.setItem(KEY, collapsed ? '1' : '0'); } catch (e) { /* 同上 */ }
-  });
-})();
-
-// サイドバーのセクション開閉。現在の画面を含むセクションは常に開く。
-(function () {
-  var nav = document.getElementById('sidebar');
-
-  if (!nav) { return; }
-
-  var KEY = 'verirag.nav.open';
-  var saved = null;
-
-  try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { saved = null; }
-
-  if (saved) {
-    nav.querySelectorAll('.sb-sec').forEach(function (sec) {
-      if (sec.classList.contains('current')) { return; }
-      sec.classList.toggle('open', saved.indexOf(sec.dataset.sec) !== -1);
+    try { apply(localStorage.getItem(KEY) === '1'); } catch (e) { apply(false); }
+    buttons.forEach(function (button) {
+      button.addEventListener('click', function () {
+        var collapsed = !shell.classList.contains('nav-collapsed');
+        apply(collapsed);
+        try { localStorage.setItem(KEY, collapsed ? '1' : '0'); } catch (e) { /* 保存できなくても動く */ }
+      });
     });
   }
 
-  nav.querySelectorAll('.sb-hd').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      btn.parentElement.classList.toggle('open');
-
-      var open = [];
-      nav.querySelectorAll('.sb-sec.open').forEach(function (sec) { open.push(sec.dataset.sec); });
-
-      try { localStorage.setItem(KEY, JSON.stringify(open)); } catch (e) { /* 保存できなくても動く */ }
-    });
-  });
+  window.VeriRagUi.initNavigation = initNavigation;
+  initNavigation(document);
 })();
+
+// 誤送信・離脱と入力エラーを共通で扱う。画面ごとに挙動を増やさないため、
+// 実際に保存する .form だけを対象にする。
+(function () {
+  var formStates = [];
+
+  function hasUnsavedChanges() {
+    return formStates.some(function (state) {
+      return state.dirty && !state.submitting && !state.form.hasAttribute('data-no-unsaved-warning');
+    });
+  }
+
+  function initMainEnhancements(root) {
+    formStates = [];
+    root.querySelectorAll('table thead th').forEach(function (header) {
+      header.setAttribute('scope', 'col');
+    });
+
+    // コーチマーク。閉じた状態は端末側にだけ置く（個人データをサーバーへ持たない）。
+    // localStorage が使えない環境（プライベートモード等）では、単に毎回出るだけにする。
+    root.querySelectorAll('[data-coach]').forEach(function (coach) {
+      var key = 'veriRagCoach:' + coach.getAttribute('data-coach');
+      try {
+        if (window.localStorage.getItem(key) === 'closed') { coach.hidden = true; }
+      } catch (error) { /* 参照できないだけ。案内は出したままにする */ }
+
+      var button = coach.querySelector('[data-coach-close]');
+      if (!button) { return; }
+      button.addEventListener('click', function () {
+        coach.hidden = true;
+        try { window.localStorage.setItem(key, 'closed'); } catch (error) { /* 保存できなくても閉じる */ }
+      });
+    });
+
+    root.querySelectorAll('[data-field-error]').forEach(function (error) {
+      var control = document.getElementById(error.getAttribute('data-field-error'));
+      if (!control) { return; }
+      var errorId = control.id + '-error';
+      error.id = errorId;
+      control.setAttribute('aria-invalid', 'true');
+      control.setAttribute('aria-describedby', errorId);
+    });
+
+    var summary = root.querySelector('[data-form-error-summary]');
+    if (summary) {
+      summary.setAttribute('tabindex', '-1');
+      summary.focus();
+    }
+
+    root.querySelectorAll('form.form, form[data-submit-protection]').forEach(function (form) {
+      var state = { form: form, dirty: false, submitting: false };
+      formStates.push(state);
+      form.querySelectorAll('input, select, textarea').forEach(function (control) {
+        control.addEventListener('input', function () { state.dirty = true; });
+        control.addEventListener('change', function () { state.dirty = true; });
+      });
+      form.addEventListener('submit', function (event) {
+        var confirmation = form.getAttribute('data-confirm');
+        if (confirmation && !window.confirm(confirmation)) {
+          event.preventDefault();
+          return;
+        }
+        if (state.submitting) {
+          event.preventDefault();
+          return;
+        }
+        state.submitting = true;
+        state.dirty = false;
+        form.classList.add('is-submitting');
+        form.setAttribute('aria-busy', 'true');
+        form.querySelectorAll('button[type="submit"]').forEach(function (button) {
+          button.disabled = true;
+        });
+        var status = document.createElement('span');
+        status.className = 'sr-only';
+        status.setAttribute('role', 'status');
+        status.textContent = '送信しています。';
+        form.appendChild(status);
+      });
+    });
+
+    // 和文の改行位置。CSS の `word-break: auto-phrase` は Chrome / Edge にしか無く、
+    // Safari / Firefox では「この画面の目／的です。」のように語の途中で折れる。
+    // 形態素解析は持ち込まず、保守的な規則で文節の切れ目へ <wbr>（改行してよい位置）
+    // を置く。CSS 側は `keep-all` で任意位置の改行を止めてあるため、ここで置いた
+    // <wbr> が改行の許可点になる。
+    var wbrTargets = '.ps, .empty, .empty-state, .attention-meta, .callout p, .kpi-s';
+    // 漢字（CJK統合漢字と踊り字「々」）。ひらがな連続では切らない。
+    var wbrKanji = /[々一-鿿]/;
+    // 前方一致で見るため、長いものを先に置く。
+    var wbrParticles = ['から', 'まで', 'より', 'は', 'が', 'を', 'に', 'へ', 'と', 'で', 'も', 'の'];
+    var wbrPoliteness = ['ました', 'ません', 'です', 'ます'];
+    var wbrAfter = '、。）」';
+
+    function wbrStartsWithAny(text, index, words) {
+      return words.some(function (word) {
+        return text.substr(index, word.length) === word;
+      });
+    }
+
+    // 改行してよい位置（文字数オフセット）を昇順で返す。先頭は含めない。
+    function wbrOffsets(text) {
+      var offsets = [];
+      var index = 1;
+      while (index < text.length) {
+        var previous = text.charAt(index - 1);
+
+        // 句読点・閉じ括弧の直後は、どの流派でも切ってよい。
+        if (wbrAfter.indexOf(previous) >= 0) {
+          offsets.push(index);
+          index += 1;
+          continue;
+        }
+
+        // 文節の切れ目は「助詞の直後」であって、助詞の手前ではない。
+        // 「この画面の目的です」は 画面の / 目的です と切る。
+        // 手前で切ると 画面 / の目的です となり、かえって読みにくくなる。
+        var particle = wbrMatchAt(text, index, wbrParticles);
+        if (particle && wbrKanji.test(previous)) {
+          var after = index + particle.length;
+          // 助詞の後ろに次の語が続くときだけ切る。文末の「です」の前では切らない。
+          if (after < text.length && wbrKanji.test(text.charAt(after))) {
+            offsets.push(after);
+            index = after + 1;
+            continue;
+          }
+        }
+
+        // 「〜です」「〜ます」の手前。ここは述語の切れ目なので前で切る。
+        if (wbrKanji.test(previous) && wbrStartsWithAny(text, index, wbrPoliteness)) {
+          offsets.push(index);
+        }
+        index += 1;
+      }
+      return offsets;
+    }
+
+    function wbrMatchAt(text, index, words) {
+      // 長い語から順に照合する（「から」を「か」と誤認しないため）。
+      var sorted = words.slice().sort(function (a, b) { return b.length - a.length; });
+      var found = null;
+      sorted.some(function (word) {
+        if (text.substr(index, word.length) === word) { found = word; return true; }
+        return false;
+      });
+      return found;
+    }
+
+    // ページ見出しの説明文だけは、句読点の直後にしか改行位置を作らない。
+    // 助詞の規則まで適用すると、短い案内文が細かく折れて読みにくくなる。
+    root.querySelectorAll('.ph .ps').forEach(function (element) {
+      if (element.getAttribute('data-wbr') === 'done') { return; }
+      element.setAttribute('data-wbr', 'done');
+      var text = element.firstChild;
+      if (!text || text.nodeType !== 3) { return; }
+      var value = text.nodeValue;
+      var points = [];
+      var at;
+      for (at = 1; at < value.length; at += 1) {
+        if (wbrAfter.indexOf(value.charAt(at - 1)) >= 0) { points.push(at); }
+      }
+      for (at = points.length - 1; at >= 0; at -= 1) {
+        var rest = text.splitText(points[at]);
+        rest.parentNode.insertBefore(document.createElement('wbr'), rest);
+      }
+    });
+
+    root.querySelectorAll(wbrTargets).forEach(function (element) {
+      // 冪等にする。画面差し替え後に再初期化されても二重に入れない。
+      if (element.getAttribute('data-wbr') === 'done') { return; }
+      element.setAttribute('data-wbr', 'done');
+
+      var walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+      var textNodes = [];
+      var node = walker.nextNode();
+      while (node) {
+        textNodes.push(node);
+        node = walker.nextNode();
+      }
+
+      // HTML を文字列で組み立てない。要素生成とテキスト分割だけで挿入する
+      // （本文が属性やタグとして解釈される余地を作らないため）。
+      textNodes.forEach(function (textNode) {
+        var offsets = wbrOffsets(textNode.nodeValue);
+        var i;
+        // 後ろから入れる。前から入れると残りのオフセットがずれる。
+        for (i = offsets.length - 1; i >= 0; i -= 1) {
+          var tail = textNode.splitText(offsets[i]);
+          tail.parentNode.insertBefore(document.createElement('wbr'), tail);
+        }
+      });
+    });
+  }
+
+  window.addEventListener('beforeunload', function (event) {
+    if (!hasUnsavedChanges()) { return; }
+    event.preventDefault();
+    event.returnValue = '';
+  });
+
+  window.VeriRagUi.hasUnsavedChanges = hasUnsavedChanges;
+  window.VeriRagUi.initMainEnhancements = initMainEnhancements;
+  initMainEnhancements(document);
+})();
+
+// 同一サイト内の画面遷移は、現在の画面を残したまま次のHTMLを取得して置き換える。
+// 失敗時は通常遷移へ戻すため、JavaScriptが使えない環境でも画面を開ける。
+(function () {
+  var activeRequest = null;
+  var currentUrl = window.location.href;
+
+  function isInternalNavigation(anchor, event) {
+    if (!anchor || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) { return false; }
+    if (anchor.target || anchor.hasAttribute('download') || anchor.dataset.noEnhancedNav !== undefined) { return false; }
+    var target = new window.URL(anchor.href, window.location.href);
+    if (target.origin !== window.location.origin || target.protocol !== window.location.protocol) { return false; }
+    if (target.pathname === window.location.pathname && target.search === window.location.search && target.hash) { return false; }
+    return true;
+  }
+
+  function announce(message) {
+    var status = document.getElementById('page-navigation-status');
+    if (status) { status.textContent = message; }
+  }
+
+  function replaceShell(nextDocument) {
+    var currentShell = document.querySelector('.shell');
+    var nextShell = nextDocument.querySelector('.shell');
+    if (!currentShell || !nextShell) { return false; }
+    var wasCollapsed = currentShell.classList.contains('nav-collapsed');
+    function apply() {
+      currentShell.className = nextShell.className;
+      if (wasCollapsed) { currentShell.classList.add('nav-collapsed'); }
+      currentShell.innerHTML = nextShell.innerHTML;
+      document.title = nextDocument.title;
+      window.VeriRagUi.initNavigation(document);
+      window.VeriRagUi.initMainEnhancements(document);
+    }
+    // 画面切替にアニメーションを掛けない。
+    // startViewTransition を呼ぶと、view-transition-name を外してもブラウザ既定で
+    // ルート要素が交差フェードするため、呼び出し自体をやめて即差し替えにする。
+    // 読み込み中であることはヘッダーの進行線が示す。
+    apply();
+    return true;
+  }
+
+  function visit(url, options) {
+    var settings = options || {};
+    if (activeRequest) { activeRequest.abort(); }
+    var controller = new AbortController();
+    activeRequest = controller;
+    var shell = document.querySelector('.shell');
+    if (shell) { shell.setAttribute('aria-busy', 'true'); }
+    document.body.classList.add('is-page-loading');
+    announce('画面を切り替えています。');
+
+    return window.fetch(url, {
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-VeriRAG-Navigation': 'true' },
+      signal: controller.signal
+    }).then(function (response) {
+      if (!response.ok) { throw new Error('navigation failed'); }
+      return response.text().then(function (html) {
+        return { html: html, url: response.url };
+      });
+    }).then(function (result) {
+      var nextDocument = new DOMParser().parseFromString(result.html, 'text/html');
+      if (!replaceShell(nextDocument)) {
+        window.location.assign(result.url || url);
+        return;
+      }
+      var nextUrl = result.url || url;
+      if (!settings.fromHistory) { window.history.pushState({}, '', nextUrl); }
+      currentUrl = nextUrl;
+      window.scrollTo(0, 0);
+      announce('画面を切り替えました。');
+    }).catch(function (error) {
+      if (error.name !== 'AbortError') { window.location.assign(url); }
+    }).finally(function () {
+      // 後から開始した遷移がある場合、その進行表示を先に消さない。
+      if (activeRequest === controller) {
+        if (shell) { shell.removeAttribute('aria-busy'); }
+        document.body.classList.remove('is-page-loading');
+        activeRequest = null;
+      }
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    var anchor = event.target.closest('a[href]');
+    if (!isInternalNavigation(anchor, event)) { return; }
+    if (window.VeriRagUi.hasUnsavedChanges() && !window.confirm('入力内容が保存されていません。画面を移動しますか？')) { return; }
+    event.preventDefault();
+    visit(anchor.href);
+  });
+
+  window.addEventListener('popstate', function () {
+    if (window.VeriRagUi.hasUnsavedChanges() && !window.confirm('入力内容が保存されていません。画面を移動しますか？')) {
+      window.history.pushState({}, '', currentUrl);
+      return;
+    }
+    visit(window.location.href, { fromHistory: true });
+  });
+
+  window.VeriRagUi.visit = visit;
+})();
+
 </script>
 </body>
 </html>

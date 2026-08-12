@@ -1,12 +1,14 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
 {% block subtitle %}品質指標の合否と不具合の収束状況を確認します。{% endblock %}
 
 {% block content %}
 
+  {% include "partials/coachmark.html" with coach_key="quality" step1="まず「先に見るもの（不合格・未計測）」を読みます。品質ゲート不合格と未計測は分けて並びます" step2="不合格は「未対応の不具合一覧を見る」「文書台帳を見る」から原因へ、未計測は「次に入力／取得すべきデータ」を埋めます" step3="「品質指標（指標ごとの最新値）」の判定が「閾値未設定」の行は、合否そのものを出せていません。不合格ではありません" %}
+
   <div class="kpi-g">
     <div class="kpi">
-      <div class="kpi-l">消化率</div>
+      <div class="kpi-l">消化率{% include "partials/hint.html" with label="消化率" body="品質指標に登録があればその値を使い、無ければ不具合のクローズ率で代替します。どちらを使ったかは数値の下に出ています。" %}</div>
       <div class="kpi-v" style="color:var(--blue)">{{ report.consumption_percent }}<small>%</small></div>
       <div class="kpi-s">{{ report.consumption_source }}</div>
       <div class="kpi-bar"><div class="kpi-fill b" style="width:{{ report.consumption_percent }}%"></div></div>
@@ -24,11 +26,56 @@
       <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
     </div>
     <div class="kpi">
-      <div class="kpi-l">品質ゲート不合格</div>
+      <div class="kpi-l">品質ゲート不合格{% include "partials/hint.html" with label="品質ゲート" body="指標の実績が目標値に届いているかの判定です。目標値が登録されていない指標は「閾値未設定」となり、合否を出しません。" %}</div>
       <div class="kpi-v" style="color:var(--orange)">{{ report.gate_failures }}</div>
       <div class="kpi-s">目標未達の指標</div>
       <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
     </div>
+  </div>
+
+  {% comment %}
+  UXP-06: 表を上から読ませないための要約。不合格（測れていて届いていない）と
+  未計測（そもそも合否を出せない）は対処が違うので、必ず分けて出す。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">先に見るもの（不合格・未計測）</span>
+      <span class="card-act">不合格と未計測は対処が違います</span>
+    </div>
+
+    <p><strong>品質ゲート不合格</strong>：測れていて、基準に届いていない指標です。</p>
+    <ul class="attention-list">
+      {% for row in metric_rows %}
+        {% if row.is_failed %}
+          <li class="attention-item">
+            <span class="attention-name">{{ row.metric.project.code }} ／ {{ row.label }}</span>
+            <span class="attention-meta">
+              <span class="badge r">ゲート未達</span>
+              実績 {{ row.metric.value|floatformat:"-2" }} ／ 目標 {{ row.metric.target_value|floatformat:"-2"|default:"未設定" }}
+              {% if defect_list_url %}<a href="{{ defect_list_url }}">未対応の不具合一覧を見る</a>{% else %}確認先なし{% endif %}
+              {% if document_list_url %}<a href="{{ document_list_url }}">文書台帳を見る</a>{% else %}確認先なし{% endif %}
+            </span>
+          </li>
+        {% endif %}
+      {% empty %}
+        <li class="attention-item"><span class="attention-name">品質指標が登録されていません。</span></li>
+      {% endfor %}
+    </ul>
+
+    <p><strong>未計測</strong>{% include "partials/hint.html" with label="未計測" body="閾値や計測値が足りず、合否を判定できない状態です。基準に届いていない「不合格」とは対処が違います。" %}：閾値や計測値が足りず、合否を出せない指標です。「不合格」ではありません。</p>
+    <ul class="attention-list">
+      {% for row in metric_rows %}
+        {% if row.is_unmeasured %}
+          <li class="attention-item">
+            <span class="attention-name">{{ row.metric.project.code }} ／ {{ row.label }}</span>
+            <span class="attention-meta">
+              <span class="badge n">未計測</span>
+              次に入力／取得すべきデータ：{{ row.next_data }}
+            </span>
+          </li>
+        {% endif %}
+      {% endfor %}
+    </ul>
   </div>
 
   <div class="card">
@@ -42,10 +89,13 @@
           <tr><th>案件</th><th>指標</th><th>実績</th><th>目標</th><th>計測日</th><th>判定</th></tr>
         </thead>
         <tbody>
-          {% for row in report.metric_rows %}
+          {% for row in metric_rows %}
             <tr>
               <td>{{ row.metric.project.code }}</td>
-              <td>{{ row.metric.metric_key }}</td>
+              <td>
+                {{ row.label }}
+                <div class="ps">登録キー: {{ row.metric_key }}</div>
+              </td>
               <td class="nowrap">{{ row.metric.value|floatformat:"-2" }}</td>
               <td class="nowrap">{{ row.metric.target_value|floatformat:"-2"|default:"—" }}</td>
               <td class="nowrap">{{ row.metric.measured_on|date:"n/j" }}</td>
@@ -105,7 +155,7 @@
     {% if coverage.determinable %}
       <div class="kpi-g">
         <div class="kpi">
-          <div class="kpi-l">テストのカバー率</div>
+          <div class="kpi-l">テストのカバー率{% include "partials/hint.html" with label="テストのカバー率" body="要件書のIDのうち、テスト計画書にも出てくる割合です。突合は要件ID（REQ-…／NFR-…）の一致のみで、推測は行いません。" %}</div>
           <div class="kpi-v">{{ coverage.coverage_percent }}<small>%</small></div>
           <div class="kpi-s">要件書のIDのうち、テスト計画書にも出てくる割合</div>
           <div class="kpi-bar"><div class="kpi-fill {{ coverage.tone }}" style="width:{{ coverage.coverage_percent }}%"></div></div>
@@ -141,7 +191,7 @@
     {% endif %}
     {% if coverage.unreadable_documents %}
       <div class="callout w">
-        <p><strong>本文が取れていない文書があります。</strong>下記は判定に含めていません。ドキュメント登録から本文抽出を実行してください。</p>
+        <p><strong>本文が取れていない文書があります。</strong>下記は判定に含めていません。ナレッジ一覧から本文抽出を実行してください。</p>
         <p>{% for document in coverage.unreadable_documents %}{{ document.title }}{% if not forloop.last %} ／ {% endif %}{% endfor %}</p>
       </div>
     {% endif %}

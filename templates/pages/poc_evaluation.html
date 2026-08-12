@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
-{% block kicker %}AIプロジェクト管制{% endblock %}
-{% block subtitle %}PoCの受け入れ条件ごとに、目標値と実績を突き合わせて合否を判定します。データが足りない指標は「判定不能」と理由を出します。{% endblock %}
+{% block kicker %}プロジェクト管理{% endblock %}
+{% block subtitle %}受け入れ条件ごとに目標と実績を突き合わせます。足りない指標は判定不能とします。{% endblock %}
 
 {% block content %}
 
@@ -27,12 +27,50 @@
     </div>
   </div>
 
-  {% if report.unknown_count %}
-    <div class="callout w">
-      <p><strong>判定不能が {{ report.unknown_count }} 件あります。</strong>
-      判定不能は「不合格」ではありません。合否を言うために何が足りないかは、下の表の「根拠」に書いています。</p>
+  {% comment %}
+  UXP-13: 総合判定だけでは次の一手が決まらない。総合判定の直下に、
+  手当てが要る「不合格」と「判定不能」だけを抜き出す。判定不能には
+  必要なデータと取得先を必ず添える（取得先が無ければ「確認先なし」と書く）。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">手当てが要る条件（不合格・判定不能）</span>
+      <span class="card-act">不合格と判定不能は別ものです</span>
     </div>
-  {% endif %}
+
+    <p><strong>不合格 {{ report.failed_count }}件</strong>：測れていて、目標に届いていない条件です。</p>
+    <ul class="attention-list">
+      {% for item in failed_rows %}
+        <li class="attention-item">
+          <span class="attention-name">{{ item.number }}. {{ item.label }}</span>
+          <span class="attention-meta">
+            <span class="badge r">不合格</span>
+            実績 {{ item.actual_text }} ／ 目標 {{ item.target_text }}
+            {{ item.reason }}
+          </span>
+        </li>
+      {% empty %}
+        <li class="attention-item"><span class="attention-name">不合格の条件はありません。</span></li>
+      {% endfor %}
+    </ul>
+
+    <p><strong>判定不能 {{ report.unknown_count }}件</strong>：データが足りず、合否を言えない条件です。不合格ではありません。</p>
+    <ul class="attention-list">
+      {% for row in unknown_rows %}
+        <li class="attention-item">
+          <span class="attention-name">{{ row.item.number }}. {{ row.item.label }}</span>
+          <span class="attention-meta">
+            <span class="badge n">判定不能</span>
+            必要なデータ：{{ row.data_need }}
+            ／ 取得先：{% if row.url %}<a href="{{ row.url }}">{{ row.link_label }}</a>{% else %}{{ row.link_label }}{% endif %}
+            {{ row.item.reason }}
+          </span>
+        </li>
+      {% empty %}
+        <li class="attention-item"><span class="attention-name">判定不能の条件はありません。</span></li>
+      {% endfor %}
+    </ul>
+  </div>
 
   <div class="card">
     <div class="card-hdr">
@@ -72,13 +110,19 @@
       <span class="card-act">{{ report.blocked_deliverables|length }}件がブロック中</span>
     </div>
     {% if report.blocked_deliverables %}
-      <div class="dl">
-        <p><strong>実演手順</strong></p>
-        <p>1. 下表の成果物を「成果物」画面で開く。</p>
-        <p>2. 承認申請を実行する。</p>
-        <p>3. 根拠評価が不足と判定しているため、サーバ側で拒否され承認へ進めないことを確認する。</p>
-        <p>4. 根拠を追加したうえで再評価すると、同じ操作が通ることを確認する。</p>
-      </div>
+      {% comment %}
+      UXP-13: 実演手順は毎回読むものではないので折りたたむ。既定は閉じた状態で、
+      判定結果の表を先に読めるようにする。
+      {% endcomment %}
+      <details>
+        <summary>実演手順を開く（4ステップ）</summary>
+        <div class="dl">
+          <p>1. 下表の成果物を「成果物」画面で開く。</p>
+          <p>2. 承認申請を実行する。</p>
+          <p>3. 根拠評価が不足と判定しているため、サーバ側で拒否され承認へ進めないことを確認する。</p>
+          <p>4. 根拠を追加したうえで再評価すると、同じ操作が通ることを確認する。</p>
+        </div>
+      </details>
       <div class="dashboard-risk-wrap">
         <table class="dashboard-risk-table">
           <thead>

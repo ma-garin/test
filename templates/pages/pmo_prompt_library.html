@@ -14,6 +14,12 @@
     <em>カテゴリ {{ categories|length }}種</em>
   </div>
 
+  {# 押す前に「何が起きるか」を読めるようにする。押してから気づく設計にしない。 #}
+  <div class="callout ok">
+    <p><strong>「このテンプレートで相談」を押すと何が起きるか。</strong>下の「相談へ渡す内容」の本文が入力済みの状態で、PMO相談画面が開きます。</p>
+    <p>渡るのは本文だけです。送信はまだ行われません。相談画面の入力欄で本文を書き換え・追記してから、自分で送信します。</p>
+  </div>
+
   {% for category in categories %}
     <div class="card">
       <div class="card-hdr">
@@ -22,18 +28,21 @@
       </div>
       <div class="t-wrap">
         <table class="t">
-          <thead><tr><th>テンプレート</th><th>想定意図</th><th>本文</th><th>操作</th></tr></thead>
+          <thead><tr><th>テンプレート</th><th>用途</th><th>相談へ渡す内容</th><th>主操作</th></tr></thead>
           <tbody>
             {% for entry in entries %}
               {% if entry.category == category %}
                 <tr>
                   <td>
                     <strong>{{ entry.title }}</strong>
-                    <div class="ps">{{ entry.description }}</div>
+                    <div class="ps">分類: {% if entry.intent %}{{ entry.intent }}{% else %}汎用{% endif %}</div>
                   </td>
-                  <td class="nowrap">{% if entry.intent %}<span class="badge b">{{ entry.intent }}</span>{% else %}<span class="muted">汎用</span>{% endif %}</td>
-                  <td><code>{{ entry.body|truncatechars:60 }}</code></td>
-                  <td class="nowrap"><a class="btn-out sm" href="{% url 'pmo:consultation' %}?q={{ entry.body|urlencode }}">この内容で相談</a></td>
+                  <td><div class="ps">{{ entry.description }}</div></td>
+                  <td>
+                    <code>{{ entry.body|truncatechars:60 }}</code>
+                    <div class="ps">相談画面で編集できます。</div>
+                  </td>
+                  <td class="nowrap"><a class="btn-out sm" href="{% url 'pmo:consultation' %}?q={{ entry.body|urlencode }}">このテンプレートで相談</a></td>
                 </tr>
               {% endif %}
             {% endfor %}

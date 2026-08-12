@@ -1,6 +1,6 @@
 {% extends "layouts/base.html" %}
 {% block kicker %}管理・設定{% endblock %}
-{% block heading %}パイプライン監視{% endblock %}
+{% block heading %}同期の稼働状況{% endblock %}
 {% block subtitle %}外部同期と RAG インデックスの鮮度をまとめて見ます。止まっていることに気づけるのがこの画面の目的です。{% endblock %}
 
 {% block header_actions %}
@@ -13,16 +13,40 @@
   {% if overview.stale_rows %}
     <div class="callout d">
       <p><strong>{{ overview.stale_count }} 件の接続が {{ overview.stale_after_hours }} 時間以上、同期に成功していません。</strong>取り込めていないデータがあるため、画面の数字は最新ではありません。</p>
-      {% for row in overview.stale_rows %}
-        <p>・{{ row.connection.name }}（{{ row.connection.get_provider_display }}）: {{ row.staleness_label }}</p>
-      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if attention_rows %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">今すぐ確認する接続</span>
+        <span class="card-act">{{ attention_rows|length }} 件を先頭に固定しています</span>
+      </div>
+      <ul class="attention-list">
+        {% for row in attention_rows %}
+          <li class="attention-item">
+            <span class="badge {{ row.tone }}">{{ row.attention_reason }}</span>
+            <span class="attention-name">{{ row.connection.name }}（{{ row.connection.get_provider_display }}）</span>
+            <span class="attention-meta">失敗理由: {{ row.failure_reason|default:"記録がありません" }} ／ 最終成功 {{ row.last_success_at|date:"n/j H:i"|default:"なし" }}</span>
+            <span class="attention-meta">
+              {% if can_edit %}<a href="{% url 'integrations:edit' row.connection.pk %}">接続設定を開く</a> ／ {% endif %}
+              <a href="{% url 'integrations:job_list' %}">同期履歴を見る</a>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <div class="callout ok">
+      <strong>監視対象 {{ rows|length }} 件はすべて正常です。</strong>
+      次に確認する目安は {{ overview.stale_after_hours }} 時間ごとです（最終成功からこれを超えた接続は、停止疑いとして先頭に出ます）。
     </div>
   {% endif %}
 
   <div class="kpi-g">
     <div class="kpi">
       <div class="kpi-l">監視対象の接続</div>
-      <div class="kpi-v">{{ overview.rows|length }}</div>
+      <div class="kpi-v">{{ rows|length }}</div>
       <div class="kpi-s">うち有効 {{ overview.active_count }} 件</div>
     </div>
     <div class="kpi">
@@ -45,15 +69,15 @@
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">接続ごとの同期状態</span>
-      <span class="card-act">最終同期情報</span>
+      <span class="card-act">異常のある接続を先頭に固定しています</span>
     </div>
     <div class="t-wrap">
       <table class="t">
         <thead>
-          <tr><th>接続</th><th>連携先</th><th>モード</th><th>最終同期</th><th>最終成功</th><th>経過</th><th>直近ジョブ</th><th>鮮度</th></tr>
+          <tr><th>接続</th><th>連携先</th><th>モード</th><th>最終同期</th><th>最終成功</th><th>経過</th><th>直近ジョブ</th><th>鮮度</th><th>失敗理由</th><th>次に開く画面</th></tr>
         </thead>
         <tbody>
-          {% for row in overview.rows %}
+          {% for row in rows %}
             <tr>
               <td>{{ row.connection.name }}</td>
               <td class="nowrap">{{ row.connection.get_provider_display }}</td>
@@ -69,9 +93,14 @@
                 {% endif %}
               </td>
               <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.staleness_label }}</span></td>
+              <td>{{ row.failure_reason|default:"—" }}</td>
+              <td class="nowrap">
+                {% if can_edit %}<a href="{% url 'integrations:edit' row.connection.pk %}">接続設定</a> ／ {% endif %}
+                <a href="{% url 'integrations:job_list' %}">同期履歴</a>
+              </td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="empty">監視対象の接続がありません。接続を追加すると、ここに同期の鮮度が並びます。</div></td></tr>
+            <tr><td colspan="10"><div class="empty">監視対象の接続は 0 件です。接続を追加すると、{{ overview.stale_after_hours }} 時間ごとに確認する鮮度がここに並びます。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

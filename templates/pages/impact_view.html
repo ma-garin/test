@@ -1,0 +1,135 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}影響範囲{% endblock %}
+{% block subtitle %}{{ defect.project.code }} {{ defect.project.name }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{{ return_to }}">不具合管理へ</a>
+{% endblock %}
+
+{% block content %}
+
+  {% comment %}
+  GE-04: 確定・候補・否定・未確認を混ぜない。候補を確定情報と誤認したまま
+  報告へ載せることが、この画面で最も避けたい失敗である。
+  {% endcomment %}
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">確定した影響</div>
+      <div class="kpi-v">{{ impact.confirmed_edges|length }}</div>
+      <div class="kpi-s">予測の根拠に使える関係</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">未確認の候補</div>
+      <div class="kpi-v" style="color:var(--orange)">{{ impact.candidate_edges|length }}</div>
+      <div class="kpi-s">確定するまで日数計算に使わない</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">到達したノード</div>
+      <div class="kpi-v">{{ impact.nodes|length }}</div>
+      <div class="kpi-s">うち確定経路のみ {{ confirmed_node_count }}件</div>
+      <div class="kpi-bar"><div class="kpi-fill g" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">行き止まり</div>
+      <div class="kpi-v" style="color:var(--muted)">{{ impact.dead_ends|length }}</div>
+      <div class="kpi-s">先の関係が未登録のノード</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:100%"></div></div>
+    </div>
+  </div>
+
+  {% if impact.truncated %}
+    <div class="callout w"><p><strong>経路が上限に達したため、一部を表示していません。</strong>影響が広すぎる場合は、確定した関係だけに絞って確認してください。</p></div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">起点</span>
+      <span class="card-act">{{ defect.get_severity_display }} ／ {{ defect.get_status_display }}</span>
+    </div>
+    <dl class="dl">
+      <dt>不具合</dt><dd>{{ defect.title }}</dd>
+      <dt>検出工程</dt><dd>{{ defect.phase|default:"—" }}</dd>
+      <dt>検出日</dt><dd>{{ defect.detected_on|date:"Y/n/j"|default:"—" }}</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">確定した影響の経路</span>
+      <span class="card-act">予測の根拠に使用</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>起点</th><th class="nowrap">関係</th><th>影響先</th><th class="nowrap">出所</th><th class="nowrap">確認者</th><th class="nowrap">確認日時</th></tr></thead>
+        <tbody>
+          {% for edge in impact.confirmed_edges %}
+            <tr>
+              <td>{{ edge.from_node.title }}<div class="ps">{{ edge.from_node.label }}</div></td>
+              <td class="nowrap"><span class="badge b">{{ edge.relation_label }}</span></td>
+              <td>{{ edge.to_node.title }}<div class="ps">{{ edge.to_node.label }}</div></td>
+              <td class="nowrap">{{ edge.provenance_label }}</td>
+              <td class="nowrap">{{ edge.confirmed_by|default:"—" }}</td>
+              <td class="nowrap">{{ edge.confirmed_at|date:"n/j H:i"|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="empty">確定した影響がありません。候補を確認するか、影響を手動で登録してください。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">未確認の候補</span>
+      <span class="card-act">確定情報ではありません</span>
+    </div>
+    <div class="callout w"><p>ここにある関係は<strong>まだ確認されていない候補</strong>です。遅延日数・影響範囲の確定には使っていません。確定または否定してください。</p></div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>起点</th><th class="nowrap">関係</th><th>影響先（候補）</th><th class="nowrap">出所</th><th>判断</th></tr></thead>
+        <tbody>
+          {% for edge in impact.candidate_edges %}
+            <tr>
+              <td>{{ edge.from_node.title }}</td>
+              <td class="nowrap"><span class="badge a">{{ edge.relation_label }}</span></td>
+              <td>{{ edge.to_node.title }}<div class="ps">{{ edge.to_node.label }}</div></td>
+              <td class="nowrap">{{ edge.provenance_label }}</td>
+              <td class="nowrap">
+                <form method="post" action="{% url 'forecast:review_work_link' edge.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" name="action" value="confirm" class="btn-out sm">確定</button>
+                  <button type="submit" name="action" value="reject" class="btn-ghost sm">否定</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty">未確認の候補はありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">行き止まり（未確認の空白）</span>
+      <span class="card-act">{{ impact.dead_ends|length }}件</span>
+    </div>
+    <ul class="attention-list">
+      {% for node in impact.dead_ends %}
+        <li class="attention-item">
+          <span class="badge n">{{ node.label }}</span>
+          <span class="attention-name">{{ node.title }}</span>
+          <span class="attention-meta">ここから先の関係が登録されていません。影響が無いのか、未確認なのかを区別できません。</span>
+        </li>
+      {% empty %}
+        <li><div class="empty">行き止まりはありません。</div></li>
+      {% endfor %}
+    </ul>
+  </div>
+
+{% endblock %}
