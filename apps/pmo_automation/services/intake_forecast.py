@@ -13,10 +13,13 @@ from __future__ import annotations
 
 import hashlib
 
+from django.utils import timezone
+
 from apps.forecast.models import ForecastSnapshot
 from apps.pmo_automation.models import PmoWorkItem, WorkKind
 from apps.pmo_automation.services import planning
 from apps.pmo_automation.services.intake import IntakeResult, build_dedupe_key
+from apps.pmo_automation.services.rate_limit import check_intake_rate_limit
 
 
 def intake_from_forecast_regression(snapshot: ForecastSnapshot, *, dry_run: bool = False) -> IntakeResult:
@@ -49,6 +52,8 @@ def intake_from_forecast_regression(snapshot: ForecastSnapshot, *, dry_run: bool
     ).first()
     if existing is not None:
         return IntakeResult(work_item=existing, created=False, dedupe_key=dedupe_key)
+
+    check_intake_rate_limit(tenant, now=timezone.now())
 
     if dry_run:
         return IntakeResult(work_item=None, created=True, dedupe_key=dedupe_key)

@@ -15,7 +15,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Tenant
 from apps.pmo_authority.models import AuditEvent, CapabilityStatus, ExecutionCapability
-from apps.pmo_authority.services import audit, broker
+from apps.pmo_authority.services import audit, broker, policy_bundle
 from apps.pmo_authority.services.authority import (
     MAX_TTL_SECONDS,
     CapabilityRequest,
@@ -32,6 +32,10 @@ class AuthorityBrokerTestBase(TestCase):
     def setUp(self) -> None:
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
         self.project = Project.objects.create(tenant=self.tenant, code="p1", name="基幹刷新")
+        # SEC-01: issue_capabilityは署名済みpolicy bundleしか受理しないため、
+        # このテストファイルで使うbundleハッシュを事前に登録しておく。
+        policy_bundle.publish_bundle(content_sha256="bundle-hash", commit_sha="test-commit-1")
+        policy_bundle.publish_bundle(content_sha256="bundle-v1", commit_sha="test-commit-2")
 
     def _request(self, **kwargs) -> CapabilityRequest:
         defaults = {
@@ -84,7 +88,16 @@ class IssueCapabilityTests(AuthorityBrokerTestBase):
 
     @override_settings(DEBUG=False, PMO_AUTHORITY_SIGNING_KEY="explicit-non-default-key")
     def test_DEBUG_Falseでも明示的な鍵が設定されていれば発行できる(self) -> None:
-        capability = issue_capability(self._request(), now=NOW)
+        # setUpで登録した"bundle-hash"はデフォルト鍵で署名済みのため、
+        # override_settingsで鍵を切り替えたこのテストの中では検証が
+        # 通らない（意図通り、署名鍵が変われば既存bundleは無効になる）。
+        # このテストの趣旨（鍵さえ明示されていれば発行できること）を
+        # 確認するため、切り替え後の鍵でbundleを登録し直す。
+        policy_bundle.publish_bundle(content_sha256="explicit-key-bundle", commit_sha="test-commit-3")
+
+        capability = issue_capability(
+            self._request(policy_bundle_sha256="explicit-key-bundle"), now=NOW
+        )
 
         self.assertTrue(capability.signature)
 

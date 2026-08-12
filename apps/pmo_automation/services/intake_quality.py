@@ -11,8 +11,11 @@ block_reason に安全な集計情報だけを記録する。
 
 from __future__ import annotations
 
+from django.utils import timezone
+
 from apps.pmo_automation.models import PmoWorkItem, WorkKind
 from apps.pmo_automation.services.intake import IntakeResult, build_dedupe_key
+from apps.pmo_automation.services.rate_limit import check_intake_rate_limit
 from apps.projects.models import Defect, Issue, QualityMetric
 
 
@@ -36,6 +39,8 @@ def intake_from_quality_gate_failure(metric: QualityMetric, *, dry_run: bool = F
     existing = PmoWorkItem.objects.filter(tenant=tenant, dedupe_key=dedupe_key, is_active=True).first()
     if existing is not None:
         return IntakeResult(work_item=existing, created=False, dedupe_key=dedupe_key)
+
+    check_intake_rate_limit(tenant, now=timezone.now())
 
     if dry_run:
         return IntakeResult(work_item=None, created=True, dedupe_key=dedupe_key)

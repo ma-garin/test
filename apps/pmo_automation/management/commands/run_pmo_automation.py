@@ -22,6 +22,7 @@ from apps.accounts.models import Tenant
 from apps.dashboard.models import Alert
 from apps.pmo_automation.models import WorkItemState, WorkKind
 from apps.pmo_automation.services import intake, planning, workflow
+from apps.pmo_automation.services.rate_limit import RateLimitExceeded
 
 
 class Command(BaseCommand):
@@ -59,12 +60,19 @@ class Command(BaseCommand):
             raise CommandError(f"テナントが見つかりません: {code}") from exc
 
         plan_summaries: list[str] = []
+        rate_limited_count = 0
 
         with transaction.atomic():
             alerts = Alert.objects.filter(project__tenant=tenant).order_by("id")[:limit]
 
             for alert in alerts:
-                intake_result = intake.intake_from_alert(alert, dry_run=False)
+                try:
+                    intake_result = intake.intake_from_alert(alert, dry_run=False)
+                except RateLimitExceeded:
+                    # SEC-11: 上限到達後は残りをスキップする（1件の拒否で
+                    # このバッチ全体をロールバックさせない）。
+                    rate_limited_count += 1
+                    continue
                 if not intake_result.created:
                     continue
 
@@ -100,6 +108,12 @@ class Command(BaseCommand):
 
             if dry_run:
                 transaction.set_rollback(True)
+
+        if rate_limited_count:
+            self.stderr.write(
+                f"レート上限のため {rate_limited_count} 件のAlertをスキップしました"
+                "（SEC-11: 次回実行分として持ち越し、破棄はしていません）。"
+            )
 
         if not plan_summaries:
             self.stdout.write("対象イベントはありませんでした。")

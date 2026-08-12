@@ -122,7 +122,13 @@ class DispatchApprovedStepTests(OutboxTestBase):
         self.assertEqual(ExecutionCapability.objects.count(), 1)
         self.assertEqual(self.step.attempts.filter(outcome=ExecutionOutcome.SUCCEEDED).count(), 1)
 
-    def test_fake以外のconnectorは拒否される(self) -> None:
+    def test_許可リスト外のconnectorは拒否される(self) -> None:
+        """SEC-06自体はP0スコープ外（LLM統合が無く「LLMがschema外action
+        を返す」という原シナリオが発生しない）。このテストはSEC-06への
+        対応ではなく、PA-11で既に導入済みのALLOWED_CONNECTORSが
+        "未許可の行き先を実行させない"という近い安全性質を偶然満たして
+        いることの回帰確認であり、SEC-06向けに新規実装したコードは無い。"""
+
         with self.assertRaises(outbox.DispatchRejected):
             self._dispatch(connector="slack")
 

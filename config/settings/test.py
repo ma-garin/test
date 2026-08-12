@@ -19,3 +19,7 @@ AI_PROVIDER = "local_hash"
 # pmo_authority: DEBUG=False では開発用デフォルト鍵の使用を拒否する設計のため、
 # テスト専用の鍵を明示する（本番鍵ではない）。
 PMO_AUTHORITY_SIGNING_KEY = "test-only-signing-key-not-for-production"
+
+# pmo_authority: DEBUG=False では開発用の既定policy bundle（D-04未決定の間の
+# fake実装専用）の使用も拒否する設計のため、テストでのみ明示的に許可する。
+PMO_AUTHORITY_ALLOW_DEV_POLICY_BUNDLE = True

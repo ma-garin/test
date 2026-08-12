@@ -14,8 +14,11 @@
 
 from __future__ import annotations
 
+from django.utils import timezone
+
 from apps.pmo_automation.models import PmoWorkItem, WorkKind
 from apps.pmo_automation.services.intake import IntakeResult, build_dedupe_key
+from apps.pmo_automation.services.rate_limit import check_intake_rate_limit
 from apps.rag.models import EvaluationRun
 
 
@@ -52,6 +55,8 @@ def intake_from_rag_evaluation_degradation(
     if existing is not None:
         # 既存レコードを返すのは読み取りのみであり、dry-run不変条件には抵触しない。
         return IntakeResult(work_item=existing, created=False, dedupe_key=dedupe_key)
+
+    check_intake_rate_limit(tenant, now=timezone.now())
 
     if dry_run:
         return IntakeResult(work_item=None, created=True, dedupe_key=dedupe_key)

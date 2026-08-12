@@ -28,7 +28,7 @@ from apps.pmo_automation.models import (
     WorkStepState,
 )
 from apps.pmo_automation.services import policy
-from apps.pmo_authority.services import authority, broker
+from apps.pmo_authority.services import authority, broker, policy_bundle
 
 #: D-04（最初に許可する承認付き外部反映）が未決定の間は fake のみ許可する。
 ALLOWED_CONNECTORS = frozenset({"fake"})
@@ -140,13 +140,17 @@ def dispatch_approved_step(
     # 起きるとStepがRUNNINGのまま永久に残るバグがあった）。
     try:
         work_item = step.plan.work_item
+        # 安全施策.md SC-01/SEC-01: issue_capabilityは署名済みpolicy bundle
+        # しか受理しない。D-04未決定の間は開発用の既定bundleを使う
+        # （無ければ自動でpublishされる）。
+        dev_bundle = policy_bundle.get_or_create_dev_default_bundle()
         capability = authority.issue_capability(
             authority.CapabilityRequest(
                 tenant=work_item.tenant,
                 project=work_item.project,
                 work_item_id=work_item.id,
                 plan_version=step.plan.version,
-                policy_bundle_sha256="dev-fake-policy-bundle",
+                policy_bundle_sha256=dev_bundle.content_sha256,
                 requested_action=approval.requested_action,
                 resource_id=step.kind,
                 payload_sha256=actual_evidence_hash,

@@ -10,11 +10,14 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
+from django.utils import timezone
+
 from apps.dashboard.models import Alert
 from apps.forecast.models import ForecastSnapshot
 from apps.integrations.models import SyncJob
 from apps.pmo_automation.models import PmoWorkItem, WorkKind, WorkLink
 from apps.pmo_automation.services import planning
+from apps.pmo_automation.services.rate_limit import check_intake_rate_limit
 
 #: Alert.category から PMO Work Item の kind への割り当て。
 #: P0 は種別を絞る方針（提案.md 4.2）に合わせ、いずれも detection_triage に寄せる。
@@ -75,6 +78,10 @@ def _integrate_or_link(
         # 既存レコードを返すこと自体は読み取りであり、dry-run不変条件
         # （DB書き込みをしない）には抵触しない。
         return IntakeResult(work_item=existing, created=False, dedupe_key=dedupe_key)
+
+    # SEC-11: 新規Work Item作成のみをrate limit対象にする。既存への統合
+    # （上のexisting分岐）はWork Item数を増やさないため対象外でよい。
+    check_intake_rate_limit(tenant, now=timezone.now())
 
     if dry_run:
         return IntakeResult(work_item=None, created=True, dedupe_key=dedupe_key)
@@ -163,6 +170,8 @@ def intake_from_forecast_undeterminable(snapshot: ForecastSnapshot, *, dry_run: 
     ).first()
     if existing is not None:
         return IntakeResult(work_item=existing, created=False, dedupe_key=dedupe_key)
+
+    check_intake_rate_limit(tenant, now=timezone.now())
 
     if dry_run:
         return IntakeResult(work_item=None, created=True, dedupe_key=dedupe_key)

@@ -123,6 +123,14 @@ def issue_capability(
     if kill_switch_reason is not None:
         raise KillSwitchTrippedError(kill_switch_reason)
 
+    # 安全施策.md SC-01 / SEC-01: 未署名または別コミットのpolicy bundleを
+    # 読み込むと拒否する。policy_bundle モジュールが本モジュールの
+    # _signing_key を使うため、モジュールトップレベルでの相互importを
+    # 避け、ここで遅延importする。
+    from apps.pmo_authority.services import policy_bundle
+
+    policy_bundle.verify_bundle(request.policy_bundle_sha256)
+
     capability_id = uuid.uuid4()
     nonce = uuid.uuid4().hex
     expires_at = now + timedelta(seconds=ttl_seconds)

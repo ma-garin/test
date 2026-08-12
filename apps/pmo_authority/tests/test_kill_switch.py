@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Tenant
 from apps.pmo_authority.models import CapabilityStatus, KillSwitch, KillSwitchScope
-from apps.pmo_authority.services import broker, kill_switch
+from apps.pmo_authority.services import broker, kill_switch, policy_bundle
 from apps.pmo_authority.services.authority import (
     CapabilityRequest,
     KillSwitchTrippedError,
@@ -26,6 +26,7 @@ class KillSwitchTestBase(TestCase):
     def setUp(self) -> None:
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
         self.project = Project.objects.create(tenant=self.tenant, code="p1", name="基幹刷新")
+        policy_bundle.publish_bundle(content_sha256="bundle-hash", commit_sha="test-commit")
 
 
 class CheckKillSwitchesTests(KillSwitchTestBase):

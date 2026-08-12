@@ -22,6 +22,31 @@ from django.db import models
 from apps.core.models import TimeStampedModel
 
 
+class PolicyBundle(TimeStampedModel):
+    """安全施策.md SC-01 / SEC-01: 実行時に読み込む policy bundle は、
+    署名済みのものだけを受理する（開発用fake実装、KMS/HSM署名ではなく
+    HMAC鍵を使う点は ExecutionCapability と同じ）。
+
+    本番では「CI が生成した policy_bundle.json と detached signature」が
+    正本になる（安全施策.md SC-01）。ここでは commit_sha と
+    content_sha256 の組をそのbundleの識別子とし、署名で保護する。
+    """
+
+    commit_sha = models.CharField("コミットSHA", max_length=64)
+    content_sha256 = models.CharField("bundle内容のハッシュ", max_length=64, unique=True)
+    signature = models.TextField("署名（HMAC-SHA256, hex）")
+    is_active = models.BooleanField("有効", default=True)
+
+    class Meta:
+        verbose_name = "policy bundle"
+        verbose_name_plural = "policy bundle"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        state = "有効" if self.is_active else "無効化済み"
+        return f"policy bundle {self.content_sha256[:12]} ({state})"
+
+
 class CapabilityStatus(models.TextChoices):
     ISSUED = "issued", "発行済み"
     CONSUMED = "consumed", "実行済み"

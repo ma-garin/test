@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Tenant
 from apps.pmo_authority.models import CapabilityStatus, ExecutionCapability
-from apps.pmo_authority.services import audit, broker
+from apps.pmo_authority.services import audit, broker, policy_bundle
 from apps.pmo_authority.services.authority import CapabilityRequest, issue_capability
 from apps.projects.models import Project
 
@@ -21,6 +21,7 @@ class AuditFailClosedTests(TestCase):
     def setUp(self) -> None:
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
         self.project = Project.objects.create(tenant=self.tenant, code="p1", name="基幹刷新")
+        policy_bundle.publish_bundle(content_sha256="bundle-hash", commit_sha="test-commit")
 
     def _payload_hash(self) -> str:
         return hashlib.sha256(b"payload").hexdigest()
