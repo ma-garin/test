@@ -10,9 +10,12 @@
 | `screen_map.md` | 画面一覧と移植状況、画面ごとの受入条件 |
 | `api_contract.md` | エンドポイント一覧、応答の約束、API 化の方針 |
 | `requirements/p0_scope.md` | P0/P1 のスコープ、実装済み／未実装、推奨する実装順序 |
+| `requirements/traceability.md` | 旧実装の機能一覧と実装状況の対応（要件トレーサビリティ） |
 | `open_questions.md` | 未確定事項 |
 | `migration/from_streamlit.md` | 旧実装から何を引き継ぎ、何を変えたか |
 | `adr/` | アーキテクチャ決定記録 |
+| `idea/sidebar_variants.html` | UI 検討中の試作（サイドバー案） |
+| `INCIDENT-001-scope-omission.md` | インシデント記録（スコープ突合せの漏れ） |
 
 ## 参照資料（元の資料。編集しない）
 

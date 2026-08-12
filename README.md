@@ -13,6 +13,7 @@ Python/Streamlit の単一アプリだった現行システムを、Django の�
 - **RAG 検索** — 登録文書をハイブリッド検索し、引用元とスコアの内訳を表示する
 - **PMO 相談** — 相談内容を意図分類し、確認観点・根拠・根拠の十分性評価を返す
 - **Agentic トレース** — AI の意図分類・実行計画・使用ツール・根拠評価を後から追跡する
+- **外部連携** — Jira / Redmine / Slack / Teams / Confluence / Git と同期し、課題・通知・文書・開発活動の取り込み経路を持つ
 - **監査** — 操作ログとフィードバックを、秘密値をマスクしたうえで保存する
 
 ## クイックスタート
@@ -29,7 +30,7 @@ API キーは不要です。既定の `AI_PROVIDER=local_hash` は、外部 API 
 `.env` を編集してから `make index TENANT=demo` でインデックスを作り直してください。
 
 ```bash
-make test       # テスト（62 件、外部 API 呼び出しなし）
+make test       # テスト（外部 API 呼び出しなし）
 make lint       # ruff
 make check      # システムチェック + マイグレーション漏れ検出
 ```
@@ -52,6 +53,7 @@ make check      # システムチェック + マイグレーション漏れ検�
 │   ├── agents/              Agentic RAG（意図分類・計画・根拠評価・トレース）
 │   ├── pmo/                 相談、計画策定、成果物、承認（HITL）
 │   ├── dashboard/           ヘルススコア、アラート、介入提案、KPI
+│   ├── integrations/        外部連携（Jira / Redmine / Slack / Teams / Confluence / Git）
 │   └── audit/               操作ログ、フィードバック、秘密値マスク
 ├── templates/               画面テンプレート
 ├── static/                  CSS
@@ -61,16 +63,17 @@ make check      # システムチェック + マイグレーション漏れ検�
 │   ├── rag_flow.md          文書登録から回答までの流れ
 │   ├── screen_map.md        画面一覧と移植状況
 │   ├── api_contract.md      HTTP エンドポイント一覧
-│   ├── requirements/        P0/P1 スコープと受入条件
+│   ├── requirements/        P0/P1 スコープ・受入条件・要件トレーサビリティ
 │   ├── migration/           Streamlit 版からの移行方針
 │   ├── adr/                 アーキテクチャ決定記録
 │   ├── reference/           元の参照資料（現行コードの棚卸し、Agentic RAG 仕様）
-│   └── screens/             UI モック、スクリーンショット
-├── requirements/            base / ai / ingest / dev / prod
-└── tests/                   アプリ横断のテスト置き場
+│   ├── screens/             UI モック、スクリーンショット
+│   ├── idea/                UI 検討中の試作
+│   └── INCIDENT-*.md        障害・インシデント記録
+└── requirements/            base / ai / ingest / dev / prod
 ```
 
-各アプリの内部構成は共通です。
+各アプリの内部構成は共通です（`services/` や `management/` の有無はアプリごとに異なります）。
 
 ```text
 apps/<name>/
@@ -91,6 +94,7 @@ apps/<name>/
 | 約束 | 実装場所 |
 |---|---|
 | 認証情報を UI・ログへ出さない | `apps/core/services/ai_settings.py`（マスク）、`apps/audit/models.py`（保存時マスク） |
+| 外部連携の資格情報を DB に置かない | `apps/integrations/models.py`（環境変数名のみ保持、値は読み取り時に解決） |
 | AI 出力に根拠・信頼度・人の判断を持たせる | `apps/agents/models.py` の `EvidenceEvaluation` / `HumanReview` |
 | 根拠不足なら断定せず承認へ進めない | `EvidenceEvaluation.blocks_approval`、`Deliverable.can_request_approval` |
 | 案件・テナントの参照範囲を分離する | `apps/projects/selectors.py`、`apps/rag/services/vector_store.py`（インデックス単位でファイル分離） |
