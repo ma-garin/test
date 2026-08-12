@@ -50,4 +50,14 @@
     </select>
     <button type="submit" class="btn-b sm">絞り込む</button>
   </form>
+  {% comment %}VP-57: いま何で絞っているかを、条件の中身つきでフォームの直後に出す。{% endcomment %}
+  <div class="ps">適用条件:
+    {% if board.filters.is_active %}
+      {% if board.filters.owner %}担当={{ board.filters.owner }}{% endif %}
+      {% if board.filters.status %}{% if board.filters.owner %} ／ {% endif %}状態={% for value, label in board.status_choices %}{% if board.filters.status == value %}{{ label }}{% endif %}{% endfor %}{% endif %}
+      {% if board.filters.priority %}{% if board.filters.owner or board.filters.status %} ／ {% endif %}優先度={% for value, label in board.priority_choices %}{% if board.filters.priority == value %}{{ label }}{% endif %}{% endfor %}{% endif %}
+      {% if board.filters.due %}{% if board.filters.owner or board.filters.status or board.filters.priority %} ／ {% endif %}期限={% for value, label in board.due_choices %}{% if board.filters.due == value %}{{ label }}{% endif %}{% endfor %}{% endif %}
+      {% if board.filters.progress %}{% if board.filters.owner or board.filters.status or board.filters.priority or board.filters.due %} ／ {% endif %}進捗={% for value, label in board.progress_choices %}{% if board.filters.progress == value %}{{ label }}{% endif %}{% endfor %}{% endif %}
+    {% else %}なし（全件）{% endif %}
+  </div>
 </div>

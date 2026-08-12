@@ -49,6 +49,7 @@
       </select>
       <button type="submit" class="btn-b sm">絞り込む</button>
     </form>
+    {% if filter_submitted_empty %}{% include "partials/search_notice.html" with notice_title="条件が未指定のため、絞り込んでいません。" notice_body="いずれかの条件を選んでから、もう一度「絞り込む」を押してください。" %}{% endif %}
     <div class="ps">該当 {{ match_count }} 件 ／ 適用中の条件: {% if applied_labels %}{{ applied_labels|join:" ・ " }}{% else %}なし（すべての履歴）{% endif %}</div>
   </div>
 
@@ -60,7 +61,7 @@
     <div class="t-wrap">
       <table class="t">
         <thead>
-          <tr><th>実行日時</th><th>接続</th><th>方向</th><th>状態</th><th>新規</th><th>更新</th><th>変更なし</th><th>失敗</th><th>所要</th><th>実行者</th><th>メッセージ</th></tr>
+          <tr><th>実行日時</th><th>接続</th><th>方向</th><th>状態</th><th>件数</th><th>実行者</th><th>メッセージ</th></tr>
         </thead>
         <tbody>
           {% for job in jobs %}
@@ -68,12 +69,11 @@
               <td class="nowrap">{{ job.created_at|date:"n/j H:i" }}</td>
               <td>{{ job.connection.name }}</td>
               <td class="nowrap">{{ job.get_direction_display }}</td>
-              <td class="nowrap"><span class="badge {{ job.tone }}">{{ job.get_status_display }}</span></td>
-              <td class="nowrap">{{ job.created_count }}</td>
-              <td class="nowrap">{{ job.updated_count }}</td>
-              <td class="nowrap">{{ job.skipped_count }}</td>
-              <td class="nowrap">{{ job.failed_count }}</td>
-              <td class="nowrap">{% if job.duration_seconds is not None %}{{ job.duration_seconds }} 秒{% else %}—{% endif %}</td>
+              <td class="nowrap">
+                <span class="badge {{ job.tone }}">{{ job.get_status_display }}</span>
+                <div class="muted">所要 {% if job.duration_seconds is not None %}{{ job.duration_seconds }} 秒{% else %}—{% endif %}</div>
+              </td>
+              <td class="nowrap">新規 {{ job.created_count }} / 更新 {{ job.updated_count }} / 変更なし {{ job.skipped_count }} / 失敗 {{ job.failed_count }}</td>
               <td class="nowrap">{{ job.triggered_by.username|default:"—" }}</td>
               <td>
                 {{ job.message|default:"—" }}
@@ -93,12 +93,14 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="11">
+            <tr><td colspan="7">
               <div class="empty">
-                {% if filters.is_active %}条件に一致する同期履歴がありません。{% else %}同期の実行履歴がありません。{% endif %}
+                {% if filters.is_active %}条件に一致する同期履歴がありません。{% else %}同期の実行履歴がありません。まだ一度も同期を実行していないためです。{% endif %}
               </div>
               {% if filters.is_active %}
                 <div class="ps"><a href="{% url 'integrations:job_list' %}">条件をクリアして全件を見る</a></div>
+              {% else %}
+                <div class="ps"><a href="{% url 'integrations:list' %}">接続一覧</a>で対象の接続を開き、同期を実行すると、その結果がここに残ります。</div>
               {% endif %}
             </td></tr>
           {% endfor %}

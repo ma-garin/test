@@ -43,6 +43,7 @@
       <button type="submit" class="btn-out sm">絞り込む</button>
       <a class="btn-ghost sm" href="{% url 'projects:issue_list' %}">条件をクリア</a>
     </form>
+    {% if filter_submitted_empty %}{% include "partials/search_notice.html" with notice_title="条件が未指定のため、絞り込んでいません。" notice_body="いずれかの条件を選んでから、もう一度「絞り込む」を押してください。" %}{% endif %}
   </div>
 
   <div class="card">
@@ -53,7 +54,7 @@
     <div class="t-wrap">
       <table class="t">
         <thead>
-          <tr><th>案件</th><th>課題</th><th>重大度</th><th>担当</th><th>期限{% include "partials/hint.html" with label="期限超過" body="対応期限が今日より前で、まだ完了していない課題に付きます。期限が未設定の課題には付きません。" %}</th><th>外部キー{% include "partials/hint.html" with label="外部キー" body="Jira 等の課題キーです。外部連携は将来対応のため、いまは参照用の文字列として保持しているだけです。" %}</th><th>状態</th><th>操作</th></tr>
+          <tr><th>案件</th><th>課題{% include "partials/hint.html" with label="外部キー" body="Jira 等の課題キーです。課題名の下に補足として表示します。外部連携は将来対応のため、いまは参照用の文字列として保持しているだけです。" %}</th><th>重大度</th><th>担当</th><th>期限{% include "partials/hint.html" with label="期限超過" body="対応期限が今日より前で、まだ完了していない課題に付きます。期限が未設定の課題には付きません。" %}</th><th>状態</th><th>操作</th></tr>
         </thead>
         <tbody>
           {% for issue in issues %}
@@ -61,17 +62,17 @@
               <td>{{ issue.project.code }}</td>
               <td>
                 <a href="{% url 'projects:issue_edit' issue.pk %}?next={{ request.get_full_path|urlencode }}" title="内容を確認・編集">{{ issue.title }}</a>
+                <div class="ps">外部キー: {% external_link issue external_links as issue_link %}{% if issue_link %}{{ issue_link }}{% elif issue.external_key %}{{ issue.external_key }}{% else %}<span class="badge n">外部キー未連携</span>{% endif %}</div>
               </td>
               <td class="nowrap">{{ issue.get_severity_display }}</td>
               <td class="nowrap">{% if issue.owner %}{{ issue.owner }}{% else %}<span class="badge a">担当未設定</span>{% endif %}</td>
               <td class="nowrap">{{ issue.due_date|date:"n/j"|default:"—" }}{% if issue.is_overdue %} <span class="badge r">期限超過</span>{% endif %}</td>
-              <td class="nowrap">{% external_link issue external_links as issue_link %}{% if issue_link %}{{ issue_link }}{% elif issue.external_key %}{{ issue.external_key }}{% else %}<span class="badge n">外部キー未連携</span>{% endif %}</td>
               <td><span class="badge n">{{ issue.get_status_display }}</span></td>
               <td class="nowrap"><a class="btn-ghost sm" href="{% url 'projects:issue_edit' issue.pk %}?next={{ request.get_full_path|urlencode }}">内容を確認・編集</a></td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8">
+              <td colspan="7">
                 {% if is_filtered %}
                   <div class="empty">絞り込み条件に一致する課題がありません。<a href="{% url 'projects:issue_list' %}">条件をクリア</a>すると全件に戻ります。</div>
                 {% else %}

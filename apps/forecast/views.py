@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.core.pagination import page_window, paginate, query_without_page
 from apps.forecast.models.snapshots import ForecastReview, ForecastSnapshot
 from apps.forecast.services.board import build_forecast_board
 from apps.forecast.services.feature_view import build_feature_detail, latest_snapshots_for
@@ -29,13 +30,23 @@ def live_forecast(request: HttpRequest) -> HttpResponse:
 
     projects = scoped_projects_for(request)
     board = build_forecast_board(projects, timezone.localdate())
+    features = (
+        Feature.objects.filter(project__in=projects)
+        .select_related("project")
+        .order_by("project__code", "name")
+    )
+    page = paginate(features, request)
+
     return render(
         request,
         "pages/live_forecast.html",
         {
             "board": board,
             "page_title": "ライブ着地予測",
-            "features": Feature.objects.filter(project__in=projects).select_related("project"),
+            "features": page.object_list,
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
         },
     )
 

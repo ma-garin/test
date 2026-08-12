@@ -134,7 +134,7 @@
             </tr>
           {% endfor %}
           {% if not related_tasks and not child_tasks %}
-            <tr><td colspan="6"><div class="empty">関連づけられたタスクはありません。</div></td></tr>
+            <tr><td colspan="6"><div class="empty">関連づけられたタスクはありません。このタスクに依存関係（先行・後続）が設定されておらず、子タスクも登録されていないためです。関連づけるには、上の「編集」からこのタスクの親タスクを指定するか、依存関係を登録してください。</div></td></tr>
           {% endif %}
         </tbody>
       </table>

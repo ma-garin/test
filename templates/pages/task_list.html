@@ -18,7 +18,15 @@
     <div class="kpi">
       <div class="kpi-l">対象タスク</div>
       <div class="kpi-v">{{ board.total }}</div>
-      <div class="kpi-s">{% if board.filters.is_active %}絞り込み中{% else %}全件{% endif %}</div>
+      <div class="kpi-s">絞り込み:
+        {% if board.filters.is_active %}
+          {% if board.filters.owner %}担当={{ board.filters.owner }}{% endif %}
+          {% if board.filters.status %}{% if board.filters.owner %} ／ {% endif %}状態={% for value, label in board.status_choices %}{% if board.filters.status == value %}{{ label }}{% endif %}{% endfor %}{% endif %}
+          {% if board.filters.priority %}{% if board.filters.owner or board.filters.status %} ／ {% endif %}優先度={% for value, label in board.priority_choices %}{% if board.filters.priority == value %}{{ label }}{% endif %}{% endfor %}{% endif %}
+          {% if board.filters.due %}{% if board.filters.owner or board.filters.status or board.filters.priority %} ／ {% endif %}期限={% for value, label in board.due_choices %}{% if board.filters.due == value %}{{ label }}{% endif %}{% endfor %}{% endif %}
+          {% if board.filters.progress %}{% if board.filters.owner or board.filters.status or board.filters.priority or board.filters.due %} ／ {% endif %}進捗={% for value, label in board.progress_choices %}{% if board.filters.progress == value %}{{ label }}{% endif %}{% endfor %}{% endif %}
+        {% else %}なし（全件）{% endif %}
+      </div>
       <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
     </div>
     <div class="kpi">
@@ -75,9 +83,10 @@
     <div class="dashboard-risk-wrap">
       <table class="dashboard-risk-table task-list-table">
         <thead>
+          {% comment %}VP-31: 列は7つまで。優先度はタスク名のバッジとして同じセルに残す。{% endcomment %}
           <tr>
             <th>タスク</th><th>担当</th><th>期限</th><th>進捗</th>
-            <th>状態</th><th>優先度</th><th>次アクション</th><th>操作</th>
+            <th>状態</th><th>次アクション</th><th>操作</th>
           </tr>
         </thead>
         <tbody>
@@ -86,13 +95,12 @@
             <tr class="{{ row.row_tone }}">
               <td class="task-list-name">
                 <a href="{% url 'projects:task_detail' row.task.pk %}?next={{ request.get_full_path|urlencode }}">{{ row.task.name }}</a>
-                <span>{{ row.task.project.code }} ／ WBS {{ row.task.wbs_code }}</span>
+                <span>{{ row.task.project.code }} ／ WBS {{ row.task.wbs_code }} ／ <span class="badge {{ row.priority_tone }}">優先度 {{ row.task.get_priority_display }}</span></span>
               </td>
               <td>{{ row.task.owner|default:"—" }}</td>
               <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.task.planned_end|date:"n/j"|default:"未設定" }}</span></td>
               <td class="nowrap">{{ row.task.progress_percent|floatformat:0 }}%</td>
               <td><span class="badge {{ row.status_tone }}">{{ row.task.get_status_display }}</span></td>
-              <td><span class="badge {{ row.priority_tone }}">{{ row.task.get_priority_display }}</span></td>
               <td class="task-list-next">{{ row.task.next_action|default:"—" }}</td>
               {% comment %}
               JT-02: 詳細への導線はタスク名リンク 1 つに絞る。同じ URL のボタンを
@@ -103,7 +111,7 @@
               </td>
             </tr>
           {% empty %}
-          <tr><td colspan="8"><div class="dashboard-empty empty-state">{% if board.filters.is_active %}条件に一致するタスクがありません。<a href="{% url 'dashboard:tasks' %}">条件をクリア</a>{% else %}参照できるタスクがありません。対象案件または参照権限を確認してください。{% endif %}</div></td></tr>
+          <tr><td colspan="7"><div class="dashboard-empty empty-state">{% if board.filters.is_active %}条件に一致するタスクがありません。<a href="{% url 'dashboard:tasks' %}">条件をクリア</a>{% else %}参照できるタスクがありません。対象案件または参照権限を確認してください。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

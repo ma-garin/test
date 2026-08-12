@@ -42,6 +42,7 @@
       </select>
       <button type="submit" class="btn-b sm">絞り込む</button>
     </form>
+    {% if filter_submitted_empty %}{% include "partials/search_notice.html" with notice_title="条件が未指定のため、絞り込んでいません。" notice_body="いずれかの条件を選んでから、もう一度「絞り込む」を押してください。" %}{% endif %}
     <div class="ps">
       該当 {{ page.paginator.count }}件 ／ 適用条件: {% if filters.is_active %}{{ filters.label_text }}{% else %}なし（全件）{% endif %}
     </div>
@@ -51,7 +52,7 @@
     <div class="card-hdr"><span class="card-t">Agentic 実行履歴</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>日時</th><th>画面</th><th>入力</th><th>意図</th><th>状態</th><th>根拠</th><th>所要</th><th>詳細</th></tr></thead>
+        <thead><tr><th>日時</th><th>画面</th><th>入力</th><th>意図</th><th>状態</th><th>根拠</th><th>詳細</th></tr></thead>
         <tbody>
           {% for run in runs %}
             <tr>
@@ -59,17 +60,19 @@
               <td class="nowrap">{{ run.get_area_display }}</td>
               <td>{{ run.user_input|truncatechars:44 }}</td>
               <td class="nowrap"><span class="badge b">{{ run.get_intent_display }}</span></td>
-              <td class="nowrap"><span class="badge {% if run.status == 'succeeded' %}g{% elif run.status == 'failed' %}r{% else %}n{% endif %}">{{ run.get_status_display }}</span></td>
+              <td class="nowrap">
+                <span class="badge {% if run.status == 'succeeded' %}g{% elif run.status == 'failed' %}r{% else %}n{% endif %}">{{ run.get_status_display }}</span>
+                <div class="muted">所要 {{ run.elapsed_ms }}ms</div>
+              </td>
               <td class="nowrap">
                 {% if run.evidence %}
                   <span class="badge {% if run.evidence.blocks_approval %}r{% elif run.evidence.confidence >= 0.75 %}g{% else %}a{% endif %}">{% if run.evidence.blocks_approval %}根拠不足 {% endif %}{{ run.evidence.confidence }}</span>
                 {% else %}<span class="muted">—</span>{% endif %}
               </td>
-              <td class="nowrap muted">{{ run.elapsed_ms }}ms</td>
               <td class="nowrap"><a class="btn-ghost sm" href="{% url 'agents:run_detail' run.pk %}">トレースを見る →</a></td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="empty">{% if filters.is_active %}この条件に合う実行はありません。条件をクリアすると全件に戻ります。{% else %}実行履歴はまだありません。{% endif %}</div></td></tr>
+            <tr><td colspan="7"><div class="empty">{% if filters.is_active %}この条件に合う実行はありません。条件をクリアすると全件に戻ります。{% else %}実行履歴はまだありません。まだ AI の支援機能が一度も実行されていないためです。上の「画面」の一覧にある各画面で AI に相談すると、その実行がここに記録されます。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

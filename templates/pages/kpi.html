@@ -84,7 +84,7 @@
     <div class="dashboard-risk-wrap">
       <table class="dashboard-risk-table">
         <thead>
-          <tr><th>指標</th><th>案件</th><th>基準値</th><th>実績</th><th>目標</th><th>改善率</th><th>判定</th><th>計測日</th><th>次に確認する台帳</th></tr>
+          <tr><th>指標</th><th>案件</th><th>基準値</th><th>実績</th><th>目標</th><th>改善率</th><th>判定</th></tr>
         </thead>
         <tbody>
           {% for row in kpi_rows %}
@@ -95,7 +95,10 @@
               </td>
               <td>{{ row.row.measurement.project.code }}</td>
               <td class="nowrap">{{ row.row.measurement.baseline_value|floatformat:"-2"|default:"—" }}</td>
-              <td class="nowrap">{{ row.row.measurement.actual_value|floatformat:"-2" }} {{ row.row.measurement.unit }}</td>
+              <td class="nowrap">
+                {{ row.row.measurement.actual_value|floatformat:"-2" }} {{ row.row.measurement.unit }}
+                <div class="ps">計測日 {{ row.row.measurement.measured_on|date:"n/j" }}</div>
+              </td>
               <td class="nowrap">{{ row.row.measurement.target_value|floatformat:"-2"|default:"—" }}</td>
               <td class="nowrap">
                 {% if row.row.improvement_percent is None %}—（算出不能）
@@ -107,12 +110,11 @@
                 {% if row.is_target_missing %}<span class="badge n">目標未設定</span>
                 {% elif row.is_unachieved %}<span class="badge r">未達</span>
                 {% else %}<span class="badge g">達成</span>{% endif %}
+                <div class="ps">次に確認する台帳: {% if row.url %}<a href="{{ row.url }}">{{ row.link_label }}</a>{% else %}{{ row.link_label }}{% endif %}</div>
               </td>
-              <td class="nowrap">{{ row.row.measurement.measured_on|date:"n/j" }}</td>
-              <td class="nowrap">{% if row.url %}<a href="{{ row.url }}">{{ row.link_label }}</a>{% else %}{{ row.link_label }}{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="9"><div class="dashboard-empty">KPIの計測データがありません。</div></td></tr>
+            <tr><td colspan="7"><div class="dashboard-empty">KPIの計測データがありません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

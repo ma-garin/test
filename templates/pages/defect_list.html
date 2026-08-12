@@ -49,6 +49,7 @@
       <button type="submit" class="btn-out sm">絞り込む</button>
       <a class="btn-ghost sm" href="{% url 'projects:defect_list' %}">条件をクリア</a>
     </form>
+    {% if filter_submitted_empty %}{% include "partials/search_notice.html" with notice_title="条件が未指定のため、絞り込んでいません。" notice_body="いずれかの条件を選んでから、もう一度「絞り込む」を押してください。" %}{% endif %}
   </div>
 
   <div class="card">
@@ -59,7 +60,7 @@
     <div class="t-wrap">
       <table class="t">
         <thead>
-          <tr><th>案件</th><th>不具合</th><th>重大度{% include "partials/hint.html" with label="重大度" body="不具合の影響の大きさの区分です。「緊急」「高」は赤い印で表示し、「未解決かつ重大」の絞り込みの対象になります。" %}</th><th>状態</th><th>検出工程{% include "partials/hint.html" with label="検出工程" body="その不具合を見つけた工程です。未入力の行は「—」と表示され、工程での絞り込みに掛かりません。" %}</th><th>検出日</th><th>原文</th><th>操作{% include "partials/hint.html" with label="クローズ" body="不具合を解決済みとして閉じる操作です。この操作は取り消せません。押す前に対象の不具合名と現在の状態を確認してください。" %}</th></tr>
+          <tr><th>案件</th><th>不具合</th><th>重大度{% include "partials/hint.html" with label="重大度" body="不具合の影響の大きさの区分です。「緊急」「高」は赤い印で表示し、「未解決かつ重大」の絞り込みの対象になります。" %}</th><th>状態</th><th>検出工程{% include "partials/hint.html" with label="検出工程" body="その不具合を見つけた工程です。未入力の行は「—」と表示され、工程での絞り込みに掛かりません。" %}</th><th>検出日</th><th>操作{% include "partials/hint.html" with label="クローズ" body="不具合を解決済みとして閉じる操作です。この操作は取り消せません。押す前に対象の不具合名と現在の状態を確認してください。" %}</th></tr>
         </thead>
         <tbody>
           {% for defect in defects %}
@@ -68,12 +69,12 @@
               <td>
                 {% comment %}タイトルは内容確認の導線。編集はボタンとして別に置き、押し間違いを避ける。{% endcomment %}
                 <a href="{% url 'projects:defect_edit' defect.pk %}?next={{ request.get_full_path|urlencode }}" title="内容を確認">{{ defect.title }}</a>
+                {% external_link defect external_links as defect_link %}{% if defect_link %}<div class="ps">原文: {{ defect_link }}</div>{% endif %}
               </td>
               <td class="nowrap"><span class="badge {% if defect.severity == 'critical' or defect.severity == 'high' %}r{% else %}n{% endif %}">{{ defect.get_severity_display }}</span></td>
               <td class="nowrap"><span class="badge {% if defect.status == 'closed' %}g{% else %}a{% endif %}">{{ defect.get_status_display }}</span></td>
               <td>{{ defect.phase|default:"—" }}</td>
               <td class="nowrap">{{ defect.detected_on|date:"Y-m-d"|default:"—" }}</td>
-              <td class="nowrap">{% external_link defect external_links as defect_link %}{% if defect_link %}{{ defect_link }}{% else %}—{% endif %}</td>
               <td>
                 <a class="btn-ghost sm" href="{% url 'projects:defect_edit' defect.pk %}?next={{ request.get_full_path|urlencode }}">編集する</a>
                 {% if defect.status != 'closed' %}
@@ -88,7 +89,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8">
+              <td colspan="7">
                 {% if is_filtered %}
                   <div class="empty">絞り込み条件に一致する不具合がありません。<a href="{% url 'projects:defect_list' %}">条件をクリア</a>すると全件に戻ります。</div>
                 {% else %}

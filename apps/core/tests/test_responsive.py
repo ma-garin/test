@@ -128,7 +128,15 @@ class ResponsiveLayoutTests(StaticLiveServerTestCase):
                         const style = getComputedStyle(el);
                         if (style.overflowX !== 'visible') { return; }
                         if (el.scrollWidth - el.clientWidth > 2) {
-                            out.push((el.textContent || '').trim().slice(0, 40));
+                            // どの要素かが分からないと直せない。タグとクラスを添える。
+                            const where = el.tagName.toLowerCase()
+                                + (el.className ? '.' + String(el.className).split(' ').join('.') : '');
+                            const over = el.scrollWidth - el.clientWidth;
+                            const parent = el.parentElement;
+                            const owner = parent ? parent.tagName.toLowerCase() : '?';
+                            const cls = parent ? String(parent.className) : '';
+                            out.push(`${where} +${over}px in ${owner}.${cls}: `
+                                + (el.textContent || '').trim().slice(0, 20));
                         }
                     });
                 });

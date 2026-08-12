@@ -116,10 +116,12 @@
           </select>
         </div>
         <div class="actions">
-          <button class="btn-b sm" type="submit">この条件で集計</button>
+          {% comment %}VP-16: このページの主操作は「フィードバックを投稿」だけにする。{% endcomment %}
+          <button class="btn-out sm" type="submit">この条件で集計</button>
           <a class="btn-out sm" href="{% url 'audit:feedback_list' %}">条件をリセット</a>
         </div>
       </form>
+      {% if filter_submitted_empty %}{% include "partials/search_notice.html" with notice_title="条件が未指定のため、絞り込んでいません。" notice_body="いずれかの条件を選んでから、もう一度「絞り込む」を押してください。" %}{% endif %}
       <div class="ps">上の KPI は期間・利用者の条件だけで集計します。事実誤認・評価の絞り込みは下の明細にだけ効きます。</div>
     </div>
   </div>
@@ -159,7 +161,7 @@
               <td class="nowrap">{{ feedback.user|default:"—" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="7"><div class="empty">この条件に合うフィードバックはありません。</div></td></tr>
+            <tr><td colspan="7"><div class="empty">{% if view_filters.is_active %}この条件に合うフィードバックはありません。絞り込みで対象が残っていないためです。<a href="{% url 'audit:feedback_list' %}">条件をリセット</a>すると全件に戻ります。{% else %}フィードバックがまだ投稿されていません。<a href="{% url 'audit:feedback_create' %}">フィードバックを投稿</a>から登録してください。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
