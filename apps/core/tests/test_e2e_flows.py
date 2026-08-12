@@ -184,6 +184,13 @@ class BrowserFlowTests(StaticLiveServerTestCase):
         self.page.click("form.form button[type='submit']")
         self.page.wait_for_load_state("networkidle", timeout=TIMEOUT_MS)
 
+        # ログイン直後は一度だけ、テナント／案件選択（オンボーディング）を挟む。
+        # テナントが1つに定まる利用者は自動でテナント選択がスキップされ、
+        # 案件選択画面（既定は「全案件」）だけが出る。既定のまま進める。
+        while "/accounts/welcome/" in self.page.url:
+            self.page.click("form button[type='submit']")
+            self.page.wait_for_load_state("networkidle", timeout=TIMEOUT_MS)
+
     def click_and_wait(self, selector: str) -> None:
         self.page.click(selector, timeout=TIMEOUT_MS)
         self.page.wait_for_load_state("networkidle", timeout=TIMEOUT_MS)

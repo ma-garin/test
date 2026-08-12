@@ -12,16 +12,20 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ctext x='16' y='22' font-family='Helvetica,Arial,sans-serif' font-size='15' font-weight='bold' fill='%23ffffff' text-anchor='middle'%3EVR%3C/text%3E%3C/svg%3E">
 </head>
 <body>
-<div class="auth">
-  <div class="auth-card">
-    <div class="auth-brand">
-      <span class="hdr-mark">VR</span>
-      <span>
-        <strong>VeriRAG PMO Agent</strong>
-        <span>AI PROJECT CONTROL</span>
-      </span>
+<div class="auth{% block auth_modifier %}{% endblock %}">
+  {% block hero %}{% endblock %}
+  <div class="auth-panel">
+    <div class="auth-card{% block card_modifier %}{% endblock %}">
+      <div class="auth-brand">
+        <span class="hdr-mark">VR</span>
+        <span>
+          <strong>VeriRAG PMO Agent</strong>
+          <span>AI PROJECT CONTROL</span>
+        </span>
+      </div>
+      {% block step %}{% endblock %}
+      {% block content %}{% endblock %}
     </div>
-    {% block content %}{% endblock %}
   </div>
 </div>
 </body>
