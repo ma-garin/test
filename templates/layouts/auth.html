@@ -7,16 +7,20 @@
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
-<div class="auth">
-  <div class="auth-card">
-    <div class="auth-brand">
-      <span class="hdr-mark">VR</span>
-      <span>
-        <strong>VeriRAG PMO Agent</strong>
-        <span>AI PROJECT CONTROL</span>
-      </span>
+<div class="auth{% block auth_modifier %}{% endblock %}">
+  {% block hero %}{% endblock %}
+  <div class="auth-panel">
+    <div class="auth-card{% block card_modifier %}{% endblock %}">
+      <div class="auth-brand">
+        <span class="hdr-mark">VR</span>
+        <span>
+          <strong>VeriRAG PMO Agent</strong>
+          <span>AI PROJECT CONTROL</span>
+        </span>
+      </div>
+      {% block step %}{% endblock %}
+      {% block content %}{% endblock %}
     </div>
-    {% block content %}{% endblock %}
   </div>
 </div>
 </body>

@@ -36,7 +36,14 @@ def login_view(request: HttpRequest) -> HttpResponse:
         else:
             login(request, user)
 
-            return redirect(_safe_next(request) or settings.LOGIN_REDIRECT_URL)
+            # next が明示されているとき（認証が必要なページへの直リンク等）は、
+            # オンボーディングを挟まずそのまま元の行き先へ戻す。
+            next_target = _safe_next(request)
+
+            if next_target:
+                return redirect(next_target)
+
+            return redirect("accounts:onboarding_tenant")
 
     return render(
         request,
@@ -130,6 +137,63 @@ def select_project(request: HttpRequest) -> HttpResponse:
             "next": _back_to(request),
             "page_title": "案件の切替",
         },
+    )
+
+
+@login_required
+def onboarding_tenant(request: HttpRequest) -> HttpResponse:
+    """ログイン直後、参照するテナントを選ぶ（複数テナントを横断できる利用者だけ）。
+
+    通常の利用者は所属テナントが1つに定まるため選ぶまでもない。
+    その場合は自動でスキップし、案件選択へ進む。
+    """
+
+    if request.user.is_superuser:
+        tenants = Tenant.objects.filter(is_active=True).order_by("name")
+    else:
+        tenants = Tenant.objects.filter(pk=request.user.tenant_id, is_active=True)
+
+    if tenants.count() <= 1:
+        return redirect("accounts:onboarding_project")
+
+    if request.method == "POST":
+        tenant_id = request.POST.get("tenant")
+
+        if tenants.filter(pk=tenant_id).exists():
+            request.session[TENANT_SESSION_KEY] = str(tenant_id)
+            request.session.pop(PROJECT_SESSION_KEY, None)
+
+            return redirect("accounts:onboarding_project")
+
+    return render(
+        request,
+        "pages/onboarding_tenant.html",
+        {"tenants": tenants, "page_title": "テナント選択"},
+    )
+
+
+@login_required
+def onboarding_project(request: HttpRequest) -> HttpResponse:
+    """ログイン直後、対象案件を選ぶ。選択は任意で、スキップすると全案件を横断する。"""
+
+    from apps.projects.selectors import projects_for
+
+    projects = projects_for(request.user, request.tenant).order_by("code")
+
+    if request.method == "POST":
+        raw = request.POST.get("project", "")
+
+        if raw and projects.filter(pk=raw).exists():
+            request.session[PROJECT_SESSION_KEY] = str(raw)
+        else:
+            request.session.pop(PROJECT_SESSION_KEY, None)
+
+        return redirect(settings.LOGIN_REDIRECT_URL)
+
+    return render(
+        request,
+        "pages/onboarding_project.html",
+        {"projects": projects, "tenant": request.tenant, "page_title": "案件選択"},
     )
 
 
