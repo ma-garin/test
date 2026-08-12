@@ -53,6 +53,7 @@ LOCAL_APPS = [
     "apps.audit",
     "apps.integrations",
     "apps.pmo_automation",
+    "apps.pmo_authority",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -145,6 +146,11 @@ REST_FRAMEWORK = {
 # 旧 .streamlit/secrets.toml に置かれていた値は、すべて環境変数へ移す。
 # 認証情報を UI・ログ・引継ぎ資料へ出力しないことは再設計時の必須要件。
 AI_PROVIDER = env("AI_PROVIDER", default="local_hash")
+
+# PMO Authority（開発用fake実装）のcapability署名鍵。
+# KMS/HSMではなく環境変数由来のHMAC鍵。本番運用は不可（docs/安全施策.md 11章の
+# 人の決定事項: 署名鍵の管理者・KMS基盤が未確定のため、開発用に限定する）。
+PMO_AUTHORITY_SIGNING_KEY = env("PMO_AUTHORITY_SIGNING_KEY", default="dev-only-insecure-default-signing-key")
 
 OPENAI = {
     "API_KEY": env("OPENAI_API_KEY", default=""),

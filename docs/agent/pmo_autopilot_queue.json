@@ -618,7 +618,7 @@
       "depends_on": [
         "PA-10"
       ],
-      "state": "untouched",
+      "state": "done",
       "goal": "シナリオ予測、品質相関、RAG品質修復、フィードバック較正を一種別ずつ追加する。",
       "allowed_paths": [
         "apps/pmo_automation/",
@@ -641,7 +641,19 @@
         "policy_boundary"
       ],
       "verification": [],
-      "evidence": []
+      "evidence": [
+        "PA-12-shadow-comparison"
+      ],
+      "executor": "claude-code",
+      "review": {
+        "reviewer": "code-reviewer",
+        "passed": [
+          "shadow_comparison",
+          "policy_boundary"
+        ],
+        "failed": [],
+        "recorded_at": "2026-08-12T05:33:27.425835+00:00"
+      }
     },
     {
       "id": "PA-13",
