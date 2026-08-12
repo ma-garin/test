@@ -7,9 +7,14 @@ from io import StringIO
 from pathlib import Path
 
 from django.core.management import call_command
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 
-from tools.pmo_autopilot_harness.contracts import ContractError, load_repository_contract, validate_package
+from tools.pmo_autopilot_harness.contracts import (
+    QUEUE_PATH,
+    ContractError,
+    load_repository_contract,
+    validate_package,
+)
 
 
 class PmoAutopilotHarnessTests(SimpleTestCase):
@@ -129,3 +134,67 @@ class PmoAutopilotHarnessTests(SimpleTestCase):
             call_command("makemigrations", "--check", "--dry-run", stdout=out, stderr=out)
         except SystemExit as error:
             self.fail(f"未反映の migration があります（makemigrations が必要）: {out.getvalue()}\n{error}")
+
+
+class QueueJsonIsolationTests(TestCase):
+    """SEC-02: 実装エージェントが docs/agent/pmo_autopilot_queue.json を直接
+    書き換えて完了を偽装しようとしても、apps.pmo_automation の実データ
+    （Authority側の実際の状態）は一切変わらないことを検証する。
+
+    queue.json は「実装作業の進行管理」だけを持つファイルであり、
+    PmoWorkItem 等の実データとはコード上どこにも結び付いていない
+    （import・FK参照が存在しない）。
+
+    レビュー指摘: in-memory dict の書換えだけでは「ファイルに保存して
+    いないから当然変わらない」という自明な検証にしかならない。ここでは
+    実際に docs/agent/pmo_autopilot_queue.json ファイル自体を一時的に
+    書き換え・再読込した上でDB側が無傷であることを確認する（必ず
+    tearDown で元の内容へ復元する）。
+    """
+
+    def setUp(self) -> None:
+        self._original_queue_json = QUEUE_PATH.read_text(encoding="utf-8")
+        self.addCleanup(lambda: QUEUE_PATH.write_text(self._original_queue_json, encoding="utf-8"))
+
+    def test_queue_jsonファイルを実際に書き換えてもpmo_automationの状態に影響しない(self) -> None:
+        import json
+
+        from apps.accounts.models import Tenant
+        from apps.pmo_automation.models import PmoWorkItem, WorkItemState, WorkKind
+        from apps.projects.models import Project
+
+        tenant = Tenant.objects.create(code="acme", name="ACME")
+        project = Project.objects.create(tenant=tenant, code="p1", name="基幹刷新")
+        work_item = PmoWorkItem.objects.create(
+            tenant=tenant,
+            project=project,
+            kind=WorkKind.DETECTION_TRIAGE,
+            source_type="alert",
+            source_key="sec02",
+            dedupe_key="sec02:1",
+            state=WorkItemState.AWAITING_APPROVAL,
+        )
+
+        queue_data = json.loads(self._original_queue_json)
+        pa11 = next(ticket for ticket in queue_data["tickets"] if ticket["id"] == "PA-11")
+        pa11["state"] = "done"
+        pa11["executor"] = "attacker"
+        pa11["evidence"] = ["fake-evidence"]
+        pa11["review"] = {"reviewer": "someone-else", "passed": pa11["required_reviews"], "failed": []}
+        # 実際にファイルへ書き込む（setUpのaddCleanupが必ず元へ戻す）。
+        QUEUE_PATH.write_text(json.dumps(queue_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+        # PA-11はD-04（人の決定事項）が未決のためdecision_requiredでなければ
+        # ならない契約になっている。review記録を偽装してdoneへ書き換えても、
+        # このD-04未決チェックにより load_repository_contract（cli validate相当）
+        # 自体が拒否する。「無関係だから変わらない」だけでなく「不正な改変は
+        # 検証で弾かれる」という二重の安全性を示す。
+        with self.assertRaises(ContractError):
+            load_repository_contract()
+
+        work_item.refresh_from_db()
+        self.assertEqual(
+            work_item.state,
+            WorkItemState.AWAITING_APPROVAL,
+            "queue.jsonファイルの実際の書換えが、PmoWorkItemの状態に影響してはならない。",
+        )

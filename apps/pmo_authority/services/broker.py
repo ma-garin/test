@@ -121,10 +121,21 @@ def verify_and_execute(
     select_for_updateでロックを取得してから最新状態を判定する
     （セキュリティレビュー指摘: check-then-actでの二重通過を防ぐ）。
 
-    監査記録（record_event）は、ロック区間のトランザクションが確定した後に
-    行う。atomicブロック内で例外を投げると、そこで積んだ監査行自体も
-    ロールバックされ「拒否された事実」が消えてしまうため
-    （最初の実装で見つかったバグ）。
+    監査記録（record_event）の扱いは成功時と拒否時で非対称にしている:
+
+    - 拒否時: ロック区間のトランザクションが確定した後に監査記録を書く。
+      atomicブロック内で例外を投げると、そこで積んだ監査行自体もロール
+      バックされ「拒否された事実」が消えてしまうため（最初の実装で見つ
+      かったバグ）。拒否時は何も実行していないので、監査記録が多少遅れて
+      も安全側の性質は変わらない。
+    - 成功時: 監査記録を、capability.status更新と**同じ**atomicブロック
+      内で行う。安全施策.md SEC-10「Broker監査ストアの書込みを失敗させる。
+      期待結果: 外部操作を実行しない（fail closed）」に対応するため、
+      監査書込みが失敗したら「実行した」という状態変更ごとロールバック
+      させる。fake connectorの呼び出し自体はPython内のハッシュ計算に
+      過ぎず副作用を持たないため、ロールバックしても矛盾は生じない
+      （本番で実際に外部送信する場合は、より慎重な二相の設計が必要になる
+      点は残る）。
     """
 
     with transaction.atomic():
@@ -150,6 +161,23 @@ def verify_and_execute(
             capability.status = CapabilityStatus.CONSUMED
             capability.save(update_fields=["status", "updated_at"])
 
+            # SEC-10: 監査記録の書込みが失敗したら、この atomic ブロック全体
+            # （capability.status の更新を含む）がロールバックされる。
+            audit.record_event(
+                correlation_id=correlation_id,
+                subject="broker",
+                event_type="capability_consumed",
+                result="succeeded",
+                detail={
+                    "capability_id": str(capability.capability_id),
+                    "connector": connector,
+                    "operation": operation,
+                    "external_id": external_id,
+                    "result_hash": result_hash,
+                },
+                now=now,
+            )
+
     if rejection_reason is not None:
         audit.record_event(
             correlation_id=correlation_id,
@@ -160,20 +188,5 @@ def verify_and_execute(
             now=now,
         )
         raise CapabilityRejected(rejection_reason)
-
-    audit.record_event(
-        correlation_id=correlation_id,
-        subject="broker",
-        event_type="capability_consumed",
-        result="succeeded",
-        detail={
-            "capability_id": str(capability.capability_id),
-            "connector": connector,
-            "operation": operation,
-            "external_id": receipt["external_id"],
-            "result_hash": receipt["result_hash"],
-        },
-        now=now,
-    )
 
     return receipt
