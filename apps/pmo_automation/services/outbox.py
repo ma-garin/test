@@ -161,6 +161,8 @@ def dispatch_approved_step(
             connector=connector,
             operation=operation,
             current_payload_sha256=actual_evidence_hash,
+            expected_tenant_id=work_item.tenant_id,
+            expected_project_id=work_item.project_id,
             now=now,
             correlation_id=correlation_id,
         )

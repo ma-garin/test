@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 
 from apps.pmo_authority.models import ExecutionCapability
+from apps.pmo_authority.services import kill_switch
 
 #: 安全施策.md SC-06: capabilityの最大有効期限は10分。
 MAX_TTL_SECONDS = 600
@@ -47,6 +48,15 @@ class InvalidTtlError(ValueError):
 
 class InsecureSigningKeyError(RuntimeError):
     """DEBUG=False（本番相当）なのに開発用デフォルト署名鍵のままであることを表す。"""
+
+
+class KillSwitchTrippedError(RuntimeError):
+    """kill switchが作動中のため、capability発行自体を拒否したことを表す。
+
+    安全施策.md SC-08: kill switch は Authority と Broker の両方で毎回確認する
+    （Broker側は apps.pmo_authority.services.broker で既に確認している。
+    セキュリティレビュー指摘: Authority側の確認が欠落していた）。
+    """
 
 
 _DEV_ONLY_DEFAULT_SIGNING_KEY = "dev-only-insecure-default-signing-key"
@@ -102,6 +112,16 @@ def issue_capability(
         raise InvalidTtlError(
             f"ttl_seconds は 1〜{MAX_TTL_SECONDS} 秒の範囲で指定してください（安全施策.md SC-06）。"
         )
+
+    # 安全施策.md SC-08: kill switch は Authority と Broker の両方で毎回確認する。
+    # capability発行の時点ではconnector/operationがまだ決まっていないため、
+    # ここではglobal/tenant/projectスコープだけを確認する
+    # （connector/operationスコープはBroker実行時に確認される）。
+    kill_switch_reason = kill_switch.check_kill_switches(
+        tenant_id=request.tenant.id, project_id=request.project.id, connector="", operation=""
+    )
+    if kill_switch_reason is not None:
+        raise KillSwitchTrippedError(kill_switch_reason)
 
     capability_id = uuid.uuid4()
     nonce = uuid.uuid4().hex

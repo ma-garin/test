@@ -13,7 +13,7 @@ from datetime import datetime
 from django.db import transaction
 
 from apps.pmo_authority.models import CapabilityStatus, ExecutionCapability
-from apps.pmo_authority.services import audit
+from apps.pmo_authority.services import audit, kill_switch
 from apps.pmo_authority.services.authority import sign_payload
 
 
@@ -45,11 +45,26 @@ def _capability_fields(capability: ExecutionCapability) -> dict:
 def _validation_error(
     capability: ExecutionCapability,
     *,
+    connector: str,
+    operation: str,
     current_payload_sha256: str,
     now: datetime,
     current_policy_bundle_sha256: str | None,
+    expected_tenant_id: uuid.UUID,
+    expected_project_id: uuid.UUID,
 ) -> str | None:
     """検証だけを行い、拒否理由（あれば）を返す。DB書き込みは一切しない。"""
+
+    # 安全施策.md SC-08: kill switch は Authority と Broker の両方で毎回確認する。
+    # 最も止めたいケース（緊急停止）を最初に評価する。
+    kill_switch_reason = kill_switch.check_kill_switches(
+        tenant_id=expected_tenant_id,
+        project_id=expected_project_id,
+        connector=connector,
+        operation=operation,
+    )
+    if kill_switch_reason is not None:
+        return kill_switch_reason
 
     expected_signature = sign_payload(_capability_fields(capability))
     if expected_signature != capability.signature:
@@ -70,6 +85,15 @@ def _validation_error(
     if current_policy_bundle_sha256 is not None and current_policy_bundle_sha256 != capability.policy_bundle_sha256:
         return "policy bundleが承認時から差し替わっています。"
 
+    # 安全施策.md SC-09 / SEC-07: capabilityのtenant/projectと、呼び出し元が
+    # （DBから再解決した）実行対象の現在のtenant/projectが一致することを
+    # 必ず再検証する。呼び出し元の値をそのまま信用しない（tenant Aの
+    # capabilityをtenant Bのresourceと組み合わせる攻撃を検知する）。
+    if str(capability.tenant_id) != str(expected_tenant_id):
+        return "テナントがcapability発行時と一致しません（テナント越境の疑い）。"
+    if str(capability.project_id) != str(expected_project_id):
+        return "案件がcapability発行時と一致しません（境界越えの疑い）。"
+
     return None
 
 
@@ -81,13 +105,16 @@ def verify_and_execute(
     current_payload_sha256: str,
     now: datetime,
     correlation_id: uuid.UUID,
+    expected_tenant_id: uuid.UUID,
+    expected_project_id: uuid.UUID,
     current_policy_bundle_sha256: str | None = None,
 ) -> dict:
     """capabilityを検証し、通れば fake connector で「実行」する。
 
     検証: 署名の再計算一致、status=issued、期限内、payload_sha256が
     承認時から変わっていないこと、policy bundleが差し替わっていないこと
-    （安全施策.md SC-06: policy bundleを差し替えると古いcapabilityは拒否される）。
+    （安全施策.md SC-06: policy bundleを差し替えると古いcapabilityは拒否される）、
+    tenant/projectがcapability発行時と一致すること（SC-09/SEC-07）。
     いずれか失敗すれば fake connectorを呼ぶ前に CapabilityRejected で拒否する。
 
     同一capabilityへの同時リクエスト（レースコンディション）対策として、
@@ -104,9 +131,13 @@ def verify_and_execute(
         capability = ExecutionCapability.objects.select_for_update().get(pk=capability.pk)
         rejection_reason = _validation_error(
             capability,
+            connector=connector,
+            operation=operation,
             current_payload_sha256=current_payload_sha256,
             now=now,
             current_policy_bundle_sha256=current_policy_bundle_sha256,
+            expected_tenant_id=expected_tenant_id,
+            expected_project_id=expected_project_id,
         )
 
         receipt: dict | None = None

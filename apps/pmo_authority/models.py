@@ -114,3 +114,80 @@ class AuditEvent(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"{self.event_type}: {self.result}"
+
+
+class KillSwitchScope(models.TextChoices):
+    """安全施策.md SC-08: kill switch は global/tenant/project/connector/operation の
+    五段階で用意する。"""
+
+    GLOBAL = "global", "全体"
+    TENANT = "tenant", "テナント"
+    PROJECT = "project", "案件"
+    CONNECTOR = "connector", "コネクタ"
+    OPERATION = "operation", "操作"
+
+
+class KillSwitch(TimeStampedModel):
+    """緊急停止スイッチ。Broker は capability を実行する前に必ず確認する
+    （安全施策.md SC-08: kill switch は Authority と Broker の両方で毎回確認する）。
+
+    is_tripped=True の間、該当スコープの実行はすべて拒否する。
+    scope に応じて tenant/project/connector/operation のうち必要な
+    フィールドだけを埋める（例: scope=connector なら connector のみ）。
+    """
+
+    scope = models.CharField("範囲", max_length=16, choices=KillSwitchScope.choices)
+    tenant = models.ForeignKey(
+        "accounts.Tenant", verbose_name="テナント", on_delete=models.CASCADE, related_name="+", null=True, blank=True
+    )
+    project = models.ForeignKey(
+        "projects.Project", verbose_name="案件", on_delete=models.CASCADE, related_name="+", null=True, blank=True
+    )
+    connector = models.CharField("コネクタ", max_length=64, blank=True)
+    operation = models.CharField("操作", max_length=64, blank=True)
+    is_tripped = models.BooleanField("作動中（停止中）", default=True)
+    reason = models.TextField("理由", blank=True)
+    activated_by = models.CharField("作動させた主体", max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "kill switch"
+        verbose_name_plural = "kill switch"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["scope", "is_tripped"]),
+            models.Index(fields=["tenant", "is_tripped"]),
+        ]
+        constraints = [
+            # scopeごとに必要なフィールドだけが埋まっていることを強制する。
+            # 例えばscope=globalなのにtenantが埋まっていると、意図が
+            # 曖昧になり誤って狭い範囲だけ止めたつもりが全体に効く、
+            # あるいはその逆の誤解を招く。
+            models.CheckConstraint(
+                condition=(
+                    models.Q(scope="global", tenant__isnull=True, project__isnull=True, connector="", operation="")
+                    | models.Q(scope="tenant", tenant__isnull=False, project__isnull=True, connector="", operation="")
+                    | models.Q(
+                        scope="project", tenant__isnull=True, project__isnull=False, connector="", operation=""
+                    )
+                    | models.Q(
+                        scope="connector",
+                        tenant__isnull=True,
+                        project__isnull=True,
+                        connector__gt="",
+                        operation="",
+                    )
+                    | models.Q(
+                        scope="operation",
+                        tenant__isnull=True,
+                        project__isnull=True,
+                        connector="",
+                        operation__gt="",
+                    )
+                ),
+                name="kill_switch_scope_fields_match",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        state = "作動中" if self.is_tripped else "解除"
+        return f"{self.get_scope_display()} kill switch ({state})"

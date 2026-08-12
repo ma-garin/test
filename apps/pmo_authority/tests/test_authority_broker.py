@@ -129,6 +129,8 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
             connector="slack",
             operation="create_draft",
             current_payload_sha256=self._payload_hash(),
+            expected_tenant_id=self.tenant.id,
+            expected_project_id=self.project.id,
             now=NOW + timedelta(seconds=1),
             correlation_id=uuid.uuid4(),
         )
@@ -150,6 +152,8 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
                 connector="slack",
                 operation="create_draft",
                 current_payload_sha256=self._payload_hash(),
+                expected_tenant_id=self.tenant.id,
+                expected_project_id=self.project.id,
                 now=NOW,
                 correlation_id=uuid.uuid4(),
             )
@@ -165,6 +169,8 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
                 connector="slack",
                 operation="create_draft",
                 current_payload_sha256=self._payload_hash(),
+                expected_tenant_id=self.tenant.id,
+                expected_project_id=self.project.id,
                 now=NOW + timedelta(seconds=61),
                 correlation_id=uuid.uuid4(),
             )
@@ -180,6 +186,51 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
                 connector="slack",
                 operation="create_draft",
                 current_payload_sha256=self._payload_hash("payload-v2-changed"),
+                expected_tenant_id=self.tenant.id,
+                expected_project_id=self.project.id,
+                now=NOW,
+                correlation_id=uuid.uuid4(),
+            )
+
+    def test_SEC07_別テナントのresourceと組み合わせると拒否される(self) -> None:
+        """安全施策.md SC-09/SEC-07: tenant Aのcapabilityをtenant Bの
+        resourceと組み合わせて実行しようとすると拒否される。"""
+
+        other_tenant = Tenant.objects.create(code="other", name="OTHER")
+        other_project = Project.objects.create(tenant=other_tenant, code="op1", name="他社案件")
+        capability = issue_capability(
+            self._request(payload_sha256=self._payload_hash()), now=NOW
+        )
+
+        with self.assertRaises(broker.CapabilityRejected):
+            broker.verify_and_execute(
+                capability,
+                connector="slack",
+                operation="create_draft",
+                current_payload_sha256=self._payload_hash(),
+                expected_tenant_id=other_tenant.id,
+                expected_project_id=other_project.id,
+                now=NOW,
+                correlation_id=uuid.uuid4(),
+            )
+
+        capability.refresh_from_db()
+        self.assertEqual(capability.status, CapabilityStatus.ISSUED)
+
+    def test_同一テナント内の別案件と組み合わせても拒否される(self) -> None:
+        other_project = Project.objects.create(tenant=self.tenant, code="op2", name="同テナント別案件")
+        capability = issue_capability(
+            self._request(payload_sha256=self._payload_hash()), now=NOW
+        )
+
+        with self.assertRaises(broker.CapabilityRejected):
+            broker.verify_and_execute(
+                capability,
+                connector="slack",
+                operation="create_draft",
+                current_payload_sha256=self._payload_hash(),
+                expected_tenant_id=self.tenant.id,
+                expected_project_id=other_project.id,
                 now=NOW,
                 correlation_id=uuid.uuid4(),
             )
@@ -197,6 +248,8 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
                 connector="slack",
                 operation="create_draft",
                 current_payload_sha256=self._payload_hash(),
+                expected_tenant_id=self.tenant.id,
+                expected_project_id=self.project.id,
                 now=NOW,
                 correlation_id=uuid.uuid4(),
                 current_policy_bundle_sha256="bundle-v2-differs",
@@ -212,6 +265,8 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
             connector="slack",
             operation="create_draft",
             current_payload_sha256=self._payload_hash(),
+            expected_tenant_id=self.tenant.id,
+            expected_project_id=self.project.id,
             now=NOW,
             correlation_id=uuid.uuid4(),
             current_policy_bundle_sha256="bundle-v1",
@@ -230,6 +285,8 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
             connector="slack",
             operation="create_draft",
             current_payload_sha256=self._payload_hash(),
+            expected_tenant_id=self.tenant.id,
+            expected_project_id=self.project.id,
             now=NOW,
             correlation_id=correlation_id,
         )
@@ -240,6 +297,8 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
                 connector="slack",
                 operation="create_draft",
                 current_payload_sha256=self._payload_hash(),
+                expected_tenant_id=self.tenant.id,
+                expected_project_id=self.project.id,
                 now=NOW + timedelta(seconds=1),
                 correlation_id=correlation_id,
             )
@@ -258,6 +317,8 @@ class VerifyAndExecuteTests(AuthorityBrokerTestBase):
                 connector="slack",
                 operation="create_draft",
                 current_payload_sha256=self._payload_hash(),
+                expected_tenant_id=self.tenant.id,
+                expected_project_id=self.project.id,
                 now=NOW,
                 correlation_id=correlation_id,
             )
@@ -282,6 +343,8 @@ class AuditHashChainTests(AuthorityBrokerTestBase):
             connector="slack",
             operation="create_draft",
             current_payload_sha256=hashlib.sha256(b"p").hexdigest(),
+            expected_tenant_id=self.tenant.id,
+            expected_project_id=self.project.id,
             now=NOW,
             correlation_id=correlation_id,
         )
@@ -294,6 +357,8 @@ class AuditHashChainTests(AuthorityBrokerTestBase):
             connector="slack",
             operation="create_draft",
             current_payload_sha256=hashlib.sha256(b"p2").hexdigest(),
+            expected_tenant_id=self.tenant.id,
+            expected_project_id=self.project.id,
             now=NOW + timedelta(seconds=1),
             correlation_id=correlation_id,
         )
@@ -316,6 +381,8 @@ class AuditHashChainTests(AuthorityBrokerTestBase):
             connector="slack",
             operation="create_draft",
             current_payload_sha256=hashlib.sha256(b"p").hexdigest(),
+            expected_tenant_id=self.tenant.id,
+            expected_project_id=self.project.id,
             now=NOW,
             correlation_id=correlation_id,
         )
@@ -327,6 +394,8 @@ class AuditHashChainTests(AuthorityBrokerTestBase):
             connector="slack",
             operation="create_draft",
             current_payload_sha256=hashlib.sha256(b"p2").hexdigest(),
+            expected_tenant_id=self.tenant.id,
+            expected_project_id=self.project.id,
             now=NOW + timedelta(seconds=1),
             correlation_id=correlation_id,
         )
@@ -348,6 +417,8 @@ class AuditHashChainTests(AuthorityBrokerTestBase):
             connector="slack",
             operation="create_draft",
             current_payload_sha256=hashlib.sha256(b"p").hexdigest(),
+            expected_tenant_id=self.tenant.id,
+            expected_project_id=self.project.id,
             now=NOW,
             correlation_id=correlation_id,
         )
