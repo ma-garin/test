@@ -187,6 +187,9 @@ def consultation(request: HttpRequest) -> HttpResponse:
     """PMO 相談。オーケストレーターを通し、意図・計画・根拠評価を画面へ返す。"""
 
     question = request.GET.get("q", "").strip()
+    # 未入力のまま送信されたことを、まだ押していない状態と区別する。
+    # 同じ画面を返すだけだと「押しても何も起きない」不具合に見える。
+    submitted_empty = "q" in request.GET and not question
     # 直前に開いていた画面を文脈として使う（要件 #22）。使うかどうかは
     # 利用者が選べる。勝手に混ぜて外した検索をされるほうが困るため。
     screen = screen_context.current(request)
@@ -218,6 +221,7 @@ def consultation(request: HttpRequest) -> HttpResponse:
         "pages/pmo_consultation.html",
         {
             "question": question,
+            "submitted_empty": submitted_empty,
             "result": result,
             "screen": screen,
             "use_screen": use_screen,

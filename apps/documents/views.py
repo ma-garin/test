@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db.models import F, Q
@@ -180,6 +181,9 @@ def extract_document(request: HttpRequest, pk: UUID) -> HttpResponse:
 
     抽出の失敗は例外ではなくジョブとして記録されるため、ここでは常に台帳へ戻す。
     結果（抽出済み / 失敗理由）は台帳の行に出る。
+
+    行の状態だけでは、押した操作が終わったのか始まってすらいないのかが分からない。
+    成否をメッセージでも返す（VP-62）。
     """
 
     document = selectors.documents_for(request.user, request.tenant).filter(pk=pk).first()
@@ -188,7 +192,17 @@ def extract_document(request: HttpRequest, pk: UUID) -> HttpResponse:
         # 他テナントの文書 ID を推測されても存在有無を漏らさない。
         raise Http404("文書が見つかりません。")
 
-    extractors.ingest(document)
+    result = extractors.ingest(document)
+
+    if result.succeeded:
+        messages.success(
+            request,
+            f"「{document.title}」の本文を抽出しました（{result.page_count}ページ）。"
+            "RAG 検索の対象になりました。",
+        )
+    else:
+        reason = result.message or "理由は同期履歴を確認してください。"
+        messages.error(request, f"「{document.title}」の本文抽出に失敗しました: {reason}")
 
     return redirect("documents:list")
 

@@ -130,6 +130,11 @@ class OperationFilters:
         return parts
 
 
+#: 絞り込みフォームが送信されたかどうかを判定するキー。
+#: 条件を選ばずに「絞り込む」を押したときに、押した反応を返すために使う。
+OPERATION_FILTER_KEYS: tuple[str, ...] = ("period", "user", "action", "target", "result")
+
+
 def parse_operation_filters(params) -> OperationFilters:
     """クエリ文字列を条件へ変換する。不正値は既定へ倒し、500 にしない。"""
 
@@ -191,6 +196,7 @@ def operation_list(request: HttpRequest) -> HttpResponse:
             **_page_context(page, request),
             "filters": filters,
             "filter_labels": filters.labels(actor_label),
+            "filter_submitted": any(key in request.GET for key in OPERATION_FILTER_KEYS),
             "period_choices": OPERATION_PERIOD_CHOICES,
             "result_choices": RESULT_CHOICES,
             "actor_options": actors,

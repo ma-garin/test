@@ -1,0 +1,11 @@
+{% comment %}
+  送信したのに画面が変わらない状態を無くすための通知。
+
+  検索・絞り込みを押したのに何も起きないと、利用者は「壊れている」と読む。
+  結果が無いこと自体は正常でも、押した操作に対する応答は必ず返す。
+  呼び出しは 1 行で書くこと（複数行の `{% include %}` は解釈されない）。
+{% endcomment %}
+<div class="callout w" role="status" data-search-notice>
+  <p><strong>{{ notice_title }}</strong> {{ notice_body }}</p>
+  {% if notice_hint %}<p class="ps">{{ notice_hint }}</p>{% endif %}
+</div>

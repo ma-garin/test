@@ -39,6 +39,7 @@
       該当 {{ page.paginator.count }}件 ／ 適用条件:
       {% if filter_labels %}{% for label in filter_labels %}{{ label }}{% if not forloop.last %} ／ {% endif %}{% endfor %}{% else %}なし（全期間・全件）{% endif %}
     </div>
+    {% if filter_submitted and not filters.is_active %}{% include "partials/search_notice.html" with notice_title="条件が未指定のため、絞り込んでいません。" notice_body="期間・操作者・対象種別・対象名・成否のいずれかを選んでから「絞り込む」を押してください。" %}{% endif %}
   </div>
 
   <div class="card">

@@ -69,6 +69,9 @@ def search_view(request: HttpRequest) -> HttpResponse:
     tenant = _current_tenant(request)
     scope = scopes.resolve(request, request.GET.get("scope"), tenant)
     question = request.GET.get("q", "").strip()
+    # 未入力のまま検索されたことを、まだ押していない状態と区別する。
+    # 同じ画面を返すだけだと「押しても何も起きない」不具合に見える。
+    submitted_empty = "q" in request.GET and not question
     hits = (
         search(
             list(scope.indexes),
@@ -85,6 +88,7 @@ def search_view(request: HttpRequest) -> HttpResponse:
         "pages/rag_search.html",
         {
             "question": question,
+            "submitted_empty": submitted_empty,
             "index": scope.primary_index,
             "scope": scope,
             "scope_choices": scopes.SCOPE_CHOICES,

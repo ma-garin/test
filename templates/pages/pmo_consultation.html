@@ -19,6 +19,7 @@
       </span>
     </div>
     <div class="ai-pb">
+      {% if submitted_empty %}{% include "partials/search_notice.html" with notice_title="相談内容が未入力のため、整理していません。" notice_body="下の入力欄に相談内容を書いてから「整理する」を押してください。" notice_hint="事実・期間・判断したいことを 1 文に入れると、意図の判定が安定します。" %}{% endif %}
       <form method="get" class="form">
         {% comment %}
           入力欄の直上に、書き方の手本と検索対象を出す（UXP-14）。
@@ -38,7 +39,7 @@
         </div>
         <div>
           <label for="q">相談内容</label>{% include "partials/hint.html" with label="AIの回答" body="この画面が返す結論・観点は、登録文書の検索結果から機械的に組み立てた候補です。確定情報ではありません。下の根拠の欄に挙がった原文で確かめてから使ってください。" %}
-          <textarea name="q" id="q" rows="3" placeholder="例: 結合試験が5日遅れています。どう整理すべきですか。">{{ question }}</textarea>
+          <textarea name="q" id="q" rows="3" placeholder="例: 結合試験が5日遅れています。どう整理すべきですか。" required>{{ question }}</textarea>
         </div>
         {% if screen %}
           <div class="callout w">

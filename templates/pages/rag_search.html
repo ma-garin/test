@@ -13,7 +13,7 @@
 
   <div class="card">
     <form method="get" class="search-row">
-      <input type="search" name="q" value="{{ question }}" placeholder="登録文書・業務データへ質問する（例: 決済APIのタイムアウト）" aria-label="検索語">
+      <input type="search" name="q" value="{{ question }}" placeholder="登録文書・業務データへ質問する（例: 決済APIのタイムアウト）" aria-label="検索語" required>
       <select name="scope" aria-label="検索範囲">
         {% for value, label in scope_choices %}
           <option value="{{ value }}"{% if scope.value == value %} selected{% endif %}>{{ label }}</option>
@@ -22,6 +22,9 @@
       <button type="submit" class="btn-b">検索</button>
     </form>
   </div>
+
+  {# 直前の操作への応答を最優先で返す。索引の状態より、押した結果のほうが先に要る。 #}
+  {% if submitted_empty %}{% include "partials/search_notice.html" with notice_title="検索語が未入力のため、検索していません。" notice_body="上の入力欄に質問を入れてから「検索」を押してください。" notice_hint="例: 決済APIのタイムアウト ／ 結合試験の完了判定基準" %}{% endif %}
 
   {% if not scope.is_usable %}
     <div class="callout w">
