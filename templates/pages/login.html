@@ -1,0 +1,19 @@
+{% extends "layouts/auth.html" %}
+
+{% block content %}
+  <form method="post" class="form">
+    {% csrf_token %}
+    {% if error or form.errors %}
+      <div class="callout d">{{ error|default:"メールアドレスの形式が正しくありません。" }}</div>
+    {% endif %}
+    <div>
+      <label for="{{ form.email.id_for_label }}">メールアドレス</label>
+      {{ form.email }}
+    </div>
+    <button type="submit" class="btn-b">ログイン</button>
+  </form>
+  <p class="auth-note">
+    パスワードは使いません。初めてのメールアドレスは、その場で利用者を作成します。<br>
+    体験用データは <code>pmo@example.com</code> に紐づいています。
+  </p>
+{% endblock %}

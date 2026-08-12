@@ -1,0 +1,98 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}実データをルールで検査した結果です。何を検知し、何をなぜ見送ったかを両方表示します。AIは使っていません。{% endblock %}
+
+{% block header_actions %}
+  <form method="post" action="{% url 'dashboard:detection_run' %}" class="actions">
+    {% csrf_token %}
+    <button type="submit" class="btn-b sm">検知を実行してアラートを作成</button>
+  </form>
+  <a class="btn-out sm" href="{% url 'dashboard:control' %}">管制ダッシュボードへ</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">検知</div>
+      <div class="kpi-v" style="color:var(--red)">{{ result.finding_count }}</div>
+      <div class="kpi-s">案件 {{ result.project_count }}件を検査</div>
+      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">判定不能</div>
+      <div class="kpi-v" style="color:var(--yellow)">{{ result.undetermined|length }}</div>
+      <div class="kpi-s">観測数が足りない項目</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">重複で見送り</div>
+      <div class="kpi-v">{{ result.duplicate_count }}</div>
+      <div class="kpi-s">未対応アラートが残っている対象</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:40%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">見送り合計</div>
+      <div class="kpi-v">{{ result.skips|length }}</div>
+      <div class="kpi-s">理由つきで記録</div>
+      <div class="kpi-bar"><div class="kpi-fill g" style="width:50%"></div></div>
+    </div>
+  </div>
+
+  <div class="callout w">
+    <p><strong>この一覧は保存していません。</strong>「検知を実行してアラートを作成」を押すまで、アラートも介入提案も作られません。</p>
+    <p>しきい値は設定（DETECTION_RULES）で変更できます。同じ対象に未対応のアラートが残っている場合は重複して作りません。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">検知した項目</span>
+      <span class="card-act">重要度順</span>
+    </div>
+    {% for label, finding in finding_rows %}
+      <div class="pb-row">
+        <div class="pb-lr">
+          <span class="pb-t">{{ finding.title }}</span>
+          <span class="pb-v">
+            <span class="badge {% if finding.severity == 'critical' %}r{% elif finding.severity == 'warning' %}a{% else %}n{% endif %}">
+              {% if finding.severity == 'critical' %}重大{% elif finding.severity == 'warning' %}注意{% else %}情報{% endif %}
+            </span>
+          </span>
+        </div>
+        <div class="ps">{{ finding.project.name }} ／ {{ label }}</div>
+        <div class="ps">判定根拠: {{ finding.reason }}</div>
+      </div>
+    {% empty %}
+      <div class="empty">しきい値を超えた項目はありません。</div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">検知しなかった項目と理由</span>
+      <span class="card-act">判定不能はデータ不足</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>案件</th><th>検知</th><th>結果</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          {% for label, skip in skip_rows %}
+            <tr>
+              <td>{{ skip.project.name }}</td>
+              <td class="nowrap">{{ label }}</td>
+              <td class="nowrap">
+                <span class="badge {% if skip.is_undetermined %}a{% else %}n{% endif %}">{{ skip.reason_label }}</span>
+              </td>
+              <td>{{ skip.detail }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="empty">見送った項目はありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

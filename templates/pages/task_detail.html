@@ -1,0 +1,116 @@
+{% extends "layouts/base.html" %}
+{% load integration_links %}
+{% block kicker %}WBSタスク詳細{% endblock %}
+{% block subtitle %}{{ task.project.code }} {{ task.project.name }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'dashboard:tasks' %}">タスク一覧へ</a>
+  <a class="btn-b sm" href="{% url 'projects:task_edit' task.pk %}">編集する</a>
+  <a class="btn-out sm" href="{% url 'pmo:consultation' %}?screen=task_detail&amp;subject={{ task.wbs_code }} {{ task.name|urlencode }}">この画面について相談</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">進捗率</div>
+      <div class="kpi-v">{{ task.progress_percent|floatformat:0 }}<small>%</small></div>
+      <div class="kpi-s">{{ task.get_status_display }}</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:{{ task.progress_percent|floatformat:0 }}%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">期限</div>
+      <div class="kpi-v" style="font-size:16px">{{ task.planned_end|date:"Y/n/j"|default:"未設定" }}</div>
+      <div class="kpi-s">遅れ {{ task.delay_days|default:"—" }}日</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">担当</div>
+      <div class="kpi-v" style="font-size:16px">{{ task.owner|default:"—" }}</div>
+      <div class="kpi-s">ボール保持者 {{ task.ball_holder|default:"—" }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">優先度</div>
+      <div class="kpi-v" style="font-size:16px">{{ task.get_priority_display }}</div>
+      <div class="kpi-s">{{ task.get_follow_up_state_display }}</div>
+    </div>
+  </div>
+
+  {% if task.is_archived %}
+    <div class="callout w"><p>このタスクはアーカイブ済みです。編集画面から状態を戻せます。</p></div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">タスク情報</span>
+      <span class="card-act">{{ task.wbs_code }}</span>
+    </div>
+    <dl class="dl">
+      <dt>タスク名</dt><dd>{{ task.name }}</dd>
+      <dt>案件</dt><dd><a href="{% url 'projects:detail' task.project.pk %}">{{ task.project.code }} {{ task.project.name }}</a></dd>
+      <dt>WBSコード</dt><dd>{{ task.wbs_code }}</dd>
+      <dt>状態</dt><dd><span class="badge n">{{ task.get_status_display }}</span></dd>
+      <dt>優先度</dt><dd>{{ task.get_priority_display }}</dd>
+      <dt>担当</dt><dd>{{ task.owner|default:"—" }}</dd>
+      <dt>ボール保持者</dt><dd>{{ task.ball_holder|default:"—" }}</dd>
+      <dt>PMOフォロー状態</dt><dd>{{ task.get_follow_up_state_display }}</dd>
+      <dt>計画開始日</dt><dd>{{ task.planned_start|date:"Y/n/j"|default:"—" }}</dd>
+      <dt>計画終了日</dt><dd>{{ task.planned_end|date:"Y/n/j"|default:"—" }}</dd>
+      <dt>実績開始日</dt><dd>{{ task.actual_start|date:"Y/n/j"|default:"—" }}</dd>
+      <dt>実績終了日</dt><dd>{{ task.actual_end|date:"Y/n/j"|default:"—" }}</dd>
+      <dt>進捗率</dt><dd>{{ task.progress_percent|floatformat:0 }}%</dd>
+      <dt>クリティカルパス</dt><dd>{% if task.is_critical_path %}該当{% else %}—{% endif %}</dd>
+      <dt>外部原文</dt><dd>{% external_link task as task_link %}{% if task_link %}{{ task_link }}{% else %}—{% endif %}</dd>
+      <dt>親タスク</dt><dd>{% if task.parent %}<a href="{% url 'projects:task_detail' task.parent.pk %}">{{ task.parent.wbs_code }} {{ task.parent.name }}</a>{% else %}—{% endif %}</dd>
+      <dt>次アクション</dt><dd>{{ task.next_action|default:"—" }}</dd>
+      <dt>登録日時</dt><dd>{{ task.created_at|date:"Y/n/j H:i" }}</dd>
+      <dt>更新日時</dt><dd>{{ task.updated_at|date:"Y/n/j H:i" }}</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">根拠メモ</span></div>
+    {% if task.evidence_note %}
+      <div class="callout ok"><p>{{ task.evidence_note|linebreaksbr }}</p></div>
+    {% else %}
+      <div class="empty">根拠メモが登録されていません。判断の裏付けを残してください。</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">関連タスク</span>
+      <span class="card-act">子タスク {{ child_tasks|length }}件</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>関係</th><th>WBS</th><th>タスク</th><th>担当</th><th>期限</th><th>状態</th></tr></thead>
+        <tbody>
+          {% for related in related_tasks %}
+            <tr>
+              <td class="nowrap">関連</td>
+              <td class="nowrap">{{ related.wbs_code }}</td>
+              <td><a href="{% url 'projects:task_detail' related.pk %}">{{ related.name }}</a></td>
+              <td>{{ related.owner|default:"—" }}</td>
+              <td class="nowrap">{{ related.planned_end|date:"n/j"|default:"—" }}</td>
+              <td class="nowrap">{{ related.get_status_display }}</td>
+            </tr>
+          {% endfor %}
+          {% for child in child_tasks %}
+            <tr>
+              <td class="nowrap">子</td>
+              <td class="nowrap">{{ child.wbs_code }}</td>
+              <td><a href="{% url 'projects:task_detail' child.pk %}">{{ child.name }}</a></td>
+              <td>{{ child.owner|default:"—" }}</td>
+              <td class="nowrap">{{ child.planned_end|date:"n/j"|default:"—" }}</td>
+              <td class="nowrap">{{ child.get_status_display }}</td>
+            </tr>
+          {% endfor %}
+          {% if not related_tasks and not child_tasks %}
+            <tr><td colspan="6"><div class="empty">関連づけられたタスクはありません。</div></td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

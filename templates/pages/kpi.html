@@ -1,0 +1,104 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}基準値・実績・改善率を指標ごとに表示します。計測が無い指標は「未計測」と明示します。{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">計測済みの指標</div>
+      <div class="kpi-v">{{ report.rows|length }}<small>/4</small></div>
+      <div class="kpi-s">計測データ {{ report.measured_count }}件</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">改善した指標</div>
+      <div class="kpi-v" style="color:var(--green)">{{ report.improved_count }}</div>
+      <div class="kpi-s">基準値より良くなったもの</div>
+      <div class="kpi-bar"><div class="kpi-fill g" style="width:60%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">目標達成</div>
+      <div class="kpi-v" style="color:var(--blue)">{{ report.achieved_count }}</div>
+      <div class="kpi-s">目標値に到達した指標</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:50%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">未計測</div>
+      <div class="kpi-v" style="color:var(--yellow)">{{ report.missing_kinds|length }}</div>
+      <div class="kpi-s">効果を語れない指標</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:40%"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">効果測定（指標ごとの最新計測）</span>
+      <a class="btn-out" href="{% url 'dashboard:poc' %}">PoC合否判定を見る</a>
+    </div>
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr><th>指標</th><th>案件</th><th>基準値</th><th>実績</th><th>目標</th><th>改善率</th><th>判定</th><th>計測日</th></tr>
+        </thead>
+        <tbody>
+          {% for row in report.rows %}
+            <tr>
+              <td>{{ row.measurement.get_kind_display }}</td>
+              <td>{{ row.measurement.project.code }}</td>
+              <td class="nowrap">{{ row.measurement.baseline_value|floatformat:"-2"|default:"—" }}</td>
+              <td class="nowrap">{{ row.measurement.actual_value|floatformat:"-2" }} {{ row.measurement.unit }}</td>
+              <td class="nowrap">{{ row.measurement.target_value|floatformat:"-2"|default:"—" }}</td>
+              <td class="nowrap">
+                {% if row.improvement_percent is None %}—
+                {% else %}<span class="badge {{ row.tone }}">{{ row.improvement_percent }}%</span>{% endif %}
+              </td>
+              <td>
+                {% if row.target_achieved is None %}<span class="badge n">目標未設定</span>
+                {% elif row.target_achieved %}<span class="badge g">達成</span>
+                {% else %}<span class="badge r">未達</span>{% endif %}
+              </td>
+              <td class="nowrap">{{ row.measurement.measured_on|date:"n/j" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8"><div class="dashboard-empty">KPIの計測データがありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if derived_rows %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">代替指標（実測値が無いため算出したもの）</span>
+        <span class="card-act">実測ではありません</span>
+      </div>
+      <div class="callout w">
+        <p><strong>KPIの実測値が1件も登録されていません。</strong>
+        以下は WBS・課題・不具合の実データから算出した参考値で、効果測定の根拠には使えません。</p>
+      </div>
+      {% for row in derived_rows %}
+        <div class="pb-row">
+          <div class="pb-lr">
+            <span class="pb-t">{{ row.label }}</span>
+            <span class="pb-v"><span class="badge {{ row.tone }}">{{ row.actual }}{{ row.unit }}（{{ row.improvement_point }}pt）</span></span>
+          </div>
+          <div class="pb-tr"><div class="pb-f {{ row.tone }}" style="width:{{ row.bar_percent }}%"></div></div>
+          <div class="ps">{{ row.note }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if report.missing_kinds %}
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">未計測の指標</span></div>
+      <div class="callout w">
+        <p><strong>次の指標はまだ計測されていません。</strong>効果を語る前に計測が要ります。</p>
+        <p>{{ report.missing_kinds|join:" ／ " }}</p>
+      </div>
+    </div>
+  {% endif %}
+
+{% endblock %}

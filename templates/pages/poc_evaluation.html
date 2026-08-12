@@ -1,0 +1,114 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}PoCの受け入れ条件ごとに、目標値と実績を突き合わせて合否を判定します。データが足りない指標は「判定不能」と理由を出します。{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">総合判定</div>
+      <div class="kpi-v"><span class="badge {{ report.overall_tone }}">{{ report.overall_label }}</span></div>
+      <div class="kpi-s">不合格が1件でもあれば不合格、残りが判定不能なら判定不能</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">合格</div>
+      <div class="kpi-v" style="color:var(--green)">{{ report.passed_count }}<small>/{{ report.criteria|length }}</small></div>
+      <div class="kpi-s">目標値を満たした条件</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">不合格</div>
+      <div class="kpi-v" style="color:var(--red)">{{ report.failed_count }}</div>
+      <div class="kpi-s">測れていて、目標に届いていない条件</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">判定不能</div>
+      <div class="kpi-v" style="color:var(--yellow)">{{ report.unknown_count }}</div>
+      <div class="kpi-s">データ不足で合否を言えない条件</div>
+    </div>
+  </div>
+
+  {% if report.unknown_count %}
+    <div class="callout w">
+      <p><strong>判定不能が {{ report.unknown_count }} 件あります。</strong>
+      判定不能は「不合格」ではありません。合否を言うために何が足りないかは、下の表の「根拠」に書いています。</p>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">受け入れ条件の判定</span>
+      <span class="card-act">目標値は設定（POC_TARGETS）で変更できます</span>
+    </div>
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr><th>#</th><th>受け入れ条件</th><th>基準</th><th>実績</th><th>目標</th><th>判定</th></tr>
+        </thead>
+        <tbody>
+          {% for item in report.criteria %}
+            <tr>
+              <td class="nowrap">{{ item.number }}</td>
+              <td>
+                {{ item.label }}
+                <div class="ps">{{ item.reason }}</div>
+                {% for note in item.notes %}<div class="ps">※ {{ note }}</div>{% endfor %}
+              </td>
+              <td class="nowrap">{{ item.baseline_text }}</td>
+              <td class="nowrap">{{ item.actual_text }}</td>
+              <td class="nowrap">{{ item.target_text }}</td>
+              <td class="nowrap"><span class="badge {{ item.verdict_tone }}">{{ item.verdict_label }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="dashboard-empty">判定対象の受け入れ条件が設定されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">HITL 承認前ブロックの実演手順（#54）</span>
+      <span class="card-act">{{ report.blocked_deliverables|length }}件がブロック中</span>
+    </div>
+    {% if report.blocked_deliverables %}
+      <div class="dl">
+        <p><strong>実演手順</strong></p>
+        <p>1. 下表の成果物を「成果物」画面で開く。</p>
+        <p>2. 承認申請を実行する。</p>
+        <p>3. 根拠評価が不足と判定しているため、サーバ側で拒否され承認へ進めないことを確認する。</p>
+        <p>4. 根拠を追加したうえで再評価すると、同じ操作が通ることを確認する。</p>
+      </div>
+      <div class="dashboard-risk-wrap">
+        <table class="dashboard-risk-table">
+          <thead>
+            <tr><th>成果物</th><th>案件</th><th>状態</th><th>ブロック理由</th></tr>
+          </thead>
+          <tbody>
+            {% for row in report.blocked_deliverables %}
+              <tr>
+                <td>{{ row.deliverable.title }} <span class="sg">v{{ row.deliverable.version }}</span></td>
+                <td class="nowrap">{{ row.deliverable.project.code }}</td>
+                <td class="nowrap"><span class="badge a">{{ row.deliverable.get_status_display }}</span></td>
+                <td>{{ row.reason }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">根拠不足で承認をブロックされている成果物がありません。止める対象が無いため、この画面からは実演できません。</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">判定の前提</span></div>
+    <div class="callout d">
+      <p><strong>営業日の数え方:</strong> {{ business_day_note }}</p>
+      <p><strong>目標値:</strong> 下の値は <code>settings.POC_TARGETS</code> から読んでいます。コードを変えずに環境変数で上書きできます。</p>
+      <p>{% for key, value in report.targets.items %}{{ key }} = {{ value }}{% if not forloop.last %} ／ {% endif %}{% endfor %}</p>
+      <p><strong>3値判定:</strong> 合格 / 不合格 / 判定不能。データが無いことを「不合格」にも「合格」にもしません。</p>
+    </div>
+  </div>
+
+{% endblock %}

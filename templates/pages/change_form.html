@@ -1,0 +1,29 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}変更要求の内容・影響範囲・工数・スケジュール影響を記録します。{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">{{ form_title }}</span>
+      <a class="card-act" href="{% url 'dashboard:change' %}">一覧へ戻る</a>
+    </div>
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% if form.errors %}
+        <div class="callout d">入力内容を確認してください。</div>
+      {% endif %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+          {% for error in field.errors %}<div class="callout d">{{ error }}</div>{% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-b">保存する</button>
+    </form>
+  </div>
+
+{% endblock %}

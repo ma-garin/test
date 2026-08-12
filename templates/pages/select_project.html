@@ -1,0 +1,62 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}管理・設定{% endblock %}
+{% block subtitle %}対象案件を1件に絞るか、全案件を横断して見るかを選びます。{% endblock %}
+
+{% block content %}
+
+  <div class="callout">
+    <p><strong>選択は任意です。</strong>未選択のときは、参照できる全案件を横断して集計します。
+    1件に絞ると、ダッシュボード・タスク・リスク・課題・不具合・変更要求・KPI がその案件だけになります。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">対象案件</span>
+      <span class="card-act">{% if current %}選択中: {{ current.name }}{% else %}全案件を対象にしています{% endif %}</span>
+    </div>
+
+    <form method="post" class="stack">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="dashboard-risk-wrap">
+        <table class="dashboard-risk-table">
+          <thead>
+            <tr><th></th><th>案件</th><th>状態</th><th>進捗</th><th>PM</th><th>PMO</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="radio" name="project" value="" id="project-all"{% if not current %} checked{% endif %}></td>
+              <td colspan="5"><label for="project-all"><strong>全案件</strong>（絞り込みなし）</label></td>
+            </tr>
+            {% for project in projects %}
+              <tr>
+                <td>
+                  <input type="radio" name="project" value="{{ project.pk }}" id="project-{{ project.pk }}"
+                         {% if current and current.pk == project.pk %} checked{% endif %}>
+                </td>
+                <td><label for="project-{{ project.pk }}">{{ project.code }} {{ project.name }}</label></td>
+                <td>
+                  <span class="badge {% if project.rag_status == 'red' %}r{% elif project.rag_status == 'yellow' %}a{% elif project.rag_status == 'green' %}g{% else %}n{% endif %}">
+                    {{ project.get_rag_status_display }}
+                  </span>
+                </td>
+                <td class="nowrap">{{ project.progress_percent|floatformat:0 }}%</td>
+                <td>{{ project.project_manager|default:"—" }}</td>
+                <td>{{ project.pmo_manager|default:"—" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6"><div class="dashboard-empty">参照できる案件がありません。</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-b">この対象で表示する</button>
+        <a class="btn-ghost" href="{{ next }}">戻る</a>
+      </div>
+    </form>
+  </div>
+
+{% endblock %}

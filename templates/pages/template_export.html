@@ -1,0 +1,119 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}ナレッジ / RAG{% endblock %}
+{% block subtitle %}ひな型の項目マッピングに従って実データを書き込みます。元のひな型は変更しません。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'documents:template_list' %}">ひな型管理へ戻る</a>
+  {% if result.ok %}<a class="btn-b sm" href="?{{ download_query }}">Excelをダウンロード</a>{% endif %}
+{% endblock %}
+
+{% block content %}
+
+  {% if result.ok %}
+    <div class="callout ok"><p>{{ result.message }}</p></div>
+  {% else %}
+    <div class="callout d">
+      <p><strong>Excelを出力できませんでした。</strong>{{ result.message }}</p>
+      <p>下の「未出力の項目」は、出力できていれば書き込まれるはずだった内容です。</p>
+    </div>
+  {% endif %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">書き込んだ項目</div>
+      <div class="kpi-v" style="color:var(--green)">{{ result.written|length }}</div>
+      <div class="kpi-s">{{ template.name }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">未出力の項目</div>
+      <div class="kpi-v" style="color:var(--red)">{{ result.skipped|length }}</div>
+      <div class="kpi-s">空欄の理由は下の表で確認できます</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">対象案件</div>
+      <div class="kpi-v">{% if project %}{{ project.code }}{% else %}—{% endif %}</div>
+      <div class="kpi-s">{% if project %}{{ project.name }}{% else %}案件を選ぶと実データを書き込めます{% endif %}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">対象成果物</div>
+      <div class="kpi-v">{% if deliverable %}v{{ deliverable.version }}{% else %}—{% endif %}</div>
+      <div class="kpi-s">{% if deliverable %}{{ deliverable.title }}{% else %}成果物支援から選べます{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">出力条件</span>
+      <span class="card-act">案件を選び直すと同じひな型で作り直せます</span>
+    </div>
+    <form class="form" method="get" action="{% url 'documents:template_export' template.pk %}">
+      {% if deliverable %}<input type="hidden" name="deliverable" value="{{ deliverable.pk }}">{% endif %}
+      <div class="stack">
+        <label>案件<br>
+          <select name="project">
+            <option value="">選択しない</option>
+            {% for item in projects %}
+              <option value="{{ item.pk }}" {% if project and item.pk == project.pk %}selected{% endif %}>{{ item.code }} {{ item.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+      <div class="actions">
+        <button class="btn-b" type="submit">この条件で作り直す</button>
+        {% if result.ok %}<a class="btn-out" href="?{{ download_query }}">Excelをダウンロード</a>{% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">書き込んだ項目</span>
+      <span class="card-act">{{ result.written|length }}件</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>項目</th><th class="nowrap">書き込み先</th><th>値</th></tr></thead>
+        <tbody>
+          {% for item in result.written %}
+            <tr>
+              <td>{{ item.field_name }}</td>
+              <td class="nowrap"><code>{{ item.location }}</code></td>
+              <td>{{ item.display }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3"><div class="empty">書き込んだ項目はありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">未出力の項目</span>
+      <span class="card-act">{{ result.skipped|length }}件</span>
+    </div>
+    {% if result.has_skipped %}
+      <div class="callout w">
+        <p><strong>この項目はExcelに入っていません。</strong>空欄が「値なし」なのか「出力漏れ」なのかを受け取った人が判断できないため、提出前に必ず確認してください。</p>
+      </div>
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>項目</th><th class="nowrap">書き込み先</th><th>理由</th></tr></thead>
+          <tbody>
+            {% for item in result.skipped %}
+              <tr>
+                <td>{{ item.field_name }}</td>
+                <td class="nowrap"><code>{{ item.location }}</code></td>
+                <td>{{ item.reason }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">未出力の項目はありません。</div>
+    {% endif %}
+  </div>
+
+{% endblock %}

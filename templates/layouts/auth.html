@@ -1,0 +1,23 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title }} | VeriRAG PMO Agent</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="auth">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <span class="hdr-mark">VR</span>
+      <span>
+        <strong>VeriRAG PMO Agent</strong>
+        <span>AI PROJECT CONTROL</span>
+      </span>
+    </div>
+    {% block content %}{% endblock %}
+  </div>
+</div>
+</body>
+</html>

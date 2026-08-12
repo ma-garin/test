@@ -1,0 +1,76 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}ナレッジ / RAG{% endblock %}
+{% block subtitle %}ひな型は RAG 検索の対象に含めません。回答の出力先としてのみ使います。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'documents:list' %}">文書台帳へ</a>
+  <a class="btn-b sm" href="{% url 'documents:upload' %}">文書をアップロード</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="callout w">
+    <p><strong>ひな型は RAG 対象外です。</strong>ここに登録したファイルの本文は検索・引用されません。</p>
+    <p>検索対象になるのは <a href="{% url 'documents:list' %}">文書台帳</a> の「RAG対象」文書だけです。ひな型は回答の書き出し先としてのみ使います。</p>
+  </div>
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">登録ひな型</div>
+      <div class="kpi-v">{{ template_total }}</div>
+      <div class="kpi-s">RAG検索には含まれません</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">マッピング済み項目</div>
+      <div class="kpi-v" style="color:var(--blue)">{{ mapped_total }}</div>
+      <div class="kpi-s">回答項目 → セル位置の対応</div>
+    </div>
+  </div>
+
+  {% for card in cards %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">{{ card.template.name }}</span>
+        <span class="card-act">
+          <span class="badge {{ card.tone }}">{{ card.template.get_mapping_status_display }}</span>
+          <a class="btn-out sm" href="{% url 'documents:template_export' card.template.pk %}">この様式で出力</a>
+        </span>
+      </div>
+
+      <dl class="dl">
+        <dt>説明</dt>
+        <dd>{{ card.template.description|default:"—" }}</dd>
+        <dt>検索キーワード</dt>
+        <dd>{{ card.template.keywords|default:"—" }}</dd>
+        <dt>シート構成</dt>
+        <dd>{% if card.sheets %}{{ card.sheets|join:" / " }}{% else %}未取得{% endif %}</dd>
+        <dt>RAG対象</dt>
+        <dd>含まれません（出力先としてのみ使用）</dd>
+      </dl>
+
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>回答項目</th><th>書き込み先セル</th></tr></thead>
+          <tbody>
+            {% for row in card.rows %}
+              <tr>
+                <td>{{ row.field_name }}</td>
+                <td class="nowrap"><code>{{ row.cell }}</code></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="2"><div class="empty">項目マッピングが未設定です。AI 提案後に人が確認して承認してください。</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% empty %}
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">ひな型台帳</span><span class="card-act">0件</span></div>
+      <div class="empty">ひな型が登録されていません。</div>
+    </div>
+  {% endfor %}
+
+  {% include "partials/pager.html" %}
+
+{% endblock %}

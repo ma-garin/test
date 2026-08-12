@@ -1,0 +1,50 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}管理・設定{% endblock %}
+{% block subtitle %}{{ form_subtitle }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{% url 'integrations:list' %}">接続一覧へ戻る</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="callout w">
+    APIトークンやWebhook URL の<strong>値そのものは登録できません</strong>。
+    サーバーの環境変数に置き、ここにはその<strong>名前</strong>（例: <code>JIRA_API_TOKEN</code>）だけを入力してください。
+    値は同期の実行時にだけ読み出され、画面にもログにも残りません。
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">{{ form_title }}</span>
+    </div>
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="callout d">{{ form.non_field_errors|join:" " }}</div>
+      {% endif %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-b">保存する</button>
+    </form>
+  </div>
+
+  {% if connection %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">この接続への操作</span>
+      </div>
+      <form method="post" action="{% url 'integrations:check' connection.pk %}" class="form">
+        {% csrf_token %}
+        <button type="submit" class="btn-out">疎通確認する</button>
+      </form>
+    </div>
+  {% endif %}
+
+{% endblock %}
