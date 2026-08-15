@@ -17,7 +17,16 @@
         <tbody>
           {% for row in rows %}
             <tr>
-              <td>{{ row.document.title }}</td>
+              <td>
+                {# 原本を開けないと、AI の回答に付いた引用も確かめられない。 #}
+                {% if row.document.file %}
+                  <a href="{% url 'documents:download' row.document.pk %}"
+                     title="原本をダウンロードする">{{ row.document.title }}</a>
+                {% else %}
+                  {{ row.document.title }}
+                  <span class="muted">（原本なし）</span>
+                {% endif %}
+              </td>
               <td class="nowrap"><span class="badge n">{{ row.document.get_file_type_display }}</span></td>
               <td class="nowrap">{{ row.document.project.name|default:"テナント共通" }}</td>
               <td><span class="badge {% if row.document.status == 'active' %}g{% elif row.document.status == 'error' %}r{% else %}n{% endif %}">{{ row.document.get_status_display }}</span></td>

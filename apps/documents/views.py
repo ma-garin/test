@@ -46,6 +46,52 @@ def _selected_project(projects, raw_value: str | None):
 
 
 @login_required
+def download_document(request: HttpRequest, pk) -> HttpResponse:
+    """登録した文書の原本を返す。
+
+    台帳に原本への導線が無く、本番では登録した文書を取り出す手段が存在しなかった。
+    根拠として登録した資料を開けないなら、AI の回答に付いた引用も確かめられない。
+
+    配信をこのビュー越しにするのは、MEDIA を直接公開すると URL を知っている
+    だけで他テナントの文書まで読めてしまうため。参照範囲は台帳と同じ
+    （`selectors.documents_for`）に揃え、案件配下のものは案件の閲覧権限も見る。
+    """
+
+    from django.http import FileResponse
+
+    documents = selectors.documents_for(request.user, request.tenant)
+
+    try:
+        document = documents.filter(pk=pk).first()
+    except (ValueError, ValidationError, TypeError):
+        document = None
+
+    if document is None:
+        raise Http404("この文書は参照できません。")
+
+    permissions.require(request.user, Action.VIEW, document)
+
+    if not document.file:
+        raise Http404("この文書には原本ファイルが登録されていません。")
+
+    try:
+        handle = document.file.open("rb")
+    except (FileNotFoundError, OSError) as error:
+        # ストレージから消えている。台帳には残っているので、その差が分かる形で返す。
+        raise Http404("原本ファイルが保存先に見つかりません。") from error
+
+    filename = document.file.name.rsplit("/", 1)[-1]
+    response = FileResponse(handle, as_attachment=True, filename=filename)
+    # 表示名は日本語を含む。ASCII 版と UTF-8 版を両方付ける（Excel 出力と同じ作法）。
+    fallback = re.sub(r"[^A-Za-z0-9._-]", "_", filename) or "document"
+    response["Content-Disposition"] = (
+        f'attachment; filename="{fallback}"; filename*=UTF-8\'\'{quote(filename)}'
+    )
+
+    return response
+
+
+@login_required
 def document_list(request: HttpRequest) -> HttpResponse:
     """文書台帳。先頭 200 件で打ち切ると総件数と表示が食い違うため、ページで切る。"""
 

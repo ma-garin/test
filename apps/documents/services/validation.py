@@ -25,7 +25,56 @@ EXTENSION_TO_FILE_TYPE = {
     ".docx": FileType.DOCX,
     ".doc": FileType.DOC,
     ".pptx": FileType.PPTX,
+    # テキスト系は外部ライブラリなしで端から端まで通せる唯一の経路
+    # （`apps/documents/services/extractors.py`）。ここに無いと画面から
+    # 登録できず、依存を入れられない環境で試す手段が消える。
+    ".txt": FileType.TXT,
+    ".md": FileType.MD,
 }
+
+#: 中身の先頭に必ず現れる印。拡張子だけを信じると、`payload.pdf` という名前の
+#: ZIP や HTML がそのまま登録され、抽出の段になって初めて失敗する。
+#: 印が分かる形式だけを照合し、分からないものは通す（誤って弾く方が害が大きい）。
+MAGIC_NUMBERS: dict[str, tuple[bytes, ...]] = {
+    FileType.PDF: (b"%PDF-",),
+    # Office の新形式はすべて ZIP。旧形式は OLE 複合ドキュメント。
+    FileType.XLSX: (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"),
+    FileType.XLSM: (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"),
+    FileType.DOCX: (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"),
+    FileType.PPTX: (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"),
+    FileType.XLS: (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1",),
+    FileType.DOC: (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1",),
+}
+
+
+def head_bytes(uploaded_file, length: int = 8) -> bytes:
+    """先頭バイトを読み、読み位置を戻す。"""
+
+    try:
+        uploaded_file.seek(0)
+        head = uploaded_file.read(length)
+    except (AttributeError, OSError):
+        return b""
+    finally:
+        try:
+            uploaded_file.seek(0)
+        except (AttributeError, OSError):
+            pass
+
+    return head or b""
+
+
+def content_matches(uploaded_file, file_type: str) -> bool:
+    """中身が拡張子どおりの形式か。判定できない形式は True を返す。"""
+
+    signatures = MAGIC_NUMBERS.get(file_type)
+
+    if not signatures:
+        return True
+
+    head = head_bytes(uploaded_file, max(len(signature) for signature in signatures))
+
+    return any(head.startswith(signature) for signature in signatures)
 
 
 @dataclass
@@ -66,6 +115,13 @@ def validate_upload(uploaded_file, *, tenant, project=None) -> ValidationResult:
     if file_type is None:
         supported = ", ".join(sorted(EXTENSION_TO_FILE_TYPE))
         errors.append(f"対応していない形式です（{suffix or '拡張子なし'}）。対応形式: {supported}")
+
+    if file_type is not None and not content_matches(uploaded_file, file_type):
+        # 拡張子だけを信じると、名前を付け替えただけの別形式が登録され、
+        # 抽出の段になって初めて失敗する。そのときには原因が分からない。
+        errors.append(
+            f"中身が{suffix}の形式になっていません。拡張子を付け替えたファイルではありませんか。"
+        )
 
     size = getattr(uploaded_file, "size", 0) or 0
 

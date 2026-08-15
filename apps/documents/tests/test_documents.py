@@ -99,10 +99,35 @@ class DocumentUploadTests(TestCase):
         self.assertTrue(document.sha256)
 
     def test_未対応形式は登録せず理由を返す(self):
-        response = self.client.post(self.url, {"file": SimpleUploadedFile("memo.txt", b"hello")})
+        response = self.client.post(self.url, {"file": SimpleUploadedFile("archive.zip", b"PK\x03\x04")})
 
         self.assertEqual(Document.objects.count(), 0)
         self.assertContains(response, "対応していない形式です")
+
+    def test_テキスト形式は登録できる(self):
+        """`.txt` / `.md` は外部ライブラリなしで端から端まで通せる唯一の経路。
+
+        抽出側は対応しているのに検証側の対応表に無く、画面からは登録できなかった。
+        依存を入れられない環境で試す手段が消えていた。
+        """
+
+        response = self.client.post(
+            self.url, {"file": SimpleUploadedFile("memo.txt", "議事メモ".encode())}
+        )
+
+        self.assertEqual(Document.objects.count(), 1)
+        self.assertEqual(Document.objects.get().file_type, "txt")
+        self.assertEqual(response.status_code, 200)
+
+    def test_拡張子を付け替えたファイルは登録しない(self):
+        """検証が拡張子だけだと、名前を変えた別形式が登録され、抽出で初めて失敗する。"""
+
+        response = self.client.post(
+            self.url, {"file": SimpleUploadedFile("payload.pdf", b"<html>not a pdf</html>")}
+        )
+
+        self.assertEqual(Document.objects.count(), 0)
+        self.assertContains(response, "中身が.pdfの形式になっていません")
 
     def test_空ファイルは登録しない(self):
         response = self.client.post(self.url, {"file": SimpleUploadedFile("empty.pdf", b"")})
