@@ -1,0 +1,13 @@
+{
+  "name": "verirag-pmo-e2e",
+  "private": true,
+  "description": "VeriRAG PMO Agent — Playwright E2E テスト（フェーズ2）",
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0"
+  },
+  "scripts": {
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report e2e/results/html"
+  }
+}

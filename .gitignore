@@ -30,6 +30,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Node（Playwright E2E の依存）
+node_modules/
+
 # Playwright MCP の作業ディレクトリ
 .playwright-mcp/
 

@@ -10,7 +10,8 @@
 {% endblock %}
 
 {% block content %}
-  <p class="auth-note" style="margin-top:0 0 14px">参照するテナントを選んでください。所属外のテナントは表示されません。</p>
+  <h2 class="auth-title">参照するテナントを選ぶ</h2>
+  <p class="auth-note" style="margin:0 0 14px">参照するテナントを選んでください。所属外のテナントは表示されません。</p>
 
   <form method="post">
     {% csrf_token %}
