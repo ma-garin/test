@@ -25,14 +25,38 @@ make run        # http://127.0.0.1:8000/
 ```
 
 API キーは不要です。既定の `AI_PROVIDER=local_hash` は、外部 API を呼ばずに検索経路を
-最後まで通すための決定的な Embedding 実装です。OpenAI / Ollama へ切り替えるときは
-`.env` を編集してから `make index TENANT=demo` でインデックスを作り直してください。
+最後まで通すための決定的な Embedding 実装です。
+
+OpenAI / Ollama を使うときは、**設定画面（`/core/settings/`）から利用者ごとに設定できます**。
+ロールに関係なく、全員が自分の API キーを持てます。設定は次の順に効きます。
+
+1. 個人設定 … 自分の API キー・モデル
+2. テナント既定 … 管理者が決める全員ぶんの既定
+3. 環境変数（`.env`）… 最後の拠り所
+
+上の段で空欄にした項目は、そのまま下の段に委ねます。キーは保存時に暗号化し、
+画面にもログにもマスク済みの値しか出しません。保存できても有効なキーとは限らないので、
+設定画面の「接続を確認する」で先に確かめてください。
+
+Embedding モデルだけはテナント既定と環境変数からしか変えられません。利用者ごとに
+変えられると、同じインデックスを別のベクトル空間で検索することになり、検索順位が
+意味を失うためです。Embedding を変えたら `make index TENANT=demo` で作り直してください。
 
 ```bash
-make test       # テスト（62 件、外部 API 呼び出しなし）
+make test       # 単体・結合テスト（外部 API 呼び出しなし）
 make lint       # ruff
 make check      # システムチェック + マイグレーション漏れ検出
 ```
+
+利用者視点のユースケーステスト（システムテスト）も回せます。
+
+```bash
+make systemtest   # ユースケース 735 件をロール別に実行する
+make odc          # 不具合を ODC で分類する
+make rerun-ng     # NG を修整したあと、実ブラウザで再実行して動画を残す
+```
+
+進め方と考え方は `docs/systemtest/README.md` にあります。
 
 自動実行の仕組みは置いていません。コミット前に手元で通してください。
 
@@ -90,7 +114,8 @@ apps/<name>/
 
 | 約束 | 実装場所 |
 |---|---|
-| 認証情報を UI・ログへ出さない | `apps/core/services/ai_settings.py`（マスク）、`apps/audit/models.py`（保存時マスク） |
+| 認証情報を UI・ログへ出さない | `apps/core/services/secrets.py`（保存時暗号化）、`apps/core/services/ai_settings.py`（マスク）、`apps/audit/models.py`（保存時マスク） |
+| 書き込み・承認は必ず認可を通す | `apps/accounts/services/permissions.py` の `require()`。各アプリの書き込みビューが冒頭で呼ぶ |
 | AI 出力に根拠・信頼度・人の判断を持たせる | `apps/agents/models.py` の `EvidenceEvaluation` / `HumanReview` |
 | 根拠不足なら断定せず承認へ進めない | `EvidenceEvaluation.blocks_approval`、`Deliverable.can_request_approval` |
 | 案件・テナントの参照範囲を分離する | `apps/projects/selectors.py`、`apps/rag/services/vector_store.py`（インデックス単位でファイル分離） |
