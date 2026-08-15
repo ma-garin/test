@@ -40,7 +40,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         import csv as csv_module
 
-        from _usecase_world import build_payload, build_world, resolve
+        # 世界の作り方と URL 名の解決は実行ハーネスと同じものを使う。
+        # ブラウザ側へ二重実装すると、フィクスチャの ID が必ず食い違う。
+        from apps.core.management.commands.run_usecases import build_payload, build_world, resolve
 
         ng_ids = self._collect_ng(Path(options["results"]))
 

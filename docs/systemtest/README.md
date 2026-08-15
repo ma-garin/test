@@ -58,23 +58,16 @@ apps/core/management/commands/
 ## 実行
 
 ```bash
-# 1. ケースを生成する（catalog.py を変えたときだけ）
-python tools/systemtest/generate_usecases.py
+make usecases     # ケースを生成し直す（catalog.py を変えたときだけ）
+make systemtest   # 全ロールを実行する（専用のテストDBを作る。開発DBは触らない）
+make odc          # 不具合を ODC で分類し直す
+make rerun-ng     # NG を修整したあと、実ブラウザで再実行して動画を残す
+```
 
-# 2. ロール別に実行する（専用のテストDBを作る。開発DBは触らない）
+ロールを絞って実行するとき:
+
+```bash
 python manage.py run_usecases --settings=config.settings.test --role pmo
-python manage.py run_usecases --settings=config.settings.test          # 全ロール
-
-# 3. NG を修整したあと、実ブラウザで再実行して動画を残す
-DATABASE_URL=sqlite:///var/systemtest/rerun.sqlite3 python manage.py migrate
-DATABASE_URL=sqlite:///var/systemtest/rerun.sqlite3 \
-  python manage.py build_rerun_plan --out var/systemtest/rerun-plan.json
-DATABASE_URL=sqlite:///var/systemtest/rerun.sqlite3 \
-  python manage.py runserver 127.0.0.1:8009 --noreload &
-python tools/systemtest/rerun_with_video.py \
-  --plan var/systemtest/rerun-plan.json \
-  --base-url http://127.0.0.1:8009 \
-  --out docs/systemtest/evidence
 ```
 
 再実行を実ブラウザで行うのは、HTTP のやり取りだけでは写らない壊れ方

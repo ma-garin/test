@@ -1,4 +1,4 @@
-.PHONY: help setup migrate seed run test lint fmt check index clean
+.PHONY: help setup migrate seed run test lint fmt check index clean usecases systemtest rerun-ng odc
 
 VENV ?= .venv
 PY := $(VENV)/bin/python
@@ -14,6 +14,7 @@ setup:  ## 仮想環境を作り、開発用依存をインストールする
 	@test -f .env || cp .env.example .env
 
 migrate:  ## マイグレーションを適用する
+	@mkdir -p var
 	$(PY) manage.py migrate
 
 seed:  ## 体験用デモデータを投入する
@@ -38,6 +39,18 @@ check:  ## Django のシステムチェック（本番設定含む）
 
 index:  ## 検索インデックスを再構築する（例: make index TENANT=demo）
 	$(PY) manage.py rebuild_index --tenant $(TENANT)
+
+usecases:  ## ユースケース一覧（CSV）を生成し直す
+	$(PY) tools/systemtest/generate_usecases.py
+
+systemtest:  ## ユースケースを全件実行する（専用のテストDBを作る）
+	$(PY) manage.py run_usecases --settings=config.settings.test
+
+odc:  ## 不具合を ODC で分類し直す
+	$(PY) tools/systemtest/odc.py
+
+rerun-ng:  ## NGケースを実ブラウザで再実行し、動画とスクリーンショットを撮る
+	tools/systemtest/rerun_ng.sh
 
 clean:  ## 生成物を削除する
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
