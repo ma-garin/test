@@ -57,6 +57,9 @@ _NUMBER_LABELS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ("完了率", "%", ("task_done_percent",)),
     ("進捗", "%", ("task_progress_percent",)),
     ("タスク", "件", ("task_total",)),
+    # 「出所: ○○ の WBS 10件」のようなフッタも WBS タスクの総数を指す。
+    # ラベルを引けないと「照合不能」が増え、検査したのかどうかが読み取りにくくなる。
+    ("WBS", "件", ("task_total",)),
     ("完了", "件", ("task_done",)),
     ("ブロック中", "件", ("task_blocked",)),
     ("クリティカルパス上", "件", ("task_overdue_critical",)),
@@ -83,10 +86,26 @@ _NUMBER_LABELS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 #: 日付を「実績」として書いている行の目印。予定・計画の日付は未来でも誤りではない。
 _ACTUAL_DATE_MARKERS = ("実績", "完了日", "完了しました", "実施日", "実施しました", "検出日", "クローズ")
 
+#: 実績を示す語の直後がこれらなら「実績はまだ無い」という記述であり、実績日ではない。
+#: 「2026-12-01　設計完了（登録済み／実績 未）」の予定日を実績と読むと、
+#: 正しい計画ドラフトが必ず「実績が未来日」で承認を止められる。
+_ABSENT_MARKERS = ("未", "なし", "無し", "未定", "—", "―", "-", "‐")
+
+#: 実績を示す語と日付が「同じ主張」とみなせる距離（文字数）。
+#: 「実績: 2026-01-10」のように語の直後へ書かれるのが実務上の書き方なので、
+#: 行内に語がありさえすれば実績、とは扱わない。
+_MARKER_DISTANCE_BEFORE = 12
+_MARKER_DISTANCE_AFTER = 8
+
 _DATE_RE = re.compile(r"(?P<y>\d{4})\s*[-/年]\s*(?P<m>\d{1,2})\s*[-/月]\s*(?P<d>\d{1,2})\s*日?")
 
-_PROJECT_RE = re.compile(r"案件\s*[:：]\s*(?P<name>[^\n。、]+)")
-_WBS_RE = re.compile(r"WBS\s*(?:コード)?\s*[:：]?\s*(?P<code>[0-9A-Za-z][0-9A-Za-z._-]*)")
+#: 案件名は括弧の手前で切る。「案件: 基幹刷新（コード p1）」の括弧内は補足であって
+#: 案件名の一部ではない。丸ごと拾うと、正しい本文が必ず案件名不一致になる。
+_PROJECT_RE = re.compile(r"案件\s*[:：]\s*(?P<name>[^\n。、（(\[［]+)")
+
+#: WBS コードは「WBS: 1-2」「WBSコード 1-2」の形だけを拾う。区切りの無い
+#: 「WBS 10件」「WBSタスク 3件」は件数の記述であってコードではない。
+_WBS_RE = re.compile(r"WBS\s*(?:コード\s*[:：]?|[:：])\s*(?P<code>[0-9A-Za-z][0-9A-Za-z._-]*)")
 _OWNER_RE = re.compile(r"担当(?:者)?\s*[:：]\s*(?P<owner>[^\s、。,／/]+)")
 
 #: パーセントは丸め表示されるため、この幅までのズレは一致とみなす。
@@ -359,7 +378,7 @@ def _judge_numbers(
     claims: list[FactClaim] = []
 
     for hit in hits:
-        backed = hit.raw.replace(" ", "") in evidence_text or str(int(hit.value)) in evidence_text
+        backed = _is_evidence_backed(hit, evidence_text)
         base = {
             "kind": "number",
             "label": hit.label or "（項目不明）",
@@ -411,6 +430,29 @@ def _judge_numbers(
     return claims
 
 
+#: 単位の表記ゆれ。根拠テキスト側が「％」で本文が「%」でも同じ主張として扱う。
+_UNIT_VARIANTS = {"件": ("件",), "%": ("%", "％")}
+
+
+def _is_evidence_backed(hit: _NumberHit, evidence_text: str) -> bool:
+    """その数値が、生成時の根拠テキストに「単位ごと」現れているか。
+
+    裸の数字だけで突き合わせると、トレースのどこかに同じ数字（日付やIDの一部でも）が
+    あるだけで「根拠あり」になる。根拠追跡が目的の指標なので、単位まで一致した
+    ときだけ裏付けありとする。判定できないものは False（未裏付け）に倒す。
+    """
+
+    if not evidence_text:
+        return False
+
+    units = _UNIT_VARIANTS.get(hit.unit, ())
+    # 本文の表記（62.0%）と根拠側の表記（62%）が揃わないことがあるため、
+    # 書かれたままの数字と正規化した数字の両方で照合する。
+    numbers = {hit.raw.replace(" ", "").rstrip("件%％"), _format_number(hit.value)}
+
+    return any(f"{number}{unit}" in evidence_text for number in numbers for unit in units)
+
+
 def _fact_value(facts: ProjectFacts, attr: str) -> float:
     """ProjectFacts から実測値を取り出す。件数だけ別扱いの項目もここで吸収する。"""
 
@@ -448,7 +490,9 @@ def _evidence_text(deliverable) -> str:
     evidence = getattr(run, "evidence", None)
 
     if evidence is not None:
-        parts.append(str(getattr(evidence, "rationale", "") or ""))
+        # 根拠評価の所見は `notes`。存在しない属性（旧実装の `rationale`）を読むと
+        # 常に空文字になり、根拠テキストが欠けたまま「未裏付け」と報告してしまう。
+        parts.append(evidence.notes or "")
 
     return " ".join(parts).replace(" ", "")
 
@@ -563,22 +607,62 @@ def _existence_claim(
     )
 
 
+def _actual_markers(line: str) -> list[tuple[int, int]]:
+    """行の中で「実績」を示す語の位置。実績が無いことを書いている語は除く。
+
+    「実績 未」「完了日 なし」は実績が存在しないという記述なので、これを目印に
+    してしまうと、同じ行に並んでいる予定日を実績日として誤検出する。
+    """
+
+    spans: list[tuple[int, int]] = []
+
+    for marker in _ACTUAL_DATE_MARKERS:
+        start = line.find(marker)
+
+        while start >= 0:
+            end = start + len(marker)
+
+            if not line[end:].lstrip(" 　:：=日").startswith(_ABSENT_MARKERS):
+                spans.append((start, end))
+
+            start = line.find(marker, end)
+
+    return spans
+
+
+def _states_actual(markers: Sequence[tuple[int, int]], start: int, end: int) -> bool:
+    """その日付が実績として書かれているか。目印との距離で判断する。"""
+
+    return any(
+        (marker_end <= start and start - marker_end <= _MARKER_DISTANCE_BEFORE)
+        or (marker_start >= end and marker_start - end <= _MARKER_DISTANCE_AFTER)
+        for marker_start, marker_end in markers
+    )
+
+
 def _check_dates(lines: Sequence[str], today: date) -> list[FactClaim]:
     """実績として書かれた日付が未来でないかを確かめる。
 
-    予定・計画の日付は未来でも正しいので、実績を示す語がある行だけを対象にする。
+    予定・計画の日付は未来でも正しいので、実績を示す語の近くにある日付だけを
+    対象にする。行に語があるだけで対象にすると、「予定日　○○（実績 未）」の
+    予定日まで実績と読んでしまう。
     """
 
     claims: list[FactClaim] = []
 
     for index, line in enumerate(lines, start=1):
-        if not any(marker in line for marker in _ACTUAL_DATE_MARKERS):
+        markers = _actual_markers(line)
+
+        if not markers:
             continue
 
         for match in _DATE_RE.finditer(line):
             written = _parse_date(match)
 
             if written is None:
+                continue
+
+            if not _states_actual(markers, match.start(), match.end()):
                 continue
 
             future = written > today

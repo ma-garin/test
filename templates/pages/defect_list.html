@@ -11,9 +11,13 @@
 
 {% block content %}
 
+  {% include "partials/defect_filters.html" %}
+
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">不具合一覧</span>
+      {# 件数は絞り込み後の全件。表示はページで切っても、この数字は動かない。 #}
+      <span class="card-act">{% if filters.is_active %}絞り込み {{ total }}件{% else %}全 {{ total }}件{% endif %}</span>
     </div>
     <div class="t-wrap wide">
       <table class="t">
@@ -42,7 +46,8 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="empty">登録された不具合がありません。</div></td></tr>
+            {# 0 件の理由を分けて伝える。絞り込み中かどうかで打つ手が変わる。 #}
+            <tr><td colspan="8"><div class="empty">{% if filters.is_active %}条件に一致する不具合がありません。条件を変えるか、クリアしてください。{% else %}登録された不具合がありません。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

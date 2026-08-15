@@ -220,6 +220,9 @@ class Deliverable(SoftDeleteModel):
 
         根拠不足と評価された生成物は承認へ回さない。PoC 要件の
         「ハルシネーション時の承認前ブロック」に対応する。
+
+        AI を使っていない成果物（`agent_run` が無い）は対象外。人が最初から
+        書いたものまで根拠評価を要求すると、AI 未設定の環境で業務が止まる。
         """
 
         if self.agent_run is None:
@@ -227,7 +230,13 @@ class Deliverable(SoftDeleteModel):
 
         evidence = getattr(self.agent_run, "evidence", None)
 
-        return evidence is None or not evidence.blocks_approval
+        if evidence is None:
+            # AI が生成したのに根拠の十分性を誰も判定していない状態。
+            # 「評価が無い」を「問題なし」と同じ扱いにすると、承認前ブロックが
+            # 素通りになり、「根拠評価が未実施です」の警告も永久に出ない。
+            return False
+
+        return not evidence.blocks_approval
 
 
 class Approval(TimeStampedModel):
@@ -237,6 +246,9 @@ class Approval(TimeStampedModel):
         REQUESTED = "requested", "承認依頼"
         APPROVED = "approved", "承認"
         REJECTED = "rejected", "差し戻し"
+        # 承認待ちのまま本文を編集したときの取り下げ。状態だけ下書きへ戻すと
+        # 「承認者が見ていた版が消えた」ことが履歴から追えなくなる。
+        WITHDRAWN = "withdrawn", "取り下げ"
 
     deliverable = models.ForeignKey(
         Deliverable,

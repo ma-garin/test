@@ -10,9 +10,14 @@
 
 {% block content %}
 
+  {% include "partials/issue_filters.html" %}
+
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">課題一覧</span>
+      {# 件数は絞り込み後の全件。ページを送っても動かないので、表示行数との
+         食い違いが起きない。 #}
+      <span class="card-act">{% if filters.is_active %}絞り込み {{ total }}件{% else %}全 {{ total }}件{% endif %}</span>
     </div>
     <div class="t-wrap">
       <table class="t">
@@ -33,7 +38,9 @@
               <td class="nowrap"><a class="btn-ghost sm" href="{% url 'projects:issue_edit' issue.pk %}">編集</a></td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="empty">登録された課題がありません。</div></td></tr>
+            {# 0 件の理由を分けて伝える。「無い」のか「絞り込んだ結果出ていない」のかが
+               分からないと、利用者は条件を外してよいか判断できない。 #}
+            <tr><td colspan="8"><div class="empty">{% if filters.is_active %}条件に一致する課題がありません。条件を変えるか、クリアしてください。{% else %}登録された課題がありません。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

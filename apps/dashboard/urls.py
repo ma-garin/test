@@ -17,6 +17,10 @@ urlpatterns = [
         views.intervention_decide,
         name="intervention_decide",
     ),
+    path("alerts/", views.alert_list, name="alert_list"),
+    # 状態の書き換えなので POST のみ。GET で状態が変わると、リンクを踏んだだけで
+    # アラートが消えたり、クローラの巡回で確定してしまう。
+    path("alerts/<uuid:pk>/decide/", views.alert_decide, name="alert_decide"),
     path("detection/", views.detection, name="detection"),
     path("detection/run/", views.detection_run, name="detection_run"),
     path("ops-rules/", views.ops_rules, name="ops_rules"),

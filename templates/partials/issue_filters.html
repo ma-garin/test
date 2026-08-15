@@ -1,0 +1,55 @@
+{% comment %}
+課題一覧の絞り込みフォーム。タスク一覧（partials/task_filters.html）と同じ構造に
+揃えている。台帳ごとに入力の並びやラベルの付け方が違うと、利用者は画面を移る
+たびに操作を学び直すことになる。
+{% endcomment %}
+<div class="card">
+  <div class="card-hdr">
+    <span class="card-t">絞り込み</span>
+    {% if filters.is_active %}<a class="card-act" href="{% url 'projects:issue_list' %}">条件をクリア</a>{% endif %}
+  </div>
+  {% comment %}
+  各入力には label を必ず結び付ける。placeholder や 1 件目の option は
+  ラベルの代わりにならない（入力するとプレースホルダは消え、
+  読み上げでも「何の欄か」が残らない）。
+  視覚的にはこれまでどおり見出しを出さないので .visually-hidden で隠す。
+  {% endcomment %}
+  <form method="get" class="search-row">
+    <div class="search-field grow">
+      <label class="visually-hidden" for="filter-owner">担当</label>
+      <input type="text" name="owner" id="filter-owner" value="{{ filters.owner }}" placeholder="担当">
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-status">状態</label>
+      <select name="status" id="filter-status">
+        <option value="">状態（すべて）</option>
+        {% for value, label in filters.status_choices %}
+          <option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-severity">重大度</label>
+      <select name="severity" id="filter-severity">
+        <option value="">重大度（すべて）</option>
+        {% for value, label in filters.severity_choices %}
+          <option value="{{ value }}"{% if filters.severity == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-due">期限</label>
+      <select name="due" id="filter-due">
+        <option value="">期限（すべて）</option>
+        {% for value, label in filters.due_choices %}
+          <option value="{{ value }}"{% if filters.due == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn-b sm">絞り込む</button>
+  </form>
+</div>

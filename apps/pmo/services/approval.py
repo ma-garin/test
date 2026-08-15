@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from django.conf import settings
+
 from apps.pmo.models import Approval, Deliverable
 from apps.pmo.services import fact_check
 
@@ -42,9 +44,22 @@ class DecisionResult:
     message: str
 
 
+def require_separate_approver() -> bool:
+    """四眼原則（申請者と承認者を別人にする）を必須にするか。
+
+    既定は必須。ただし承認者が 1 人しかいないテナントでは業務が止まるため、
+    `settings.APPROVAL_REQUIRE_SEPARATE_APPROVER = False` で緩められるようにする。
+    設定が無い環境でも締まった側で動くよう、既定値は True にする。
+    """
+
+    return bool(getattr(settings, "APPROVAL_REQUIRE_SEPARATE_APPROVER", True))
+
+
 def blocking_reason(
     deliverable: Deliverable,
     *,
+    decision: str | None = None,
+    actor=None,
     fact_result: fact_check.FactCheckResult | None = None,
     facts_cache: dict | None = None,
 ) -> str:
@@ -54,35 +69,120 @@ def blocking_reason(
     根拠評価のどの項目で止まっているかを文章で返す。
 
     根拠評価に加えて、本文の数値・固有名詞が実データと食い違っていないか
-    （事実照合）もここで見る。ゲートを 2 か所に分けると、片方だけを通って
-    承認される抜け道ができるため、承認可否の判断はこの関数に集約する。
+    （事実照合）、人が確定本文を書いたか、承認者が申請者と別人か（四眼原則）も
+    ここで見る。ゲートを 2 か所に分けると、片方だけを通って承認される抜け道が
+    できるため、承認可否の判断はこの関数に集約する。
     `fact_result` は一覧などで既に照合済みの結果を渡し、再計算を避けるため。
+
+    `decision` を省略したときは、いまの状態から次に行う判断を推定する
+    （承認待ちなら「承認」、それ以外なら「承認依頼」）。一覧画面は判断を
+    指定せずに理由だけを引くため。
     """
 
-    reasons = _fact_reasons(deliverable, fact_result=fact_result, facts_cache=facts_cache)
+    decision = decision or _implied_decision(deliverable)
+    reasons = _decision_reasons(deliverable, decision=decision, actor=actor)
+    reasons.extend(_evidence_reasons(deliverable))
+    reasons.extend(_fact_reasons(deliverable, fact_result=fact_result, facts_cache=facts_cache))
+
+    return "".join(reasons)
+
+
+def _implied_decision(deliverable: Deliverable) -> str:
+    if deliverable.status == Deliverable.Status.PENDING_APPROVAL:
+        return Approval.Decision.APPROVED
+
+    return Approval.Decision.REQUESTED
+
+
+def _decision_reasons(deliverable: Deliverable, *, decision: str, actor) -> list[str]:
+    """承認（確定）そのものに固有のブロック理由。
+
+    承認依頼の時点では止めない。人が確定本文を書くのは依頼の前後どちらでもよく、
+    依頼を止めると「直せないのに承認へも進めない」行き止まりを作るため。
+    """
+
+    if decision != Approval.Decision.APPROVED:
+        return []
+
+    reasons: list[str] = []
+
+    if not (deliverable.body or "").strip():
+        # 確定本文が空＝人が 1 文字も確認していない AI 生成物。これを承認すると
+        # 「人が確かめてから確定する」が成立しないまま確定情報になる。
+        reasons.append("確定本文が空です。AI生成本文を確認し、確定本文として保存してください。")
+
+    self_approval = _self_approval_reason(deliverable, actor)
+
+    if self_approval:
+        reasons.append(self_approval)
+
+    return reasons
+
+
+def _self_approval_reason(deliverable: Deliverable, actor) -> str:
+    """自己承認（四眼原則違反）の理由。該当しなければ空文字。
+
+    作成者・申請者のどちらとも突き合わせる。「承認依頼」→「承認」を同じ人が
+    連続して押せる状態では、承認履歴が残っていても人の確認を経ていない。
+    """
+
+    actor_id = getattr(actor, "pk", None)
+
+    if actor_id is None or not require_separate_approver():
+        return ""
+
+    if deliverable.created_by_id == actor_id:
+        return "作成者は自分の成果物を承認できません。別の承認者へ依頼してください（四眼原則）。"
+
+    requester_id = _requester_id(deliverable)
+
+    if requester_id is not None and requester_id == actor_id:
+        return "承認依頼をした本人は承認できません。別の承認者へ依頼してください（四眼原則）。"
+
+    return ""
+
+
+def _requester_id(deliverable: Deliverable):
+    """いまの承認待ち状態を作った申請者。分からなければ None。"""
+
+    requested = (
+        deliverable.approvals.filter(decision=Approval.Decision.REQUESTED)
+        .order_by("-created_at")
+        .first()
+    )
+
+    return requested.actor_id if requested is not None else None
+
+
+def _evidence_reasons(deliverable: Deliverable) -> list[str]:
+    """根拠評価によるブロック理由。
+
+    根拠評価そのものが無い成果物もここで止める。「評価していない」を
+    「問題なし」と同じ扱いにすると、承認前ブロックが素通りになる。
+    """
 
     if deliverable.can_request_approval:
-        return "".join(reasons)
+        return []
 
     evidence = getattr(deliverable.agent_run, "evidence", None)
 
     if evidence is None:
-        return "根拠評価が未実施です。" + "".join(reasons)
+        return ["根拠評価が未実施です。"]
 
-    evidence_reasons: list[str] = []
+    reasons: list[str] = []
 
     if evidence.has_conflict:
-        evidence_reasons.append("根拠間に矛盾があります")
+        reasons.append("根拠間に矛盾があります。")
 
     if evidence.recommendation == "ask_clarification":
-        evidence_reasons.append(f"根拠が不足しています（確信度 {evidence.confidence:.2f}）")
+        reasons.append(f"根拠が不足しています（確信度 {evidence.confidence:.2f}）。")
 
     missing = "／".join(str(item) for item in evidence.missing_information)
 
     if missing:
-        evidence_reasons.append(f"不足情報: {missing}")
+        reasons.append(f"不足情報: {missing}。")
 
-    return "。".join(evidence_reasons) + "。" + "".join(reasons)
+    return reasons
 
 
 def _fact_reasons(
@@ -120,7 +220,9 @@ def decide(*, deliverable: Deliverable, actor, decision: str, comment: str = "")
         )
 
     if decision in _EVIDENCE_GATED:
-        reason = blocking_reason(deliverable)
+        # 誰が何をしようとしているかまで渡す。承認可否は内容だけでは決まらず、
+        # 「その人が承認してよいか」も含めて 1 か所で判断する。
+        reason = blocking_reason(deliverable, decision=decision, actor=actor)
 
         if reason:
             return DecisionResult(ok=False, message=f"承認できません。{reason}")
@@ -136,3 +238,26 @@ def decide(*, deliverable: Deliverable, actor, decision: str, comment: str = "")
     label = Approval.Decision(decision).label
 
     return DecisionResult(ok=True, message=f"{deliverable.title} を「{label}」として記録しました。")
+
+
+def withdraw_request(*, deliverable: Deliverable, actor, comment: str = "") -> bool:
+    """承認待ちの成果物を下書きへ戻す（承認依頼の取り下げ）。
+
+    承認待ちのまま本文を差し替えられると、承認者が読んだ内容と承認された内容が
+    別物になる。本文を編集したらここを通し、版を繰り上げたうえで再依頼させる。
+    """
+
+    if deliverable.status != Deliverable.Status.PENDING_APPROVAL:
+        return False
+
+    Approval.objects.create(
+        deliverable=deliverable,
+        actor=actor if getattr(actor, "is_authenticated", False) else None,
+        decision=Approval.Decision.WITHDRAWN,
+        comment=comment,
+    )
+    Deliverable.objects.filter(pk=deliverable.pk).update(
+        status=Deliverable.Status.DRAFT, version=deliverable.version + 1
+    )
+
+    return True

@@ -52,6 +52,15 @@ class OrchestratorResult:
     screen_context: ScreenContext | None = None
 
 
+#: `run()` が実際に呼ぶツール。計画へ載せてよいのはここにあるものだけ。
+#:
+#: `rerank_results` は登録済みだが未実装で、`run()` からも呼んでいない。
+#: LLM が使える環境では計画にだけ現れていたため、トレースを見た人には
+#: 「リランクを使って並べ替えた結果」に見えていた。使っていないものを
+#: 計画に書かない（＝実行するようになったらここへ足す）。
+_EXECUTED_TOOLS: tuple[str, ...] = ("expand_query", "search_local_docs", "evaluate_evidence")
+
+
 def build_plan(
     intent_result: intent_service.IntentResult,
     question: str,
@@ -69,11 +78,7 @@ def build_plan(
     llm_enabled = ai_config.is_configured and ai_config.provider != "local_hash"
     available = set(registry.available(llm_enabled=llm_enabled))
 
-    tools = [
-        name
-        for name in ("expand_query", "search_local_docs", "rerank_results", "evaluate_evidence")
-        if name in available
-    ]
+    tools = [name for name in _EXECUTED_TOOLS if name in available]
 
     # 画面文脈があれば確認観点の先頭へ足す。画面固有の観点（リスク画面なら
     # 「対策の有無」「期限」）は意図分類だけでは出てこないため。

@@ -82,21 +82,48 @@ class VectorIndex(TimeStampedModel):
         return f"{self.tenant.code} / {target}"
 
     @property
-    def is_stale(self) -> bool:
-        """Embedding 設定が現在の設定と食い違っていないか。
+    def rebuild_required_reason(self) -> str:
+        """再構築が必要な理由。必要なければ空文字。
 
         設定を変えたまま再構築せずに検索すると、ベクトル空間が混ざって精度が落ちる。
+        次元まで食い違うと、そもそも比較が成立せずベクトル検索が効かなくなる。
+        「効かない」ことを黙って隠すと、利用者は検索結果が薄い理由を判断できない。
         """
 
         from apps.core.services.ai_settings import effective_config
+        from apps.rag.services.embeddings import get_embedder
+
+        if self.dimension == 0:
+            return "インデックスの次元数が記録されていません（未構築の可能性があります）。"
 
         # Embedding はテナント既定と環境変数だけが決める（個人設定では変えられない）。
         # 個人設定でプロバイダを変えただけで全インデックスが「要再構築」に
         # なると、他の利用者の検索まで警告だらけになる。
-        if self.embedding_provider != effective_config(tenant=self.tenant).provider:
-            return True
+        current = effective_config(tenant=self.tenant).provider
 
-        return self.dimension == 0
+        if self.embedding_provider != current:
+            return (
+                f"構築時の Embedding プロバイダ（{self.embedding_provider}）と"
+                f"現在の設定（{current}）が異なります。"
+            )
+
+        # プロバイダ名が同じでも、API キーが外れると検索側は local_hash へ退避する。
+        # そのとき問い合わせベクトルの次元がインデックスと揃わない。
+        query_dimension = get_embedder(self.embedding_provider).dimension
+
+        if query_dimension and query_dimension != self.dimension:
+            return (
+                f"検索時の Embedding は {query_dimension}次元ですが、"
+                f"インデックスは {self.dimension}次元で構築されています。"
+            )
+
+        return ""
+
+    @property
+    def is_stale(self) -> bool:
+        """Embedding 設定が現在の設定と食い違っていないか。"""
+
+        return bool(self.rebuild_required_reason)
 
 
 class Chunk(TimeStampedModel):

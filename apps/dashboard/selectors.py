@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from django.db.models import F, QuerySet
+from django.db.models import Case, F, IntegerField, QuerySet, When
 from django.utils import timezone
 
-from apps.dashboard.models import InterventionProposal, KpiMeasurement
+from apps.dashboard.models import Alert, InterventionProposal, KpiMeasurement
 from apps.projects.models import (
     ChangeRequest,
     Defect,
@@ -172,6 +172,57 @@ def interventions_for(
         queryset = queryset.filter(status=status)
 
     return queryset.order_by("-created_at")
+
+
+#: アラートの並び順に使う優先度。`status` も `severity` も文字列なので、
+#: そのまま並べると辞書順（acknowledged → dismissed → open …）になり、
+#: 未対応の重大アラートが一覧の途中へ埋もれる。順序は明示して持つ。
+_STATUS_RANK = Case(
+    When(status=Alert.Status.OPEN, then=0),
+    When(status=Alert.Status.ACKNOWLEDGED, then=1),
+    When(status=Alert.Status.RESOLVED, then=2),
+    When(status=Alert.Status.DISMISSED, then=3),
+    default=4,
+    output_field=IntegerField(),
+)
+
+_SEVERITY_RANK = Case(
+    When(severity=Alert.Severity.CRITICAL, then=0),
+    When(severity=Alert.Severity.WARNING, then=1),
+    When(severity=Alert.Severity.INFO, then=2),
+    default=3,
+    output_field=IntegerField(),
+)
+
+
+def alerts_for(
+    projects: QuerySet[Project],
+    *,
+    status: str = "",
+    severity: str = "",
+    category: str = "",
+) -> QuerySet[Alert]:
+    """予兆検知アラートの一覧。未対応・重大なものから並べる。
+
+    絞り込みは未指定なら無視する。選択肢に無い値は「絞り込まない」へ倒す。
+    URL を手で編集した程度で 500 になったり、0 件になって「該当なし」と
+    「壊れている」の区別が付かなくなったりするのを避けるため。
+    """
+
+    queryset = Alert.objects.filter(project__in=projects).select_related("project")
+
+    if status and status in Alert.Status.values:
+        queryset = queryset.filter(status=status)
+
+    if severity and severity in Alert.Severity.values:
+        queryset = queryset.filter(severity=severity)
+
+    if category and category in Alert.Category.values:
+        queryset = queryset.filter(category=category)
+
+    return queryset.annotate(status_rank=_STATUS_RANK, severity_rank=_SEVERITY_RANK).order_by(
+        "status_rank", "severity_rank", "-detected_at"
+    )
 
 
 def defects_for(projects: QuerySet[Project]) -> QuerySet[Defect]:

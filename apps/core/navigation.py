@@ -61,6 +61,10 @@ NAVIGATION: tuple[NavSection, ...] = (
             NavItem("tasks", "タスク一覧", "dashboard:tasks", "TA", "ready"),
             NavItem("issues", "課題管理", "projects:issue_list", "IS", "ready"),
             NavItem("detection", "予兆検知", "dashboard:detection", "DT", "ready", ("ai",)),
+            # 参照は VIEW で出す。状態の更新（確認・解消・対象外）は画面内で
+            # `Action.EDIT` により分ける。見るだけの利用者にも、いま何が
+            # 起きているかは見えている必要がある。
+            NavItem("alerts", "アラート一覧", "dashboard:alert_list", "AL", "ready", ("ai",)),
             NavItem("progress", "進捗予測・介入", "dashboard:progress", "PR", "ready", ("ai",)),
             NavItem("ops_rules", "入力標準ルール", "dashboard:ops_rules", "OR", "ready"),
             NavItem("quality", "品質リアルタイム管理", "dashboard:quality", "QA", "ready"),

@@ -97,7 +97,9 @@
         <div class="dashboard-panel">
           <div class="dashboard-panel-head">
             <strong>重要アラート Top {{ overview.ranked_alerts|length }}</strong>
-            <span>重要度順</span>
+            {# ここは上位 5 件しか出さない。残りへ辿り着く導線が無いと、
+               未対応アラートが誰にも見られないまま残り続ける。 #}
+            <a class="card-act" href="{% url 'dashboard:alert_list' %}">アラート一覧 →</a>
           </div>
           <div class="dashboard-alert-list">
             {% for row in overview.ranked_alerts %}
@@ -180,6 +182,17 @@
         <div class="callout w">
           <p><strong>AIの介入提案が {{ overview.proposal_count }} 件、人の判断を待っています。</strong></p>
           <p>判断されるまで採用されません。<a href="{% url 'dashboard:intervention' %}">提案を確認する →</a></p>
+        </div>
+      {% endif %}
+
+      {% comment %}
+      未対応アラートは放置されると二重に効く。ヘルススコアを下げ続け、
+      同じ対象が重複排除で再検知されなくなる。確認・解消の導線をここに出す。
+      {% endcomment %}
+      {% if overview.ranked_alerts %}
+        <div class="callout w">
+          <p><strong>未対応のアラートがあります。</strong></p>
+          <p>確認するまで検知の先行日数を実測できません。<a href="{% url 'dashboard:alert_list' %}">アラート一覧で確認する →</a></p>
         </div>
       {% endif %}
 

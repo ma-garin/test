@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -20,7 +21,18 @@ from apps.audit.selectors import feedbacks_for
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.dashboard import selectors
 from apps.dashboard.forms import InterventionDecisionForm
-from apps.dashboard.models import InterventionProposal
+from apps.dashboard.models import Alert, InterventionProposal
+from apps.dashboard.services.alerts import (
+    AlertFilters,
+    build_alert_board,
+    decide_alert,
+)
+from apps.dashboard.services.alerts import (
+    AlreadyDecidedError as AlertAlreadyDecidedError,
+)
+from apps.dashboard.services.alerts import (
+    InvalidDecisionError as InvalidAlertDecisionError,
+)
 from apps.dashboard.services.decisions import (
     build_change_report,
     build_intervention_report,
@@ -127,6 +139,121 @@ def detection_run(request: HttpRequest) -> HttpResponse:
         messages.info(request, f"検知を実行しました。新しいアラートはありません（{result.summary_line()}）。")
 
     return redirect("dashboard:detection")
+
+
+@login_required
+def alert_list(request: HttpRequest) -> HttpResponse:
+    """予兆検知アラートの一覧。
+
+    管制ダッシュボードは重要な 5 件しか出さないため、この画面が無いと
+    それ以外のアラートへ辿り着く手段が無かった。未対応のまま残ったアラートは
+    ヘルススコアを下げ続け、同じ対象の再検知も止める（重複排除）ので、
+    「確認した」を押せることは表示上の親切ではなく検知機能の前提になる。
+
+    集計はページではなく絞り込み後の全件から取る。ページを送るたびに
+    「未対応 12 件」が変わると、その数字が何を指すのか読み手に分からない。
+    """
+
+    filters = AlertFilters(
+        status=request.GET.get("status", ""),
+        severity=request.GET.get("severity", ""),
+        category=request.GET.get("category", ""),
+    )
+    queryset = selectors.alerts_for(
+        _projects(request),
+        status=filters.status,
+        severity=filters.severity,
+        category=filters.category,
+    )
+    page = paginate(queryset, request)
+
+    # 判断ボタンの表示可否は、POST 側と同じ `permissions.can()` で決める。
+    # 案件ごとに役割が違うため、案件単位で 1 度だけ判定して行へ配る
+    # （行ごとに判定すると、同じ案件へ何度も問い合わせることになる）。
+    editable = {
+        project.pk
+        for project in _projects(request)
+        if permissions.can(request.user, Action.EDIT, project)
+    }
+
+    return render(
+        request,
+        "pages/alert_list.html",
+        {
+            "board": build_alert_board(
+                queryset,
+                filters,
+                page.object_list,
+                can_decide=lambda alert: alert.project_id in editable,
+            ),
+            "back_query": query_without_page(request),
+            **_page_context(page, request),
+            "page_title": "アラート一覧",
+        },
+    )
+
+
+#: 判断後に一覧へ戻るとき、引き継いでよいクエリのキー。
+#: 受け取った文字列をそのまま `redirect()` へ渡すと外部サイトへ飛ばせるため、
+#: クエリとして解釈し直し、既知のキーだけを組み立てる。
+_ALERT_LIST_QUERY_KEYS = ("status", "severity", "category", "page")
+
+
+def _alert_list_url(request: HttpRequest) -> str:
+    """判断後に戻る一覧の URL。絞り込みとページを保つ。"""
+
+    source = QueryDict(request.POST.get("back", ""))
+    params = QueryDict(mutable=True)
+
+    for key in _ALERT_LIST_QUERY_KEYS:
+        value = source.get(key, "")
+
+        if value:
+            params[key] = value
+
+    query = params.urlencode()
+    url = reverse("dashboard:alert_list")
+
+    return f"{url}?{query}" if query else url
+
+
+@login_required
+@require_POST
+def alert_decide(request: HttpRequest, pk) -> HttpResponse:
+    """アラートを「確認した」「対応済み」「対象外」にする。
+
+    対象は必ず「参照できる案件に紐づくアラート」に絞る。テナントを越えた ID を
+    直接叩かれても 404 になるよう、取得の時点で候補を限定する。
+
+    状態の書き換えなので、参照だけの利用者には実行させない。画面のボタンを
+    隠すだけでは防御にならないため、POST の入口で必ず `require()` を通す。
+    """
+
+    alert = get_object_or_404(
+        Alert.objects.select_related("project", "project__tenant"),
+        pk=pk,
+        project__in=_projects(request),
+    )
+    permissions.require(request.user, Action.EDIT, alert.project)
+
+    try:
+        decided = decide_alert(
+            alert,
+            user=request.user,
+            status=request.POST.get("status", ""),
+            note=request.POST.get("note", ""),
+        )
+    except InvalidAlertDecisionError as error:
+        messages.error(request, str(error))
+    except AlertAlreadyDecidedError:
+        messages.warning(request, "このアラートはすでに確定済みです。履歴を保つため再判断はできません。")
+    else:
+        messages.success(
+            request,
+            f"アラート「{decided.title}」を{decided.get_status_display()}にしました。",
+        )
+
+    return redirect(_alert_list_url(request))
 
 
 @login_required

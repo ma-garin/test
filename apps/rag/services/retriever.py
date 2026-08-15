@@ -159,13 +159,25 @@ def search(
 
 
 def _vector_hits(index: VectorIndex, question: str, limit: int) -> list[tuple[str, float]]:
+    """1 インデックス分のベクトル検索。
+
+    次元が食い違うインデックス（Embedding を変えたまま再構築していない）では、
+    ベクトル検索を諦めて語彙検索だけで返す。全件 0.0 のまま順位に混ぜると、
+    無関係なチャンクが RRF の上位へ入り込み、検索結果が静かに劣化するため。
+    再構築が必要であることは `VectorIndex.rebuild_required_reason` が持つ。
+    """
+
     store = get_vector_store(index)
     embedder = get_embedder(index.embedding_provider)
     query_vector = embedder.embed_one(question)
-    scored = [
-        (chunk_id, cosine_similarity(query_vector, vector))
-        for chunk_id, vector in store.iter_vectors()
-    ]
+    scored: list[tuple[str, float]] = []
+
+    for chunk_id, vector in store.iter_vectors():
+        if len(vector) != len(query_vector):
+            return []
+
+        scored.append((chunk_id, cosine_similarity(query_vector, vector)))
+
     scored.sort(key=lambda item: item[1], reverse=True)
 
     return scored[:limit]

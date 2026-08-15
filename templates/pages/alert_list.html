@@ -1,0 +1,181 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}AIが検知したアラートを、根拠つきで確認・解消できます。確認するまで先行日数は測れず、同じ対象は再検知されません。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'dashboard:detection' %}">検知結果へ</a>
+  <a class="btn-out sm" href="{% url 'dashboard:intervention' %}">AI介入提案へ</a>
+  <a class="btn-b sm" href="{% url 'dashboard:control' %}">管制ダッシュボードへ</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">未対応</div>
+      <div class="kpi-v tone-r">{{ board.open_count }}</div>
+      <div class="kpi-s">うち重大 {{ board.critical_open_count }}件</div>
+      <div class="kpi-bar"><div class="kpi-fill r u-w-full"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">確認済み</div>
+      <div class="kpi-v tone-y">{{ board.acknowledged_count }}</div>
+      <div class="kpi-s">対応中のもの</div>
+      <div class="kpi-bar"><div class="kpi-fill a u-w-70"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">解消・対象外</div>
+      <div class="kpi-v tone-g">{{ board.resolved_count }}<small>/{{ board.dismissed_count }}</small></div>
+      <div class="kpi-s">解消 / 対象外</div>
+      <div class="kpi-bar"><div class="kpi-fill g u-w-60"></div></div>
+    </div>
+    <div class="kpi">
+      {% comment %}
+      PoC 受入条件「予兆検知の先行日数」の実測値。確認されたアラートが 1 件も
+      無いと算出できないため、0 ではなく「未実測」と出す（0 日で先行できたと
+      読み違えられないようにする）。
+      {% endcomment %}
+      <div class="kpi-l">平均先行日数</div>
+      <div class="kpi-v">{% if board.has_unmeasured_lead %}—{% else %}{{ board.average_lead_days }}<small>日</small>{% endif %}</div>
+      <div class="kpi-s">{% if board.has_unmeasured_lead %}確認済みが無く未実測{% else %}実測 {{ board.measured_lead_count }}件{% endif %}</div>
+      <div class="kpi-bar"><div class="kpi-fill b u-w-50"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">絞り込み</span>
+      {% if board.filters.is_active %}<a class="card-act" href="{% url 'dashboard:alert_list' %}">条件をクリア</a>{% endif %}
+    </div>
+    {% comment %}
+    タスク一覧（partials/task_filters.html）と同じ構造。各入力には label を必ず
+    結び付ける。1 件目の option はラベルの代わりにならないので .visually-hidden で隠す。
+    {% endcomment %}
+    <form method="get" class="search-row">
+      <div class="search-field grow">
+        <label class="visually-hidden" for="filter-status">状態</label>
+        <select name="status" id="filter-status">
+          <option value="">状態（すべて）</option>
+          {% for value, label in board.filters.status_choices %}
+            <option value="{{ value }}"{% if board.filters.status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="search-field">
+        <label class="visually-hidden" for="filter-severity">重要度</label>
+        <select name="severity" id="filter-severity">
+          <option value="">重要度（すべて）</option>
+          {% for value, label in board.filters.severity_choices %}
+            <option value="{{ value }}"{% if board.filters.severity == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="search-field">
+        <label class="visually-hidden" for="filter-category">分類</label>
+        <select name="category" id="filter-category">
+          <option value="">分類（すべて）</option>
+          {% for value, label in board.filters.category_choices %}
+            <option value="{{ value }}"{% if board.filters.category == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="btn-b sm">絞り込む</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">アラート</span>
+      {# 件数は絞り込み後の全件。ページを送っても動かない。 #}
+      <span class="card-act">{% if board.filters.is_active %}絞り込み {{ board.total }}件{% else %}全 {{ board.total }}件{% endif %}</span>
+    </div>
+
+    {% for row in board.rows %}
+      <div class="pb-row">
+        <div class="pb-lr">
+          <span class="pb-t">{{ row.alert.title }}</span>
+          <span class="pb-v">
+            <span class="badge {{ row.tone }}">{{ row.alert.get_severity_display }}</span>
+            <span class="badge {{ row.status_tone }}">{{ row.alert.get_status_display }}</span>
+          </span>
+        </div>
+        <div class="ps">
+          {{ row.alert.project.name }} ／ {{ row.alert.get_category_display }} ／
+          {{ row.alert.detected_at|date:"Y/m/d H:i" }} 検知
+          {% if row.alert.acknowledged_at %}
+            ／ {{ row.alert.acknowledged_at|date:"Y/m/d H:i" }} 確認
+            {% if row.lead_time_days is not None %}（先行 {{ row.lead_time_days }}日）{% endif %}
+          {% endif %}
+        </div>
+
+        {% if row.alert.detail %}<div class="ps">{{ row.alert.detail }}</div>{% endif %}
+
+        {% comment %}
+        検知根拠は必ず出す。何を観測し、どのしきい値を超えたのかが読めない
+        アラートは「AIが何か言っている」だけで、対応するかどうかを判断できない。
+        {% endcomment %}
+        {% if row.has_evidence %}
+          {% if row.reason %}
+            <div class="callout"><p><strong>判定根拠:</strong> {{ row.reason }}</p></div>
+          {% endif %}
+          {% if row.observed_items %}
+            <div class="ps"><strong>実測値</strong></div>
+            <ul class="ps">
+              {% for label, value in row.observed_items %}<li>{{ label }}: {{ value }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+          {% if row.threshold_items %}
+            <div class="ps"><strong>しきい値</strong></div>
+            <ul class="ps">
+              {% for label, value in row.threshold_items %}<li>{{ label }}: {{ value }}</li>{% endfor %}
+            </ul>
+          {% endif %}
+        {% else %}
+          <div class="callout w"><p>このアラートには検知根拠が記録されていません。対応の前に必ず裏取りしてください。</p></div>
+        {% endif %}
+
+        {% if row.can_decide and not row.is_closed %}
+          <form method="post" class="form" action="{% url 'dashboard:alert_decide' row.alert.pk %}">
+            {% csrf_token %}
+            {# 判断後も同じ絞り込み・ページへ戻す。条件が消えると、対応の途中で
+               どこまで見たか分からなくなる。 #}
+            <input type="hidden" name="back" value="{{ back_query }}page={{ page.number }}">
+            <div class="field">
+              <label class="field-label" for="note-{{ row.alert.pk }}">判断メモ</label>
+              <input type="text" id="note-{{ row.alert.pk }}" name="note" placeholder="確認した内容や、対象外にする理由">
+              <div class="field-help">「対象外にする」は AI の検知を人が否定する判断なので、理由が必須です。</div>
+            </div>
+            <div class="actions">
+              {% if row.can_acknowledge %}
+                <button type="submit" class="btn-b sm" name="status" value="acknowledged">確認した</button>
+              {% endif %}
+              {% if row.can_resolve %}
+                <button type="submit" class="btn-out sm" name="status" value="resolved">対応済みにする</button>
+              {% endif %}
+              {% if row.can_dismiss %}
+                <button type="submit" class="btn-out sm" name="status" value="dismissed">対象外にする</button>
+              {% endif %}
+            </div>
+          </form>
+        {% elif row.is_closed %}
+          <div class="ps">確定済み（{{ row.alert.get_status_display }}）。履歴を保つため再判断はできません。</div>
+        {% else %}
+          <div class="ps">このアラートを更新するには、案件の編集権限が必要です。</div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="empty">
+        {% if board.filters.is_active %}
+          条件に一致するアラートがありません。条件を変えるか、クリアしてください。
+        {% else %}
+          アラートはまだありません。「検知結果へ」から予兆検知を実行すると作成されます。
+        {% endif %}
+      </div>
+    {% endfor %}
+    {% include "partials/pager.html" %}
+  </div>
+
+{% endblock %}

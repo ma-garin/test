@@ -165,8 +165,15 @@ def get_embedder(provider: str | None = None) -> BaseEmbedder:
 
 
 def cosine_similarity(left: list[float], right: list[float]) -> float:
-    """両者とも L2 正規化済み前提。内積がそのまま cosine になる。"""
+    """両者とも L2 正規化済み前提。内積がそのまま cosine になる。
 
-    # strict=True: 次元の異なるベクトルを黙って途中まで比較しない。
-    # Embedding モデルを切り替えたまま再構築を忘れた場合、ここで気づける。
+    次元が食い違うベクトルは比較できないので 0.0（無関係）を返す。ここで例外に
+    すると、Embedding モデルを切り替えたまま再構築を忘れただけで検索・チャットが
+    500 になり、利用者には「壊れた」以上のことが分からない。何をすればよいかは
+    `VectorIndex.rebuild_required_reason` が文章で持ち、画面がそれを伝える。
+    """
+
+    if len(left) != len(right):
+        return 0.0
+
     return sum(a * b for a, b in zip(left, right, strict=True))

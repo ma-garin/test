@@ -1,0 +1,43 @@
+{% comment %}
+不具合一覧の絞り込みフォーム。課題一覧・タスク一覧と同じ構造に揃えている。
+検出工程は自由入力なので部分一致のテキスト欄にしている（選択肢にすると、
+既存データの表記ゆれをそのまま探せなくなる）。
+{% endcomment %}
+<div class="card">
+  <div class="card-hdr">
+    <span class="card-t">絞り込み</span>
+    {% if filters.is_active %}<a class="card-act" href="{% url 'projects:defect_list' %}">条件をクリア</a>{% endif %}
+  </div>
+  {% comment %}
+  各入力には label を必ず結び付ける。placeholder や 1 件目の option は
+  ラベルの代わりにならない。視覚的な見出しは出さないので .visually-hidden で隠す。
+  {% endcomment %}
+  <form method="get" class="search-row">
+    <div class="search-field grow">
+      <label class="visually-hidden" for="filter-phase">検出工程</label>
+      <input type="text" name="phase" id="filter-phase" value="{{ filters.phase }}" placeholder="検出工程">
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-status">状態</label>
+      <select name="status" id="filter-status">
+        <option value="">状態（すべて）</option>
+        {% for value, label in filters.status_choices %}
+          <option value="{{ value }}"{% if filters.status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-severity">重大度</label>
+      <select name="severity" id="filter-severity">
+        <option value="">重大度（すべて）</option>
+        {% for value, label in filters.severity_choices %}
+          <option value="{{ value }}"{% if filters.severity == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn-b sm">絞り込む</button>
+  </form>
+</div>

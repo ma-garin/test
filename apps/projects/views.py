@@ -35,7 +35,14 @@ from apps.projects.forms import (
     WbsTaskForm,
 )
 from apps.projects.models import ChangeRequest, Defect, Issue, Project, Risk, WbsTask
-from apps.projects.selectors import projects_for, scoped_projects_for
+from apps.projects.selectors import (
+    DefectFilters,
+    IssueFilters,
+    defects_for,
+    issues_for,
+    projects_for,
+    scoped_projects_for,
+)
 from apps.projects.services.change_requests import decide_change_request, save_change_request
 from apps.projects.services.defects import close_defect, save_defect
 from apps.projects.services.issues import close_issue, save_issue
@@ -195,14 +202,9 @@ def _change_requests_for(request: HttpRequest):
     ).select_related("project")
 
 
-def _scoped(request: HttpRequest, queryset):
-    """一覧の絞り込み。選択中の案件があればその1件だけにする。
-
-    詳細・編集には掛けない。直リンクで開いたときに「権限はあるのに
-    選択中でないから404」となるのは、実務では事故のもとになる。
-    """
-
-    return queryset.filter(project__in=scoped_projects_for(request))
+# 一覧は `scoped_projects_for()`（選択中の案件があればその1件）を入口にする。
+# 詳細・編集には掛けない。直リンクで開いたときに「権限はあるのに選択中でないから
+# 404」となるのは、実務では事故のもとになる。
 
 
 def _defects_for(request: HttpRequest):
@@ -298,15 +300,34 @@ def change_decide(request: HttpRequest, pk) -> HttpResponse:
 
 @login_required
 def defect_list(request: HttpRequest) -> HttpResponse:
-    """不具合一覧。件数が増えても 1 画面へ詰め込まない。"""
+    """不具合一覧。件数が増えても 1 画面へ詰め込まない。
 
-    page = paginate(_scoped(request, _defects_for(request)), request)
+    絞り込みは selectors 側で解釈する。総件数は *絞り込み後の全件* から取り、
+    表示だけをページで切る（ページを送るたびに「全 12 件」が変わると、
+    その数字が何を指すのか読み手に判別できない）。
+    """
+
+    filters = DefectFilters(
+        status=request.GET.get("status", ""),
+        severity=request.GET.get("severity", ""),
+        phase=request.GET.get("phase", "").strip(),
+    )
+    queryset = defects_for(
+        scoped_projects_for(request),
+        status=filters.status,
+        severity=filters.severity,
+        phase=filters.phase,
+    )
+    page = paginate(queryset, request)
 
     return render(
         request,
         "pages/defect_list.html",
         {
             "defects": page.object_list,
+            "filters": filters,
+            # ページ本体ではなくページャの母数（＝絞り込み後の全件）を渡す。
+            "total": page.paginator.count,
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),
@@ -605,15 +626,34 @@ def risk_promote(request: HttpRequest, pk) -> HttpResponse:
 
 @login_required
 def issue_list(request: HttpRequest) -> HttpResponse:
-    """課題一覧。件数が増えても 1 画面へ詰め込まない。"""
+    """課題一覧。件数が増えても 1 画面へ詰め込まない。
 
-    page = paginate(_scoped(request, _issues_for(request)), request)
+    絞り込みの解釈は selectors に置く。総件数は絞り込み後の全件から取り、
+    表示だけをページで切る（不具合一覧と同じ作法）。
+    """
+
+    filters = IssueFilters(
+        status=request.GET.get("status", ""),
+        severity=request.GET.get("severity", ""),
+        owner=request.GET.get("owner", "").strip(),
+        due=request.GET.get("due", ""),
+    )
+    queryset = issues_for(
+        scoped_projects_for(request),
+        status=filters.status,
+        severity=filters.severity,
+        owner=filters.owner,
+        due=filters.due,
+    )
+    page = paginate(queryset, request)
 
     return render(
         request,
         "pages/issue_list.html",
         {
             "issues": page.object_list,
+            "filters": filters,
+            "total": page.paginator.count,
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),

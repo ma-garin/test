@@ -41,6 +41,10 @@ def consultation(request: HttpRequest) -> HttpResponse:
 
     if question and request.tenant:
         index = VectorIndex.objects.filter(tenant=request.tenant, project__isnull=True).first()
+        # インデックスの Embedding 設定が現在の設定と食い違っていると、ベクトル
+        # 検索は黙って効かなくなる（次元が違えば比較できない）。検索結果が薄い
+        # 理由を利用者が判断できるよう、再構築が必要なことをここで伝える。
+        _warn_if_index_stale(request, index)
         result = orchestrator.run(
             tenant=request.tenant,
             question=question,
@@ -60,6 +64,23 @@ def consultation(request: HttpRequest) -> HttpResponse:
             "screen_context": screen,
             "page_title": "PMO相談・状況整理",
         },
+    )
+
+
+def _warn_if_index_stale(request: HttpRequest, index: VectorIndex | None) -> None:
+    """検索インデックスの再構築が必要なら警告する。
+
+    `VectorIndex.is_stale` はモデルに実装があるだけで、どの画面からも参照されて
+    いなかった。判定できているのに誰にも伝わらないなら、無いのと同じである。
+    """
+
+    if index is None or not index.is_stale:
+        return
+
+    messages.warning(
+        request,
+        f"検索インデックスの再構築が必要です。{index.rebuild_required_reason}"
+        "（`python manage.py rebuild_index --tenant <テナントコード>`）",
     )
 
 
@@ -225,7 +246,14 @@ def _generate_deliverable(request: HttpRequest) -> HttpResponse:
 
 
 def _save_deliverable(request: HttpRequest) -> HttpResponse:
-    """確定本文を保存する。承認済みの版は書き換えさせない。"""
+    """確定本文を保存する。承認済みの版は書き換えさせない。
+
+    承認待ちの本文編集は「拒否」ではなく「承認依頼の取り下げ」で扱う。
+    拒否にすると、編集権限しか持たない担当者は自分で差し戻せないため、
+    承認者を捕まえるまで誤りを直せない行き止まりになる。編集を受け付けつつ
+    版を繰り上げて下書きへ戻せば、承認者が読んだ版と承認される版が必ず一致する
+    （再度「承認依頼」を通さない限り承認できない）。
+    """
 
     deliverable = get_object_or_404(
         selectors.deliverables_for(request.user, request.tenant),
@@ -253,7 +281,19 @@ def _save_deliverable(request: HttpRequest) -> HttpResponse:
     saved = form.save()
     rate = saved.correction_rate
     detail = "（AI未使用のため赤字率は算出しません）" if rate is None else f"（赤字率 {round(rate * 100)}%）"
+    withdrawn = approval_service.withdraw_request(
+        deliverable=saved,
+        actor=request.user,
+        comment="承認待ちの本文が編集されたため、承認依頼を取り下げました。",
+    )
     messages.success(request, f"確定本文を保存しました。{detail}")
+
+    if withdrawn:
+        messages.warning(
+            request,
+            "承認待ちの本文を編集したため、承認依頼を取り下げて下書き"
+            f"（v{saved.version + 1}）へ戻しました。改めて承認依頼を行ってください。",
+        )
 
     return redirect(f"{reverse('pmo:deliverables')}?deliverable={saved.pk}")
 

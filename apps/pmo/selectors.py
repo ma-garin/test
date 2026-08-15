@@ -36,10 +36,19 @@ def deliverables_for(user, tenant) -> QuerySet[Deliverable]:
 
 
 def deliverables_awaiting_decision_for(user, tenant) -> QuerySet[Deliverable]:
-    """承認判断が必要な成果物（下書き・承認待ち）。"""
+    """承認判断が必要な成果物（下書き・承認待ち・差し戻し）。
+
+    差し戻したものを外すと、遷移表が REJECTED → 承認依頼を許していても
+    画面から消えて再申請できなくなる（差し戻した瞬間に行き止まりになる）。
+    確定したもの（承認済み）だけを一覧から外す。
+    """
 
     return deliverables_for(user, tenant).filter(
-        status__in=[Deliverable.Status.DRAFT, Deliverable.Status.PENDING_APPROVAL]
+        status__in=[
+            Deliverable.Status.DRAFT,
+            Deliverable.Status.PENDING_APPROVAL,
+            Deliverable.Status.REJECTED,
+        ]
     )
 
 
