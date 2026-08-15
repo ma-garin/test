@@ -52,7 +52,7 @@
                   {% csrf_token %}
                   <button type="submit" class="btn-ghost sm">疎通確認</button>
                 </form>
-                {% if row.connection.can_pull_issues %}
+                {% if row.connection.can_pull_issues or row.connection.can_pull_documents %}
                   <form method="post" action="{% url 'integrations:sync' row.connection.pk %}" class="inline-form">
                     {% csrf_token %}
                     <button type="submit" class="btn-out sm">同期実行</button>

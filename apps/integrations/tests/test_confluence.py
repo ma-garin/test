@@ -21,7 +21,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Tenant
 from apps.documents.models import Document, DocumentPage
-from apps.integrations.models import Connection, SyncedRecord, SyncJob
+from apps.integrations.models import Connection, Provider, SyncedRecord, SyncJob
 from apps.integrations.services.confluence_sync import run_confluence_pull
 from apps.integrations.services.connectors import confluence as confluence_module
 from apps.integrations.services.connectors import get_connector
@@ -351,3 +351,63 @@ class ConfluenceReferenceTimeTests(TestCase):
         pages = list(ConfluenceConnector(connection, reference_time=anchor).fetch_pages())
 
         self.assertEqual(pages[0].updated_at, anchor - timedelta(hours=6))
+
+
+class ConfluenceSyncFromScreenTests(TestCase):
+    """画面の「同期実行」から Confluence を取り込めること。
+
+    接続としては作れるのに同期する導線が無く、直接叩くと「通知専用です」という
+    事実と違う理由が返っていた。実装済みの機能が到達不能だった。
+    """
+
+    def setUp(self) -> None:
+        from apps.accounts.constants import Role
+        from apps.accounts.models import User
+
+        self.tenant = Tenant.objects.create(code="acme", name="ACME")
+        self.project = Project.objects.create(tenant=self.tenant, code="p1", name="案件")
+        self.admin = User.objects.create_user(
+            username="tenant-admin",
+            email="tenant-admin@example.com",
+            password="x",
+            tenant=self.tenant,
+            role=Role.TENANT_ADMIN,
+        )
+        self.connection = Connection.objects.create(
+            tenant=self.tenant,
+            project=self.project,
+            provider=Provider.CONFLUENCE,
+            name="社内Wiki",
+            base_url="https://acme.atlassian.net/wiki",
+            mode=Connection.Mode.MOCK,
+        )
+        self.client.force_login(self.admin)
+
+    def test_同期実行から文書を取り込める(self):
+        from django.urls import reverse
+
+        response = self.client.post(
+            reverse("integrations:sync", args=[self.connection.pk]), follow=True
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(SyncJob.objects.filter(connection=self.connection).exists())
+        self.assertTrue(Document.objects.filter(tenant=self.tenant).exists())
+
+    def test_取り込めない接続には理由を返す(self):
+        from django.urls import reverse
+
+        notify_only = Connection.objects.create(
+            tenant=self.tenant,
+            provider=Provider.SLACK,
+            name="通知用",
+            base_url="https://hooks.example.com/",
+            mode=Connection.Mode.MOCK,
+        )
+
+        response = self.client.post(
+            reverse("integrations:sync", args=[notify_only.pk]), follow=True
+        )
+
+        self.assertContains(response, "取り込めるものはありません")
+        self.assertFalse(SyncJob.objects.filter(connection=notify_only).exists())

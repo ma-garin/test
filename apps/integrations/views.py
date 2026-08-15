@@ -175,7 +175,25 @@ def connection_sync(request: HttpRequest, pk) -> HttpResponse:
     connection = get_object_or_404(
         selectors.connections_for(request.user, request.tenant), pk=pk
     )
-    job = run_pull(connection, user=request.user)
+
+    # 接続の種類ごとに取り込むものが違う。Confluence は文書、Jira/Redmine は課題。
+    # 以前は課題の取込しか呼んでおらず、Confluence 接続を作れるのに同期する手段が
+    # 無い（直接叩くと「通知専用です」という事実と違う理由が返る）状態だった。
+    if connection.can_pull_documents:
+        from apps.integrations.services.confluence_sync import run_confluence_pull
+
+        job = run_confluence_pull(connection, user=request.user)
+    elif connection.can_pull_issues:
+        job = run_pull(connection, user=request.user)
+    else:
+        messages.error(
+            request,
+            f"{connection.name}: {connection.get_provider_display()} から取り込めるものはありません"
+            "（通知や統計の取得は同期とは別の経路です）。",
+        )
+
+        return redirect(LIST_URL)
+
     text = f"{connection.name}: {job.message}"
 
     if job.status == SyncJob.Status.SUCCEEDED:
