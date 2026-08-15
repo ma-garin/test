@@ -359,7 +359,7 @@ def _summarize_rules(
 ) -> tuple[RuleSummary, ...]:
     """ルール別の件数。0 件のルールも「見ている」ことを示すために残す。"""
 
-    counts = {rule: 0 for rule in rules}
+    counts = dict.fromkeys(rules, 0)
 
     for violation in violations:
         counts[violation.rule] = counts.get(violation.rule, 0) + 1

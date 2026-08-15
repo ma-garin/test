@@ -24,10 +24,23 @@ class CurrentTenantMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
+        from apps.core.services import ai_settings
+
         request.tenant = self._resolve_tenant(request)
         request.project = self._resolve_project(request)
 
-        return self.get_response(request)
+        # AI 設定は利用者ごとに違う。サービス層すべてへ user を引き回すと、
+        # 管理コマンド経由の呼び出しまで引数が増えて壊れやすくなるため、
+        # リクエストの間だけ文脈として持たせる。必ず reset して次の
+        # リクエスト（同一スレッドの使い回し）へ漏らさない。
+        token = ai_settings.set_current_user(
+            request.user if getattr(request, "user", None) is not None else None
+        )
+
+        try:
+            return self.get_response(request)
+        finally:
+            ai_settings.reset_current_user(token)
 
     def _resolve_tenant(self, request: HttpRequest):
         user = getattr(request, "user", None)

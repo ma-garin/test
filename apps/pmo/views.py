@@ -18,8 +18,7 @@ from apps.pmo.forms import DeliverableEditForm, DeliverableGenerateForm
 from apps.pmo.models import Deliverable
 from apps.pmo.services import approval as approval_service
 from apps.pmo.services import deliverables as deliverable_service
-from apps.pmo.services import diffing
-from apps.pmo.services import generators
+from apps.pmo.services import diffing, generators
 from apps.pmo.services import prompt_library as prompt_library_service
 from apps.projects.selectors import scoped_projects_for
 from apps.rag.models import VectorIndex

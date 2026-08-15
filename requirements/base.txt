@@ -1,3 +1,5 @@
 Django>=5.1,<5.2
 django-environ>=0.11
 djangorestframework>=3.15
+# 利用者ごとの API キーを保存時に暗号化する（apps/core/services/secrets.py）。
+cryptography>=43

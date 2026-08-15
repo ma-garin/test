@@ -27,8 +27,8 @@ RAG が常に最新の設計・議事録を引ける状態にするための経�
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from django.db import transaction
 from django.utils import timezone

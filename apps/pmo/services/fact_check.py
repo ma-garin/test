@@ -20,15 +20,14 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Sequence
 
 from django.utils import timezone
 
-from apps.projects.models import Issue, Risk, WbsTask
-
 from apps.pmo.services.generators.facts import ProjectFacts, collect_facts
+from apps.projects.models import Issue, Risk, WbsTask
 
 #: 判定の 3 分類。一致・不一致・照合不能を混ぜないための定数。
 VERDICT_MATCH = "match"

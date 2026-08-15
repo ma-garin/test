@@ -75,7 +75,14 @@ class RoleVisibilityTests(TestCase):
     def setUp(self) -> None:
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
 
-    def test_参照のみのロールには設定画面を出さない(self):
+    def test_参照のみのロールにも設定画面を出す(self):
+        """AI の API 設定は利用者ごとに持つため、設定画面は全ロールへ開く。
+
+        以前は管理者だけの画面だった。管理者の 1 本のキーを全員で共有する形になり、
+        費用も利用ログも誰のものか分からず、1 人の離任で全員が止まっていた。
+        テナント既定を触れるのは管理権限を持つ人だけ（`test_ai_settings.py`）。
+        """
+
         viewer = User.objects.create_user(
             username="viewer",
             email="viewer@example.com",
@@ -86,7 +93,7 @@ class RoleVisibilityTests(TestCase):
         self.client.force_login(viewer)
         response = self.client.get(reverse("dashboard:control"))
 
-        self.assertNotContains(response, reverse("core:settings"))
+        self.assertContains(response, reverse("core:settings"))
 
     def test_テナント管理者には設定画面を出す(self):
         admin_user = User.objects.create_user(

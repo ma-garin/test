@@ -73,21 +73,27 @@ class OpenAIEmbedder(BaseEmbedder):
     """OpenAI Embeddings API。
 
     実装は `openai` パッケージが入っている環境でのみ有効。requirements/ai.txt を参照。
+
+    認証情報は解決済みの設定（個人 → テナント → 環境変数）から取る。
+    `settings.OPENAI` を直接読むと、利用者ごとの API キーが無視される。
     """
 
     provider = "openai"
 
     def __init__(self) -> None:
-        self.model = settings.OPENAI["EMBEDDING_MODEL"]
+        from apps.core.services.ai_settings import effective_config
+
+        self.config = effective_config()
+        self.model = self.config.openai_embedding_model
         self.dimension = 1536
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         from openai import OpenAI  # 遅延 import。未設定環境で import エラーにしない。
 
         client = OpenAI(
-            api_key=settings.OPENAI["API_KEY"],
-            organization=settings.OPENAI["ORG_ID"] or None,
-            project=settings.OPENAI["PROJECT_ID"] or None,
+            api_key=self.config.openai_api_key,
+            organization=self.config.openai_org_id or None,
+            project=self.config.openai_project_id or None,
         )
         response = client.embeddings.create(model=self.model, input=texts)
 
@@ -100,13 +106,16 @@ class OllamaEmbedder(BaseEmbedder):
     provider = "ollama"
 
     def __init__(self) -> None:
-        self.model = settings.OLLAMA["EMBEDDING_MODEL"]
+        from apps.core.services.ai_settings import effective_config
+
+        self.config = effective_config()
+        self.model = self.config.ollama_embedding_model
         self.dimension = 0  # 実際の次元はモデル依存。初回応答で確定する。
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         import httpx
 
-        base_url = settings.OLLAMA["BASE_URL"].rstrip("/")
+        base_url = self.config.ollama_base_url.rstrip("/")
         vectors: list[list[float]] = []
 
         with httpx.Client(timeout=60.0) as client:
@@ -136,13 +145,20 @@ def get_embedder(provider: str | None = None) -> BaseEmbedder:
 
     プロバイダが未設定なら、例外にせず `local_hash` へ退避する。検索画面が
     設定不備で完全に停止するより、劣化した状態で動く方が運用しやすい。
+
+    `provider` を明示したときは、そのプロバイダの認証情報が揃っているかを見る。
+    既存インデックスの再検索（`get_embedder(index.embedding_provider)`）で、
+    現在の既定プロバイダの設定状況を見てしまうと判定がずれる。
     """
 
-    from apps.core.services.ai_settings import is_provider_configured
+    from apps.core.services.ai_settings import effective_config
 
-    resolved = provider or settings.AI_PROVIDER
+    config = effective_config()
+    resolved = provider or config.provider
 
-    if resolved != "local_hash" and not is_provider_configured():
+    if resolved == "openai" and not config.openai_api_key:
+        resolved = "local_hash"
+    elif resolved == "ollama" and not config.ollama_base_url:
         resolved = "local_hash"
 
     return _EMBEDDERS.get(resolved, LocalHashEmbedder)()

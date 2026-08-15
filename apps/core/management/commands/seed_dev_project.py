@@ -24,7 +24,6 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.constants import Role
 from apps.accounts.models import Tenant, User
 from apps.dashboard.models import Alert, KpiMeasurement
 from apps.projects.models import (

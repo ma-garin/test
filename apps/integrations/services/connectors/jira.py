@@ -19,8 +19,9 @@ PMO の課題は既に Jira にある。ここへ二重入力させた時点で�
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from datetime import date, datetime, timedelta
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 from django.utils import timezone
 

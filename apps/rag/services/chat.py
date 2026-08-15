@@ -12,11 +12,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from django.conf import settings
-
 from apps.agents.models import Recommendation
 from apps.agents.services import evidence as evidence_service
 from apps.agents.services import intent as intent_service
+from apps.core.services.ai_settings import effective_config
 from apps.rag.models import (
     AnswerCitation,
     ChatMessage,
@@ -24,7 +23,6 @@ from apps.rag.models import (
     RagAnswer,
     RetrievalQuery,
     RetrievedChunk,
-    VectorIndex,
 )
 from apps.rag.services import project_context as project_context_service
 from apps.rag.services.retriever import SearchHit, search
@@ -146,12 +144,13 @@ def build_reply(question: str, hits: list[SearchHit], context=None) -> ChatReply
 def _persist_answer(session: ChatSession, question: str, hits: list[SearchHit], reply: ChatReply):
     """検索と回答を保存する。根拠の追跡は監査要件なので必ず残す。"""
 
+    ai_config = effective_config()
     query = RetrievalQuery.objects.create(
         tenant=session.tenant,
         project=session.project,
         user=session.user,
         question=question,
-        top_k=settings.RAG["DEFAULT_TOP_K"],
+        top_k=ai_config.rag_top_k,
     )
     RetrievedChunk.objects.bulk_create(
         [
@@ -173,7 +172,7 @@ def _persist_answer(session: ChatSession, question: str, hits: list[SearchHit], 
         grounded_findings="\n".join(f"{c.title} p.{c.page}: {c.quote}" for c in reply.citations),
         unverified_points="\n".join(reply.missing_information),
         follow_up_questions=reply.follow_up_questions,
-        provider=settings.AI_PROVIDER,
+        provider=ai_config.provider,
         model=RULE_BASED_MODEL,
     )
     AnswerCitation.objects.bulk_create(

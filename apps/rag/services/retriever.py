@@ -15,10 +15,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from django.conf import settings
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 
+from apps.core.services.ai_settings import effective_config
 from apps.documents.models import DocumentStatus
 from apps.rag.models import Chunk, ChunkSourceType, RetrievalQuery, RetrievedChunk, VectorIndex
 from apps.rag.services.embeddings import cosine_similarity, get_embedder
@@ -111,7 +111,7 @@ def search(
     """
 
     indexes = index_list(index)
-    limit = top_k or settings.RAG["DEFAULT_TOP_K"]
+    limit = top_k or effective_config().rag_top_k
     chunks: list[Chunk] = []
 
     for target in indexes:
@@ -204,6 +204,7 @@ def search_and_record(
     監査・根拠トレースの要件上、検索は「実行しただけ」で終わらせず必ず記録する。
     """
 
+    config = effective_config()
     started = timezone.now()
     hits = search(index, question, top_k=top_k)
     elapsed_ms = int((timezone.now() - started).total_seconds() * 1000)
@@ -214,8 +215,8 @@ def search_and_record(
         project=project or primary.project,
         user=user,
         question=question,
-        top_k=top_k or settings.RAG["DEFAULT_TOP_K"],
-        used_rerank=settings.RAG["USE_LLM_RERANK"],
+        top_k=top_k or config.rag_top_k,
+        used_rerank=config.use_llm_rerank,
         elapsed_ms=elapsed_ms,
     )
 

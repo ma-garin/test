@@ -715,3 +715,15 @@ a { color: inherit; text-decoration: none; }
   .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-alert-layout, .sg, .sg-r { grid-template-columns: 1fr; }
 }
+
+/* --- 設定画面のフォーム ------------------------------------------------- */
+/* 項目が多い設定フォームを1列で積むと、画面が縦に伸びて関係が見えなくなる。
+   2列に畳み、幅の要る操作行だけ横断させる。 */
+.form-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items: start; }
+.form-grid .form-wide { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* 見出しを目で見せずに支援技術へ渡す。表の caption に使う。 */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

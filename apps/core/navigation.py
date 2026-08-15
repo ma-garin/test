@@ -111,14 +111,11 @@ NAVIGATION: tuple[NavSection, ...] = (
             NavItem("integrations", "外部連携", "integrations:list", "IN", "ready"),
             NavItem("pipeline", "同期パイプライン", "integrations:pipeline", "PP", "ready"),
             NavItem("sync_jobs", "同期履歴", "integrations:job_list", "SY", "ready"),
-            NavItem(
-                "settings",
-                "設定",
-                "core:settings",
-                "ST",
-                "ready",
-                roles=(Role.TENANT_ADMIN, Role.SYSTEM_ADMIN),
-            ),
+            # 設定画面は全ロールへ出す。AI の API 設定は利用者ごとに持てるように
+            # なったため、管理者だけが開ける画面のままだと、他のロールは
+            # 自分のキーを入れる場所へ辿り着けない。
+            # テナント既定の編集可否は画面内で `Action.MANAGE` により分ける。
+            NavItem("settings", "設定", "core:settings", "ST", "ready"),
         ),
     ),
 )

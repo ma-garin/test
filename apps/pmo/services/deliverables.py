@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable
 
 from apps.pmo.models import Deliverable
 from apps.pmo.services import fact_check

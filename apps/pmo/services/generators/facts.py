@@ -15,9 +15,8 @@ from decimal import Decimal
 from django.utils import timezone
 
 from apps.dashboard.models import Alert
-from apps.projects.models import Defect, Issue, QualityMetric, Risk, Severity, WbsTask
-
 from apps.pmo.services.generators.base import EvidenceItem, percent
+from apps.projects.models import Defect, Issue, QualityMetric, Risk, Severity, WbsTask
 
 #: リスクスコア（発生確率 × 影響度、各 1-5）がこの値以上なら「高リスク」。
 HIGH_RISK_SCORE = 15

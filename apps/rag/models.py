@@ -88,9 +88,12 @@ class VectorIndex(TimeStampedModel):
         設定を変えたまま再構築せずに検索すると、ベクトル空間が混ざって精度が落ちる。
         """
 
-        from django.conf import settings
+        from apps.core.services.ai_settings import effective_config
 
-        if self.embedding_provider != settings.AI_PROVIDER:
+        # Embedding はテナント既定と環境変数だけが決める（個人設定では変えられない）。
+        # 個人設定でプロバイダを変えただけで全インデックスが「要再構築」に
+        # なると、他の利用者の検索まで警告だらけになる。
+        if self.embedding_provider != effective_config(tenant=self.tenant).provider:
             return True
 
         return self.dimension == 0

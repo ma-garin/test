@@ -10,7 +10,7 @@ MIN_OBSERVATIONS 未満なら「判定不能」として見送る。
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from django.utils import timezone
 

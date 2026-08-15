@@ -14,22 +14,24 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.audit.selectors import feedbacks_for
+from apps.core.pagination import page_window, paginate, query_without_page
 from apps.dashboard import selectors
 from apps.dashboard.forms import InterventionDecisionForm
 from apps.dashboard.models import InterventionProposal
-from apps.dashboard.services.detection import kind_label, run_detection
 from apps.dashboard.services.decisions import (
     build_change_report,
     build_intervention_report,
     build_risk_report,
 )
+from apps.dashboard.services.detection import kind_label, run_detection
+from apps.dashboard.services.earned_value import build_portfolio
+from apps.dashboard.services.gantt import build_gantt_chart
 from apps.dashboard.services.interventions import (
     AlreadyDecidedError,
     decide_intervention,
     is_pending,
 )
-from apps.dashboard.services.earned_value import build_portfolio
-from apps.dashboard.services.gantt import build_gantt_chart
 from apps.dashboard.services.kpi import build_derived_rows, build_kpi_report
 from apps.dashboard.services.milestones import build_milestone_report
 from apps.dashboard.services.ops_rules import build_ops_rules_report
@@ -38,8 +40,6 @@ from apps.dashboard.services.poc_evaluation import BUSINESS_DAY_NOTE, build_poc_
 from apps.dashboard.services.progress import build_progress_report
 from apps.dashboard.services.quality import build_quality_report
 from apps.dashboard.services.tasks import TaskFilters, build_task_board
-from apps.audit.selectors import feedbacks_for
-from apps.core.pagination import page_window, paginate, query_without_page
 from apps.projects.selectors import scoped_projects_for
 
 
