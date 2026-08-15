@@ -1,0 +1,84 @@
+# ユースケーステスト（システムテスト）
+
+「システムとして動くか」ではなく「利用者にとって使えるか」を確かめるための仕組み。
+機能が動いても使えない画面には価値が無いので、期待値は *仕様の再掲* ではなく
+*その人がその場面で目的を達成できるか* で書く。
+
+## 構成
+
+```text
+docs/systemtest/
+├── usecases/usecases.csv    ユースケース一覧（735件・生成物。手で編集しない）
+├── scan/defect-register.md  静的スキャンで洗い出した不具合台帳
+├── results/result-*.json    ロール別の実行結果
+├── odc/                     ODC による不具合分析
+└── evidence/                NG 再実行の動画・スクリーンショット・判定
+
+tools/systemtest/
+├── catalog.py               ロール軸・ペルソナ軸の定義（ケースの source of truth）
+├── generate_usecases.py     CSV 生成と MECE の機械検証
+└── rerun_with_video.py      NG ケースを実ブラウザで再実行し動画を撮る
+
+apps/core/management/commands/
+├── run_usecases.py          ユースケースの実行（Django テストクライアント）
+└── build_rerun_plan.py      NG ケースの再実行計画とブラウザ用DBの用意
+```
+
+## ケースの作り方（MECE）
+
+2 本の直交する軸の直積として生成する。人手で並べると重複と抜けが必ず出るため、
+生成器が次を機械的に検証し、外れたら生成そのものを失敗させる。
+
+- ケース ID の重複が無い
+- 7 ロール × 15 観点 = 105 件、各ロールちょうど 15 件
+- 42 ペルソナ × 15 場面 = 630 件、各ペルソナちょうど 15 件
+- `(軸, ロール, ペルソナ, 観点)` の組が一意
+- 合計が 500〜1,000 件に収まる
+
+**ロール軸**の 15 観点は、システムの 69 エンドポイントを機能面で重複なく分割したもの。
+**ペルソナ軸**の 15 場面は、利用者の1日〜1週間の流れを重複なく分割したもの。
+切り口が別なので、両者のケースは重複しない。
+
+## 期待値の決め方
+
+期待値は「いまの実装がこう動く」ではなく「こう動くべき」で書く。実装に合わせて
+期待値を書くと、テストは不具合を素通りさせる。
+
+権限まわりの期待値は `settings.ROLE_PERMISSIONS` / `PROJECT_ROLE_PERMISSIONS` から
+機械的に導出している。実装が対応表に従っていなければ NG になる。
+
+## 「200 が返った」を成功と呼ばない
+
+権限が無いのに 200 を返す画面は、ボタンを隠しただけで実際には書き込めていることが
+ある。書き込みを伴う手順では、対象モデルの件数の増減も併せて確認する。
+
+- 許可されるはずの操作 … 応答が成功で、かつ対象が 1 件以上増えている
+- 拒否されるはずの操作 … 403 で、かつ対象が 1 件も増えていない
+
+## 実行
+
+```bash
+# 1. ケースを生成する（catalog.py を変えたときだけ）
+python tools/systemtest/generate_usecases.py
+
+# 2. ロール別に実行する（専用のテストDBを作る。開発DBは触らない）
+python manage.py run_usecases --settings=config.settings.test --role pmo
+python manage.py run_usecases --settings=config.settings.test          # 全ロール
+
+# 3. NG を修整したあと、実ブラウザで再実行して動画を残す
+DATABASE_URL=sqlite:///var/systemtest/rerun.sqlite3 python manage.py migrate
+DATABASE_URL=sqlite:///var/systemtest/rerun.sqlite3 \
+  python manage.py build_rerun_plan --out var/systemtest/rerun-plan.json
+DATABASE_URL=sqlite:///var/systemtest/rerun.sqlite3 \
+  python manage.py runserver 127.0.0.1:8009 --noreload &
+python tools/systemtest/rerun_with_video.py \
+  --plan var/systemtest/rerun-plan.json \
+  --base-url http://127.0.0.1:8009 \
+  --out docs/systemtest/evidence
+```
+
+再実行を実ブラウザで行うのは、HTTP のやり取りだけでは写らない壊れ方
+（画面は 200 だが中身が空、ボタンが押せない、遷移先が違う）を捕まえるため。
+POST も JavaScript でフォームを組んで実際にブラウザから送信し、遷移を動画に残す。
+
+自動実行の仕組み（CI・定期実行）は置いていない。手元で明示的に走らせる。

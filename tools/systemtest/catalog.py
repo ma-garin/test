@@ -278,6 +278,8 @@ VIEWPOINTS: tuple[Viewpoint, ...] = (
                 "u": "dashboard:intervention_decide",
                 "args": ["{proposal_id}"],
                 "data": {"status": "accepted", "decision_reason": "システムテストによる判断"},
+                # 判断は「更新」なので件数では測れない。判断の記録（操作ログ）で測る。
+                "effect": "audit.OperationLog",
                 "expect": {"write": True},
             },
         ),
@@ -352,6 +354,8 @@ VIEWPOINTS: tuple[Viewpoint, ...] = (
                 "m": "POST",
                 "u": "pmo:approvals",
                 "data": {"deliverable": "{deliverable_id}", "decision": "approved", "comment": "確認しました"},
+                # 承認は成果物の状態遷移だが、証跡として Approval が必ず1件残る。
+                "effect": "pmo.Approval",
                 "expect": {"write": True},
             },
         ),
@@ -587,6 +591,8 @@ STAGES: tuple[Stage, ...] = (
                 "u": "dashboard:intervention_decide",
                 "args": ["{proposal_id}"],
                 "data": {"status": "accepted", "decision_reason": "システムテストによる判断"},
+                # 判断は「更新」なので件数では測れない。判断の記録（操作ログ）で測る。
+                "effect": "audit.OperationLog",
                 "expect": {"write": True},
             },
         ),
