@@ -10,9 +10,17 @@
 input=$(cat)
 command=$(echo "$input" | jq -r '.tool_input.command // ""')
 
+# 終了条件つきの待機（`until 条件; do sleep N; done`）は通す。
+# 条件が満たされた時点で終わるので、通知は 1 回だけ。浪費にならない。
+# 禁じたいのは「ただ寝るだけ」の待機で、これは何度でも繰り返され、
+# そのたびに会話全体の読み直しが発生する。
+if echo "$command" | grep -qE '(^|[;&[:space:]])(until|while)[[:space:]]'; then
+  exit 0
+fi
+
 # `sleep 0.5` のような短い待機（プロセス起動待ちなど）は許す。
-# 60 秒以上の待機は、ほぼ確実にポーリング目的。
-if echo "$command" | grep -qE '(^|[;&|[:space:]])sleep[[:space:]]+([0-9]{2,}|[6-9][0-9])'; then
+# 10 秒以上、ただ寝るだけの待機はポーリング目的とみなす。
+if echo "$command" | grep -qE '(^|[;&|[:space:]])sleep[[:space:]]+[0-9]{2,}'; then
   echo "待機目的の sleep は禁止されています（過去にこれで数百万トークンを浪費）。" >&2
   echo "サブエージェントやバックグラウンド処理の完了は、ハーネスの通知で受け取ってください。" >&2
   echo "ポーリングせず、通知が来るまで発言しないこと。" >&2
