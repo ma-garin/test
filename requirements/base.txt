@@ -4,4 +4,8 @@ djangorestframework>=3.15
 
 # 外部ツール連携（Jira/Redmine/Slack/Teams/Confluence）の HTTP 呼び出しで使う。
 # コネクタは遅延 import でモックへ退避するが、実 API を叩くには必須。
+# AI 設定画面の接続確認（apps/core/services/ai_settings.py）でも使う。
 requests>=2.32
+
+# 利用者ごとの API キーを保存時に暗号化する（apps/core/services/secrets.py）。
+cryptography>=43

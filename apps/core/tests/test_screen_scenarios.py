@@ -140,7 +140,9 @@ SCREENS: tuple[Screen, ...] = (
     Screen("integrations:pipeline"),
     Screen("integrations:job_list"),
     Screen("integrations:create", writable=True, admin_only=True),
-    Screen("core:settings", admin_only=True),
+    # AI設定は全ロールが開ける。API キーは利用者ごとに持てるため、閲覧と個人設定は
+    # 全員へ開き、テナント既定の書き換えだけをビュー側で管理者に限っている。
+    Screen("core:settings"),
     Screen("core:screen_map"),
     Screen("accounts:select_tenant"),
     Screen("accounts:select_project"),

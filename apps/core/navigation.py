@@ -14,8 +14,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from apps.accounts.constants import Role
-
 
 @dataclass(frozen=True)
 class NavItem:
@@ -165,14 +163,10 @@ NAVIGATION: tuple[NavSection, ...] = (
             NavItem("integrations", "外部連携", "integrations:list", "IN", "ready"),
             NavItem("pipeline", "同期の稼働状況", "integrations:pipeline", "PP", "ready"),
             NavItem("sync_jobs", "同期履歴", "integrations:job_list", "SY", "ready"),
-            NavItem(
-                "settings",
-                "AI設定",
-                "core:settings",
-                "ST",
-                "ready",
-                roles=(Role.TENANT_ADMIN, Role.SYSTEM_ADMIN),
-            ),
+            # AI設定は全ロールへ出す。API キーを利用者ごとに持てるようになったため、
+            # 管理者だけが開ける画面のままだと、他のロールは自分のキーを入れる場所へ
+            # 辿り着けない。テナント既定の編集可否は画面内で分ける。
+            NavItem("settings", "AI設定", "core:settings", "ST", "ready"),
         ),
     ),
 )

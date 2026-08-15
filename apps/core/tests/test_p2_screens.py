@@ -55,13 +55,16 @@ class P2SettingsScreenTests(TestCase):
         self.assertIn("RAG_DEFAULT_TOP_K", html)
         self.assertIn("再起動後の最初のリクエストから", html)
 
-    def test_settings_explains_why_user_cannot_edit_and_whom_to_ask(self) -> None:
-        """編集できない理由と依頼先が読める。"""
+    def test_settings_explains_who_edits_which_tier_and_whom_to_ask(self) -> None:
+        """どの段を誰が変えられるか、変えられない段の依頼先が読める。
+
+        個人設定とテナント既定はこの画面から変えられる。環境変数の段だけは
+        アプリの外なので、依頼先を明示しないと利用者が行き止まりになる。
+        """
 
         html = self.client.get(reverse("core:settings")).content.decode()
 
-        self.assertIn("この画面は参照専用です", html)
-        self.assertIn("画面から書き換える手段はありません", html)
+        self.assertIn("この画面から変更できます", html)
         self.assertIn("システム管理者（インフラ担当）", html)
         self.assertIn("変更を依頼する先", html)
 

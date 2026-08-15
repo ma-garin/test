@@ -15,10 +15,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from django.conf import settings
 from django.db.models import Q, QuerySet
 from django.utils import timezone
 
+from apps.core.services.ai_settings import effective_config
 from apps.documents.models import DocumentStatus
 from apps.rag.models import Chunk, ChunkSourceType, RetrievalQuery, RetrievedChunk, VectorIndex
 from apps.rag.services.embeddings import cosine_similarity, get_embedder
@@ -111,7 +111,9 @@ def search(
     """
 
     indexes = index_list(index)
-    limit = top_k or settings.RAG["DEFAULT_TOP_K"]
+    # 解決済みの設定（個人 → テナント → 環境変数）を使う。settings.RAG を直読みすると
+    # 利用者が設定画面で変えた Top-K が無視される。
+    limit = top_k or effective_config().rag_top_k
     chunks: list[Chunk] = []
 
     for target in indexes:
@@ -209,13 +211,14 @@ def search_and_record(
     elapsed_ms = int((timezone.now() - started).total_seconds() * 1000)
 
     primary = index_list(index)[0]
+    ai_config = effective_config()
     query = RetrievalQuery.objects.create(
         tenant=primary.tenant,
         project=project or primary.project,
         user=user,
         question=question,
-        top_k=top_k or settings.RAG["DEFAULT_TOP_K"],
-        used_rerank=settings.RAG["USE_LLM_RERANK"],
+        top_k=top_k or ai_config.rag_top_k,
+        used_rerank=ai_config.use_llm_rerank,
         elapsed_ms=elapsed_ms,
     )
 

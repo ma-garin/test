@@ -75,7 +75,14 @@ class RoleVisibilityTests(TestCase):
     def setUp(self) -> None:
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
 
-    def test_参照のみのロールには設定画面を出さない(self):
+    def test_参照のみのロールにも設定画面を出す(self):
+        """AI設定は全ロールへ出す。
+
+        API キーは費用と利用ログの単位が個人なので、利用者ごとに持てる必要がある。
+        管理者だけが開ける画面のままだと、他のロールは自分のキーを入れる場所へ
+        辿り着けない。テナント既定を編集できるかは画面内で分ける。
+        """
+
         viewer = User.objects.create_user(
             username="viewer",
             email="viewer@example.com",
@@ -86,7 +93,7 @@ class RoleVisibilityTests(TestCase):
         self.client.force_login(viewer)
         response = self.client.get(reverse("dashboard:control"))
 
-        self.assertNotContains(response, reverse("core:settings"))
+        self.assertContains(response, reverse("core:settings"))
 
     def test_テナント管理者には設定画面を出す(self):
         admin_user = User.objects.create_user(
@@ -103,7 +110,12 @@ class RoleVisibilityTests(TestCase):
 
 
 class SettingsPermissionTests(TestCase):
-    """設定画面はナビ定義どおり管理者限定。宣言だけでビューが素通しだと権限境界が形だけになる。"""
+    """設定画面の権限境界。
+
+    閲覧と個人設定は全ロールへ開き、**テナント既定の書き換えだけ**を管理者に限る。
+    宣言だけでビューが素通しだと、メニューに出ない操作へ POST を直接投げられて
+    権限境界が形だけになるため、ビュー側でも同じ条件を強制する。
+    """
 
     def setUp(self) -> None:
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
@@ -127,10 +139,22 @@ class SettingsPermissionTests(TestCase):
         response = self.client.get(reverse("core:settings"))
         self.assertEqual(response.status_code, 200)
 
-    def test_管理者以外はURL直打ちでも開けない(self) -> None:
+    def test_管理者以外も自分の設定のために開ける(self) -> None:
         self.client.force_login(self.member)
         response = self.client.get(reverse("core:settings"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_管理者以外はテナント既定を書き換えられない(self) -> None:
+        from apps.core.models import TenantAISetting
+
+        self.client.force_login(self.member)
+        response = self.client.post(
+            reverse("core:settings"),
+            {"scope": "tenant", "is_active": "on", "provider": "ollama"},
+        )
+
         self.assertEqual(response.status_code, 403)
+        self.assertFalse(TenantAISetting.objects.filter(tenant=self.tenant).exists())
 
     def test_未ログインはログインへ送る(self) -> None:
         response = self.client.get(reverse("core:settings"))

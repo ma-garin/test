@@ -12,13 +12,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from django.conf import settings
 from django.utils import timezone
 
 from apps.agents.models import AgentRun, AgentStep, EvidenceEvaluation
 from apps.agents.services import intent as intent_service
 from apps.agents.services.tools import registry
-from apps.core.services.ai_settings import is_provider_configured
+from apps.core.services.ai_settings import effective_config
 
 
 @dataclass
@@ -57,7 +56,10 @@ def build_plan(intent_result: intent_service.IntentResult, question: str) -> Pla
     実行時に落とすより、最初から立てない方がトレースが読みやすい。
     """
 
-    llm_enabled = is_provider_configured() and settings.AI_PROVIDER != "local_hash"
+    # 利用者ごとの API 設定を見る。管理者が設定していなくても、自分のキーを
+    # 入れた利用者には LLM 必須ツールを使わせる。
+    ai_config = effective_config()
+    llm_enabled = ai_config.is_configured and ai_config.provider != "local_hash"
     available = set(registry.available(llm_enabled=llm_enabled))
 
     tools = [

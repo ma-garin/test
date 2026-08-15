@@ -1,99 +1,196 @@
 {% extends "layouts/base.html" %}
 {% block kicker %}管理・設定{% endblock %}
-{% block subtitle %}認証情報は環境変数で管理します。この画面からは変更できません。{% endblock %}
+{% block subtitle %}AI の接続先とAPIキーを設定します。設定は「個人 → テナント既定 → 環境変数」の順に効きます。{% endblock %}
 
 {% block content %}
 
-  <div class="callout ok">
-    <p><strong>認証情報はマスクして表示しています。</strong>生の値は画面・ログ・エクスポートに含めません。</p>
-  </div>
-
-  {# UXP-35: 値だけでは「誰に何を頼めば変わるか」が分からない。依頼先と手順を併記する。 #}
-  <div class="callout w">
-    <p><strong>この画面は参照専用です。</strong>すべての設定は環境変数で決まります。画面から書き換える手段はありません（誤操作で生成の実行先が変わるのを防ぐため）。</p>
-    <p><strong>管理者:</strong> システム管理者（インフラ担当）。<strong>変更を依頼する先:</strong> 同じシステム管理者へ、変更したい環境変数名と新しい値を伝えてください。</p>
-    <p><strong>変更方法:</strong> 環境変数を書き換えてアプリを再起動します。<strong>反映タイミング:</strong> 再起動後の最初のリクエストから。稼働中の画面には自動反映されません。</p>
-  </div>
-
+  {# 実際に使われている設定を最初に出す。入力欄だけでは効いている値が分からない。 #}
   <div class="kpi-g">
-    <div class="kpi"><div class="kpi-l">AIプロバイダ</div><div class="kpi-v" style="font-size:15px">{{ ai_settings.provider_label }}</div><div class="kpi-s">生成・Embedding の実行先 / AI_PROVIDER</div></div>
-    <div class="kpi"><div class="kpi-l">既定 Top-K</div><div class="kpi-v">{{ ai_settings.rag.default_top_k }}</div><div class="kpi-s">検索結果の取得件数 / RAG_DEFAULT_TOP_K</div></div>
-    <div class="kpi"><div class="kpi-l">ループ上限</div><div class="kpi-v">{{ ai_settings.agent.max_loops }}</div><div class="kpi-s">NFR-AG-002 / AGENT_MAX_LOOPS</div></div>
-    <div class="kpi"><div class="kpi-l">タイムアウト</div><div class="kpi-v">{{ ai_settings.agent.timeout_seconds }}<small>秒</small></div><div class="kpi-s">NFR-AG-004 / AGENT_TIMEOUT_SECONDS</div></div>
+    <div class="kpi">
+      <div class="kpi-l">実行中のプロバイダ</div>
+      <div class="kpi-v" style="font-size:15px">{{ ai_settings.effective_provider_label }}</div>
+      <div class="kpi-s">
+        {% if ai_settings.is_configured %}
+          {{ ai_settings.sources.provider|default:"環境変数" }}の設定
+        {% else %}
+          {{ ai_settings.provider_label }}が未設定のため退避中
+        {% endif %}
+      </div>
+    </div>
+    <div class="kpi"><div class="kpi-l">既定 Top-K</div><div class="kpi-v">{{ ai_settings.rag.default_top_k }}</div><div class="kpi-s">{{ ai_settings.sources.rag_top_k|default:"環境変数" }}</div></div>
+    <div class="kpi"><div class="kpi-l">ループ上限</div><div class="kpi-v">{{ ai_settings.agent.max_loops }}</div><div class="kpi-s">NFR-AG-002 / {{ ai_settings.sources.agent_max_loops|default:"環境変数" }}</div></div>
+    <div class="kpi"><div class="kpi-l">タイムアウト</div><div class="kpi-v">{{ ai_settings.agent.timeout_seconds }}<small>秒</small></div><div class="kpi-s">NFR-AG-004 / {{ ai_settings.sources.agent_timeout_seconds|default:"環境変数" }}</div></div>
   </div>
 
-  <div class="sg">
-    <div class="card">
-      <div class="card-hdr"><span class="card-t">OpenAI</span><span class="card-act">マスク表示</span></div>
-      <dl class="dl">
-        <dt>APIキー</dt><dd><code>{{ ai_settings.openai.api_key }}</code></dd>
-        <dt>組織ID</dt><dd><code>{{ ai_settings.openai.org_id }}</code></dd>
-        <dt>プロジェクトID</dt><dd><code>{{ ai_settings.openai.project_id }}</code></dd>
-        <dt>回答モデル</dt><dd>{{ ai_settings.openai.model }}</dd>
-        <dt>Embedding</dt><dd>{{ ai_settings.openai.embedding_model }}</dd>
-        <dt>状態</dt>
-        <dd>
-          {% if ai_settings.openai.api_key == "未設定" %}
-            <span class="badge n">未設定</span> APIキーが入っていないため、OpenAI では生成できません。
-          {% else %}
-            <span class="badge g">設定済み</span> APIキーは登録済みです。値は表示しません。
-          {% endif %}
-        </dd>
-        <dt>管理者</dt><dd>システム管理者（インフラ担当）。利用者は変更できません。</dd>
-        <dt>変更方法</dt>
-        <dd>環境変数 <code>OPENAI_API_KEY</code> / <code>OPENAI_ORG_ID</code> / <code>OPENAI_PROJECT_ID</code> / <code>OPENAI_MODEL</code> / <code>OPENAI_EMBEDDING_MODEL</code> を書き換え、アプリを再起動します。</dd>
-        <dt>反映タイミング</dt><dd>再起動後の最初のリクエストから。</dd>
-      </dl>
+  {% if not ai_settings.is_configured %}
+    <div class="callout w" role="status">
+      <p>
+        <strong>{{ ai_settings.provider_label }}の認証情報が揃っていません。</strong>
+        検索とAI支援はローカルハッシュ（APIキー不要・検証用）で動いています。意味的な近さは扱えないため、
+        精度の評価には使えません。下の「個人のAI設定」にご自身のAPIキーを入れると、この画面だけで解消できます。
+      </p>
     </div>
+  {% endif %}
 
-    <div class="card">
-      <div class="card-hdr"><span class="card-t">Ollama / ローカル</span></div>
-      <dl class="dl">
-        <dt>Ollama URL</dt><dd>{{ ai_settings.ollama.base_url }}</dd>
-        <dt>回答モデル</dt><dd>{{ ai_settings.ollama.model }}</dd>
-        <dt>Embedding</dt><dd>{{ ai_settings.ollama.embedding_model }}</dd>
-        <dt>ローカルEmbedding</dt><dd>{{ ai_settings.local_hash.model }}（{{ ai_settings.local_hash.dim }}次元）</dd>
-        <dt>状態</dt>
-        <dd>
-          {% if ai_settings.ollama.base_url %}
-            <span class="badge g">設定済み</span> 接続先URLは登録済みです。
-          {% else %}
-            <span class="badge n">未設定</span> 接続先URLが無いため、Ollama では生成できません。
-          {% endif %}
-        </dd>
-        <dt>管理者</dt><dd>システム管理者（インフラ担当）。利用者は変更できません。</dd>
-        <dt>変更方法</dt>
-        <dd>環境変数 <code>OLLAMA_BASE_URL</code> / <code>OLLAMA_MODEL</code> / <code>OLLAMA_EMBEDDING_MODEL</code> / <code>LOCAL_HASH_EMBEDDING_MODEL</code> / <code>LOCAL_HASH_EMBEDDING_DIM</code> を書き換え、アプリを再起動します。</dd>
-        <dt>反映タイミング</dt><dd>再起動後の最初のリクエストから。</dd>
-      </dl>
+  {% if connection %}
+    <div class="callout {{ connection.level }}" role="status">
+      <p><strong>接続確認（{{ connection.provider }}）:</strong> {{ connection.message }}
+        {% if connection.detail %}<br><span class="muted">{{ connection.detail }}</span>{% endif %}
+      </p>
     </div>
-  </div>
+  {% endif %}
 
   <div class="card">
-    <div class="card-hdr"><span class="card-t">検索設定</span><span class="card-act">参照専用</span></div>
+    <div class="card-hdr">
+      <span class="card-t">いま効いている設定</span>
+      <span class="card-act">認証情報はマスク表示</span>
+    </div>
     <table class="t">
-      <thead><tr><th>項目</th><th>値</th><th>説明</th><th>変更方法（環境変数）</th></tr></thead>
+      <caption class="visually-hidden">解決済みの AI 設定と、その値の出どころ</caption>
+      <thead><tr><th scope="col">項目</th><th scope="col">値</th><th scope="col">出どころ</th></tr></thead>
       <tbody>
-        <tr>
-          <td>既定 Top-K</td>
-          <td><span class="badge b">{{ ai_settings.rag.default_top_k }}</span></td>
-          <td class="muted">1回の検索で取得するチャンク数</td>
-          <td class="muted"><code>RAG_DEFAULT_TOP_K</code> を変更して再起動</td>
-        </tr>
-        <tr>
-          <td>LLMリランク</td>
-          <td><span class="badge {% if ai_settings.rag.use_llm_rerank %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_llm_rerank|yesno:"有効,無効" }}</span></td>
-          <td class="muted">LLM 必須。未設定時は計画から除外される</td>
-          <td class="muted"><code>RAG_USE_LLM_RERANK</code> を変更して再起動</td>
-        </tr>
-        <tr>
-          <td>クエリ拡張</td>
-          <td><span class="badge {% if ai_settings.rag.use_query_expansion %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_query_expansion|yesno:"有効,無効" }}</span></td>
-          <td class="muted">意図分類の定型語で検索語を補強</td>
-          <td class="muted"><code>RAG_USE_QUERY_EXPANSION</code> を変更して再起動</td>
-        </tr>
+        <tr><td>AIプロバイダ</td><td>{{ ai_settings.provider_label }}</td><td class="muted">{{ ai_settings.sources.provider|default:"環境変数" }}</td></tr>
+        <tr><td>OpenAI APIキー</td><td><code>{{ ai_settings.openai.api_key }}</code></td><td class="muted">{{ ai_settings.sources.openai_api_key|default:"環境変数" }}</td></tr>
+        <tr><td>OpenAI 組織ID</td><td><code>{{ ai_settings.openai.org_id }}</code></td><td class="muted">{{ ai_settings.sources.openai_org_id|default:"環境変数" }}</td></tr>
+        <tr><td>OpenAI プロジェクトID</td><td><code>{{ ai_settings.openai.project_id }}</code></td><td class="muted">{{ ai_settings.sources.openai_project_id|default:"環境変数" }}</td></tr>
+        <tr><td>OpenAI 回答モデル</td><td>{{ ai_settings.openai.model }}</td><td class="muted">{{ ai_settings.sources.openai_model|default:"環境変数" }}</td></tr>
+        <tr><td>OpenAI Embedding</td><td>{{ ai_settings.openai.embedding_model }}</td><td class="muted">{{ ai_settings.sources.openai_embedding_model|default:"環境変数" }}</td></tr>
+        <tr><td>Ollama URL</td><td>{{ ai_settings.ollama.base_url }}</td><td class="muted">{{ ai_settings.sources.ollama_base_url|default:"環境変数" }}</td></tr>
+        <tr><td>Ollama 回答モデル</td><td>{{ ai_settings.ollama.model }}</td><td class="muted">{{ ai_settings.sources.ollama_model|default:"環境変数" }}</td></tr>
+        <tr><td>Ollama Embedding</td><td>{{ ai_settings.ollama.embedding_model }}</td><td class="muted">{{ ai_settings.sources.ollama_embedding_model|default:"環境変数" }}</td></tr>
+        <tr><td>ローカルEmbedding</td><td>{{ ai_settings.local_hash.model }}（{{ ai_settings.local_hash.dim }}次元）</td><td class="muted">環境変数</td></tr>
+        <tr><td>LLMリランク</td><td><span class="badge {% if ai_settings.rag.use_llm_rerank %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_llm_rerank|yesno:"有効,無効" }}</span></td><td class="muted">{{ ai_settings.sources.use_llm_rerank|default:"環境変数" }}</td></tr>
+        <tr><td>クエリ拡張</td><td><span class="badge {% if ai_settings.rag.use_query_expansion %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_query_expansion|yesno:"有効,無効" }}</span></td><td class="muted">{{ ai_settings.sources.use_query_expansion|default:"環境変数" }}</td></tr>
       </tbody>
     </table>
+    <form method="post" class="verify-row">
+      {% csrf_token %}
+      <input type="hidden" name="scope" value="verify">
+      <button type="submit" class="btn-out sm">この設定で接続を確認する</button>
+      <span class="muted">保存できても有効なキーとは限りません。運用に入る前にここで確かめてください。</span>
+    </form>
   </div>
+
+  {# 3段のどれを誰が触れるか。ここが無いと、値が変わらないときの相談先が分からない。 #}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">この設定の管理</span>
+      <span class="card-act">個人 → テナント既定 → 環境変数の順に効く</span>
+    </div>
+    <dl class="dl">
+      <dt>状態</dt>
+      <dd>
+        {% if ai_settings.openai.api_key == "未設定" %}
+          <span class="badge n">未設定</span> OpenAI の APIキーが入っていません。下の「個人のAI設定」から登録できます。
+        {% else %}
+          <span class="badge g">設定済み</span> APIキーは登録済みです（{{ ai_settings.sources.openai_api_key|default:"環境変数" }}）。値は表示しません。
+        {% endif %}
+      </dd>
+
+      <dt>管理者</dt>
+      <dd>
+        <strong>個人設定</strong>: ご自身。ロールに関係なく全員が自分ぶんを持てます。<br>
+        <strong>テナント既定</strong>: テナント管理者。個人設定を入れていない利用者へ適用されます。<br>
+        <strong>環境変数</strong>: システム管理者（インフラ担当）。どちらも未設定のときの拠り所です。
+      </dd>
+
+      <dt>変更方法</dt>
+      <dd>
+        個人設定とテナント既定は<strong>この画面から変更できます</strong>。<br>
+        環境変数の段を変えるときは、<strong>変更を依頼する先</strong>はシステム管理者（インフラ担当）です。
+        <code>OPENAI_API_KEY</code> / <code>OPENAI_ORG_ID</code> / <code>OPENAI_PROJECT_ID</code> /
+        <code>OLLAMA_BASE_URL</code> / <code>RAG_DEFAULT_TOP_K</code> などの名前と新しい値を伝えてください。
+      </dd>
+
+      <dt>反映タイミング</dt>
+      <dd>
+        この画面での保存は<strong>保存した直後のリクエストから</strong>効きます。<br>
+        環境変数の変更はアプリの再起動が要るため、<strong>再起動後の最初のリクエストから</strong>反映されます。
+      </dd>
+    </dl>
+  </div>
+
+  {# --- 個人設定：ロールに関係なく全員が編集できる --- #}
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">個人のAI設定</span>
+      <span class="card-act">{{ user.get_role_display }} / {{ user.display_name|default:user.username }}</span>
+    </div>
+
+    {% if personal_allowed %}
+      <p class="ps">
+        自分のAPIキーで動かせます。空欄の項目はテナント既定、それも無ければ環境変数の値が使われます。
+        入力したキーは暗号化して保存し、画面にもログにも出しません。
+      </p>
+
+      {% if user_form.non_field_errors %}
+        <div class="callout d" role="alert">{{ user_form.non_field_errors|join:" " }}</div>
+      {% endif %}
+
+      <form method="post" class="form form-grid">
+        {% csrf_token %}
+        <input type="hidden" name="scope" value="user">
+        {% for field in user_form %}
+          <div>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+        <div class="form-wide">
+          <button type="submit" class="btn-b">個人設定を保存</button>
+          {% if has_user_setting %}
+            <span class="muted">保存済みのAPIキー: <code>{{ user_form.masked_secrets.openai_api_key }}</code></span>
+          {% endif %}
+        </div>
+      </form>
+    {% else %}
+      <div class="callout w" role="status">
+        <p>このテナントでは、利用者ごとのAPI設定が許可されていません。テナント既定の設定が全員に適用されます。</p>
+      </div>
+    {% endif %}
+  </div>
+
+  {# --- テナント既定：テナント管理者だけ --- #}
+  {% if tenant_form %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">テナント既定のAI設定</span>
+        <span class="card-act">{{ request.tenant.name }}</span>
+      </div>
+
+      {% if can_manage_tenant %}
+        <p class="ps">
+          個人設定を入れていない利用者に適用されます。Embedding モデルはここでしか変えられません。
+          利用者ごとに Embedding が違うと、同じインデックスを別のベクトル空間で検索することになり、検索順位が意味を失うためです。
+        </p>
+
+        {% if tenant_form.non_field_errors %}
+          <div class="callout d" role="alert">{{ tenant_form.non_field_errors|join:" " }}</div>
+        {% endif %}
+
+        <form method="post" class="form form-grid">
+          {% csrf_token %}
+          <input type="hidden" name="scope" value="tenant">
+          {% for field in tenant_form %}
+            <div>
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+              {% for error in field.errors %}<div class="field-error" data-field-error="{{ field.id_for_label }}">{{ error }}</div>{% endfor %}
+            </div>
+          {% endfor %}
+          <div class="form-wide">
+            <button type="submit" class="btn-b">テナント既定を保存</button>
+          </div>
+        </form>
+      {% else %}
+        <div class="callout" role="status">
+          <p>テナント既定を変更できるのは管理権限を持つ利用者だけです。現在の値は上の「いま効いている設定」で確認できます。</p>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
 
 {% endblock %}

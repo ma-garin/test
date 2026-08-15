@@ -14,7 +14,7 @@ from django.urls import reverse
 
 from apps.accounts.constants import Role
 from apps.accounts.models import Tenant, User
-from apps.core.navigation import NAVIGATION, all_items, navigation_for
+from apps.core.navigation import NAVIGATION, NavItem, all_items, navigation_for
 
 #: `static/fonts/MaterialSymbolsOutlined-subset.woff2` に収録済みのアイコン。
 #: ここに無い名前を使うと、画面にその文字列がそのまま出る。
@@ -50,7 +50,14 @@ class NavigationItemsTests(TestCase):
             with self.subTest(section=defined.key):
                 self.assertEqual(len(by_key[defined.key].items), len(defined.items))
 
-    def test_権限の無い項目だけは除かれる(self):
+    def test_ロール限定を宣言した項目だけが除かれる(self):
+        """絞り込みの仕組みそのものを固定する。
+
+        現時点でロール限定を宣言している項目は無い（AI設定は利用者ごとに API キーを
+        持てるようになり、全ロールへ開いた）。宣言が無くなったからといって仕組みごと
+        外すと、次にロール限定の画面を足したときに素通しになる。
+        """
+
         viewer = User.objects.create_user(
             username="nav-viewer",
             email="nav-viewer@example.com",
@@ -58,11 +65,16 @@ class NavigationItemsTests(TestCase):
             tenant=self.tenant,
             role=Role.VIEWER,
         )
+        admin_only = NavItem("secret", "管理限定", "core:settings", roles=(Role.TENANT_ADMIN,))
+        open_item = NavItem("open", "全員", "core:settings")
+
+        self.assertFalse(admin_only.is_visible_to(viewer))
+        self.assertTrue(open_item.is_visible_to(viewer))
 
         visible = {item.key for s in navigation_for(viewer) for item in s.items}
 
-        self.assertNotIn("settings", visible)
         self.assertIn("control_dashboard", visible)
+        self.assertIn("settings", visible)
 
     def test_項目の重複が無い(self):
         keys = [item.key for item in all_items()]
