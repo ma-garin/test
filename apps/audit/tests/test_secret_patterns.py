@@ -13,6 +13,7 @@ from apps.accounts.models import Tenant
 from apps.audit.models import OperationLog, mask_secrets
 from apps.integrations.models import Connection, Provider, SyncJob
 
+
 def _sample(prefix: str, body: str) -> str:
     """検知パターンに一致するダミー値を、実行時に組み立てる。
 
