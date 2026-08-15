@@ -12,6 +12,8 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.accounts.constants import Action
+from apps.accounts.services import permissions
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.documents import selectors
 from apps.documents.services import excel_export, extractors, registration, template_mapping
@@ -78,6 +80,10 @@ def extract_document(request: HttpRequest, pk: UUID) -> HttpResponse:
     if document is None:
         # 他テナントの文書 ID を推測されても存在有無を漏らさない。
         raise Http404("文書が見つかりません。")
+
+    # 抽出は本文とインデックスを作る書き込み。参照だけの利用者には実行させない。
+    # 案件に紐づく文書ならその案件の役割で判定される。
+    permissions.require(request.user, Action.EDIT, document)
 
     extractors.ingest(document)
 
@@ -218,10 +224,15 @@ def upload(request: HttpRequest) -> HttpResponse:
     result = None
 
     if request.method == "POST":
+        project = _selected_project(projects, request.POST.get("project"))
+        # 登録は書き込み。案件が選ばれていればその案件の役割で、選ばれて
+        # いなければテナント単位で判定する。
+        permissions.require(request.user, Action.EDIT, project)
+
         result = registration.register(
             uploaded_file=request.FILES.get("file"),
             tenant=tenant,
-            project=_selected_project(projects, request.POST.get("project")),
+            project=project,
             title=request.POST.get("title", ""),
             source_note=request.POST.get("source_note", ""),
             user=request.user,

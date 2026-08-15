@@ -440,7 +440,8 @@ def _describe_transport_error(exc: Exception) -> str:
 
     if "Timeout" in name:
         return (
-            f"Jira への接続がタイムアウトしました（接続{HTTP_TIMEOUT[0]:.0f}秒 / 読み取り{HTTP_TIMEOUT[1]:.0f}秒）。"
+            f"Jira への接続がタイムアウトしました"
+            f"（接続{HTTP_TIMEOUT[0]:.0f}秒 / 読み取り{HTTP_TIMEOUT[1]:.0f}秒）。"
             "Jira 側の応答が遅いか、ネットワークが遮断されている可能性があります"
         )
 
@@ -448,7 +449,10 @@ def _describe_transport_error(exc: Exception) -> str:
         return "Jira との TLS 接続に失敗しました。社内プロキシの証明書設定を確認してください"
 
     if "ConnectionError" in name or "Proxy" in name:
-        return "Jira へ接続できませんでした。ベースURLの綴りと、ネットワーク／プロキシの疎通を確認してください"
+        return (
+            "Jira へ接続できませんでした。"
+            "ベースURLの綴りと、ネットワーク／プロキシの疎通を確認してください"
+        )
 
     return "Jira への通信に失敗しました。ベースURLとネットワーク設定を確認してください"
 

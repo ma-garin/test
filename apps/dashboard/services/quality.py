@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
 
 from django.db.models import QuerySet
 
@@ -147,12 +146,43 @@ def _count_rows(defects: list[Defect], choices, attribute: str, total: int) -> t
     return tuple(rows)
 
 
+def _as_percent(metric) -> float:
+    """指標の値を % へ揃える。
+
+    同じ「消化率」でも 0〜1 の比率で登録する現場と 0〜100 の百分率で登録する
+    現場がある。単位が入っていればそれに従い、無ければ 1 以下を比率とみなす。
+    無変換のままだと、比率で登録した現場では常に 0% と表示されていた。
+    """
+
+    value = float(metric.value)
+    unit = (metric.unit or "").strip()
+
+    if unit in ("%", "percent", "パーセント"):
+        return value
+
+    if unit in ("ratio", "比率", "割合"):
+        return value * 100
+
+    return value * 100 if value <= 1 else value
+
+
 def _consumption(metric_rows: tuple[MetricRow, ...], total: int, closed: int) -> tuple[int, str]:
     """消化率と、その値がどこから来たかの説明。"""
 
-    for row in metric_rows:
-        if row.metric.metric_key in CONSUMPTION_KEYS:
-            return int(row.metric.value / Decimal(1)), f"{row.metric.metric_label or row.metric.metric_key}（実測）"
+    measured = [row for row in metric_rows if row.metric.metric_key in CONSUMPTION_KEYS]
+
+    if measured:
+        # 案件ごとに 1 件ずつ入るので、複数案件を横断しているときに先頭 1 件を
+        # 全体の値として出すと、他の案件の消化状況が消える。平均を取る。
+        percents = [_as_percent(row.metric) for row in measured]
+        average = round(sum(percents) / len(percents))
+        label = measured[0].metric.metric_label or measured[0].metric.metric_key
+        note = f"{label}（実測）"
+
+        if len(measured) > 1:
+            note = f"{label}（実測 {len(measured)} 案件の平均）"
+
+        return average, note
 
     if total:
         return round(100 * closed / total), "不具合クローズ率で代替（消化率の指標が未登録）"

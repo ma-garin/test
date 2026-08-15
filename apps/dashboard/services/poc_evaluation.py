@@ -223,7 +223,10 @@ def _report_hours_criterion(projects, targets: dict) -> PocCriterion:
     if latest is None:
         return _unknown(
             **base,
-            reason="レポート作業時間の計測が 1 件もありません。導入前後の作業時間を KPI 実績として登録してください。",
+            reason=(
+                "レポート作業時間の計測が 1 件もありません。"
+                "導入前後の作業時間を KPI 実績として登録してください。"
+            ),
         )
 
     if latest.baseline_value in (None, 0):
@@ -560,7 +563,10 @@ def _block_reason(deliverable: Deliverable) -> str:
     if evidence is None:
         return "根拠評価がありません。"
 
-    reasons = [f"根拠評価の推奨は「{evidence.get_recommendation_display()}」（確信度 {evidence.confidence:.2f}）"]
+    reasons = [
+        f"根拠評価の推奨は「{evidence.get_recommendation_display()}」"
+        f"（確信度 {evidence.confidence:.2f}）"
+    ]
 
     if evidence.has_conflict:
         reasons.append("根拠どうしが矛盾しています")

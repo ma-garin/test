@@ -3,8 +3,9 @@
 接続の取得は必ず `connections_for` で絞る。テナント越境は「見えない」ではなく
 「存在しない（404）」として扱い、ID の総当たりで他テナントの存在有無が漏れないようにする。
 
-接続の追加・編集はテナント管理者に限る。接続先を差し替えられると、取込元を
-すり替えて内部データを汚染できてしまうため。
+接続の追加・編集に加えて、疎通確認・同期実行もテナント管理者に限る。接続先を
+差し替えられると取込元をすり替えて内部データを汚染でき、同期実行そのものも
+外部データで課題・タスクを書き換える操作だから。
 """
 
 from __future__ import annotations
@@ -39,10 +40,10 @@ class ConnectionRow:
 
 
 def _require_tenant_admin(user) -> None:
-    """接続の変更権限。`is_tenant_admin` はスーパーユーザーを含む。"""
+    """接続の変更・実行権限。`is_tenant_admin` はスーパーユーザーを含む。"""
 
     if not user.is_tenant_admin:
-        raise PermissionDenied("接続の追加・編集はテナント管理者のみ行えます")
+        raise PermissionDenied("接続の追加・編集・実行はテナント管理者のみ行えます")
 
 
 @login_required
@@ -139,7 +140,13 @@ def connection_edit(request: HttpRequest, pk) -> HttpResponse:
 @login_required
 @require_POST
 def connection_check(request: HttpRequest, pk) -> HttpResponse:
-    """疎通確認。設定を信じ込む前に、利用者が自分で試せるようにする。"""
+    """疎通確認。設定を信じ込む前に、利用者が自分で試せるようにする。
+
+    追加・編集と同じ管理者権限を要る。疎通確認は登録された接続先へ資格情報を
+    使って外部通信する操作であり、誰でも叩ければ接続先の存在確認に使えてしまう。
+    """
+
+    _require_tenant_admin(request.user)
 
     connection = get_object_or_404(
         selectors.connections_for(request.user, request.tenant), pk=pk
@@ -157,7 +164,13 @@ def connection_check(request: HttpRequest, pk) -> HttpResponse:
 @login_required
 @require_POST
 def connection_sync(request: HttpRequest, pk) -> HttpResponse:
-    """同期実行。結果は件数まで含めて伝える（「実行した」だけでは検証できない）。"""
+    """同期実行。結果は件数まで含めて伝える（「実行した」だけでは検証できない）。
+
+    取込は課題・タスクを外部データで書き換える操作なので、接続の追加・編集と
+    同じ管理者権限を要る。
+    """
+
+    _require_tenant_admin(request.user)
 
     connection = get_object_or_404(
         selectors.connections_for(request.user, request.tenant), pk=pk

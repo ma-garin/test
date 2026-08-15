@@ -46,7 +46,10 @@ class Command(BaseCommand):
 
         report = build_ops_rules_report(ops_rule_tasks_for(projects))
 
-        self.stdout.write(f"判定日: {report.checked_on:%Y-%m-%d} / 更新基準日: {report.update_cutoff:%Y-%m-%d}")
+        self.stdout.write(
+            f"判定日: {report.checked_on:%Y-%m-%d} / "
+            f"更新基準日: {report.update_cutoff:%Y-%m-%d}"
+        )
         self.stdout.write(f"対象タスク: {report.target_tasks}件")
 
         if not report.has_targets:

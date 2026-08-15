@@ -11,6 +11,8 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
+from apps.accounts.constants import Action
+from apps.accounts.services import permissions
 from apps.documents.models import Document
 from apps.rag import scopes, selectors
 from apps.rag.models import ChatSession, EvaluationSuite, GoldenQuestion
@@ -98,7 +100,12 @@ def _post_message(request: HttpRequest, tenant) -> HttpResponse:
     """質問を受け取り、応答を保存してから GET へ戻す（PRG）。
 
     リロードで同じ質問が二重登録されるのを避けるため、必ずリダイレクトで返す。
+
+    会話はセッションとメッセージを作る書き込みなので、参照だけの利用者には
+    行わせない。案件に紐づかないテナント単位の操作なので対象は渡さない。
     """
+
+    permissions.require(request.user, Action.EDIT)
 
     question = request.POST.get("message", "").strip()
     session = selectors.chat_session_for(request.user, tenant, request.POST.get("session"))
@@ -171,7 +178,13 @@ def _resolved_suite(value: str | None) -> str:
 
 
 def _post_evaluation(request: HttpRequest, tenant) -> HttpResponse:
-    """評価実行と Golden 登録。どちらも PRG で GET へ戻す。"""
+    """評価実行と Golden 登録。どちらも PRG で GET へ戻す。
+
+    どちらも評価実行結果・Golden を作る書き込みなので、参照だけの利用者には
+    行わせない。テナント単位の操作なので対象は渡さない。
+    """
+
+    permissions.require(request.user, Action.EDIT)
 
     if tenant is None:
         return redirect(reverse("rag:evaluation"))

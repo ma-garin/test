@@ -3,13 +3,19 @@
 タスクの取得は必ず `projects_for` で絞った案件配下に限定する。テナント越境は
 「見えない」ではなく「存在しない（404）」として扱い、ID の総当たりで他テナントの
 存在有無が漏れないようにする。
+
+書き込み（作成・更新・クローズ・判断）は、参照できることと別に
+`permissions.require()` で権限を確かめる。参照できる案件でも、その案件での
+役割が「参照」なら書き換えさせない。判定は必ず対象（案件 or 案件配下の
+オブジェクト）を渡して行う。渡さないと案件内の役割が効かず、テナントロール
+だけで通ってしまう。
 """
 
 from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -146,6 +152,37 @@ def project_member_remove(request: HttpRequest, pk) -> HttpResponse:
     return redirect("projects:detail", pk=project.pk)
 
 
+# --- 書き込みの権限判定 -----------------------------------------------------
+
+
+def _posted_project(request: HttpRequest):
+    """POST で指定された案件。参照できる案件の中からしか解決しない。
+
+    不正な ID で 500 にしないため、値の解釈に失敗したら「未指定」として扱う。
+    """
+
+    raw_value = request.POST.get("project", "")
+
+    if not raw_value:
+        return None
+
+    try:
+        return projects_for(request.user, request.tenant).filter(pk=raw_value).first()
+    except (ValueError, ValidationError, TypeError):
+        return None
+
+
+def _require_edit_on_posted_project(request: HttpRequest) -> None:
+    """新規作成 POST の入口。保存経路へ入る前に編集権限を確かめる。
+
+    フォーム検証より先に判定するのは、権限が無い利用者の入力をサービス層へ
+    一切渡さないため。案件が特定できないときはテナント単位で判定する
+    （案件が確定しない入力は、どのみちフォーム側で弾かれる）。
+    """
+
+    permissions.require(request.user, Action.EDIT, _posted_project(request))
+
+
 # --- 変更要求・不具合 -------------------------------------------------------
 # 取得は必ず「参照できる案件」に紐づくものへ絞る。絞り込みを個々のビューで
 # 書くと必ずどこかで漏れるため、下の 2 つのヘルパー以外から直接 objects を
@@ -178,6 +215,10 @@ def _render_change_form(request: HttpRequest, *, change: ChangeRequest | None) -
     projects = projects_for(request.user, request.tenant)
 
     if request.method == "POST":
+        # 移動先の案件でも編集できることを確かめる。編集権限のある案件から
+        # 無い案件へ付け替えられると、権限の無い案件のデータを増やせてしまう。
+        _require_edit_on_posted_project(request)
+
         form = ChangeRequestForm(request.POST, instance=change, projects=projects)
 
         if form.is_valid():
@@ -206,7 +247,12 @@ def change_create(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def change_edit(request: HttpRequest, pk) -> HttpResponse:
-    return _render_change_form(request, change=get_object_or_404(_change_requests_for(request), pk=pk))
+    change = get_object_or_404(_change_requests_for(request), pk=pk)
+    # 編集フォームは GET でも編集権限を要る。保存できないフォームを見せるのは
+    # 権限の漏れであり、書いた内容が捨てられる分そのままの UX でも誤り。
+    permissions.require(request.user, Action.EDIT, change)
+
+    return _render_change_form(request, change=change)
 
 
 @login_required
@@ -214,9 +260,9 @@ def change_decide(request: HttpRequest, pk) -> HttpResponse:
     """変更要求の承認・却下。監査対象なので理由と判断者を必ず残す。"""
 
     change = get_object_or_404(_change_requests_for(request), pk=pk)
-
-    if not request.user.can_approve:
-        raise PermissionDenied("変更要求を判断する権限がありません。")
+    # テナントロールの `can_approve` だけでは案件内の役割を見ていない。
+    # 案件配下の判断なので、対象を渡して案件の役割で判定する。
+    permissions.require(request.user, Action.APPROVE, change)
 
     if request.method == "POST":
         form = ChangeDecisionForm(request.POST)
@@ -273,6 +319,8 @@ def _render_defect_form(request: HttpRequest, *, defect: Defect | None) -> HttpR
     projects = projects_for(request.user, request.tenant)
 
     if request.method == "POST":
+        _require_edit_on_posted_project(request)
+
         form = DefectForm(request.POST, instance=defect, projects=projects)
 
         if form.is_valid():
@@ -301,7 +349,10 @@ def defect_create(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def defect_edit(request: HttpRequest, pk) -> HttpResponse:
-    return _render_defect_form(request, defect=get_object_or_404(_defects_for(request), pk=pk))
+    defect = get_object_or_404(_defects_for(request), pk=pk)
+    permissions.require(request.user, Action.EDIT, defect)
+
+    return _render_defect_form(request, defect=defect)
 
 
 @login_required
@@ -309,7 +360,11 @@ def defect_edit(request: HttpRequest, pk) -> HttpResponse:
 def defect_close(request: HttpRequest, pk) -> HttpResponse:
     """不具合のクローズ。物理削除はせず状態で終了を表す。"""
 
-    defect = close_defect(get_object_or_404(_defects_for(request), pk=pk), user=request.user)
+    target = get_object_or_404(_defects_for(request), pk=pk)
+    # クローズは状態の書き換えなので編集権限を要る。
+    permissions.require(request.user, Action.EDIT, target)
+
+    defect = close_defect(target, user=request.user)
     messages.success(request, f"不具合「{defect.title}」をクローズしました。")
 
     return redirect("projects:defect_list")
@@ -328,6 +383,8 @@ def task_create(request: HttpRequest) -> HttpResponse:
     projects = projects_for(request.user, request.tenant)
 
     if request.method == "POST":
+        _require_edit_on_posted_project(request)
+
         form = WbsTaskForm(request.POST, projects=projects)
 
         if form.is_valid():
@@ -350,9 +407,13 @@ def task_create(request: HttpRequest) -> HttpResponse:
 @login_required
 def task_edit(request: HttpRequest, pk) -> HttpResponse:
     task = get_object_or_404(_tasks_for(request), pk=pk)
+    permissions.require(request.user, Action.EDIT, task)
+
     projects = projects_for(request.user, request.tenant)
 
     if request.method == "POST":
+        _require_edit_on_posted_project(request)
+
         form = WbsTaskForm(request.POST, instance=task, projects=projects)
 
         if form.is_valid():
@@ -392,6 +453,9 @@ def task_detail(request: HttpRequest, pk) -> HttpResponse:
 @require_POST
 def task_archive(request: HttpRequest, pk) -> HttpResponse:
     task = get_object_or_404(_tasks_for(request), pk=pk)
+    # アーカイブは計画の書き換え。参照だけの利用者に消させない。
+    permissions.require(request.user, Action.EDIT, task)
+
     archive_task(task)
     messages.success(request, f"タスク「{task.name}」をアーカイブしました。")
 
@@ -419,6 +483,8 @@ def risk_create(request: HttpRequest) -> HttpResponse:
     projects = projects_for(request.user, request.tenant)
 
     if request.method == "POST":
+        _require_edit_on_posted_project(request)
+
         form = RiskForm(request.POST, projects=projects)
 
         if form.is_valid():
@@ -447,9 +513,13 @@ def risk_create(request: HttpRequest) -> HttpResponse:
 @login_required
 def risk_edit(request: HttpRequest, pk) -> HttpResponse:
     risk = get_object_or_404(_risks_for(request), pk=pk)
+    permissions.require(request.user, Action.EDIT, risk)
+
     projects = projects_for(request.user, request.tenant)
 
     if request.method == "POST":
+        _require_edit_on_posted_project(request)
+
         form = RiskForm(request.POST, instance=risk, projects=projects)
 
         if form.is_valid():
@@ -479,6 +549,8 @@ def risk_edit(request: HttpRequest, pk) -> HttpResponse:
 @require_POST
 def risk_close(request: HttpRequest, pk) -> HttpResponse:
     risk = get_object_or_404(_risks_for(request), pk=pk)
+    permissions.require(request.user, Action.EDIT, risk)
+
     close_risk(risk)
     messages.success(request, f"リスク「{risk.title}」をクローズしました。")
 
@@ -490,6 +562,8 @@ def risk_promote(request: HttpRequest, pk) -> HttpResponse:
     """リスクを課題へ転換する。課題作成とリスクの状態遷移はサービス層で同時に確定する。"""
 
     risk = get_object_or_404(_risks_for(request), pk=pk)
+    # 転換は課題の新規作成とリスクの状態遷移を伴う。GET の時点で編集権限を要る。
+    permissions.require(request.user, Action.EDIT, risk)
 
     if request.method == "POST":
         form = RiskPromoteForm(request.POST)
@@ -553,6 +627,8 @@ def issue_create(request: HttpRequest) -> HttpResponse:
     projects = projects_for(request.user, request.tenant)
 
     if request.method == "POST":
+        _require_edit_on_posted_project(request)
+
         form = IssueForm(request.POST, projects=projects)
 
         if form.is_valid():
@@ -582,9 +658,13 @@ def issue_create(request: HttpRequest) -> HttpResponse:
 @login_required
 def issue_edit(request: HttpRequest, pk) -> HttpResponse:
     issue = get_object_or_404(_issues_for(request), pk=pk)
+    permissions.require(request.user, Action.EDIT, issue)
+
     projects = projects_for(request.user, request.tenant)
 
     if request.method == "POST":
+        _require_edit_on_posted_project(request)
+
         form = IssueForm(request.POST, instance=issue, projects=projects)
 
         if form.is_valid():
@@ -615,6 +695,8 @@ def issue_edit(request: HttpRequest, pk) -> HttpResponse:
 @require_POST
 def issue_close(request: HttpRequest, pk) -> HttpResponse:
     issue = get_object_or_404(_issues_for(request), pk=pk)
+    permissions.require(request.user, Action.EDIT, issue)
+
     close_issue(issue)
     messages.success(request, f"課題「{issue.title}」をクローズしました。")
 

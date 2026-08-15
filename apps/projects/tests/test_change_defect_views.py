@@ -10,7 +10,7 @@ from __future__ import annotations
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.accounts.constants import Role
+from apps.accounts.constants import ProjectRole, Role
 from apps.accounts.models import Tenant, User
 from apps.audit.models import OperationLog
 from apps.projects.models import ChangeRequest, Defect, Project, ProjectMember
@@ -38,8 +38,15 @@ class ChangeDefectViewTests(TestCase):
             tenant=self.tenant_a,
             role=Role.VIEWER,
         )
-        ProjectMember.objects.create(project=self.project_a, user=self.approver)
-        ProjectMember.objects.create(project=self.project_a, user=self.viewer)
+        # 案件内の役割はテナントロールと揃える。既定の「メンバー」のままだと
+        # 案件役割が優先される判定（承認は PMO 以上）と食い違い、テストが
+        # 実際の権限の切れ目を検証しなくなる。
+        ProjectMember.objects.create(
+            project=self.project_a, user=self.approver, role=ProjectRole.PMO
+        )
+        ProjectMember.objects.create(
+            project=self.project_a, user=self.viewer, role=ProjectRole.VIEWER
+        )
 
         self.change_a = ChangeRequest.objects.create(
             project=self.project_a,

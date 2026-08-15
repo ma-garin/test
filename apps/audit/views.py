@@ -1,4 +1,11 @@
-"""操作ログ・フィードバックの閲覧。"""
+"""操作ログ・フィードバックの閲覧。
+
+監査データは「誰が何をしたか」がそのまま並ぶ。テナントで絞るだけでは、
+参照だけの利用者にも他人の操作・他人の評価コメントが全件見えてしまう。
+他人の記録を見てよいのは承認権限を持つ立場（＝責任者）だけに絞り、
+それ以外の利用者へは自分の記録だけを返す。画面自体は誰でも開けてよい
+（自分の操作を確かめる導線を塞ぐと、記録の誤りを本人が指摘できない）。
+"""
 
 from __future__ import annotations
 
@@ -7,6 +14,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
+from apps.accounts.constants import Action
+from apps.accounts.services import permissions
 from apps.audit.forms import FeedbackForm
 from apps.audit.selectors import feedbacks_for, operation_logs_for
 from apps.audit.services import feedback_stats
@@ -24,11 +33,26 @@ def _page_context(page, request: HttpRequest) -> dict:
     }
 
 
+def _auditable(request: HttpRequest, queryset):
+    """監査データの閲覧範囲。
+
+    承認権限（責任者の立場）があればテナント全体、無ければ自分の記録だけ。
+    案件に紐づかないテナント単位の判定なので、対象は渡さない。
+    """
+
+    if permissions.can(request.user, Action.APPROVE):
+        return queryset
+
+    return queryset.filter(user=request.user)
+
+
 @login_required
 def operation_list(request: HttpRequest) -> HttpResponse:
     """操作ログ。監査で遡れなければ意味がないので、先頭打ち切りではなく全件を辿らせる。"""
 
-    page = paginate(operation_logs_for(request.user, request.tenant), request)
+    page = paginate(
+        _auditable(request, operation_logs_for(request.user, request.tenant)), request
+    )
 
     return render(
         request,
@@ -45,7 +69,7 @@ def operation_list(request: HttpRequest) -> HttpResponse:
 def feedback_list(request: HttpRequest) -> HttpResponse:
     """評価分布と事実誤認件数を、期間・利用者で絞り込んで見せる。"""
 
-    scoped = feedbacks_for(request.user, request.tenant)
+    scoped = _auditable(request, feedbacks_for(request.user, request.tenant))
     criteria = feedback_stats.parse_criteria(request.GET)
     filtered = feedback_stats.apply_criteria(scoped, criteria)
     page = paginate(filtered, request)

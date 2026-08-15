@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
+from apps.accounts.constants import Action
+from apps.accounts.services import permissions
 from apps.agents.models import AgentRun
 from apps.agents.services import orchestrator
 from apps.agents.services import screen_context as screen_context_service
@@ -146,6 +149,22 @@ def _deliverables_context(
     }
 
 
+def _posted_project(projects, raw_value: str | None):
+    """POST で指定された案件。参照できる案件の中からしか解決しない。
+
+    不正な ID で 500 にしないため、解釈に失敗したら「未指定」として扱う。
+    未指定ならテナント単位の判定へ落ちる（案件が確定しない入力はフォームが弾く）。
+    """
+
+    if not raw_value:
+        return None
+
+    try:
+        return projects.filter(pk=raw_value).first()
+    except (ValueError, ValidationError, TypeError):
+        return None
+
+
 def _deliverable_post(request: HttpRequest) -> HttpResponse:
     """成果物画面の POST。生成と保存のどちらかを受ける。"""
 
@@ -163,9 +182,17 @@ def _deliverable_post(request: HttpRequest) -> HttpResponse:
 
 
 def _generate_deliverable(request: HttpRequest) -> HttpResponse:
-    """実データから成果物を生成する。案件は参照できる範囲からしか選べない。"""
+    """実データから成果物を生成する。案件は参照できる範囲からしか選べない。
+
+    生成は成果物レコードの作成なので、フォーム検証より先に編集権限を見る。
+    参照できる案件でも、その案件で参照しかできない人には作らせない。
+    """
 
     projects = scoped_projects_for(request)
+    permissions.require(
+        request.user, Action.EDIT, _posted_project(projects, request.POST.get("project"))
+    )
+
     form = DeliverableGenerateForm(request.POST, projects=projects)
 
     if not form.is_valid():
@@ -204,6 +231,8 @@ def _save_deliverable(request: HttpRequest) -> HttpResponse:
         selectors.deliverables_for(request.user, request.tenant),
         pk=request.POST.get("deliverable"),
     )
+    # 本文の確定は書き込み。案件内の役割で編集権限を確かめる。
+    permissions.require(request.user, Action.EDIT, deliverable)
 
     if deliverable.status == Deliverable.Status.APPROVED:
         messages.error(request, "承認済みの版は編集できません。新しい版を生成してください。")
@@ -264,6 +293,11 @@ def _decide(request: HttpRequest) -> HttpResponseRedirect:
         selectors.deliverables_for(request.user, request.tenant),
         pk=request.POST.get("deliverable"),
     )
+    # 承認・差戻は成果物を確定させる判断そのもの。案件内の役割で承認権限を見る。
+    # 根拠評価のゲート（approval_service）は「内容が足りているか」しか見ないので、
+    # 「その人が決めてよいか」はここで必ず確かめる。
+    permissions.require(request.user, Action.APPROVE, deliverable)
+
     result = approval_service.decide(
         deliverable=deliverable,
         actor=request.user,

@@ -158,7 +158,14 @@ class RiskIssueViewTests(TestCase):
     def test_他テナントのリスクは課題へ転換できない(self):
         response = self.client.post(
             reverse("projects:risk_promote", args=[self.risk_b.pk]),
-            {"title": "乗っ取り", "description": "", "severity": "high", "owner": "", "due_date": "", "external_key": ""},
+            {
+                "title": "乗っ取り",
+                "description": "",
+                "severity": "high",
+                "owner": "",
+                "due_date": "",
+                "external_key": "",
+            },
         )
 
         self.assertEqual(response.status_code, 404)

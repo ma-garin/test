@@ -34,12 +34,9 @@ def detect(project: Project, *, today: date) -> tuple[list[Finding], list[Skip]]
     min_signals = int(conf["MIN_SIGNALS"])
     critical_signals = int(conf["CRITICAL_SIGNALS"])
 
-    tasks = [
-        task
-        for task in WbsTask.objects.filter(project=project).exclude(
-            status__in=FINISHED_TASK_STATUSES
-        )
-    ]
+    tasks = list(
+        WbsTask.objects.filter(project=project).exclude(status__in=FINISHED_TASK_STATUSES)
+    )
 
     if not tasks:
         return [], [Skip(project, KIND, SkipReason.INSUFFICIENT_DATA, "未完了のWBSタスクがありません。")]
@@ -145,7 +142,8 @@ def _past_half_of_plan(task: WbsTask, today: date) -> bool:
 
 def _build_finding(project, task, signals, *, conf, critical_signals) -> Finding:
     summary = "／".join(
-        f"{signal['label']}（{signal['observed']}{signal['unit']} ＞ しきい値 {signal['threshold']}{signal['unit']}）"
+        f"{signal['label']}（{signal['observed']}{signal['unit']} ＞ "
+        f"しきい値 {signal['threshold']}{signal['unit']}）"
         for signal in signals
     )
     reason = f"{task.wbs_code} 「{task.name}」に兆候が {len(signals)}件 重なっています: {summary}"

@@ -79,7 +79,13 @@ SCREENS: dict[str, ScreenDefinition] = {
             key="risk_list",
             label="リスク一覧画面",
             subject_label="案件",
-            viewpoints=("対策の有無", "対応期限", "影響度と発生確率", "リスク化の要否", "エスカレーション要否"),
+            viewpoints=(
+                "対策の有無",
+                "対応期限",
+                "影響度と発生確率",
+                "リスク化の要否",
+                "エスカレーション要否",
+            ),
         ),
         ScreenDefinition(
             key="issue_list",
@@ -97,7 +103,12 @@ SCREENS: dict[str, ScreenDefinition] = {
             key="task_list",
             label="WBSタスク一覧画面",
             subject_label="案件",
-            viewpoints=("期限超過の件数", "ブロック中のタスク", "更新が止まっているタスク", "クリティカルパス"),
+            viewpoints=(
+                "期限超過の件数",
+                "ブロック中のタスク",
+                "更新が止まっているタスク",
+                "クリティカルパス",
+            ),
         ),
         ScreenDefinition(
             key="defect_list",

@@ -182,7 +182,7 @@ class IntegrationViewTests(TestCase):
     # ── 実行 ────────────────────────────────────────────────
 
     def test_同期を実行すると結果が一覧へ返る(self):
-        self.client.force_login(self.member)
+        self.client.force_login(self.admin)
 
         with patch(
             "apps.integrations.services.sync.get_connector",
@@ -197,19 +197,34 @@ class IntegrationViewTests(TestCase):
 
         job = SyncJob.objects.get()
         self.assertEqual(job.status, SyncJob.Status.SUCCEEDED)
-        self.assertEqual(job.triggered_by, self.member)
+        self.assertEqual(job.triggered_by, self.admin)
         self.assertContains(response, "新規 1")
 
     def test_同期はGETでは実行できない(self):
-        self.client.force_login(self.member)
+        self.client.force_login(self.admin)
 
         response = self.client.get(reverse("integrations:sync", args=[self.connection_a.pk]))
 
         self.assertEqual(response.status_code, 405)
         self.assertEqual(SyncJob.objects.count(), 0)
 
-    def test_疎通確認は結果をメッセージで返す(self):
+    def test_一般ユーザーは同期を実行できない(self):
+        """同期は外部データで課題・タスクを書き換える。管理者以外には実行させない。"""
+
         self.client.force_login(self.member)
+
+        with patch(
+            "apps.integrations.services.sync.get_connector",
+            side_effect=lambda connection: _FixedConnector(connection),
+        ):
+            response = self.client.post(reverse("integrations:sync", args=[self.connection_a.pk]))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(SyncJob.objects.count(), 0)
+        self.assertEqual(Issue.objects.count(), 0)
+
+    def test_疎通確認は結果をメッセージで返す(self):
+        self.client.force_login(self.admin)
 
         with patch(
             "apps.integrations.services.connections.get_connector",
@@ -221,3 +236,16 @@ class IntegrationViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "疎通しました")
+
+    def test_一般ユーザーは疎通確認を実行できない(self):
+        """疎通確認は登録済みの資格情報を使って外部へ出ていく操作。"""
+
+        self.client.force_login(self.member)
+
+        with patch(
+            "apps.integrations.services.connections.get_connector",
+            side_effect=lambda connection: _FixedConnector(connection),
+        ):
+            response = self.client.post(reverse("integrations:check", args=[self.connection_a.pk]))
+
+        self.assertEqual(response.status_code, 403)

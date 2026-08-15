@@ -12,8 +12,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
+from apps.accounts.constants import Action
+from apps.accounts.services import permissions
 from apps.audit.selectors import feedbacks_for
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.dashboard import selectors
@@ -100,9 +102,20 @@ def detection_run(request: HttpRequest) -> HttpResponse:
     """検知を実行してアラート・介入提案を保存する。
 
     参照ではなく作成なので POST のみ。対象は画面と同じ案件スコープに揃える。
+    アラートと介入提案を書き込む操作なので、参照だけの利用者には実行させない。
+    案件が選択されていればその案件の役割で、未選択ならテナント単位で判定する。
     """
 
-    result = run_detection(_projects(request))
+    permissions.require(request.user, Action.EDIT, getattr(request, "project", None))
+
+    # 判定を通っても、編集権限のある案件だけを対象にする。案件未選択のときに
+    # 「参照だけの案件」へアラートを書き込まないため。
+    targets = [
+        project
+        for project in _projects(request)
+        if permissions.can(request.user, Action.EDIT, project)
+    ]
+    result = run_detection(targets)
 
     if result.alert_count:
         messages.success(
@@ -310,7 +323,9 @@ def poc(request: HttpRequest) -> HttpResponse:
     それぞれの selectors を入口に通したものだけをサービスへ渡す。
     """
 
-    report = build_poc_evaluation(_projects(request), feedbacks_for(request.user, getattr(request, "tenant", None)))
+    report = build_poc_evaluation(
+        _projects(request), feedbacks_for(request.user, getattr(request, "tenant", None))
+    )
 
     return render(
         request,
@@ -324,11 +339,15 @@ def poc(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def intervention_decide(request: HttpRequest, pk) -> HttpResponse:
     """AI 介入提案に人の判断を記録する。
 
     対象は必ず「参照できる案件に紐づく提案」に絞る。テナントを越えた ID を
     直接叩かれても 404 になるよう、取得の時点で候補を限定している。
+
+    採否の確定は承認そのものなので、案件内の役割で承認権限を確かめる。
+    判断フォームは GET でも同じ判定を通す（押してから断られる導線にしない）。
     """
 
     proposal = get_object_or_404(
@@ -336,6 +355,7 @@ def intervention_decide(request: HttpRequest, pk) -> HttpResponse:
         pk=pk,
         project__in=_projects(request),
     )
+    permissions.require(request.user, Action.APPROVE, proposal)
 
     if not is_pending(proposal):
         messages.warning(request, "この提案はすでに判断済みです。履歴を保つため再判断はできません。")
