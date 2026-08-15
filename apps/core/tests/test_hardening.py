@@ -18,7 +18,6 @@ from apps.core.pagination import paginate
 from apps.core.services.ai_settings import AIConfig, is_allowed_ollama_url, verify_connection
 from apps.core.services.secrets import INSECURE_DEFAULT_KEY, is_key_secure
 
-
 #: 本番設定は必須の環境変数を要求する（未設定なら起動しないのが正しい）。
 #: テストから読むためだけの最小の値。
 PRODUCTION_ENV = {

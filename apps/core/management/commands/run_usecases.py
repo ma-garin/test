@@ -246,6 +246,7 @@ def build_world() -> dict:
 
     from datetime import date, timedelta
 
+    from catalog import PROJECT_ROLE_OF, ROLES
     from django.core.files.uploadedfile import SimpleUploadedFile
     from django.core.management import call_command
     from django.utils import timezone
@@ -265,8 +266,6 @@ def build_world() -> dict:
         Severity,
         WbsTask,
     )
-
-    from catalog import PROJECT_ROLE_OF, ROLES
 
     call_command("seed_demo", verbosity=0)
 

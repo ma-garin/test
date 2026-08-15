@@ -96,7 +96,8 @@ def settings_page(request: HttpRequest) -> HttpResponse:
             if not personal_allowed:
                 messages.error(
                     request,
-                    "このテナントでは利用者ごとの API 設定が許可されていません。テナント管理者へ相談してください。",
+                    "このテナントでは利用者ごとの API 設定が許可されていません。"
+                    "テナント管理者へ相談してください。",
                 )
 
                 return redirect("core:settings")

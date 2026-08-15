@@ -405,7 +405,9 @@ class Command(BaseCommand):
                 "rationale": "端末未確保が2週間解消しておらず、担当者間の調整では動いていません。",
                 "recommended_action": "PMO から情シス部門長へ、期日を切って正式に依頼する",
                 "expected_effect": "実機テストの着手を1週間前倒しできる見込み",
-                "evidence": [{"type": "issue", "title": "検証用のレジ端末が確保できず実機テストに着手できない"}],
+                "evidence": [
+                    {"type": "issue", "title": "検証用のレジ端末が確保できず実機テストに着手できない"}
+                ],
             },
         )
 
@@ -509,7 +511,13 @@ class Command(BaseCommand):
             ("小計行の税率表示が欠ける", Defect.Status.CLOSED, Severity.MEDIUM, "単体試験", -18),
             ("軽減税率商品の値引き計算が合わない", Defect.Status.FIXING, Severity.CRITICAL, "結合試験", -5),
             ("レシート再発行で旧税率が印字される", Defect.Status.NEW, Severity.HIGH, "結合試験", -2),
-            ("日次締めで税区分別合計が一致しない", Defect.Status.ANALYZING, Severity.CRITICAL, "結合試験", -4),
+            (
+                "日次締めで税区分別合計が一致しない",
+                Defect.Status.ANALYZING,
+                Severity.CRITICAL,
+                "結合試験",
+                -4,
+            ),
             ("免税対象商品の判定が漏れる", Defect.Status.NEW, Severity.HIGH, "結合試験", -1),
             ("軽減税率の適用開始時刻がずれる", Defect.Status.FIXING, Severity.MEDIUM, "単体試験", -8),
             ("クレジット決済の税額内訳が出力されない", Defect.Status.NEW, Severity.HIGH, "結合試験", -3),

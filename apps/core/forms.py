@@ -141,7 +141,7 @@ class AISettingFormMixin(forms.ModelForm):
         """保存済み秘密値の表示用。復号してからマスクする。"""
 
         if not self.instance.pk:
-            return {name: "未設定" for name in self.SECRET_INPUTS}
+            return dict.fromkeys(self.SECRET_INPUTS, "未設定")
 
         return {
             name: mask_secret(self.instance.secret(name)) for name in self.SECRET_INPUTS

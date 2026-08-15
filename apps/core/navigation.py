@@ -101,8 +101,12 @@ NAVIGATION: tuple[NavSection, ...] = (
         label="監査・トレース",
         items=(
             NavItem("agent_runs", "Agenticトレース", "agents:run_list", "TR", "ready", ("ai",)),
-            NavItem("operations", "操作ログ", "audit:operation_list", "OP", "ready", action=Action.APPROVE),
-            NavItem("feedback", "フィードバック", "audit:feedback_list", "FB", "ready", action=Action.APPROVE),
+            NavItem(
+                "operations", "操作ログ", "audit:operation_list", "OP", "ready", action=Action.APPROVE
+            ),
+            NavItem(
+                "feedback", "フィードバック", "audit:feedback_list", "FB", "ready", action=Action.APPROVE
+            ),
         ),
     ),
     NavSection(
@@ -111,7 +115,9 @@ NAVIGATION: tuple[NavSection, ...] = (
         items=(
             NavItem("projects", "案件管理", "projects:list", "PJ", "ready"),
             NavItem("integrations", "外部連携", "integrations:list", "IN", "ready", action=Action.MANAGE),
-            NavItem("pipeline", "同期パイプライン", "integrations:pipeline", "PP", "ready", action=Action.MANAGE),
+            NavItem(
+                "pipeline", "同期パイプライン", "integrations:pipeline", "PP", "ready", action=Action.MANAGE
+            ),
             NavItem("sync_jobs", "同期履歴", "integrations:job_list", "SY", "ready", action=Action.MANAGE),
             # 設定画面は全ロールへ出す。AI の API 設定は利用者ごとに持てるように
             # なったため、管理者だけが開ける画面のままだと、他のロールは

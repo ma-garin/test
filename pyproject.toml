@@ -16,6 +16,11 @@ ignore = [
   "DJ008",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# ODC の分類表は 1 件 1 行で並べたほうが読める。折り返すと列が揃わず、
+# 分布を目で追えなくなる。表としての可読性を優先して行長だけ免除する。
+"tools/systemtest/odc.py" = ["E501"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["apps", "config"]
 
