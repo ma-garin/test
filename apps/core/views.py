@@ -182,6 +182,36 @@ def settings_page(request: HttpRequest) -> HttpResponse:
 
             messages.error(request, "入力内容を確認してください。")
 
+        elif scope in ("clear_user", "clear_tenant"):
+            # 削除は保存とは別の操作にする。空欄＝削除にすると、モデル名だけ
+            # 直したい人がキーを消してしまう。
+            if scope == "clear_tenant" and not can_manage_tenant:
+                _log_operation(
+                    request, "AI設定のキー削除（テナント）", str(tenant), ok=False, detail="権限なし"
+                )
+
+                raise PermissionDenied("テナント既定の変更はテナント管理者のみ行えます")
+
+            target = user_setting if scope == "clear_user" else tenant_setting
+
+            if target is None or target.pk is None:
+                messages.error(request, "削除できる保存済みのAPIキーがありません。")
+
+                return redirect("core:settings")
+
+            target.openai_api_key = ""
+            target.save()
+            _log_operation(
+                request,
+                "AI設定のキー削除" + ("（個人）" if scope == "clear_user" else "（テナント）"),
+                str(request.user if scope == "clear_user" else tenant),
+                ok=True,
+                detail="OpenAI APIキー",
+            )
+            messages.success(request, "保存済みのAPIキーを削除しました。")
+
+            return redirect("core:settings")
+
         elif scope == "verify":
             # 保存済みの実効設定で疎通を確かめる。キーを保存できても有効とは限らず、
             # 無効なまま運用に入ると検索が黙って local_hash へ退避する。
@@ -222,6 +252,29 @@ def settings_page(request: HttpRequest) -> HttpResponse:
     }
 
     return render(request, "pages/settings.html", context)
+
+
+@login_required
+def ollama_models(request: HttpRequest) -> HttpResponse:
+    """接続先 Ollama にあるモデル名を返す。設定画面のモデル欄を埋めるために使う。
+
+    宛先は許可リストで縛る（`list_ollama_models`）。利用者が指定した URL へ
+    サーバから通信する操作なので、自由な宛先を許すと内部探索に使える。
+    """
+
+    from django.http import JsonResponse
+
+    from apps.core.services.ai_settings import effective_config, list_ollama_models
+
+    tenant = getattr(request, "tenant", None)
+    base_url = (request.GET.get("base_url") or "").strip()
+
+    if not base_url:
+        base_url = effective_config(user=request.user, tenant=tenant).ollama_base_url
+
+    models, error = list_ollama_models(base_url)
+
+    return JsonResponse({"models": models, "error": error})
 
 
 @login_required

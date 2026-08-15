@@ -3,70 +3,83 @@ AI設定のフォーム1つぶん。個人設定とテナント既定で同じ�
 
 呼び出し側が渡すもの:
   form          … UserAISettingForm / TenantAISettingForm
-  scope         … "user" / "tenant"（POST 先の判別に使う hidden の値）
+  scope         … "user" / "tenant"（POST 先の判別に使う submit の値）
   submit_label  … 保存ボタンの文言
   saved_secret  … 保存済み APIキーのマスク表示（無ければ空）
 
-プロバイダ別の節は `data-provider-section` を持ち、選んだプロバイダのものだけを
-表示する。JavaScript が無効でも、いま効いているプロバイダの節は開いた状態で出す。
+接続先は OpenAI / Ollama の2択で、選んだものの入力欄だけを下に出す。
+JavaScript が無効でも、いま選ばれている接続先の節は開いた状態で出す。
+
+`scope` を hidden ではなく submit ボタンの name/value で送る。保存・疎通確認・
+キー削除を同じフォームから出すためで、押したボタンの値だけがサーバへ届く。
 {% endcomment %}
 
-<form method="post" class="setform" data-provider-form
-      data-inherited-provider="{{ form.inherited.provider|default:"" }}">
+<form method="post" class="setform" data-provider-form>
   {% csrf_token %}
-  <input type="hidden" name="scope" value="{{ scope }}">
 
   {% if form.non_field_errors %}
     <div class="callout d" role="alert">{{ form.non_field_errors|join:" " }}</div>
   {% endif %}
 
-  <fieldset class="setgroup">
-    <legend class="setgroup-t">接続先</legend>
-    <p class="setgroup-d">どのAIで動かすかを選びます。選んだものの入力欄だけが下に出ます。</p>
-
-    <div class="provider-opts">
+  <div class="setpick">
+    <div class="provider-seg">
       {% for radio in form.provider %}
-        <label class="provider-opt">
+        <label class="provider-pill">
           {{ radio.tag }}
-          <span class="provider-opt-body">
-            <span class="provider-opt-name">{{ radio.choice_label }}</span>
-            <span class="provider-opt-note">
-              {% if radio.data.value == "openai" %}外部のOpenAI APIを使います。APIキーが要ります。
-              {% elif radio.data.value == "ollama" %}手元・社内のOllamaを使います。データを外へ出しません。
-              {% elif radio.data.value == "local_hash" %}APIキー不要。意味的な近さは扱えないため検証用です。
-              {% else %}{% if inherited_provider_label %}いまは「{{ inherited_provider_label }}」が使われます。{% else %}上位の設定をそのまま使います。{% endif %}
-              {% endif %}
-            </span>
-          </span>
+          <span>{{ radio.choice_label }}</span>
         </label>
       {% endfor %}
     </div>
     {% for error in form.provider.errors %}<p class="field-error" data-field-error="{{ form.provider.id_for_label }}">{{ error }}</p>{% endfor %}
-  </fieldset>
+
+    {% comment %}
+    説明は選んだものだけ1行で出す。全部を常に並べると、選択そのものより説明が
+    場所を取り、どれが選ばれているのかが読み取りにくくなる。
+    {% endcomment %}
+    <p class="provider-note" data-provider-note="openai" {% if form.selected_provider != "openai" %}hidden{% endif %}>外部の OpenAI API を使います。APIキーが要ります。</p>
+    <p class="provider-note" data-provider-note="ollama" {% if form.selected_provider != "ollama" %}hidden{% endif %}>手元・社内の Ollama を使います。データを外へ出しません。</p>
+  </div>
 
   {% for section in form.sections %}
     {% if not section.advanced %}
-      <fieldset class="setgroup"
+      <fieldset class="setgroup setgroup--flat"
                 {% if section.provider %}data-provider-section="{{ section.provider }}"{% if section.provider != form.selected_provider %} hidden{% endif %}{% endif %}>
         <legend class="setgroup-t">{{ section.title }}</legend>
         <p class="setgroup-d">{{ section.description }}</p>
-        <div class="setgrid">
+
+        {% comment %}
+        保存済みキーの有無は、入力欄を見ても分からない（値を戻さないため）。
+        入れ直しか変更不要かをここで判断させる。
+        {% endcomment %}
+        {% if section.provider == "openai" and scope == "user" %}
+          <div class="keycurrent">
+            <span class="keycurrent-l">現在のキー</span>
+            {% if saved_secret %}
+              <code>{{ saved_secret }}</code>
+            {% else %}
+              <span class="badge n">未設定</span>
+              <span class="keycurrent-h">登録すると検索とAI支援が実際のモデルで動きます。</span>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        <div class="setstack">
           {% for row in section.rows %}{% include "partials/ai_setting_field.html" %}{% endfor %}
+
+          {% comment %}
+          モデル名は起動中の Ollama から取る。手で書けてしまうと、pull していない
+          名前でも保存でき、実際に呼ぶまで誤りに気づけない。
+          {% endcomment %}
+          {% if section.provider == "ollama" %}
+            <div class="setmodels">
+              <button type="button" class="btn-out" data-reload-ollama>モデル一覧を再取得</button>
+              <span class="setmodels-s" data-ollama-status>ローカルの Ollama が起動している必要があります。API キーは不要です。</span>
+            </div>
+          {% endif %}
         </div>
       </fieldset>
     {% endif %}
   {% endfor %}
-
-  {% comment %}
-  認証情報を持たないプロバイダ（ローカルハッシュ）を使っているときは、入力欄が
-  1つも出ない。何も出ないままだと「APIキーを入れる場所が無い」に見えるため、
-  どうすれば欄が出るのかをここで示す。
-  {% endcomment %}
-  <p class="setempty" data-provider-empty
-     {% if form.selected_provider == "openai" or form.selected_provider == "ollama" %}hidden{% endif %}>
-    上の「接続先」で <strong>OpenAI API</strong> か <strong>Ollama</strong> を選ぶと、APIキーなどの入力欄がここに出ます。
-    いま選ばれている接続先は認証情報を必要としません。
-  </p>
 
   <details class="setadv">
     <summary class="setadv-s">詳細設定（検索とエージェントの調整）</summary>
@@ -98,10 +111,22 @@ AI設定のフォーム1つぶん。個人設定とテナント既定で同じ�
       {% endif %}
     {% endfor %}
     <div class="setfoot-act">
-      <button type="submit" class="btn-b">{{ submit_label }}</button>
-      {% if saved_secret %}
-        <span class="muted">保存済みのAPIキー: <code>{{ saved_secret }}</code></span>
-      {% endif %}
+      <button type="submit" class="btn-b" name="scope" value="{{ scope }}">{{ submit_label }}</button>
+      {% comment %}
+      保存できたことと、そのキーで実際に通ることは別。無効なまま運用に入ると
+      検索が黙ってローカルハッシュへ退避し、精度が落ちた理由を追えなくなる。
+      入力途中でも押せるよう formnovalidate を付ける。
+      {% endcomment %}
+      <button type="submit" class="btn-out" name="scope" value="verify" formnovalidate>疎通確認</button>
+
+      {% comment %}
+      消す操作は決定のとなりに置かない。並べると保存のつもりで削除を押せてしまう。
+      右端へ寄せ、押す前に確認を挟む。
+      {% endcomment %}
+      <button type="submit" class="btn-danger" data-provider-only="openai" formnovalidate
+              name="scope" value="{% if scope == 'user' %}clear_user{% else %}clear_tenant{% endif %}"
+              onclick="return confirm('保存済みの API キーを削除します。よろしいですか？');"
+              {% if form.selected_provider != "openai" %}hidden{% endif %}>API キーを削除</button>
     </div>
   </div>
 </form>

@@ -1031,19 +1031,41 @@ body.is-page-loading .hdr::after {
 .setfield-src { display: inline-block; padding: 0 6px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 10px; font-weight: 800; }
 .setfield-help { font-size: 11px; color: var(--muted); line-height: 1.6; margin: 4px 0 0; }
 
-/* プロバイダ選択。3〜4択で、これがこの画面の主操作なので大きく出す。 */
-.provider-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-.provider-opt {
-  display: flex; gap: 9px; align-items: flex-start;
-  padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px;
-  background: var(--bg); cursor: pointer;
+/* 接続先の選択。以前は説明文つきのカードを4枚横に並べていたが、
+   主操作より説明のほうが場所を取り、選択中がどれかを読み取りにくかった。
+   横並びの切替（セグメント）に畳み、説明は選んだものだけ1行で下に出す。 */
+.setpick { display: grid; gap: 0; }
+.provider-seg {
+  display: inline-flex; flex-wrap: wrap; gap: 2px; justify-self: start;
+  padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
 }
-.provider-opt:hover { border-color: var(--blue); }
-.provider-opt input { width: auto; margin: 2px 0 0; flex: none; accent-color: var(--blue); }
-.provider-opt:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); box-shadow: inset 0 0 0 1px var(--blue); }
-.provider-opt-body { display: block; min-width: 0; }
-.provider-opt-name { display: block; font-size: 13px; font-weight: 800; color: var(--ink); }
-.provider-opt-note { display: block; font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 3px; }
+.provider-pill {
+  display: inline-flex; align-items: center; padding: 7px 15px; border-radius: 8px;
+  font-size: 12.5px; font-weight: 800; color: var(--muted); cursor: pointer;
+}
+.provider-pill:hover { color: var(--ink); }
+/* ラジオ自体は隠す。`.setform input` の width:100% を受けないよう実寸を固定する。 */
+.provider-pill input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
+.provider-pill:has(input:checked) { background: var(--surface); color: var(--blue); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1); }
+.provider-pill:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+.provider-note { font-size: 11px; color: var(--muted); line-height: 1.7; margin: 9px 0 0; }
+.provider-note[hidden] { display: none; }
+
+/* 認証情報の欄は1列に積む。2列にすると、キー・組織ID・モデルの入力順が
+   左右に折り返して、上から順に埋める操作にならない。 */
+.setstack { display: grid; gap: 14px; max-width: 640px; }
+
+/* 保存済みキーの有無は入力欄からは分からない（値を戻さないため）。
+   入れ直しか変更不要かをここで判断させる。 */
+.keycurrent {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  padding: 9px 12px; margin-bottom: 14px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+}
+.keycurrent-l { font-size: 11px; font-weight: 900; color: var(--muted); }
+.keycurrent code { font-size: 12px; color: var(--ink); }
+.keycurrent-h { font-size: 11px; color: var(--muted); }
 
 /* チェックボックスは入力欄と並べず、説明つきの1行として置く。 */
 .setswitch { display: flex; gap: 9px; align-items: flex-start; cursor: pointer; }
@@ -1068,6 +1090,35 @@ body.is-page-loading .hdr::after {
 
 .setfoot { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
 .setfoot-act { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* 削除は保存のとなりに置かない。並べると保存のつもりで押せてしまう。
+   右端へ寄せ、色でも決定の操作と区別する。 */
+.btn-danger {
+  margin-left: auto; padding: 6px 13px; border-radius: 7px;
+  background: transparent; color: var(--red); border: 1px solid var(--red);
+  font-size: 12px; font-weight: 800; cursor: pointer;
+}
+.btn-danger:hover { background: #fef2f2; }
+.btn-danger[hidden] { display: none; }
+
+/* モデル一覧の再取得と、その結果の1行。 */
+.setmodels { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.setmodels-s { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+/* 設定の段（個人 / テナント既定 / 実効値）。縦に積むと折り返しの外へ出るため、
+   1つずつ切り替えて見せる。 */
+.settabs {
+  display: flex; gap: 4px; flex-wrap: wrap; padding: 4px; margin-bottom: var(--space-4);
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
+}
+.settab {
+  padding: 8px 16px; border: 0; border-radius: 8px; background: transparent;
+  color: var(--muted); font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer;
+}
+.settab:hover { color: var(--ink); }
+.settab[aria-selected="true"] { background: var(--surface); color: var(--blue); box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1); }
+.setpanel[hidden] { display: none; }
+.u-mt { margin-top: var(--space-4); }
 
 /* いま動いているAIを1行で出す帯。以前は KPI カード4枚がこの位置を占め、
    主操作が折り返しの下へ落ちていた。 */

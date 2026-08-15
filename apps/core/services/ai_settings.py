@@ -497,6 +497,43 @@ def verify_connection(config: AIConfig, *, timeout: float = 10.0) -> ConnectionR
     return ConnectionResult(ok=False, provider=provider, message=f"未知のプロバイダです: {provider}")
 
 
+def list_ollama_models(base_url: str, *, timeout: float = 5.0) -> tuple[list[str], str]:
+    """起動中の Ollama にあるモデル名を返す。失敗は例外にせずメッセージで返す。
+
+    モデル名を手で書かせると、pull していない名前でも保存でき、実際に呼ぶまで
+    誤りに気づけない。宛先の判定は接続確認と同じ許可リストを使う（SSRF 対策）。
+    """
+
+    if not base_url:
+        return [], "URL が未設定です。"
+
+    if not is_allowed_ollama_url(base_url):
+        return [], (
+            "この URL への接続は許可されていません。"
+            f"許可されているホスト: {', '.join(sorted(allowed_ollama_hosts()))}"
+        )
+
+    try:
+        import requests
+
+        response = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=timeout)
+
+        if response.status_code != 200:
+            return [], f"Ollama から想定外の応答が返りました（HTTP {response.status_code}）。"
+
+        payload = response.json()
+    except Exception:  # noqa: BLE001 - 設定画面を落とさないため全て捕まえる
+        return [], "Ollama へ接続できませんでした。URL と起動状態を確認してください。"
+
+    names = [
+        str(entry.get("name", "")).strip()
+        for entry in payload.get("models", [])
+        if isinstance(entry, dict) and entry.get("name")
+    ]
+
+    return sorted(set(names)), ""
+
+
 def _safe_detail(error: Exception, config: AIConfig) -> str:
     """例外本文から秘密値を取り除く。ライブラリは URL やヘッダを本文へ入れてくる。"""
 

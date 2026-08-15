@@ -7,7 +7,7 @@
   {% comment %}
   いま何で動いているかを1行で出す。以前は KPI カード4枚と12行の表が先頭を占め、
   本来の目的である「自分のAPIキーを入れる」が折り返しの下へ落ちていた。
-  監査用の全項目はページ下部の折りたたみへ移した。
+  疎通確認は各フォームの操作行へ移し、この帯は状態表示だけを担う。
   {% endcomment %}
   <div class="aistate {% if ai_settings.is_configured %}is-ok{% else %}is-fallback{% endif %}">
     <div class="aistate-main">
@@ -19,11 +19,6 @@
         <span class="badge a">退避中</span>
       {% endif %}
     </div>
-    <form method="post" class="aistate-act">
-      {% csrf_token %}
-      <input type="hidden" name="scope" value="verify">
-      <button type="submit" class="btn-out sm">接続を確認する</button>
-    </form>
   </div>
 
   {% if not ai_settings.is_configured %}
@@ -31,7 +26,7 @@
       <p>
         <strong>{{ ai_settings.provider_label }}の認証情報が揃っていません。</strong>
         検索とAI支援はローカルハッシュ（APIキー不要・検証用）で動いています。意味的な近さは扱えないため、
-        精度の評価には使えません。下の「あなたのAI設定」にご自身のAPIキーを入れると、この画面だけで解消できます。
+        精度の評価には使えません。「あなたのAI設定」にご自身のAPIキーを入れると、この画面だけで解消できます。
       </p>
     </div>
   {% endif %}
@@ -44,58 +39,88 @@
     </div>
   {% endif %}
 
-  {% comment %} 個人設定：ロールに関係なく全員が編集できる。目的の操作なので最上部に置く。 {% endcomment %}
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">あなたのAI設定</span>
-      <span class="card-act">{{ user.get_role_display }} / {{ user.display_name|default:user.username }}</span>
-    </div>
-
-    {% if personal_allowed %}
-      <p class="ps u-mb">
-        自分のAPIキーで動かせます。空欄の項目はテナント既定、それも無ければ環境変数の値が使われます。
-        入力したキーは暗号化して保存し、画面にもログにも出しません。
-      </p>
-      {% include "partials/ai_setting_form.html" with form=user_form scope="user" submit_label="個人設定を保存" saved_secret=user_saved_secret inherited_provider_label=inherited_provider_label %}
-    {% else %}
-      <div class="callout w" role="status">
-        <p>このテナントでは、利用者ごとのAPI設定が許可されていません。テナント既定の設定が全員に適用されます。</p>
-      </div>
+  {% comment %}
+  縦に4ブロック並べると、テナント既定より下は折り返しの外に出る。段（個人 /
+  テナント既定 / 実効値）はどれか1つを見れば済むので、タブで切り替える。
+  入力エラーがあるときは、そのフォームの段を開いた状態で返す。
+  {% endcomment %}
+  <div class="settabs" role="tablist" aria-label="AI設定の段"
+       data-settabs data-initial-tab="{% if tenant_form.errors %}tenant{% else %}personal{% endif %}">
+    <button type="button" class="settab" role="tab" data-settab="personal"
+            aria-selected="true" aria-controls="setpanel-personal" id="settab-personal">あなたのAI設定</button>
+    {% if tenant_form %}
+      <button type="button" class="settab" role="tab" data-settab="tenant"
+              aria-selected="false" aria-controls="setpanel-tenant" id="settab-tenant" tabindex="-1">テナント既定</button>
     {% endif %}
+    <button type="button" class="settab" role="tab" data-settab="status"
+            aria-selected="false" aria-controls="setpanel-status" id="settab-status" tabindex="-1">いま効いている設定</button>
+  </div>
+
+  {% comment %} 個人設定：ロールに関係なく全員が編集できる。目的の操作なので最初の段に置く。 {% endcomment %}
+  <div class="setpanel" data-setpanel="personal" id="setpanel-personal" role="tabpanel" aria-labelledby="settab-personal">
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">あなたのAI設定</span>
+        <span class="card-act">{{ user.get_role_display }} / {{ user.display_name|default:user.username }}</span>
+      </div>
+
+      {% if personal_allowed %}
+        <p class="ps u-mb">
+          自分のAPIキーで動かせます。空欄の項目はテナント既定、それも無ければ環境変数の値が使われます。
+          入力したキーは暗号化して保存し、画面にもログにも出しません。
+        </p>
+        {% include "partials/ai_setting_form.html" with form=user_form scope="user" submit_label="個人設定を保存" saved_secret=user_saved_secret inherited_provider_label=inherited_provider_label %}
+      {% else %}
+        <div class="callout w" role="status">
+          <p>このテナントでは、利用者ごとのAPI設定が許可されていません。テナント既定の設定が全員に適用されます。</p>
+        </div>
+        {% comment %}
+        編集できるフォームが1つも無いと、疎通確認の導線まで消える。キーが有効か
+        どうかは権限に関係なく確かめられるようにする。
+        {% endcomment %}
+        {% if not can_manage_tenant %}
+          <form method="post" class="u-mt">
+            {% csrf_token %}
+            <button type="submit" class="btn-out" name="scope" value="verify">接続を確認する</button>
+          </form>
+        {% endif %}
+      {% endif %}
+    </div>
   </div>
 
   {% comment %} テナント既定：テナント管理者だけ。 {% endcomment %}
   {% if tenant_form %}
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-t">テナント既定のAI設定</span>
-        <span class="card-act">{{ request.tenant.name }}</span>
-      </div>
-
-      {% if can_manage_tenant %}
-        <p class="ps u-mb">
-          個人設定を入れていない利用者に適用されます。Embedding モデルはここでしか変えられません。
-          利用者ごとに Embedding が違うと、同じインデックスを別のベクトル空間で検索することになり、検索順位が意味を失うためです。
-        </p>
-        {% include "partials/ai_setting_form.html" with form=tenant_form scope="tenant" submit_label="テナント既定を保存" saved_secret="" inherited_provider_label=env_provider_label %}
-      {% else %}
-        <div class="callout" role="status">
-          <p>テナント既定を変更できるのは管理権限を持つ利用者だけです。現在の値は下の「いま効いている設定の全項目」で確認できます。</p>
+    <div class="setpanel" data-setpanel="tenant" id="setpanel-tenant" role="tabpanel" aria-labelledby="settab-tenant">
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">テナント既定のAI設定</span>
+          <span class="card-act">{{ request.tenant.name }}</span>
         </div>
-      {% endif %}
+
+        {% if can_manage_tenant %}
+          <p class="ps u-mb">
+            個人設定を入れていない利用者に適用されます。Embedding モデルはここでしか変えられません。
+            利用者ごとに Embedding が違うと、同じインデックスを別のベクトル空間で検索することになり、検索順位が意味を失うためです。
+          </p>
+          {% include "partials/ai_setting_form.html" with form=tenant_form scope="tenant" submit_label="テナント既定を保存" saved_secret="" inherited_provider_label=env_provider_label %}
+        {% else %}
+          <div class="callout" role="status">
+            <p>テナント既定を変更できるのは管理権限を持つ利用者だけです。現在の値は「いま効いている設定」で確認できます。</p>
+          </div>
+        {% endif %}
+      </div>
     </div>
   {% endif %}
 
   {% comment %}
-  以下は確認用。既定で畳む。12行すべてが「環境変数」と出るのが通常の状態で、
-  開いたままだと情報量のない行が画面の半分を占める。
+  確認用の段。12行すべてが「環境変数」と出るのが通常の状態なので、既定では開かない。
   {% endcomment %}
-  <details class="card card--fold">
-    <summary class="card-fold-s">
-      <span class="card-t">いま効いている設定の全項目</span>
-      <span class="card-act">認証情報はマスク表示</span>
-    </summary>
-    <div class="card-fold-b">
+  <div class="setpanel" data-setpanel="status" id="setpanel-status" role="tabpanel" aria-labelledby="settab-status" hidden>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">いま効いている設定の全項目</span>
+        <span class="card-act">認証情報はマスク表示</span>
+      </div>
       <table class="t">
         <caption class="visually-hidden">解決済みの AI 設定と、その値の出どころ</caption>
         <thead><tr><th scope="col">項目</th><th scope="col">値</th><th scope="col">出どころ</th></tr></thead>
@@ -118,57 +143,93 @@
         </tbody>
       </table>
     </div>
-  </details>
 
-  <details class="card card--fold">
-    <summary class="card-fold-s">
-      <span class="card-t">この設定の管理</span>
-      <span class="card-act">個人 → テナント既定 → 環境変数の順に効く</span>
-    </summary>
-    <div class="card-fold-b">
-      <dl class="dl">
-        <dt>状態</dt>
-        <dd>
-          {% if ai_settings.openai.api_key == "未設定" %}
-            <span class="badge n">未設定</span> OpenAI の APIキーが入っていません。上の「あなたのAI設定」から登録できます。
-          {% else %}
-            <span class="badge g">設定済み</span> APIキーは登録済みです（{{ ai_settings.sources.openai_api_key|default:"環境変数" }}）。値は表示しません。
-          {% endif %}
-        </dd>
+    <details class="card card--fold">
+      <summary class="card-fold-s">
+        <span class="card-t">この設定の管理</span>
+        <span class="card-act">個人 → テナント既定 → 環境変数の順に効く</span>
+      </summary>
+      <div class="card-fold-b">
+        <dl class="dl">
+          <dt>状態</dt>
+          <dd>
+            {% if ai_settings.openai.api_key == "未設定" %}
+              <span class="badge n">未設定</span> OpenAI の APIキーが入っていません。「あなたのAI設定」から登録できます。
+            {% else %}
+              <span class="badge g">設定済み</span> APIキーは登録済みです（{{ ai_settings.sources.openai_api_key|default:"環境変数" }}）。値は表示しません。
+            {% endif %}
+          </dd>
 
-        <dt>管理者</dt>
-        <dd>
-          <strong>個人設定</strong>: ご自身。ロールに関係なく全員が自分ぶんを持てます。<br>
-          <strong>テナント既定</strong>: テナント管理者。個人設定を入れていない利用者へ適用されます。<br>
-          <strong>環境変数</strong>: システム管理者（インフラ担当）。どちらも未設定のときの拠り所です。
-        </dd>
+          <dt>管理者</dt>
+          <dd>
+            <strong>個人設定</strong>: ご自身。ロールに関係なく全員が自分ぶんを持てます。<br>
+            <strong>テナント既定</strong>: テナント管理者。個人設定を入れていない利用者へ適用されます。<br>
+            <strong>環境変数</strong>: システム管理者（インフラ担当）。どちらも未設定のときの拠り所です。
+          </dd>
 
-        <dt>変更方法</dt>
-        <dd>
-          個人設定とテナント既定は<strong>この画面から変更できます</strong>。<br>
-          環境変数の段を変えるときは、<strong>変更を依頼する先</strong>はシステム管理者（インフラ担当）です。
-          <code>OPENAI_API_KEY</code> / <code>OPENAI_ORG_ID</code> / <code>OPENAI_PROJECT_ID</code> /
-          <code>OLLAMA_BASE_URL</code> / <code>RAG_DEFAULT_TOP_K</code> などの名前と新しい値を伝えてください。
-        </dd>
+          <dt>変更方法</dt>
+          <dd>
+            個人設定とテナント既定は<strong>この画面から変更できます</strong>。<br>
+            環境変数の段を変えるときは、<strong>変更を依頼する先</strong>はシステム管理者（インフラ担当）です。
+            <code>OPENAI_API_KEY</code> / <code>OPENAI_ORG_ID</code> / <code>OPENAI_PROJECT_ID</code> /
+            <code>OLLAMA_BASE_URL</code> / <code>RAG_DEFAULT_TOP_K</code> などの名前と新しい値を伝えてください。
+          </dd>
 
-        <dt>反映タイミング</dt>
-        <dd>
-          この画面での保存は<strong>保存した直後のリクエストから</strong>効きます。<br>
-          環境変数の変更はアプリの再起動が要るため、<strong>再起動後の最初のリクエストから</strong>反映されます。
-        </dd>
-      </dl>
-    </div>
-  </details>
+          <dt>反映タイミング</dt>
+          <dd>
+            この画面での保存は<strong>保存した直後のリクエストから</strong>効きます。<br>
+            環境変数の変更はアプリの再起動が要るため、<strong>再起動後の最初のリクエストから</strong>反映されます。
+          </dd>
+        </dl>
+      </div>
+    </details>
+  </div>
 
   <script>
-  // 選んだプロバイダの入力欄だけを出す。15個を一度に並べると、どれを埋めれば
-  // 動くのかが読み取れない。JavaScript が無効な場合はサーバ側が
-  // `hidden` を付け外しして、いま効いているプロバイダの節を開いた状態で返す。
+  // 段の切り替え。JavaScript が無効なときは全段が縦に並ぶだけで、
+  // 読めない情報も触れない操作も生まれない。
   (function () {
+    var bar = document.querySelector('[data-settabs]');
+    if (!bar) { return; }
+
+    var tabs = bar.querySelectorAll('[data-settab]');
+    var panels = document.querySelectorAll('[data-setpanel]');
+
+    function show(name) {
+      tabs.forEach(function (tab) {
+        var on = tab.getAttribute('data-settab') === name;
+        tab.setAttribute('aria-selected', on ? 'true' : 'false');
+        tab.tabIndex = on ? 0 : -1;
+      });
+      panels.forEach(function (panel) {
+        panel.hidden = panel.getAttribute('data-setpanel') !== name;
+      });
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () { show(tab.getAttribute('data-settab')); });
+    });
+
+    show(bar.getAttribute('data-initial-tab') || 'personal');
+  })();
+
+  // 選んだ接続先の入力欄だけを出す。両方の欄を一度に並べると、どれを埋めれば
+  // 動くのかが読み取れない。JavaScript が無効な場合はサーバ側が `hidden` を
+  // 付け外しして、いま選ばれている接続先の節を開いた状態で返す。
+  (function () {
+    var MODELS_URL = '{% url "core:ollama_models" %}';
+
     document.querySelectorAll('[data-provider-form]').forEach(function (form) {
       var sections = form.querySelectorAll('[data-provider-section]');
+      var notes = form.querySelectorAll('[data-provider-note]');
+      var onlys = form.querySelectorAll('[data-provider-only]');
       var inputs = form.querySelectorAll('[data-provider-input]');
-      if (!sections.length || !inputs.length) { return; }
+      if (!inputs.length) { return; }
+
+      var status = form.querySelector('[data-ollama-status]');
+      var selects = form.querySelectorAll('[data-ollama-models]');
+      var baseUrl = form.querySelector('[name="ollama_base_url"]');
+      var loaded = false;
 
       function selected() {
         for (var i = 0; i < inputs.length; i++) {
@@ -177,23 +238,72 @@
         return '';
       }
 
-      var empty = form.querySelector('[data-provider-empty]');
+      // 起動中の Ollama にあるモデルで欄を埋める。手入力させると、pull して
+      // いない名前でも保存でき、実際に呼ぶまで誤りに気づけない。
+      function loadModels() {
+        if (!selects.length) { return; }
+        loaded = true;
+
+        if (status) { status.textContent = 'モデル一覧を取得しています…'; }
+
+        fetch(MODELS_URL + '?base_url=' + encodeURIComponent(baseUrl ? baseUrl.value : ''))
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            var models = data.models || [];
+
+            selects.forEach(function (select) {
+              var current = select.value;
+              select.innerHTML = '';
+              // 空の選択肢は残す。外すと、上位へ戻す手段が画面から消える。
+              [''].concat(models).forEach(function (name) {
+                var option = document.createElement('option');
+                option.value = name;
+                option.textContent = name || '上位の設定に従う';
+                select.appendChild(option);
+              });
+              if (current && models.indexOf(current) === -1) {
+                var kept = document.createElement('option');
+                kept.value = current;
+                kept.textContent = current + '（保存済み）';
+                select.appendChild(kept);
+              }
+              select.value = current;
+            });
+
+            if (status) {
+              status.textContent = data.error
+                ? data.error
+                : models.length + ' 件のモデルを検出しました。API キーは不要です。';
+            }
+          })
+          .catch(function () {
+            if (status) { status.textContent = 'モデル一覧を取得できませんでした。'; }
+          });
+      }
 
       function apply() {
-        // 「上位の設定に従う」を選んだときは、上位で実際に使われるプロバイダの
-        // 節を出す。何も出ないと、設定できる項目が無いように見えてしまう。
-        var value = selected() || form.getAttribute('data-inherited-provider') || '';
-        var shown = 0;
+        var value = selected();
+
         sections.forEach(function (section) {
-          var match = section.getAttribute('data-provider-section') === value;
-          section.hidden = !match;
-          if (match) { shown += 1; }
+          section.hidden = section.getAttribute('data-provider-section') !== value;
         });
-        // 認証情報を持たない接続先では欄が0個になる。空のままにせず理由を出す。
-        if (empty) { empty.hidden = shown > 0; }
+        notes.forEach(function (note) {
+          note.hidden = note.getAttribute('data-provider-note') !== value;
+        });
+        onlys.forEach(function (el) {
+          el.hidden = el.getAttribute('data-provider-only') !== value;
+        });
+
+        // Ollama を選んだときだけ取りに行く。開くたびに毎回叩くと、
+        // 使っていない人の画面まで表示のたびに待たされる。
+        if (value === 'ollama' && !loaded) { loadModels(); }
       }
 
       inputs.forEach(function (input) { input.addEventListener('change', apply); });
+
+      var reload = form.querySelector('[data-reload-ollama]');
+      if (reload) { reload.addEventListener('click', loadModels); }
+
       apply();
     });
   })();

@@ -13,8 +13,8 @@ from __future__ import annotations
 from django import forms
 from django.forms.widgets import ChoiceWidget
 
-from apps.core.models import AIProvider, TenantAISetting, UserAISetting
-from apps.core.services.ai_settings import SCOPE_LABELS, mask_secret
+from apps.core.models import TenantAISetting, UserAISetting
+from apps.core.services.ai_settings import PROVIDER_LABELS, SCOPE_LABELS, mask_secret
 
 #: 入力欄をどの見出しの下に、どの順で出すか。
 #:
@@ -31,7 +31,6 @@ FIELD_SECTIONS: tuple[tuple[str, str, str, str, bool, tuple[str, ...]], ...] = (
         False,
         (
             "openai_api_key",
-            "clear_openai_api_key",
             "openai_org_id",
             "openai_project_id",
             "openai_model",
@@ -66,7 +65,53 @@ FIELD_SECTIONS: tuple[tuple[str, str, str, str, bool, tuple[str, ...]], ...] = (
 
 #: 節に入れず個別に扱う欄。`allow_personal_credentials` はテナント既定にしか
 #: 無いが、`rows()` が存在しない欄を飛ばすので両方のフォームで同じ定義を使える。
+#: `clear_openai_api_key` は入力欄と並べず、保存ボタンから離した位置へ置く。
+#: 消す操作を決定のとなりに並べると、保存のつもりで削除を押せてしまう。
 LEAD_FIELDS = ("is_active", "provider", "allow_personal_credentials")
+
+#: 画面に出すラベル。モデルの verbose_name をそのまま使わない理由が2つある。
+#:
+#: 1. 値をコピーしてくる先（OpenAI の管理画面）は英語表記なので、原語を併記しないと
+#:    どの項目を写せばよいのか対応が取れない。
+#: 2. 節の見出しが「OpenAI の認証情報」なので、欄側の "OpenAI " は重複になる。
+LABEL_OVERRIDES = {
+    "openai_api_key": "APIキー（API key）",
+    "openai_org_id": "組織ID（Organization ID）",
+    "openai_project_id": "プロジェクトID（Project ID）",
+    "openai_model": "回答モデル（Model）",
+    "openai_embedding_model": "Embedding モデル",
+    "ollama_base_url": "ベースURL（Ollama URL）",
+    "ollama_model": "回答モデル（Model）",
+    "ollama_embedding_model": "Embedding モデル",
+}
+
+#: OpenAI のモデルは選択式にする。自由入力だと表記ゆれ（gpt4.1 / GPT-4.1）でも
+#: 保存でき、実際に呼び出したときの 404 で初めて誤りに気づくことになる。
+OPENAI_MODEL_CHOICES = (
+    ("", "上位の設定に従う"),
+    ("gpt-5.4-mini", "gpt-5.4-mini（コスト効率・推奨）"),
+    ("gpt-5.4-nano", "gpt-5.4-nano（最安・最速）"),
+    ("gpt-5.4", "gpt-5.4（標準）"),
+    ("gpt-5.5", "gpt-5.5（高精度）"),
+    ("gpt-5.5-pro", "gpt-5.5-pro（最高精度）"),
+    ("gpt-4.1", "gpt-4.1（非推論・ツール呼び出し）"),
+    ("gpt-4.1-mini", "gpt-4.1-mini"),
+)
+
+#: Embedding を変えると既存インデックスと次元が合わなくなる。作り直しが要る
+#: 変更なので、候補を絞って「うっかり別物を入れる」経路を塞ぐ。
+OPENAI_EMBEDDING_CHOICES = (
+    ("", "上位の設定に従う"),
+    ("text-embedding-3-small", "text-embedding-3-small（1536次元）"),
+    ("text-embedding-3-large", "text-embedding-3-large（3072次元）"),
+)
+
+#: Ollama 側は候補を固定しない。手元に何を pull してあるかは環境ごとに違い、
+#: 実在しない名前を選ばせるほうが害が大きい。
+CHOICE_FIELDS = {
+    "openai_model": OPENAI_MODEL_CHOICES,
+    "openai_embedding_model": OPENAI_EMBEDDING_CHOICES,
+}
 
 #: 「上位の設定に従う」を選べる三択。True/False の2択にすると、
 #: テナント既定を変えても個人設定が古い値を握り続ける。
@@ -76,7 +121,12 @@ TRISTATE_CHOICES = (
     ("false", "無効"),
 )
 
-PROVIDER_CHOICES = (("", "上位の設定に従う"), *AIProvider.choices)
+#: 接続先は OpenAI / Ollama の2択。上位（テナント既定・環境変数）へ戻したいときは
+#: 「この設定を使う」を外す。段の選択と接続先の選択を1つのラジオに混ぜない。
+PROVIDER_CHOICES = (
+    ("openai", "OpenAI"),
+    ("ollama", "Ollama（ローカル）"),
+)
 
 
 class TristateField(forms.ChoiceField):
@@ -132,13 +182,68 @@ class AISettingFormMixin(forms.ModelForm):
         self.inherited = inherited
         super().__init__(*args, **kwargs)
 
-        self.fields["provider"].choices = PROVIDER_CHOICES
+        provider_value = getattr(self.instance, "provider", "") or ""
+        provider_choices = PROVIDER_CHOICES
+
+        if provider_value and provider_value not in {value for value, _ in PROVIDER_CHOICES}:
+            # 以前 local_hash を保存した設定を、画面を開いただけで別の接続先へ
+            # 化けさせない。選べる状態のまま残し、変えるかどうかは利用者が決める。
+            provider_choices = (
+                *PROVIDER_CHOICES,
+                (provider_value, PROVIDER_LABELS.get(provider_value, provider_value)),
+            )
+
+        if not provider_value:
+            # どれも選ばれていない状態を作らない。参考実装と同じく、常にどちらかの
+            # 接続先が選ばれていて、その入力欄が出ている形にする。
+            self.initial["provider"] = PROVIDER_CHOICES[0][0]
+
+        self.fields["provider"].choices = provider_choices
         self.fields["provider"].required = False
-        # 選択肢が3つしかなく、どれを選ぶかがこの画面の主目的なので、
-        # 開かないと中身が見えないセレクトではなくカード状のラジオで出す。
+        # どれを選ぶかがこの画面の主目的なので、開かないと中身が見えないセレクトに
+        # しない。ラジオで出し、画面側で横並びの切替（セグメント）として見せる。
         self.fields["provider"].widget = forms.RadioSelect(
-            choices=PROVIDER_CHOICES, attrs={"data-provider-input": "1"}
+            choices=provider_choices, attrs={"data-provider-input": "1"}
         )
+
+        # Ollama のモデルは手元に pull 済みのものだけが動く。候補を固定できないので
+        # 起動中の Ollama から取って選択式で出す（値の検証はしない）。
+        for name in ("ollama_model", "ollama_embedding_model"):
+            if name not in self.fields:
+                continue
+
+            current = (getattr(self.instance, name, "") or "").strip()
+            choices = [("", "上位の設定に従う")]
+
+            if current:
+                choices.append((current, current))
+
+            self.fields[name].widget = forms.Select(
+                choices=choices, attrs={"data-ollama-models": "1"}
+            )
+
+        for name, label in LABEL_OVERRIDES.items():
+            if name in self.fields:
+                self.fields[name].label = label
+
+        for name, choices in CHOICE_FIELDS.items():
+            if name not in self.fields:
+                continue
+
+            # 新しいモデルが出たあとに保存済みの値が選べなくなると、モデル名を
+            # 変える気が無い人まで保存を弾かれる。いまの値は必ず選択肢へ残す。
+            current = (getattr(self.instance, name, "") or "").strip()
+
+            if current and current not in {value for value, _ in choices}:
+                choices = (*choices, (current, f"{current}（保存済み）"))
+
+            original = self.fields[name]
+            self.fields[name] = forms.ChoiceField(
+                label=original.label,
+                help_text=original.help_text,
+                required=False,
+                choices=choices,
+            )
 
         for field in self.fields.values():
             widget = field.widget
@@ -297,7 +402,14 @@ class AISettingFormMixin(forms.ModelForm):
         if value:
             return value
 
-        return getattr(self.inherited, "provider", "") or ""
+        inherited = getattr(self.inherited, "provider", "") or ""
+
+        # 上位が local_hash のときに継承値をそのまま返すと、選択肢に無い接続先が
+        # 「選ばれている」ことになり、入力欄が1つも出ない画面になる。
+        if inherited in {value for value, _ in PROVIDER_CHOICES}:
+            return inherited
+
+        return PROVIDER_CHOICES[0][0]
 
 
 COMMON_FIELDS = [
