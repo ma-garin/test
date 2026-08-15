@@ -24,6 +24,17 @@ logger = logging.getLogger(__name__)
 PREFIX = "enc:v1:"
 
 
+#: `config/settings/base.py` が持つ開発用の既定値。これで暗号化しても、
+#: 鍵がリポジトリに書いてあるのと同じで、暗号化した意味が無い。
+INSECURE_DEFAULT_KEY = "insecure-development-key-change-me"
+
+
+def is_key_secure() -> bool:
+    """API キーを保存してよい状態か（SECRET_KEY が既定値のままでないか）。"""
+
+    return settings.SECRET_KEY != INSECURE_DEFAULT_KEY
+
+
 def _fernet():
     """SECRET_KEY から導出した鍵で Fernet を作る。"""
 

@@ -174,6 +174,11 @@ OPENAI = {
     "EMBEDDING_MODEL": env("OPENAI_EMBEDDING_MODEL", default="text-embedding-3-small"),
 }
 
+# 接続確認で叩いてよい Ollama のホスト。利用者が個人設定へ任意の URL を入れて
+# 「接続を確認する」を押すと、サーバから任意の宛先へ通信できてしまうため、
+# 宛先は管理者が決める。ローカルは `allowed_ollama_hosts()` が既定で許す。
+AI_OLLAMA_ALLOWED_HOSTS = env.list("AI_OLLAMA_ALLOWED_HOSTS", default=[])
+
 OLLAMA = {
     "BASE_URL": env("OLLAMA_BASE_URL", default="http://localhost:11434"),
     "MODEL": env("OLLAMA_MODEL", default="qwen2.5:7b"),

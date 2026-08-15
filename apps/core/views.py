@@ -123,11 +123,21 @@ def settings_page(request: HttpRequest) -> HttpResponse:
             messages.error(request, "入力内容を確認してください。")
 
         elif scope == "tenant":
-            if not can_manage_tenant or tenant_setting is None:
+            if not can_manage_tenant:
                 _log_operation(
                     request, "AI設定の更新（テナント）", str(tenant), ok=False, detail="権限なし"
                 )
                 permissions.require(request.user, Action.MANAGE)
+
+            if tenant_setting is None:
+                # 権限はあるがテナントが定まっていない（未所属・未選択）。
+                # そのまま保存すると tenant が NULL になり保存時に落ちる。
+                messages.error(
+                    request,
+                    "対象のテナントが決まっていません。先にテナントを選んでください。",
+                )
+
+                return redirect("core:settings")
 
             tenant_form = TenantAISettingForm(request.POST, instance=tenant_setting)
 

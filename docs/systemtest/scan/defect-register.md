@@ -158,3 +158,33 @@
 | S-UI-28 | 中 | `templates/layouts/auth.html` | メッセージブロックが無く、ログイン画面でフラッシュメッセージが出ない |
 | S-UI-29 | 中 | `static/css/app.css` | 間隔・タイポ・z-index のトークンが未定義。角丸・影もトークンが守られていない |
 | S-UI-30 | 中 | `static/css/app.css` | ダークモード非対応。`prefers-color-scheme` / `[data-theme]` / `color-scheme` の宣言が皆無で、ハードコード色が約30箇所 |
+
+## accounts / core / config（追加スキャン）
+
+| ID | 重大度 | 箇所 | 内容 |
+|---|---|---|---|
+| S-ACC-01 | 高 | `apps/accounts/backends.py:20-65` | パスワード検証なしで、未登録アドレスは利用者を自動作成。しかも既定ロールが `pmo`（承認権限つき）で、最初のテナントの実データに第三者が入れる |
+| S-ACC-02 | 高 | `config/settings/production.py` | 本番設定が `EmailOnlyBackend` を外していない。docstring は「本番では使えない」と書いているのに防御が無い |
+| S-CFG-01 | 高 | `manage.py` / `config/wsgi.py` / `config/asgi.py` | 既定の設定モジュールが `local`。設定を渡し忘れた本番起動が `DEBUG=True` / `ALLOWED_HOSTS=["*"]` / 既定 SECRET_KEY で立ち上がる |
+| S-CFG-02 | 高 | `config/settings/base.py:25` | SECRET_KEY の既定値がリテラル。API キーの暗号鍵はここから導出するため、既定のままだと実質平文 |
+| S-ACC-03 | 高 | `apps/accounts/services/permissions.py:152-160` | 越境チェックが `project` を持つ対象にしか効かない。案件に紐づかない対象（テナント共通の文書など）は他テナントでも通る |
+| S-ACC-04 | 高 | `apps/accounts/services/permissions.py:159` | `user.tenant_id is None` だと越境チェックを丸ごと素通りする。無所属が最強の権限になる |
+| S-ACC-05 | 中 | `apps/accounts/services/permissions.py:177` | 不正な案件役割で `ValueError` → 500。同ファイルの一覧側はガードしているのに判定本体だけ無防備 |
+| S-ACC-06 | 中 | `apps/accounts/views.py:75,115` | テナント/案件の切替に UUID でない値を送ると `ValidationError` で 500 |
+| S-COR-01 | 中 | `apps/core/views.py:126-132` | 管理権限ありでテナント未確定のとき、テナント既定の保存が NOT NULL 違反で 500 |
+| S-COR-02 | 中 | `apps/core/pagination.py:29-36` | 並び順を強制しないため、ページをまたぐと行が重複・欠落しうる。10 以上のビューが共有 |
+| S-COR-03 | 中 | `apps/core/services/ai_settings.py` | 接続確認が利用者指定の URL へ無検証で通信する（SSRF）。到達可否とエラー本文が画面に返る |
+| S-COR-04 | 中 | `apps/core/middleware.py:62` | 既定経路が `is_active` を見ない。テナントを止めても利用停止にならない |
+| S-COR-05 | 低 | `apps/core/middleware.py:53-62` | 選べないテナントIDがセッションに残り続け、毎リクエスト引き直す |
+| S-COR-06 | 中 | `apps/core/navigation.py:30-37` | 全項目の `roles` が空で可視性制御が事実上無効。参照のみのロールにも管理系メニューが並ぶ |
+| S-COR-07 | 低 | `apps/core/navigation.py:31` | `roles` が空だと未認証にも True を返す |
+| S-ACC-07 | 中 | `apps/accounts/models.py:71,75` | `can_approve` / `is_tenant_admin` が `ROLE_PERMISSIONS` と別系統で、表から権限を外しても減らない |
+| S-ACC-08 | 中 | `apps/accounts/views.py:72-81` | テナント切替の失敗時にメッセージが出ず、押しても何も起きない画面になる |
+| S-ACC-09 | 低 | `apps/accounts/views.py:81` | テナント切替後に `next` を無視する（案件切替とは挙動が違う） |
+| S-ACC-10 | 中 | `templates/pages/login.html` | hidden の `next` が無く、`?next=` からのログイン後に元の画面へ戻れない |
+| S-ACC-11 | 低 | `apps/accounts/backends.py:33,67-78` | メールの大小差異で入るアカウントが不定。ユーザー名の採番が非アトミックで連番が -2 から始まる |
+| S-ACC-12 | 中 | `apps/accounts/views.py:18` | ログインに回数制限も監査ログも無い |
+| S-CFG-03 | 中 | `config/settings/production.py` | セッション有効期限・DATABASES の上書き・ALLOWED_HOSTS の必須化が無く、未設定でも黙って動く |
+| S-CFG-04 | 中 | `config/urls.py:29-33` | DEBUG 時に MEDIA と docs を無認証配信。本番は逆に media の配信経路が未設計 |
+| S-COR-08 | 低 | `apps/core/views.py:33-34` | テナント未割当の利用者の設定変更が監査ログに残らない |
+| S-COR-09 | 低 | `apps/core/middleware.py:36-43` | ストリーミング応答では本体の反復前に文脈が戻り、AI 設定の解決が匿名扱いになる |

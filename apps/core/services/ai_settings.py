@@ -315,6 +315,41 @@ def is_provider_configured(user=None) -> bool:
     return effective_config(user=user).is_configured
 
 
+def allowed_ollama_hosts() -> set[str]:
+    """接続確認で叩いてよい Ollama のホスト。
+
+    Ollama は手元で動かすのが普通なので、ローカルは既定で許す。それ以外を
+    足すのは管理者の仕事（環境変数 `AI_OLLAMA_ALLOWED_HOSTS`）で、
+    利用者が個人設定へ好きな URL を入れて到達確認に使えないようにする。
+    """
+
+    from urllib.parse import urlparse
+
+    hosts = {"localhost", "127.0.0.1", "::1", "[::1]"}
+    hosts.update(getattr(settings, "AI_OLLAMA_ALLOWED_HOSTS", ()))
+
+    # 環境変数で指定された既定の接続先は、管理者が決めたものなので許す。
+    env_host = urlparse(settings.OLLAMA["BASE_URL"] or "").hostname
+
+    if env_host:
+        hosts.add(env_host)
+
+    return {host for host in hosts if host}
+
+
+def is_allowed_ollama_url(url: str) -> bool:
+    """`url` が接続確認で叩いてよい宛先か。"""
+
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url or "")
+
+    if parsed.scheme not in ("http", "https"):
+        return False
+
+    return (parsed.hostname or "") in allowed_ollama_hosts()
+
+
 @dataclass(frozen=True)
 class ConnectionResult:
     """接続確認の結果。画面へそのまま出せる文言まで含める。"""
@@ -400,6 +435,17 @@ def verify_connection(config: AIConfig, *, timeout: float = 10.0) -> ConnectionR
     if provider == "ollama":
         if not config.ollama_base_url:
             return ConnectionResult(ok=False, provider=provider, message="URL が未設定です。")
+
+        if not is_allowed_ollama_url(config.ollama_base_url):
+            # 接続確認は「利用者が指定した宛先へサーバから通信する」操作なので、
+            # 自由な URL を許すと内部ネットワークの探索に使える。到達可否と
+            # エラー内容が画面へ返るぶん、応答の差がそのまま情報になる。
+            return ConnectionResult(
+                ok=False,
+                provider=provider,
+                message="この URL への接続は許可されていません。管理者に許可先を追加してもらってください。",
+                detail=f"許可されているホスト: {', '.join(sorted(allowed_ollama_hosts()))}",
+            )
 
         try:
             import httpx

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from apps.accounts.constants import Role
+from apps.accounts.constants import Action
 
 
 @dataclass(frozen=True)
@@ -25,16 +25,18 @@ class NavItem:
     code: str = ""
     status: str = "planned"
     tags: tuple[str, ...] = ()
-    roles: tuple[str, ...] = ()
+    #: この画面を開くのに必要な操作。ビュー側の `require()` と同じ判定を使う。
+    #: ロール名を並べる書き方だと、ロールが増えるたびここを直すことになり、
+    #: 必ずどこかでナビと実装がずれる（メニューにあるのに 403、が起きる）。
+    action: str = Action.VIEW
 
     def is_visible_to(self, user) -> bool:
-        if not self.roles:
-            return True
-
-        if user is None or not user.is_authenticated:
+        if user is None or not getattr(user, "is_authenticated", False):
             return False
 
-        return user.is_superuser or user.role in self.roles
+        from apps.accounts.services.permissions import can
+
+        return can(user, self.action)
 
     @property
     def is_ready(self) -> bool:
@@ -99,8 +101,8 @@ NAVIGATION: tuple[NavSection, ...] = (
         label="監査・トレース",
         items=(
             NavItem("agent_runs", "Agenticトレース", "agents:run_list", "TR", "ready", ("ai",)),
-            NavItem("operations", "操作ログ", "audit:operation_list", "OP", "ready"),
-            NavItem("feedback", "フィードバック", "audit:feedback_list", "FB", "ready"),
+            NavItem("operations", "操作ログ", "audit:operation_list", "OP", "ready", action=Action.APPROVE),
+            NavItem("feedback", "フィードバック", "audit:feedback_list", "FB", "ready", action=Action.APPROVE),
         ),
     ),
     NavSection(
@@ -108,9 +110,9 @@ NAVIGATION: tuple[NavSection, ...] = (
         label="管理・設定",
         items=(
             NavItem("projects", "案件管理", "projects:list", "PJ", "ready"),
-            NavItem("integrations", "外部連携", "integrations:list", "IN", "ready"),
-            NavItem("pipeline", "同期パイプライン", "integrations:pipeline", "PP", "ready"),
-            NavItem("sync_jobs", "同期履歴", "integrations:job_list", "SY", "ready"),
+            NavItem("integrations", "外部連携", "integrations:list", "IN", "ready", action=Action.MANAGE),
+            NavItem("pipeline", "同期パイプライン", "integrations:pipeline", "PP", "ready", action=Action.MANAGE),
+            NavItem("sync_jobs", "同期履歴", "integrations:job_list", "SY", "ready", action=Action.MANAGE),
             # 設定画面は全ロールへ出す。AI の API 設定は利用者ごとに持てるように
             # なったため、管理者だけが開ける画面のままだと、他のロールは
             # 自分のキーを入れる場所へ辿り着けない。

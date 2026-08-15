@@ -26,6 +26,12 @@ def paginate(queryset: QuerySet, request: HttpRequest, per_page: int = PAGE_SIZE
     一覧から詳細へ戻る導線が壊れるため、範囲外は端のページへ寄せる。
     """
 
+    # 並び順が無い QuerySet をページングすると、DB が返す順序が保証されず、
+    # ページをまたいだときに同じ行が二度出たり、抜け落ちたりする。
+    # 呼び出し側の指定が無ければ主キーで安定させる。
+    if isinstance(queryset, QuerySet) and not queryset.ordered:
+        queryset = queryset.order_by("pk")
+
     paginator = Paginator(queryset, per_page)
 
     try:

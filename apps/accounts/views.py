@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -72,13 +73,18 @@ def select_tenant(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         tenant_id = request.POST.get("tenant")
 
-        if tenants.filter(pk=tenant_id).exists():
+        if _selectable(tenants, tenant_id):
             request.session[TENANT_SESSION_KEY] = str(tenant_id)
             # テナントを変えたら案件の選択は無効。他テナントの案件で
             # 絞り込んだまま画面を見せると、空の一覧の理由が分からなくなる。
             request.session.pop(PROJECT_SESSION_KEY, None)
+            messages.success(request, "参照するテナントを切り替えました。")
 
-            return redirect("dashboard:control")
+            return redirect(_back_to(request))
+
+        # 押したのに何も起きない画面にしない。理由は伝えるが、
+        # 存在の有無（他テナントが実在するか）は伝えない。
+        messages.error(request, "指定されたテナントは選択できません。")
 
     return render(
         request,
@@ -112,7 +118,7 @@ def select_project(request: HttpRequest) -> HttpResponse:
 
             return redirect(_back_to(request))
 
-        if projects.filter(pk=raw).exists():
+        if _selectable(projects, raw):
             request.session[PROJECT_SESSION_KEY] = str(raw)
             messages.success(request, "対象案件を切り替えました。")
 
@@ -131,6 +137,23 @@ def select_project(request: HttpRequest) -> HttpResponse:
             "page_title": "案件の切替",
         },
     )
+
+
+def _selectable(queryset, raw) -> bool:
+    """`raw` が選択可能な対象か。
+
+    主キーは UUID なので、フォームを手で書き換えて `abc` を送ると
+    `filter(pk=...)` が `ValidationError` を投げ、500 になる。
+    不正値は「選べない」であって「エラー」ではない。
+    """
+
+    if not raw:
+        return False
+
+    try:
+        return queryset.filter(pk=raw).exists()
+    except (ValidationError, ValueError, TypeError):
+        return False
 
 
 def _back_to(request: HttpRequest) -> str:

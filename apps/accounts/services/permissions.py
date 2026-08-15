@@ -77,6 +77,25 @@ class PermissionSet:
         return [label for value, label in Action.choices if value in self.actions]
 
 
+def tenant_id_of(obj):
+    """対象が属するテナント。取れなければ None。
+
+    案件配下のものは `project.tenant_id`、案件を持たないもの（テナント共通の文書など）は
+    自分の `tenant_id` を見る。案件の有無で越境判定が抜けると、案件に紐づかない
+    オブジェクトだけ他テナントから触れてしまう。
+    """
+
+    if obj is None:
+        return None
+
+    project = resolve_project(obj)
+
+    if project is not None:
+        return project.tenant_id
+
+    return getattr(obj, "tenant_id", None)
+
+
 def resolve_project(obj):
     """対象から案件を取り出す。
 
@@ -151,13 +170,24 @@ def permissions_for(user, obj=None) -> PermissionSet:
 
     project = resolve_project(obj)
 
-    if project is None:
-        return tenant_permissions(user)
-
     # テナント越境は許可より先に拒否する。ここを後ろに置くと、
     # 管理者判定が先に通ってしまい他テナントを触れる。
-    if user.tenant_id is not None and project.tenant_id != user.tenant_id:
-        return PermissionSet(actions=frozenset(), source="cross_tenant")
+    #
+    # 判定は案件の有無に関わらず行う。案件を持たない対象（テナント共通の文書など）を
+    # 素通りさせると、そこだけ越境できる穴になる。
+    owner_tenant_id = tenant_id_of(obj)
+
+    if owner_tenant_id is not None:
+        if user.tenant_id is None:
+            # 所属テナントの無い利用者は、テナントに属するものを一切触れない。
+            # 「所属が無いから判定を省く」は、無所属を最強の権限にしてしまう。
+            return PermissionSet(actions=frozenset(), source="no_tenant")
+
+        if owner_tenant_id != user.tenant_id:
+            return PermissionSet(actions=frozenset(), source="cross_tenant")
+
+    if project is None:
+        return tenant_permissions(user)
 
     if user.is_tenant_admin:
         return PermissionSet(
@@ -170,6 +200,11 @@ def permissions_for(user, obj=None) -> PermissionSet:
         # 案件メンバーでなければ案件配下は何もできない。
         # `projects_for()` も非メンバーを除外しており、判定を揃えている。
         return PermissionSet(actions=frozenset(), source="not_a_member")
+
+    if role not in ProjectRole.values:
+        # 想定外の役割（移行データ、手作業の UPDATE、空文字）。例外にせず拒否する。
+        # ここで落とすと、壊れたデータ 1 件で案件の画面全体が 500 になる。
+        return PermissionSet(actions=frozenset(), source="unknown_project_role")
 
     return PermissionSet(
         actions=frozenset(settings.PROJECT_ROLE_PERMISSIONS.get(str(role), ())),

@@ -59,6 +59,14 @@ class CurrentTenantMiddleware:
             if tenant and (user.is_superuser or tenant.pk == user.tenant_id):
                 return tenant
 
+            # 選べない ID がセッションに残り続けると、毎リクエスト無駄に引き直す。
+            request.session.pop(TENANT_SESSION_KEY, None)
+
+        # 無効化されたテナントは既定の経路でも通さない。
+        # ここを素通りさせると「テナントを止めた」が利用停止にならない。
+        if user.tenant is not None and not user.tenant.is_active:
+            return None
+
         return user.tenant
 
     def _resolve_project(self, request: HttpRequest):
