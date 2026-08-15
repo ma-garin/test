@@ -121,6 +121,23 @@ class Connection(TimeStampedModel):
         return self.provider in ACTIVITY_PROVIDERS
 
 
+def _mask_deep(value):
+    """入れ子の JSON をたどって、文字列だけマスクする。"""
+
+    from apps.audit.models import mask_secrets
+
+    if isinstance(value, str):
+        return mask_secrets(value)
+
+    if isinstance(value, dict):
+        return {key: _mask_deep(item) for key, item in value.items()}
+
+    if isinstance(value, list):
+        return [_mask_deep(item) for item in value]
+
+    return value
+
+
 class SyncJob(TimeStampedModel):
     """同期の実行履歴。
 
@@ -157,6 +174,8 @@ class SyncJob(TimeStampedModel):
     failed_count = models.PositiveIntegerField("失敗", default=0)
     message = models.TextField("メッセージ", blank=True)
     #: 失敗した明細など。秘密値は入れない。
+    #: 「入れない」と書くだけでは守れないので、保存時にもマスクを通す
+    #: （`save()`）。例外本文に URL やトークンが混ざる経路が実際にある。
     detail = models.JSONField("詳細", default=dict, blank=True)
     triggered_by = models.ForeignKey(
         "accounts.User",
@@ -166,6 +185,16 @@ class SyncJob(TimeStampedModel):
         blank=True,
         related_name="sync_jobs",
     )
+
+    def save(self, *args, **kwargs):
+        # 監査ログ（`apps.audit.models`）と同じ方針を、同期履歴にも適用する。
+        # 履歴は画面へそのまま出るので、ここが漏れると秘密値が表示される。
+        from apps.audit.models import mask_secrets
+
+        self.message = mask_secrets(self.message)
+        self.detail = _mask_deep(self.detail)
+
+        return super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "同期ジョブ"

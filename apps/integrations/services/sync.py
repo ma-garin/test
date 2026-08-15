@@ -120,7 +120,9 @@ def _apply(job: SyncJob, connection: Connection, issues: Iterable[ExternalIssue]
                 {
                     "external_id": external.external_id,
                     "key": external.key,
-                    "reason": f"{error.__class__.__name__}: {error}",
+                    # 例外本文には URL や資格情報が混ざりうる。外側（:79）は
+                    # 型名だけに絞っているので、明細側も同じ方針へ揃える。
+                    "reason": error.__class__.__name__,
                 }
             )
             continue
