@@ -1,0 +1,4644 @@
+{
+  "total": 105,
+  "ok": 97,
+  "ng": 8,
+  "cases": [
+    {
+      "case_id": "RC-change-01",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP01",
+      "viewpoint": "ログインとテナント・案件の切替",
+      "title": "変更管理者としてログインとテナント・案件の切替",
+      "priority": "P1",
+      "expected": "参照は 200 で表示され、view を伴う操作も実行できる",
+      "user_value": "見ている対象が常に画面に出ていて、案件を跨いだ数字の取り違えが起きない",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_tenant",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "accounts:select_project",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 49
+    },
+    {
+      "case_id": "RC-change-02",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP02",
+      "viewpoint": "管制ダッシュボードで全体状況を掴む",
+      "title": "変更管理者として管制ダッシュボードで全体状況を掴む",
+      "priority": "P1",
+      "expected": "参照は 200 で表示され、view を伴う操作も実行できる",
+      "user_value": "朝いちばんに開けば、どの案件が危ないかが1画面で分かる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "RC-change-03",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP03",
+      "viewpoint": "WBSタスクの参照と絞り込み",
+      "title": "変更管理者としてWBSタスクの参照と絞り込み",
+      "priority": "P1",
+      "expected": "参照は 200 で表示され、view を伴う操作も実行できる",
+      "user_value": "期限切れだけを一発で絞り込めて、追いかける対象がすぐ決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 35
+    },
+    {
+      "case_id": "RC-change-04",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP04",
+      "viewpoint": "WBSタスクの作成・編集・アーカイブ",
+      "title": "変更管理者としてWBSタスクの作成・編集・アーカイブ",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "計画の変更をその場で反映でき、古い計画のまま議論しなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:task_create",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_archive",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 27
+    },
+    {
+      "case_id": "RC-change-05",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP05",
+      "viewpoint": "課題の起票とクローズ",
+      "title": "変更管理者として課題の起票とクローズ",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "気づいた課題をその場で残せて、口頭で消えるのを防げる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_close",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "RC-change-06",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP06",
+      "viewpoint": "リスクの登録と課題への転換",
+      "title": "変更管理者としてリスクの登録と課題への転換",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "顕在化したリスクを課題へ引き継げて、記録が途切れない",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:risk",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:risk_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:risk_promote",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "RC-change-07",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP07",
+      "viewpoint": "不具合の登録とクローズ",
+      "title": "変更管理者として不具合の登録とクローズ",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "不具合の状態が一箇所に集まり、収束しているかを数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_close",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "RC-change-08",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP08",
+      "viewpoint": "変更要求の起票と承認判断",
+      "title": "変更管理者として変更要求の起票と承認判断",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、approve を伴う操作は 403 で拒否される",
+      "user_value": "誰がいつ何を理由に決めたかが残り、後から judgement を説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_decide",
+          "method": "POST",
+          "status": 403,
+          "expected_status": [
+            403
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "RC-change-09",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP09",
+      "viewpoint": "予兆検知の実行と結果確認",
+      "title": "変更管理者として予兆検知の実行と結果確認",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "定例報告を待たずに危ない兆候へ先回りできる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "RC-change-10",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP10",
+      "viewpoint": "進捗予測とAI介入提案の判断",
+      "title": "変更管理者として進捗予測とAI介入提案の判断",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、approve を伴う操作は 403 で拒否される",
+      "user_value": "AI の提案を採るか採らないかの判断が証跡として残る",
+      "verdict": "NG",
+      "reason": "手順3: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            403
+          ],
+          "verdict": "NG",
+          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+        }
+      ],
+      "elapsed_ms": 34
+    },
+    {
+      "case_id": "RC-change-11",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP11",
+      "viewpoint": "品質・KPI・PoC 判定の参照",
+      "title": "変更管理者として品質・KPI・PoC 判定の参照",
+      "priority": "P1",
+      "expected": "参照は 200 で表示され、view を伴う操作も実行できる",
+      "user_value": "効果が出ているかを目標値と突き合わせて言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 44
+    },
+    {
+      "case_id": "RC-change-12",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP12",
+      "viewpoint": "文書の登録とひな型出力",
+      "title": "変更管理者として文書の登録とひな型出力",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "根拠になる原本を登録でき、AI の回答が現物に紐づく",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "documents:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:upload",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:upload",
+          "method": "POST",
+          "status": 200,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 33
+    },
+    {
+      "case_id": "RC-change-13",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP13",
+      "viewpoint": "RAG検索・チャット・検索品質の評価",
+      "title": "変更管理者としてRAG検索・チャット・検索品質の評価",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "引用元つきで答えが返り、根拠を自分で確かめられる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "rag:search",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:chat",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:chat",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 45
+    },
+    {
+      "case_id": "RC-change-14",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP14",
+      "viewpoint": "PMO相談・計画策定・成果物・承認",
+      "title": "変更管理者としてPMO相談・計画策定・成果物・承認",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、approve を伴う操作は 403 で拒否される",
+      "user_value": "AI の下書きを人が確かめてから確定でき、誤りが外に出ない",
+      "verdict": "NG",
+      "reason": "手順5: POST pmo:approvals が 302 を返した（期待 [403]）",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:approvals",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:approvals",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            403
+          ],
+          "verdict": "NG",
+          "reason": "POST pmo:approvals が 302 を返した（期待 [403]）"
+        }
+      ],
+      "elapsed_ms": 56
+    },
+    {
+      "case_id": "RC-change-15",
+      "axis": "role",
+      "role": "change",
+      "persona_id": "",
+      "viewpoint_id": "VP15",
+      "viewpoint": "AI設定・監査ログ・外部連携の管理",
+      "title": "変更管理者としてAI設定・監査ログ・外部連携の管理",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、manage を伴う操作は 403 で拒否される",
+      "user_value": "自分の API キーを自分で設定でき、他人のキーに相乗りしなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "core:settings",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:settings",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:settings",
+          "method": "POST",
+          "status": 403,
+          "expected_status": [
+            403
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 45
+    },
+    {
+      "case_id": "PC-P19-01",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "変更管理委員会事務局が初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 25
+    },
+    {
+      "case_id": "PC-P19-02",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "変更管理委員会事務局が朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 34
+    },
+    {
+      "case_id": "PC-P19-03",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "変更管理委員会事務局が週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 39
+    },
+    {
+      "case_id": "PC-P19-04",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "変更管理委員会事務局が異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P19-05",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "変更管理委員会事務局が原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P19-06",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "変更管理委員会事務局が対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P19-07",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "変更管理委員会事務局が関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P19-08",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "変更管理委員会事務局が進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 33
+    },
+    {
+      "case_id": "PC-P19-09",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "変更管理委員会事務局が品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P19-10",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "変更管理委員会事務局が変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "PC-P19-11",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "変更管理委員会事務局が意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "NG",
+      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            403
+          ],
+          "verdict": "NG",
+          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P19-12",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "変更管理委員会事務局が成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P19-13",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "変更管理委員会事務局が根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P19-14",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "変更管理委員会事務局が引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 41
+    },
+    {
+      "case_id": "PC-P19-15",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P19",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "変更管理委員会事務局が振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 判断待ちが滞留していないこと）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P20-01",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "要件変更BAが初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "PC-P20-02",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "要件変更BAが朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 36
+    },
+    {
+      "case_id": "PC-P20-03",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "要件変更BAが週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 37
+    },
+    {
+      "case_id": "PC-P20-04",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "要件変更BAが異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 30
+    },
+    {
+      "case_id": "PC-P20-05",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "要件変更BAが原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "PC-P20-06",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "要件変更BAが対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P20-07",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "要件変更BAが関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 17
+    },
+    {
+      "case_id": "PC-P20-08",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "要件変更BAが進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P20-09",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "要件変更BAが品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P20-10",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "要件変更BAが変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "PC-P20-11",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "要件変更BAが意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "NG",
+      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            403
+          ],
+          "verdict": "NG",
+          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P20-12",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "要件変更BAが成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 27
+    },
+    {
+      "case_id": "PC-P20-13",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "要件変更BAが根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 21
+    },
+    {
+      "case_id": "PC-P20-14",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "要件変更BAが引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 37
+    },
+    {
+      "case_id": "PC-P20-15",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P20",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "要件変更BAが振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 影響を受ける成果物が特定できること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 29
+    },
+    {
+      "case_id": "PC-P21-01",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "契約・見積担当が初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P21-02",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "契約・見積担当が朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "PC-P21-03",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "契約・見積担当が週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 32
+    },
+    {
+      "case_id": "PC-P21-04",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "契約・見積担当が異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P21-05",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "契約・見積担当が原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P21-06",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "契約・見積担当が対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P21-07",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "契約・見積担当が関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P21-08",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "契約・見積担当が進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P21-09",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "契約・見積担当が品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 16
+    },
+    {
+      "case_id": "PC-P21-10",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "契約・見積担当が変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P21-11",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "契約・見積担当が意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 工数影響が数字で入っていること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "NG",
+      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            403
+          ],
+          "verdict": "NG",
+          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P21-12",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "契約・見積担当が成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "PC-P21-13",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "契約・見積担当が根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 17
+    },
+    {
+      "case_id": "PC-P21-14",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "契約・見積担当が引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 74
+    },
+    {
+      "case_id": "PC-P21-15",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P21",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "契約・見積担当が振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 工数影響が数字で入っていること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P22-01",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "緊急変更オンコールが初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P22-02",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "緊急変更オンコールが朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "PC-P22-03",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "緊急変更オンコールが週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 32
+    },
+    {
+      "case_id": "PC-P22-04",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "緊急変更オンコールが異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P22-05",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "緊急変更オンコールが原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P22-06",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "緊急変更オンコールが対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P22-07",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "緊急変更オンコールが関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 14
+    },
+    {
+      "case_id": "PC-P22-08",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "緊急変更オンコールが進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P22-09",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "緊急変更オンコールが品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P22-10",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "緊急変更オンコールが変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P22-11",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "緊急変更オンコールが意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "NG",
+      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            403
+          ],
+          "verdict": "NG",
+          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P22-12",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "緊急変更オンコールが成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P22-13",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "緊急変更オンコールが根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P22-14",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "緊急変更オンコールが引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P22-15",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P22",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "緊急変更オンコールが振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 最短手順で記録だけは残せること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 27
+    },
+    {
+      "case_id": "PC-P23-01",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "マルチベンダー調整役が初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P23-02",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "マルチベンダー調整役が朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 32
+    },
+    {
+      "case_id": "PC-P23-03",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "マルチベンダー調整役が週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 36
+    },
+    {
+      "case_id": "PC-P23-04",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "マルチベンダー調整役が異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 25
+    },
+    {
+      "case_id": "PC-P23-05",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "マルチベンダー調整役が原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P23-06",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "マルチベンダー調整役が対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P23-07",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "マルチベンダー調整役が関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P23-08",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "マルチベンダー調整役が進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P23-09",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "マルチベンダー調整役が品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 16
+    },
+    {
+      "case_id": "PC-P23-10",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "マルチベンダー調整役が変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "PC-P23-11",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "マルチベンダー調整役が意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "NG",
+      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            403
+          ],
+          "verdict": "NG",
+          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P23-12",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "マルチベンダー調整役が成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P23-13",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "マルチベンダー調整役が根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P23-14",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "マルチベンダー調整役が引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P23-15",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P23",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "マルチベンダー調整役が振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 誰の担当かが曖昧にならないこと）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 27
+    },
+    {
+      "case_id": "PC-P24-01",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "変更履歴記録担当が初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P24-02",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "変更履歴記録担当が朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "PC-P24-03",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "変更履歴記録担当が週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 32
+    },
+    {
+      "case_id": "PC-P24-04",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "変更履歴記録担当が異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P24-05",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "変更履歴記録担当が原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P24-06",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "変更履歴記録担当が対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P24-07",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "変更履歴記録担当が関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P24-08",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "変更履歴記録担当が進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P24-09",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "変更履歴記録担当が品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P24-10",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "変更履歴記録担当が変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P24-11",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "変更履歴記録担当が意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 後から履歴を補完できること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "NG",
+      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            403
+          ],
+          "verdict": "NG",
+          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P24-12",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "変更履歴記録担当が成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "PC-P24-13",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "変更履歴記録担当が根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P24-14",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "変更履歴記録担当が引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 32
+    },
+    {
+      "case_id": "PC-P24-15",
+      "axis": "persona",
+      "role": "change",
+      "persona_id": "P24",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "変更履歴記録担当が振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 後から履歴を補完できること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    }
+  ]
+}

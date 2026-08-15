@@ -21,10 +21,10 @@ export DJANGO_SETTINGS_MODULE=config.settings.local
 mkdir -p "$WORK"
 rm -f "$DB"
 
-echo "== 1/4 ブラウザ用のDBを作る =="
+echo "== 1/5 ブラウザ用のDBを作る =="
 $PY manage.py migrate --no-input >/dev/null
 
-echo "== 2/4 NGケースの再実行計画を組む =="
+echo "== 2/5 NGケースの再実行計画を組む =="
 $PY manage.py build_rerun_plan --out "$WORK/rerun-plan.json"
 
 if ! grep -q '"case_id"' "$WORK/rerun-plan.json"; then
@@ -32,7 +32,7 @@ if ! grep -q '"case_id"' "$WORK/rerun-plan.json"; then
   exit 0
 fi
 
-echo "== 3/4 開発サーバーを起動する（127.0.0.1:$PORT） =="
+echo "== 3/5 開発サーバーを起動する（127.0.0.1:$PORT） =="
 $PY manage.py runserver "127.0.0.1:$PORT" --noreload >"$WORK/server.log" 2>&1 &
 SERVER_PID=$!
 # 起動を待たずに叩くと接続拒否で全件 NG になる。応答を確認してから進む。
@@ -45,8 +45,11 @@ done
 
 curl -sf "http://127.0.0.1:$PORT/healthz/" >/dev/null
 
-echo "== 4/4 実ブラウザで再実行し、動画とスクリーンショットを撮る =="
+echo "== 4/5 実ブラウザで再実行し、動画とスクリーンショットを撮る =="
 $PY tools/systemtest/rerun_with_video.py \
   --plan "$WORK/rerun-plan.json" \
   --base-url "http://127.0.0.1:$PORT" \
   --out "$OUT"
+
+echo "== 5/5 結果と動画から検証評価をまとめる =="
+$PY tools/systemtest/evaluate_rerun.py --evidence "$OUT"

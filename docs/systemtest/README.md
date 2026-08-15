@@ -75,3 +75,11 @@ python manage.py run_usecases --settings=config.settings.test --role pmo
 POST も JavaScript でフォームを組んで実際にブラウザから送信し、遷移を動画に残す。
 
 自動実行の仕組み（CI・定期実行）は置いていない。手元で明示的に走らせる。
+
+## 修整前の結果を残しておく理由
+
+`docs/systemtest/results/baseline/` は**修整前**の実行結果。再実行の対象は
+「修整前に NG だったケース」なので、修整後の結果（全部 OK）から対象を作ると
+空になり、直ったことを確かめられない。`build_rerun_plan` は既定で baseline を見る。
+
+修整前の結果を上書きしないこと。上書きすると「何が直ったのか」が消える。

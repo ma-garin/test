@@ -22,7 +22,10 @@ from django.core.management.base import BaseCommand
 from django.urls import reverse
 
 BASE_DIR = Path(__file__).resolve().parents[4]
-RESULTS_DIR = BASE_DIR / "docs" / "systemtest" / "results"
+# 再実行の対象は「修整前に NG だったケース」。修整後の結果（全部 OK）から
+# 作ると対象が空になり、直ったことを確かめられない。修整前の結果は
+# baseline/ に残してあるので、そこを既定にする。
+RESULTS_DIR = BASE_DIR / "docs" / "systemtest" / "results" / "baseline"
 CSV_PATH = BASE_DIR / "docs" / "systemtest" / "usecases" / "usecases.csv"
 
 sys.path.insert(0, str(BASE_DIR / "tools" / "systemtest"))
@@ -33,7 +36,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--out", required=True, help="計画JSONの出力先")
-        parser.add_argument("--results", default=str(RESULTS_DIR), help="結果JSONのディレクトリ")
+        parser.add_argument(
+            "--results", default=str(RESULTS_DIR), help="NGを拾う結果JSONのディレクトリ"
+        )
         parser.add_argument("--csv", default=str(CSV_PATH))
         parser.add_argument("--limit", type=int, default=0, help="先頭N件に絞る（0で全件）")
 

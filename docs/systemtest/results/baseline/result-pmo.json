@@ -1,0 +1,4653 @@
+{
+  "total": 105,
+  "ok": 105,
+  "ng": 0,
+  "cases": [
+    {
+      "case_id": "RC-pmo-01",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP01",
+      "viewpoint": "ログインとテナント・案件の切替",
+      "title": "PMO担当としてログインとテナント・案件の切替",
+      "priority": "P1",
+      "expected": "参照は 200 で表示され、view を伴う操作も実行できる",
+      "user_value": "見ている対象が常に画面に出ていて、案件を跨いだ数字の取り違えが起きない",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_tenant",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "accounts:select_project",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 43
+    },
+    {
+      "case_id": "RC-pmo-02",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP02",
+      "viewpoint": "管制ダッシュボードで全体状況を掴む",
+      "title": "PMO担当として管制ダッシュボードで全体状況を掴む",
+      "priority": "P1",
+      "expected": "参照は 200 で表示され、view を伴う操作も実行できる",
+      "user_value": "朝いちばんに開けば、どの案件が危ないかが1画面で分かる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "RC-pmo-03",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP03",
+      "viewpoint": "WBSタスクの参照と絞り込み",
+      "title": "PMO担当としてWBSタスクの参照と絞り込み",
+      "priority": "P1",
+      "expected": "参照は 200 で表示され、view を伴う操作も実行できる",
+      "user_value": "期限切れだけを一発で絞り込めて、追いかける対象がすぐ決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 29
+    },
+    {
+      "case_id": "RC-pmo-04",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP04",
+      "viewpoint": "WBSタスクの作成・編集・アーカイブ",
+      "title": "PMO担当としてWBSタスクの作成・編集・アーカイブ",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "計画の変更をその場で反映でき、古い計画のまま議論しなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:task_create",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_archive",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "RC-pmo-05",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP05",
+      "viewpoint": "課題の起票とクローズ",
+      "title": "PMO担当として課題の起票とクローズ",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "気づいた課題をその場で残せて、口頭で消えるのを防げる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_close",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 17
+    },
+    {
+      "case_id": "RC-pmo-06",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP06",
+      "viewpoint": "リスクの登録と課題への転換",
+      "title": "PMO担当としてリスクの登録と課題への転換",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "顕在化したリスクを課題へ引き継げて、記録が途切れない",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:risk",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:risk_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:risk_promote",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "RC-pmo-07",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP07",
+      "viewpoint": "不具合の登録とクローズ",
+      "title": "PMO担当として不具合の登録とクローズ",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "不具合の状態が一箇所に集まり、収束しているかを数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_close",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "RC-pmo-08",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP08",
+      "viewpoint": "変更要求の起票と承認判断",
+      "title": "PMO担当として変更要求の起票と承認判断",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、approve を伴う操作も実行できる",
+      "user_value": "誰がいつ何を理由に決めたかが残り、後から judgement を説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "RC-pmo-09",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP09",
+      "viewpoint": "予兆検知の実行と結果確認",
+      "title": "PMO担当として予兆検知の実行と結果確認",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "定例報告を待たずに危ない兆候へ先回りできる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "RC-pmo-10",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP10",
+      "viewpoint": "進捗予測とAI介入提案の判断",
+      "title": "PMO担当として進捗予測とAI介入提案の判断",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、approve を伴う操作も実行できる",
+      "user_value": "AI の提案を採るか採らないかの判断が証跡として残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 27
+    },
+    {
+      "case_id": "RC-pmo-11",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP11",
+      "viewpoint": "品質・KPI・PoC 判定の参照",
+      "title": "PMO担当として品質・KPI・PoC 判定の参照",
+      "priority": "P1",
+      "expected": "参照は 200 で表示され、view を伴う操作も実行できる",
+      "user_value": "効果が出ているかを目標値と突き合わせて言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 38
+    },
+    {
+      "case_id": "RC-pmo-12",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP12",
+      "viewpoint": "文書の登録とひな型出力",
+      "title": "PMO担当として文書の登録とひな型出力",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "根拠になる原本を登録でき、AI の回答が現物に紐づく",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "documents:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:upload",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:upload",
+          "method": "POST",
+          "status": 200,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "RC-pmo-13",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP13",
+      "viewpoint": "RAG検索・チャット・検索品質の評価",
+      "title": "PMO担当としてRAG検索・チャット・検索品質の評価",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、edit を伴う操作も実行できる",
+      "user_value": "引用元つきで答えが返り、根拠を自分で確かめられる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "rag:search",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:chat",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:chat",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 39
+    },
+    {
+      "case_id": "RC-pmo-14",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP14",
+      "viewpoint": "PMO相談・計画策定・成果物・承認",
+      "title": "PMO担当としてPMO相談・計画策定・成果物・承認",
+      "priority": "P0",
+      "expected": "参照は 200 で表示され、approve を伴う操作も実行できる",
+      "user_value": "AI の下書きを人が確かめてから確定でき、誤りが外に出ない",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:approvals",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:approvals",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 47
+    },
+    {
+      "case_id": "RC-pmo-15",
+      "axis": "role",
+      "role": "pmo",
+      "persona_id": "",
+      "viewpoint_id": "VP15",
+      "viewpoint": "AI設定・監査ログ・外部連携の管理",
+      "title": "PMO担当としてAI設定・監査ログ・外部連携の管理",
+      "priority": "P0",
+      "expected": "参照は 200 で表示されるが、manage を伴う操作は 403 で拒否される",
+      "user_value": "自分の API キーを自分で設定でき、他人のキーに相乗りしなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "core:settings",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:settings",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:settings",
+          "method": "POST",
+          "status": 403,
+          "expected_status": [
+            403
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 40
+    },
+    {
+      "case_id": "PC-P01-01",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "横断PMO・8年目が初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 25
+    },
+    {
+      "case_id": "PC-P01-02",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "横断PMO・8年目が朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 36
+    },
+    {
+      "case_id": "PC-P01-03",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "横断PMO・8年目が週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 44
+    },
+    {
+      "case_id": "PC-P01-04",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "横断PMO・8年目が異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 39
+    },
+    {
+      "case_id": "PC-P01-05",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "横断PMO・8年目が原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "PC-P01-06",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "横断PMO・8年目が対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P01-07",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "横断PMO・8年目が関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P01-08",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "横断PMO・8年目が進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 36
+    },
+    {
+      "case_id": "PC-P01-09",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "横断PMO・8年目が品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "PC-P01-10",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "横断PMO・8年目が変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P01-11",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "横断PMO・8年目が意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "一連の画面が 200 で表示され、意思決定の記録を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P01-12",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "横断PMO・8年目が成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P01-13",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "横断PMO・8年目が根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P01-14",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "横断PMO・8年目が引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 41
+    },
+    {
+      "case_id": "PC-P01-15",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P01",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "横断PMO・8年目が振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 案件間で数字の粒度が揃うこと）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 32
+    },
+    {
+      "case_id": "PC-P02-01",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "兼務PMO・情シスが初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "PC-P02-02",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "兼務PMO・情シスが朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 34
+    },
+    {
+      "case_id": "PC-P02-03",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "兼務PMO・情シスが週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 38
+    },
+    {
+      "case_id": "PC-P02-04",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "兼務PMO・情シスが異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P02-05",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "兼務PMO・情シスが原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P02-06",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "兼務PMO・情シスが対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 17
+    },
+    {
+      "case_id": "PC-P02-07",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "兼務PMO・情シスが関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 17
+    },
+    {
+      "case_id": "PC-P02-08",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "兼務PMO・情シスが進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P02-09",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "兼務PMO・情シスが品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P02-10",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "兼務PMO・情シスが変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "PC-P02-11",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "兼務PMO・情シスが意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "一連の画面が 200 で表示され、意思決定の記録を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P02-12",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "兼務PMO・情シスが成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P02-13",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "兼務PMO・情シスが根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 21
+    },
+    {
+      "case_id": "PC-P02-14",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "兼務PMO・情シスが引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 37
+    },
+    {
+      "case_id": "PC-P02-15",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P02",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "兼務PMO・情シスが振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 短時間で異常だけを拾えること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 32
+    },
+    {
+      "case_id": "PC-P03-01",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "新任PMO・3ヶ月目が初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 25
+    },
+    {
+      "case_id": "PC-P03-02",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "新任PMO・3ヶ月目が朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 35
+    },
+    {
+      "case_id": "PC-P03-03",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "新任PMO・3ヶ月目が週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 38
+    },
+    {
+      "case_id": "PC-P03-04",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "新任PMO・3ヶ月目が異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 32
+    },
+    {
+      "case_id": "PC-P03-05",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "新任PMO・3ヶ月目が原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P03-06",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "新任PMO・3ヶ月目が対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 17
+    },
+    {
+      "case_id": "PC-P03-07",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "新任PMO・3ヶ月目が関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P03-08",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "新任PMO・3ヶ月目が進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P03-09",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "新任PMO・3ヶ月目が品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P03-10",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "新任PMO・3ヶ月目が変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 25
+    },
+    {
+      "case_id": "PC-P03-11",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "新任PMO・3ヶ月目が意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "一連の画面が 200 で表示され、意思決定の記録を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P03-12",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "新任PMO・3ヶ月目が成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P03-13",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "新任PMO・3ヶ月目が根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "PC-P03-14",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "新任PMO・3ヶ月目が引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 72
+    },
+    {
+      "case_id": "PC-P03-15",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P03",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "新任PMO・3ヶ月目が振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 次に何をすればよいかが示されること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "PC-P04-01",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "監査対応PMOが初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 21
+    },
+    {
+      "case_id": "PC-P04-02",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "監査対応PMOが朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 30
+    },
+    {
+      "case_id": "PC-P04-03",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "監査対応PMOが週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P04-04",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "監査対応PMOが異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P04-05",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "監査対応PMOが原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P04-06",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "監査対応PMOが対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 14
+    },
+    {
+      "case_id": "PC-P04-07",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "監査対応PMOが関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P04-08",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "監査対応PMOが進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 26
+    },
+    {
+      "case_id": "PC-P04-09",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "監査対応PMOが品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P04-10",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "監査対応PMOが変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P04-11",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "監査対応PMOが意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "一連の画面が 200 で表示され、意思決定の記録を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 15
+    },
+    {
+      "case_id": "PC-P04-12",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "監査対応PMOが成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "PC-P04-13",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "監査対応PMOが根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 17
+    },
+    {
+      "case_id": "PC-P04-14",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "監査対応PMOが引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P04-15",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P04",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "監査対応PMOが振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 誰がいつ何を根拠に決めたかが辿れること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 27
+    },
+    {
+      "case_id": "PC-P05-01",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "リモート常駐PMOが初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 21
+    },
+    {
+      "case_id": "PC-P05-02",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "リモート常駐PMOが朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "PC-P05-03",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "リモート常駐PMOが週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 30
+    },
+    {
+      "case_id": "PC-P05-04",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "リモート常駐PMOが異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "PC-P05-05",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "リモート常駐PMOが原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 18
+    },
+    {
+      "case_id": "PC-P05-06",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "リモート常駐PMOが対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 14
+    },
+    {
+      "case_id": "PC-P05-07",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "リモート常駐PMOが関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 14
+    },
+    {
+      "case_id": "PC-P05-08",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "リモート常駐PMOが進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "PC-P05-09",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "リモート常駐PMOが品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P05-10",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "リモート常駐PMOが変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P05-11",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "リモート常駐PMOが意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "一連の画面が 200 で表示され、意思決定の記録を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 16
+    },
+    {
+      "case_id": "PC-P05-12",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "リモート常駐PMOが成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 25
+    },
+    {
+      "case_id": "PC-P05-13",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "リモート常駐PMOが根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 20
+    },
+    {
+      "case_id": "PC-P05-14",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "リモート常駐PMOが引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 35
+    },
+    {
+      "case_id": "PC-P05-15",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P05",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "リモート常駐PMOが振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 会議に出なくても状況が分かること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 29
+    },
+    {
+      "case_id": "PC-P06-01",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST01",
+      "viewpoint": "初回オンボーディング",
+      "title": "PMO室長が初回オンボーディングを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、初回オンボーディングを最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "初めて開いた人が、どこから手を付けるかを自力で決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "core:screen_map",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:education",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 23
+    },
+    {
+      "case_id": "PC-P06-02",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST02",
+      "viewpoint": "朝の状況把握",
+      "title": "PMO室長が朝の状況把握を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、朝の状況把握を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "出社して5分で、今日追いかける対象が決まる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:control",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P06-03",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST03",
+      "viewpoint": "週次報告の準備",
+      "title": "PMO室長が週次報告の準備を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、週次報告の準備を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "報告に使う数字が、根拠つきでそのまま取り出せる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:progress",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:kpi",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 36
+    },
+    {
+      "case_id": "PC-P06-04",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST04",
+      "viewpoint": "異常の発見",
+      "title": "PMO室長が異常の発見を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、異常の発見を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "定例を待たずに、危ない兆候をその場で拾える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection_run",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 31
+    },
+    {
+      "case_id": "PC-P06-05",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST05",
+      "viewpoint": "原因の深掘り",
+      "title": "PMO室長が原因の深掘りを行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、原因の深掘りを最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "AI の答えの根拠を後から辿れて、鵜呑みにせずに済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:consultation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "PC-P06-06",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST06",
+      "viewpoint": "対策の起票",
+      "title": "PMO室長が対策の起票を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、対策の起票を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "決めた対策がその場で記録され、次の週まで残る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "projects:issue_create",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 16
+    },
+    {
+      "case_id": "PC-P06-07",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST07",
+      "viewpoint": "関係者への依頼",
+      "title": "PMO室長が関係者への依頼を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、関係者への依頼を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "誰に何を催促すべきかが名前つきで出る",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:ops_rules",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "integrations:pipeline",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 16
+    },
+    {
+      "case_id": "PC-P06-08",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST08",
+      "viewpoint": "進捗の追跡",
+      "title": "PMO室長が進捗の追跡を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、進捗の追跡を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "計画と実績のずれが、日付の並びとして目で見える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:tasks",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:task_detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 28
+    },
+    {
+      "case_id": "PC-P06-09",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST09",
+      "viewpoint": "品質の確認",
+      "title": "PMO室長が品質の確認を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、品質の確認を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "不具合が収束に向かっているかを、印象でなく数字で言える",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:quality",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:defect_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 17
+    },
+    {
+      "case_id": "PC-P06-10",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST10",
+      "viewpoint": "変更の影響評価",
+      "title": "PMO室長が変更の影響評価を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "変更が何にぶつかるかを、決める前に把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:change",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:change_edit",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 22
+    },
+    {
+      "case_id": "PC-P06-11",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST11",
+      "viewpoint": "意思決定の記録",
+      "title": "PMO室長が意思決定の記録を行う",
+      "priority": "P0",
+      "expected": "一連の画面が 200 で表示され、意思決定の記録を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:intervention",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:intervention_decide",
+          "method": "POST",
+          "status": 302,
+          "expected_status": [
+            200,
+            302
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 16
+    },
+    {
+      "case_id": "PC-P06-12",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST12",
+      "viewpoint": "成果物の作成",
+      "title": "PMO室長が成果物の作成を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、成果物の作成を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "下書きが出てくるので、白紙から書き始めなくて済む",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "pmo:deliverables",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "pmo:planning",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "documents:template_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 24
+    },
+    {
+      "case_id": "PC-P06-13",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST13",
+      "viewpoint": "根拠の確認・監査対応",
+      "title": "PMO室長が根拠の確認・監査対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、根拠の確認・監査対応を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "操作と判断の記録が揃っていて、監査で説明できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "audit:operation_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "agents:run_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 19
+    },
+    {
+      "case_id": "PC-P06-14",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST14",
+      "viewpoint": "引き継ぎ・不在対応",
+      "title": "PMO室長が引き継ぎ・不在対応を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、引き継ぎ・不在対応を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "担当を引き継ぐ人が、案件の現在地を1画面で把握できる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "accounts:select_project",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "projects:detail",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 34
+    },
+    {
+      "case_id": "PC-P06-15",
+      "axis": "persona",
+      "role": "pmo",
+      "persona_id": "P06",
+      "viewpoint_id": "ST15",
+      "viewpoint": "振り返りと改善",
+      "title": "PMO室長が振り返りと改善を行う",
+      "priority": "P1",
+      "expected": "一連の画面が 200 で表示され、振り返りと改善を最後まで完了できる（重視点: 出した数字の根拠を即答できること）",
+      "user_value": "効果が出たかを目標値と突き合わせ、次の打ち手を決められる",
+      "verdict": "OK",
+      "reason": "",
+      "steps": [
+        {
+          "url_name": "dashboard:poc",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "audit:feedback_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
+        }
+      ],
+      "elapsed_ms": 29
+    }
+  ]
+}
