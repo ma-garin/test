@@ -1,4 +1,4 @@
-.PHONY: help setup migrate seed run test lint fmt check index clean usecases systemtest rerun-ng odc
+.PHONY: help setup migrate seed run test lint fmt check index clean usecases systemtest odc
 
 VENV ?= .venv
 PY := $(VENV)/bin/python
@@ -48,9 +48,6 @@ systemtest:  ## ユースケースを全件実行する（専用のテストDB�
 
 odc:  ## 不具合を ODC で分類し直す
 	$(PY) tools/systemtest/odc.py
-
-rerun-ng:  ## NGケースを実ブラウザで再実行し、動画とスクリーンショットを撮る
-	tools/systemtest/rerun_ng.sh
 
 clean:  ## 生成物を削除する
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +

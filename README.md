@@ -53,7 +53,6 @@ make check      # システムチェック + マイグレーション漏れ検�
 ```bash
 make systemtest   # ユースケース 735 件をロール別に実行する
 make odc          # 不具合を ODC で分類する
-make rerun-ng     # NG を修整したあと、実ブラウザで再実行して動画を残す
 ```
 
 進め方と考え方は `docs/systemtest/README.md` にあります。

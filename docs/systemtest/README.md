@@ -10,18 +10,17 @@
 docs/systemtest/
 ├── usecases/usecases.csv    ユースケース一覧（735件・生成物。手で編集しない）
 ├── scan/defect-register.md  静的スキャンで洗い出した不具合台帳
-├── results/result-*.json    ロール別の実行結果
-├── odc/                     ODC による不具合分析
-└── evidence/                NG 再実行の動画・スクリーンショット・判定
+├── results/result-*.json    ロール別の実行結果（修整後）
+├── results/baseline/        修整前の実行結果（上書きしない）
+└── odc/                     ODC による不具合分析
 
 tools/systemtest/
 ├── catalog.py               ロール軸・ペルソナ軸の定義（ケースの source of truth）
 ├── generate_usecases.py     CSV 生成と MECE の機械検証
-└── rerun_with_video.py      NG ケースを実ブラウザで再実行し動画を撮る
+└── odc.py                   ODC 分類と分析レポートの生成
 
 apps/core/management/commands/
-├── run_usecases.py          ユースケースの実行（Django テストクライアント）
-└── build_rerun_plan.py      NG ケースの再実行計画とブラウザ用DBの用意
+└── run_usecases.py          ユースケースの実行（Django テストクライアント）
 ```
 
 ## ケースの作り方（MECE）
@@ -61,7 +60,6 @@ apps/core/management/commands/
 make usecases     # ケースを生成し直す（catalog.py を変えたときだけ）
 make systemtest   # 全ロールを実行する（専用のテストDBを作る。開発DBは触らない）
 make odc          # 不具合を ODC で分類し直す
-make rerun-ng     # NG を修整したあと、実ブラウザで再実行して動画を残す
 ```
 
 ロールを絞って実行するとき:
@@ -70,16 +68,11 @@ make rerun-ng     # NG を修整したあと、実ブラウザで再実行して
 python manage.py run_usecases --settings=config.settings.test --role pmo
 ```
 
-再実行を実ブラウザで行うのは、HTTP のやり取りだけでは写らない壊れ方
-（画面は 200 だが中身が空、ボタンが押せない、遷移先が違う）を捕まえるため。
-POST も JavaScript でフォームを組んで実際にブラウザから送信し、遷移を動画に残す。
-
 自動実行の仕組み（CI・定期実行）は置いていない。手元で明示的に走らせる。
 
 ## 修整前の結果を残しておく理由
 
-`docs/systemtest/results/baseline/` は**修整前**の実行結果。再実行の対象は
-「修整前に NG だったケース」なので、修整後の結果（全部 OK）から対象を作ると
-空になり、直ったことを確かめられない。`build_rerun_plan` は既定で baseline を見る。
+`docs/systemtest/results/baseline/` は**修整前**の実行結果（735 件 / NG 41）。
+`results/result-*.json` が**修整後**（735 件 / NG 0）。
 
-修整前の結果を上書きしないこと。上書きすると「何が直ったのか」が消える。
+修整前を上書きしないこと。上書きすると「何が直ったのか」が消える。

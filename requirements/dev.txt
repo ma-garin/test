@@ -4,8 +4,3 @@
 
 ruff>=0.6
 coverage>=7.6
-
-# NG になったユースケースを実ブラウザで再実行し、動画を残すために使う
-# （tools/systemtest/rerun_with_video.py）。ブラウザ本体はバージョンと
-# 対になっているので、環境に入っているビルドに合わせて固定する。
-playwright==1.56.0
