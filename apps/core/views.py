@@ -66,6 +66,8 @@ def settings_page(request: HttpRequest) -> HttpResponse:
     from apps.core.services.ai_settings import (
         SCOPE_LABELS,
         effective_config,
+        env_config,
+        inherited_config,
         masked_ai_settings,
         personal_credentials_allowed,
         verify_connection,
@@ -85,12 +87,18 @@ def settings_page(request: HttpRequest) -> HttpResponse:
             tenant=tenant
         ).first() or TenantAISetting(tenant=tenant)
 
-    # 個人設定を空欄にしたときに何が使われるか。画面へ出すために先に解いておく。
-    inherited = effective_config(user=None, tenant=tenant)
+    # 空欄にしたときに何が使われるか。欄ごとに具体値を出すため先に解いておく。
+    # 個人設定の継承元はテナント既定＋環境変数、テナント既定の継承元は環境変数のみ。
+    # ここで `effective_config()` を使うと自分自身の個人設定まで混ざり、
+    # 「空欄にしたら戻る先」ではなく「いまの値」を見せてしまう。
+    inherited = inherited_config(tenant)
+    tenant_inherited = env_config()
 
     user_form = UserAISettingForm(instance=user_setting, inherited=inherited)
     tenant_form = (
-        TenantAISettingForm(instance=tenant_setting) if tenant_setting is not None else None
+        TenantAISettingForm(instance=tenant_setting, inherited=tenant_inherited)
+        if tenant_setting is not None
+        else None
     )
     connection = None
 
@@ -150,7 +158,9 @@ def settings_page(request: HttpRequest) -> HttpResponse:
 
                 return redirect("core:settings")
 
-            tenant_form = TenantAISettingForm(request.POST, instance=tenant_setting)
+            tenant_form = TenantAISettingForm(
+                request.POST, instance=tenant_setting, inherited=tenant_inherited
+            )
 
             if tenant_form.is_valid():
                 saved = tenant_form.save(commit=False)
@@ -187,6 +197,8 @@ def settings_page(request: HttpRequest) -> HttpResponse:
         else:
             messages.error(request, "不明な操作です。")
 
+    from apps.core.services.ai_settings import PROVIDER_LABELS
+
     context = {
         "ai_settings": masked_ai_settings(user=request.user, tenant=tenant),
         "user_form": user_form,
@@ -194,6 +206,16 @@ def settings_page(request: HttpRequest) -> HttpResponse:
         "can_manage_tenant": can_manage_tenant,
         "personal_allowed": personal_allowed,
         "has_user_setting": user_setting.pk is not None,
+        # 「空欄なら何が使われるか」を、プロバイダ選択の説明文にも出す。
+        "inherited_provider_label": PROVIDER_LABELS.get(
+            inherited.provider, inherited.provider
+        ),
+        "env_provider_label": PROVIDER_LABELS.get(
+            tenant_inherited.provider, tenant_inherited.provider
+        ),
+        "user_saved_secret": (
+            user_form.masked_secrets.get("openai_api_key") if user_setting.pk else ""
+        ),
         "connection": connection,
         "scope_labels": SCOPE_LABELS,
         "page_title": "AI設定",

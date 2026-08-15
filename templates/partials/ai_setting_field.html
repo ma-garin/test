@@ -1,0 +1,27 @@
+{% comment %}
+入力欄1つ。`row` は forms.AISettingFormMixin.rows() が返す辞書。
+
+空欄にしたときに実際に使われる値（hint）を必ず添える。placeholder の
+「空欄なら上位に従う」だけでは上位が何か分からず、利用者は空欄を避けて
+既定値を書き写す。すると上位を変えても反映されない設定が手元に残る。
+{% endcomment %}
+
+{% if row.is_checkbox %}
+  <label class="setswitch setswitch--infield">
+    {{ row.field }}
+    <span>
+      <span class="setswitch-n">{{ row.field.label }}</span>
+      {% if row.field.help_text %}<span class="setswitch-h">{{ row.field.help_text }}</span>{% endif %}
+    </span>
+  </label>
+{% else %}
+  <div class="setfield{% if row.field.errors %} is-invalid{% endif %}">
+    <label class="setfield-l" for="{{ row.field.id_for_label }}">{{ row.field.label }}</label>
+    {{ row.field }}
+    {% if row.hint %}
+      <p class="setfield-hint">空欄なら <strong>{{ row.hint.value }}</strong> <span class="setfield-src">{{ row.hint.source }}</span></p>
+    {% endif %}
+    {% if row.field.help_text %}<p class="setfield-help">{{ row.field.help_text }}</p>{% endif %}
+    {% for error in row.field.errors %}<p class="field-error" data-field-error="{{ row.field.id_for_label }}">{{ error }}</p>{% endfor %}
+  </div>
+{% endif %}

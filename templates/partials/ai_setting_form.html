@@ -1,0 +1,107 @@
+{% comment %}
+AI設定のフォーム1つぶん。個人設定とテナント既定で同じ構造を使う。
+
+呼び出し側が渡すもの:
+  form          … UserAISettingForm / TenantAISettingForm
+  scope         … "user" / "tenant"（POST 先の判別に使う hidden の値）
+  submit_label  … 保存ボタンの文言
+  saved_secret  … 保存済み APIキーのマスク表示（無ければ空）
+
+プロバイダ別の節は `data-provider-section` を持ち、選んだプロバイダのものだけを
+表示する。JavaScript が無効でも、いま効いているプロバイダの節は開いた状態で出す。
+{% endcomment %}
+
+<form method="post" class="setform" data-provider-form
+      data-inherited-provider="{{ form.inherited.provider|default:"" }}">
+  {% csrf_token %}
+  <input type="hidden" name="scope" value="{{ scope }}">
+
+  {% if form.non_field_errors %}
+    <div class="callout d" role="alert">{{ form.non_field_errors|join:" " }}</div>
+  {% endif %}
+
+  <fieldset class="setgroup">
+    <legend class="setgroup-t">接続先</legend>
+    <p class="setgroup-d">どのAIで動かすかを選びます。選んだものの入力欄だけが下に出ます。</p>
+
+    <div class="provider-opts">
+      {% for radio in form.provider %}
+        <label class="provider-opt">
+          {{ radio.tag }}
+          <span class="provider-opt-body">
+            <span class="provider-opt-name">{{ radio.choice_label }}</span>
+            <span class="provider-opt-note">
+              {% if radio.data.value == "openai" %}外部のOpenAI APIを使います。APIキーが要ります。
+              {% elif radio.data.value == "ollama" %}手元・社内のOllamaを使います。データを外へ出しません。
+              {% elif radio.data.value == "local_hash" %}APIキー不要。意味的な近さは扱えないため検証用です。
+              {% else %}{% if inherited_provider_label %}いまは「{{ inherited_provider_label }}」が使われます。{% else %}上位の設定をそのまま使います。{% endif %}
+              {% endif %}
+            </span>
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+    {% for error in form.provider.errors %}<p class="field-error" data-field-error="{{ form.provider.id_for_label }}">{{ error }}</p>{% endfor %}
+  </fieldset>
+
+  {% for section in form.sections %}
+    {% if not section.advanced %}
+      <fieldset class="setgroup"
+                {% if section.provider %}data-provider-section="{{ section.provider }}"{% if section.provider != form.selected_provider %} hidden{% endif %}{% endif %}>
+        <legend class="setgroup-t">{{ section.title }}</legend>
+        <p class="setgroup-d">{{ section.description }}</p>
+        <div class="setgrid">
+          {% for row in section.rows %}{% include "partials/ai_setting_field.html" %}{% endfor %}
+        </div>
+      </fieldset>
+    {% endif %}
+  {% endfor %}
+
+  {% comment %}
+  認証情報を持たないプロバイダ（ローカルハッシュ）を使っているときは、入力欄が
+  1つも出ない。何も出ないままだと「APIキーを入れる場所が無い」に見えるため、
+  どうすれば欄が出るのかをここで示す。
+  {% endcomment %}
+  <p class="setempty" data-provider-empty
+     {% if form.selected_provider == "openai" or form.selected_provider == "ollama" %}hidden{% endif %}>
+    上の「接続先」で <strong>OpenAI API</strong> か <strong>Ollama</strong> を選ぶと、APIキーなどの入力欄がここに出ます。
+    いま選ばれている接続先は認証情報を必要としません。
+  </p>
+
+  <details class="setadv">
+    <summary class="setadv-s">詳細設定（検索とエージェントの調整）</summary>
+    <div class="setadv-b">
+      {% for section in form.sections %}
+        {% if section.advanced %}
+          <fieldset class="setgroup setgroup--flat">
+            <legend class="setgroup-t">{{ section.title }}</legend>
+            <p class="setgroup-d">{{ section.description }}</p>
+            <div class="setgrid">
+              {% for row in section.rows %}{% include "partials/ai_setting_field.html" %}{% endfor %}
+            </div>
+          </fieldset>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </details>
+
+  <div class="setfoot">
+    {% for row in form.lead_rows %}
+      {% if row.is_checkbox %}
+        <label class="setswitch">
+          {{ row.field }}
+          <span>
+            <span class="setswitch-n">{{ row.field.label }}</span>
+            {% if row.field.help_text %}<span class="setswitch-h">{{ row.field.help_text }}</span>{% endif %}
+          </span>
+        </label>
+      {% endif %}
+    {% endfor %}
+    <div class="setfoot-act">
+      <button type="submit" class="btn-b">{{ submit_label }}</button>
+      {% if saved_secret %}
+        <span class="muted">保存済みのAPIキー: <code>{{ saved_secret }}</code></span>
+      {% endif %}
+    </div>
+  </div>
+</form>

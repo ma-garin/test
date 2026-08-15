@@ -255,6 +255,29 @@ def effective_config(user=None, tenant=None) -> AIConfig:
     return config
 
 
+def inherited_config(tenant=None) -> AIConfig:
+    """個人設定を**除いた**解決結果（テナント既定 → 環境変数）。
+
+    設定画面で「この欄を空欄にしたら何が使われるか」を出すために使う。
+    `effective_config()` は user を省略するとリクエスト文脈の利用者を拾い、
+    その人自身の個人設定まで重ねてしまうため、継承元の表示には使えない。
+    """
+
+    config = _env_config()
+
+    tenant_setting = tenant_setting_for(tenant)
+    _overlay(config, tenant_setting, "tenant", mapping=_OVERRIDABLE)
+    _overlay(config, tenant_setting, "tenant", mapping=_TENANT_ONLY)
+
+    return config
+
+
+def env_config() -> AIConfig:
+    """環境変数だけの解決結果。テナント既定の画面での継承元表示に使う。"""
+
+    return _env_config()
+
+
 def personal_credentials_allowed(tenant) -> bool:
     """テナントが利用者ごとの API 設定を許可しているか。"""
 
