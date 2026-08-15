@@ -1,7 +1,7 @@
 {
   "total": 105,
-  "ok": 97,
-  "ng": 8,
+  "ok": 105,
+  "ng": 0,
   "cases": [
     {
       "case_id": "RC-change-01",
@@ -48,7 +48,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 49
+      "elapsed_ms": 18
     },
     {
       "case_id": "RC-change-02",
@@ -85,7 +85,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 24
+      "elapsed_ms": 60
     },
     {
       "case_id": "RC-change-03",
@@ -132,7 +132,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 35
+      "elapsed_ms": 34
     },
     {
       "case_id": "RC-change-04",
@@ -167,7 +167,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:task_archive",
@@ -216,7 +217,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_close",
@@ -265,7 +267,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:risk_promote",
@@ -278,7 +281,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 28
     },
     {
       "case_id": "RC-change-07",
@@ -313,7 +316,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:defect_close",
@@ -327,7 +331,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 25
     },
     {
       "case_id": "RC-change-08",
@@ -364,7 +368,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 17
     },
     {
       "case_id": "RC-change-09",
@@ -402,7 +406,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 22
     },
     {
       "case_id": "RC-change-10",
@@ -415,8 +419,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、approve を伴う操作は 403 で拒否される",
       "user_value": "AI の提案を採るか採らないかの判断が証跡として残る",
-      "verdict": "NG",
-      "reason": "手順3: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:progress",
@@ -441,15 +445,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 29
     },
     {
       "case_id": "RC-change-11",
@@ -506,7 +511,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 44
+      "elapsed_ms": 40
     },
     {
       "case_id": "RC-change-12",
@@ -561,7 +566,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
       "elapsed_ms": 33
@@ -609,7 +615,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 2
         },
         {
           "url_name": "rag:evaluation",
@@ -622,7 +629,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 45
+      "elapsed_ms": 40
     },
     {
       "case_id": "RC-change-14",
@@ -635,8 +642,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、approve を伴う操作は 403 で拒否される",
       "user_value": "AI の下書きを人が確かめてから確定でき、誤りが外に出ない",
-      "verdict": "NG",
-      "reason": "手順5: POST pmo:approvals が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "pmo:consultation",
@@ -681,15 +688,16 @@
         {
           "url_name": "pmo:approvals",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST pmo:approvals が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 56
+      "elapsed_ms": 51
     },
     {
       "case_id": "RC-change-15",
@@ -756,7 +764,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 45
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P19-01",
@@ -803,7 +811,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 25
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P19-02",
@@ -850,7 +858,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P19-03",
@@ -897,7 +905,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 39
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P19-04",
@@ -945,7 +953,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P19-05",
@@ -982,7 +990,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P19-06",
@@ -1007,7 +1015,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -1020,7 +1029,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 22
     },
     {
       "case_id": "PC-P19-07",
@@ -1057,7 +1066,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P19-08",
@@ -1104,7 +1113,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 33
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P19-09",
@@ -1141,7 +1150,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P19-10",
@@ -1178,7 +1187,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 24
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P19-11",
@@ -1191,8 +1200,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 判断待ちが滞留していないこと）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -1207,15 +1216,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P19-12",
@@ -1262,7 +1272,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P19-13",
@@ -1309,7 +1319,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P19-14",
@@ -1356,7 +1366,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 41
+      "elapsed_ms": 43
     },
     {
       "case_id": "PC-P19-15",
@@ -1403,7 +1413,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P20-01",
@@ -1450,7 +1460,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 24
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P20-02",
@@ -1497,7 +1507,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 36
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P20-03",
@@ -1544,7 +1554,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 37
+      "elapsed_ms": 44
     },
     {
       "case_id": "PC-P20-04",
@@ -1592,7 +1602,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 30
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P20-05",
@@ -1629,7 +1639,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 24
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P20-06",
@@ -1654,7 +1664,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -1667,7 +1678,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P20-07",
@@ -1704,7 +1715,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P20-08",
@@ -1751,7 +1762,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P20-09",
@@ -1788,7 +1799,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P20-10",
@@ -1825,7 +1836,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 24
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P20-11",
@@ -1838,8 +1849,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 影響を受ける成果物が特定できること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -1854,12 +1865,13 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
       "elapsed_ms": 18
@@ -1909,7 +1921,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 32
     },
     {
       "case_id": "PC-P20-13",
@@ -1956,7 +1968,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 26
     },
     {
       "case_id": "PC-P20-14",
@@ -2003,7 +2015,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 37
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P20-15",
@@ -2050,7 +2062,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 39
     },
     {
       "case_id": "PC-P21-01",
@@ -2097,7 +2109,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P21-02",
@@ -2144,7 +2156,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 39
     },
     {
       "case_id": "PC-P21-03",
@@ -2191,7 +2203,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P21-04",
@@ -2239,7 +2251,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P21-05",
@@ -2276,7 +2288,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P21-06",
@@ -2301,7 +2313,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -2314,7 +2327,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 22
     },
     {
       "case_id": "PC-P21-07",
@@ -2351,7 +2364,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P21-08",
@@ -2398,7 +2411,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P21-09",
@@ -2435,7 +2448,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P21-10",
@@ -2472,7 +2485,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P21-11",
@@ -2485,8 +2498,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 工数影響が数字で入っていること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -2501,15 +2514,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P21-12",
@@ -2556,7 +2570,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P21-13",
@@ -2603,7 +2617,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 24
     },
     {
       "case_id": "PC-P21-14",
@@ -2650,7 +2664,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 74
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P21-15",
@@ -2697,7 +2711,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P22-01",
@@ -2744,7 +2758,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P22-02",
@@ -2791,7 +2805,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 39
     },
     {
       "case_id": "PC-P22-03",
@@ -2838,7 +2852,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 43
     },
     {
       "case_id": "PC-P22-04",
@@ -2886,7 +2900,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P22-05",
@@ -2923,7 +2937,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 31
     },
     {
       "case_id": "PC-P22-06",
@@ -2948,7 +2962,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -2961,7 +2976,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 22
     },
     {
       "case_id": "PC-P22-07",
@@ -2998,7 +3013,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 14
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P22-08",
@@ -3045,7 +3060,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P22-09",
@@ -3082,7 +3097,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P22-10",
@@ -3119,7 +3134,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P22-11",
@@ -3132,8 +3147,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 最短手順で記録だけは残せること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -3148,15 +3163,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P22-12",
@@ -3203,7 +3219,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P22-13",
@@ -3250,7 +3266,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P22-14",
@@ -3297,7 +3313,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 43
     },
     {
       "case_id": "PC-P22-15",
@@ -3344,7 +3360,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P23-01",
@@ -3391,7 +3407,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P23-02",
@@ -3438,7 +3454,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P23-03",
@@ -3485,7 +3501,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 36
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P23-04",
@@ -3533,7 +3549,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 25
+      "elapsed_ms": 37
     },
     {
       "case_id": "PC-P23-05",
@@ -3570,7 +3586,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P23-06",
@@ -3595,7 +3611,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -3608,7 +3625,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P23-07",
@@ -3645,7 +3662,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P23-08",
@@ -3692,7 +3709,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 34
     },
     {
       "case_id": "PC-P23-09",
@@ -3729,7 +3746,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P23-10",
@@ -3766,7 +3783,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P23-11",
@@ -3779,8 +3796,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 誰の担当かが曖昧にならないこと）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -3795,15 +3812,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P23-12",
@@ -3850,7 +3868,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 32
     },
     {
       "case_id": "PC-P23-13",
@@ -3897,7 +3915,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P23-14",
@@ -3944,7 +3962,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 41
     },
     {
       "case_id": "PC-P23-15",
@@ -3991,7 +4009,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P24-01",
@@ -4038,7 +4056,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P24-02",
@@ -4085,7 +4103,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P24-03",
@@ -4132,7 +4150,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P24-04",
@@ -4180,7 +4198,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P24-05",
@@ -4217,7 +4235,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 32
     },
     {
       "case_id": "PC-P24-06",
@@ -4242,7 +4260,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -4255,7 +4274,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 27
     },
     {
       "case_id": "PC-P24-07",
@@ -4292,7 +4311,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P24-08",
@@ -4339,7 +4358,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 34
     },
     {
       "case_id": "PC-P24-09",
@@ -4376,7 +4395,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P24-10",
@@ -4413,7 +4432,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 27
     },
     {
       "case_id": "PC-P24-11",
@@ -4426,8 +4445,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 後から履歴を補完できること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -4442,15 +4461,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P24-12",
@@ -4497,7 +4517,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P24-13",
@@ -4544,7 +4564,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 24
     },
     {
       "case_id": "PC-P24-14",
@@ -4591,7 +4611,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P24-15",
@@ -4638,7 +4658,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 36
     }
   ]
 }

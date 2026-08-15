@@ -48,7 +48,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 39
+      "elapsed_ms": 18
     },
     {
       "case_id": "RC-tenant_admin-02",
@@ -85,7 +85,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 23
     },
     {
       "case_id": "RC-tenant_admin-03",
@@ -132,7 +132,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 39
     },
     {
       "case_id": "RC-tenant_admin-04",
@@ -167,7 +167,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:task_archive",
@@ -181,7 +182,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 26
     },
     {
       "case_id": "RC-tenant_admin-05",
@@ -216,7 +217,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_close",
@@ -230,7 +232,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 26
     },
     {
       "case_id": "RC-tenant_admin-06",
@@ -265,7 +267,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:risk_promote",
@@ -278,7 +281,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 27
     },
     {
       "case_id": "RC-tenant_admin-07",
@@ -313,7 +316,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:defect_close",
@@ -327,7 +331,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 35
     },
     {
       "case_id": "RC-tenant_admin-08",
@@ -365,7 +369,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 20
     },
     {
       "case_id": "RC-tenant_admin-09",
@@ -403,7 +407,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 36
     },
     {
       "case_id": "RC-tenant_admin-10",
@@ -448,10 +452,11 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 34
     },
     {
       "case_id": "RC-tenant_admin-11",
@@ -508,7 +513,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 36
+      "elapsed_ms": 45
     },
     {
       "case_id": "RC-tenant_admin-12",
@@ -563,10 +568,11 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 37
     },
     {
       "case_id": "RC-tenant_admin-13",
@@ -611,7 +617,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 2
         },
         {
           "url_name": "rag:evaluation",
@@ -624,7 +631,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 36
+      "elapsed_ms": 47
     },
     {
       "case_id": "RC-tenant_admin-14",
@@ -689,10 +696,11 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
-      "elapsed_ms": 45
+      "elapsed_ms": 58
     },
     {
       "case_id": "RC-tenant_admin-15",
@@ -760,7 +768,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 38
+      "elapsed_ms": 47
     },
     {
       "case_id": "PC-P31-01",
@@ -807,7 +815,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P31-02",
@@ -854,7 +862,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 45
     },
     {
       "case_id": "PC-P31-03",
@@ -901,7 +909,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 30
+      "elapsed_ms": 43
     },
     {
       "case_id": "PC-P31-04",
@@ -949,7 +957,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 39
+      "elapsed_ms": 53
     },
     {
       "case_id": "PC-P31-05",
@@ -986,7 +994,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P31-06",
@@ -1011,7 +1019,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -1024,7 +1033,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 22
     },
     {
       "case_id": "PC-P31-07",
@@ -1061,7 +1070,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P31-08",
@@ -1108,7 +1117,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P31-09",
@@ -1145,7 +1154,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 33
     },
     {
       "case_id": "PC-P31-10",
@@ -1182,7 +1191,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P31-11",
@@ -1217,10 +1226,11 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
-      "elapsed_ms": 15
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P31-12",
@@ -1267,7 +1277,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P31-13",
@@ -1314,7 +1324,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P31-14",
@@ -1361,7 +1371,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 48
+      "elapsed_ms": 46
     },
     {
       "case_id": "PC-P31-15",
@@ -1408,7 +1418,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 37
     },
     {
       "case_id": "PC-P32-01",
@@ -1455,7 +1465,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 25
+      "elapsed_ms": 31
     },
     {
       "case_id": "PC-P32-02",
@@ -1502,7 +1512,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 41
+      "elapsed_ms": 46
     },
     {
       "case_id": "PC-P32-03",
@@ -1549,7 +1559,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 40
+      "elapsed_ms": 46
     },
     {
       "case_id": "PC-P32-04",
@@ -1634,7 +1644,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 24
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P32-06",
@@ -1659,7 +1669,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -1672,7 +1683,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 23
     },
     {
       "case_id": "PC-P32-07",
@@ -1709,7 +1720,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P32-08",
@@ -1756,7 +1767,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 33
+      "elapsed_ms": 39
     },
     {
       "case_id": "PC-P32-09",
@@ -1793,7 +1804,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 33
     },
     {
       "case_id": "PC-P32-10",
@@ -1830,7 +1841,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P32-11",
@@ -1865,10 +1876,11 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P32-12",
@@ -1915,7 +1927,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 25
+      "elapsed_ms": 31
     },
     {
       "case_id": "PC-P32-13",
@@ -1962,7 +1974,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P32-14",
@@ -2009,7 +2021,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 43
+      "elapsed_ms": 55
     },
     {
       "case_id": "PC-P32-15",
@@ -2056,7 +2068,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 58
     },
     {
       "case_id": "PC-P33-01",
@@ -2103,7 +2115,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 25
+      "elapsed_ms": 31
     },
     {
       "case_id": "PC-P33-02",
@@ -2150,7 +2162,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 40
+      "elapsed_ms": 46
     },
     {
       "case_id": "PC-P33-03",
@@ -2197,7 +2209,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 40
+      "elapsed_ms": 43
     },
     {
       "case_id": "PC-P33-04",
@@ -2245,7 +2257,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 94
+      "elapsed_ms": 53
     },
     {
       "case_id": "PC-P33-05",
@@ -2282,7 +2294,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P33-06",
@@ -2307,7 +2319,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -2320,7 +2333,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 22
     },
     {
       "case_id": "PC-P33-07",
@@ -2357,7 +2370,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P33-08",
@@ -2404,7 +2417,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P33-09",
@@ -2441,7 +2454,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 30
+      "elapsed_ms": 34
     },
     {
       "case_id": "PC-P33-10",
@@ -2478,7 +2491,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P33-11",
@@ -2513,10 +2526,11 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P33-12",
@@ -2563,7 +2577,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P33-13",
@@ -2610,7 +2624,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P33-14",
@@ -2657,7 +2671,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 43
+      "elapsed_ms": 49
     },
     {
       "case_id": "PC-P33-15",
@@ -2704,7 +2718,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 33
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P34-01",
@@ -2751,7 +2765,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 25
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P34-02",
@@ -2798,7 +2812,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 41
+      "elapsed_ms": 44
     },
     {
       "case_id": "PC-P34-03",
@@ -2845,7 +2859,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 39
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P34-04",
@@ -2893,7 +2907,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 49
+      "elapsed_ms": 51
     },
     {
       "case_id": "PC-P34-05",
@@ -2930,7 +2944,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P34-06",
@@ -2955,7 +2969,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -2968,7 +2983,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 22
     },
     {
       "case_id": "PC-P34-07",
@@ -3005,7 +3020,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P34-08",
@@ -3052,7 +3067,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P34-09",
@@ -3089,7 +3104,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 32
     },
     {
       "case_id": "PC-P34-10",
@@ -3126,7 +3141,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P34-11",
@@ -3161,10 +3176,11 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P34-12",
@@ -3211,7 +3227,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P34-13",
@@ -3258,7 +3274,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 24
     },
     {
       "case_id": "PC-P34-14",
@@ -3305,7 +3321,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 43
+      "elapsed_ms": 47
     },
     {
       "case_id": "PC-P34-15",
@@ -3352,7 +3368,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 32
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P35-01",
@@ -3399,7 +3415,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P35-02",
@@ -3446,7 +3462,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 40
+      "elapsed_ms": 44
     },
     {
       "case_id": "PC-P35-03",
@@ -3493,7 +3509,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 38
+      "elapsed_ms": 41
     },
     {
       "case_id": "PC-P35-04",
@@ -3541,7 +3557,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 49
+      "elapsed_ms": 51
     },
     {
       "case_id": "PC-P35-05",
@@ -3578,7 +3594,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P35-06",
@@ -3603,7 +3619,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -3616,7 +3633,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 22
     },
     {
       "case_id": "PC-P35-07",
@@ -3653,7 +3670,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P35-08",
@@ -3700,7 +3717,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 35
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P35-09",
@@ -3737,7 +3754,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 30
+      "elapsed_ms": 31
     },
     {
       "case_id": "PC-P35-10",
@@ -3774,7 +3791,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P35-11",
@@ -3809,10 +3826,11 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P35-12",
@@ -3859,7 +3877,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P35-13",
@@ -3906,7 +3924,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 24
     },
     {
       "case_id": "PC-P35-14",
@@ -3953,7 +3971,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 44
+      "elapsed_ms": 46
     },
     {
       "case_id": "PC-P35-15",
@@ -4000,7 +4018,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 35
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P36-01",
@@ -4047,7 +4065,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P36-02",
@@ -4094,7 +4112,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 41
+      "elapsed_ms": 44
     },
     {
       "case_id": "PC-P36-03",
@@ -4141,7 +4159,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 39
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P36-04",
@@ -4189,7 +4207,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 49
+      "elapsed_ms": 52
     },
     {
       "case_id": "PC-P36-05",
@@ -4226,7 +4244,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P36-06",
@@ -4251,7 +4269,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         },
         {
           "url_name": "projects:issue_list",
@@ -4264,7 +4283,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 22
     },
     {
       "case_id": "PC-P36-07",
@@ -4301,7 +4320,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P36-08",
@@ -4348,7 +4367,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 35
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P36-09",
@@ -4385,7 +4404,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 30
+      "elapsed_ms": 32
     },
     {
       "case_id": "PC-P36-10",
@@ -4422,7 +4441,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P36-11",
@@ -4457,7 +4476,8 @@
             302
           ],
           "verdict": "OK",
-          "reason": ""
+          "reason": "",
+          "effect_delta": 1
         }
       ],
       "elapsed_ms": 21
@@ -4507,7 +4527,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P36-13",
@@ -4554,7 +4574,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 24
     },
     {
       "case_id": "PC-P36-14",
@@ -4648,7 +4668,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 35
+      "elapsed_ms": 42
     }
   ]
 }

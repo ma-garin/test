@@ -1,7 +1,7 @@
 {
   "total": 105,
-  "ok": 72,
-  "ng": 33,
+  "ok": 105,
+  "ng": 0,
   "cases": [
     {
       "case_id": "RC-viewer-01",
@@ -48,7 +48,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 40
+      "elapsed_ms": 18
     },
     {
       "case_id": "RC-viewer-02",
@@ -85,7 +85,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 22
     },
     {
       "case_id": "RC-viewer-03",
@@ -132,7 +132,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 32
     },
     {
       "case_id": "RC-viewer-04",
@@ -145,8 +145,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、edit を伴う操作は 403 で拒否される",
       "user_value": "計画の変更をその場で反映でき、古い計画のまま議論しなくて済む",
-      "verdict": "NG",
-      "reason": "手順2: POST projects:task_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:task_create",
@@ -161,15 +161,26 @@
         {
           "url_name": "projects:task_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:task_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:task_archive",
+          "method": "POST",
+          "status": 403,
+          "expected_status": [
+            403
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 27
     },
     {
       "case_id": "RC-viewer-05",
@@ -182,8 +193,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、edit を伴う操作は 403 で拒否される",
       "user_value": "気づいた課題をその場で残せて、口頭で消えるのを防げる",
-      "verdict": "NG",
-      "reason": "手順2: POST projects:issue_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:issue_list",
@@ -198,15 +209,26 @@
         {
           "url_name": "projects:issue_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:issue_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:issue_close",
+          "method": "POST",
+          "status": 403,
+          "expected_status": [
+            403
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 13
+      "elapsed_ms": 23
     },
     {
       "case_id": "RC-viewer-06",
@@ -219,8 +241,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、edit を伴う操作は 403 で拒否される",
       "user_value": "顕在化したリスクを課題へ引き継げて、記録が途切れない",
-      "verdict": "NG",
-      "reason": "手順2: POST projects:risk_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:risk",
@@ -235,15 +257,26 @@
         {
           "url_name": "projects:risk_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:risk_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:risk_promote",
+          "method": "GET",
+          "status": 403,
+          "expected_status": [
+            403
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 14
+      "elapsed_ms": 25
     },
     {
       "case_id": "RC-viewer-07",
@@ -256,8 +289,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、edit を伴う操作は 403 で拒否される",
       "user_value": "不具合の状態が一箇所に集まり、収束しているかを数字で言える",
-      "verdict": "NG",
-      "reason": "手順2: POST projects:defect_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:defect_list",
@@ -272,15 +305,26 @@
         {
           "url_name": "projects:defect_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:defect_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:defect_close",
+          "method": "POST",
+          "status": 403,
+          "expected_status": [
+            403
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 13
+      "elapsed_ms": 22
     },
     {
       "case_id": "RC-viewer-08",
@@ -317,7 +361,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 18
     },
     {
       "case_id": "RC-viewer-09",
@@ -330,8 +374,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、edit を伴う操作は 403 で拒否される",
       "user_value": "定例報告を待たずに危ない兆候へ先回りできる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:detection_run が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:detection",
@@ -346,15 +390,15 @@
         {
           "url_name": "dashboard:detection_run",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:detection_run が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 17
     },
     {
       "case_id": "RC-viewer-10",
@@ -367,8 +411,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、approve を伴う操作は 403 で拒否される",
       "user_value": "AI の提案を採るか採らないかの判断が証跡として残る",
-      "verdict": "NG",
-      "reason": "手順3: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:progress",
@@ -393,15 +437,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 32
     },
     {
       "case_id": "RC-viewer-11",
@@ -458,7 +503,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 42
     },
     {
       "case_id": "RC-viewer-12",
@@ -471,8 +516,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、edit を伴う操作は 403 で拒否される",
       "user_value": "根拠になる原本を登録でき、AI の回答が現物に紐づく",
-      "verdict": "NG",
-      "reason": "手順4: POST documents:upload が 200 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "documents:list",
@@ -507,15 +552,16 @@
         {
           "url_name": "documents:upload",
           "method": "POST",
-          "status": 200,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST documents:upload が 200 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 32
     },
     {
       "case_id": "RC-viewer-13",
@@ -528,8 +574,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、edit を伴う操作は 403 で拒否される",
       "user_value": "引用元つきで答えが返り、根拠を自分で確かめられる",
-      "verdict": "NG",
-      "reason": "手順3: POST rag:chat が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "rag:search",
@@ -554,15 +600,26 @@
         {
           "url_name": "rag:chat",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST rag:chat が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "rag:evaluation",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 34
     },
     {
       "case_id": "RC-viewer-14",
@@ -575,8 +632,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、approve を伴う操作は 403 で拒否される",
       "user_value": "AI の下書きを人が確かめてから確定でき、誤りが外に出ない",
-      "verdict": "NG",
-      "reason": "手順5: POST pmo:approvals が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "pmo:consultation",
@@ -621,15 +678,16 @@
         {
           "url_name": "pmo:approvals",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST pmo:approvals が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 44
+      "elapsed_ms": 58
     },
     {
       "case_id": "RC-viewer-15",
@@ -696,7 +754,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 38
+      "elapsed_ms": 41
     },
     {
       "case_id": "PC-P25-01",
@@ -743,7 +801,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P25-02",
@@ -790,7 +848,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 27
+      "elapsed_ms": 39
     },
     {
       "case_id": "PC-P25-03",
@@ -837,7 +895,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 33
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P25-04",
@@ -850,8 +908,8 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、異常の発見は完了しない（重視点: 1画面で結論が分かること）",
       "user_value": "定例を待たずに、危ない兆候をその場で拾える",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:detection_run が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:detection",
@@ -866,15 +924,25 @@
         {
           "url_name": "dashboard:detection_run",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:detection_run が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 27
     },
     {
       "case_id": "PC-P25-05",
@@ -911,7 +979,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P25-06",
@@ -924,21 +992,32 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、対策の起票は完了しない（重視点: 1画面で結論が分かること）",
       "user_value": "決めた対策がその場で記録され、次の週まで残る",
-      "verdict": "NG",
-      "reason": "手順1: POST projects:issue_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:issue_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:issue_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 8
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P25-07",
@@ -975,7 +1054,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P25-08",
@@ -1022,7 +1101,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P25-09",
@@ -1059,7 +1138,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P25-10",
@@ -1072,8 +1151,8 @@
       "priority": "P1",
       "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 1画面で結論が分かること）",
       "user_value": "変更が何にぶつかるかを、決める前に把握できる",
-      "verdict": "NG",
-      "reason": "手順2: GET projects:change_edit が 200 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:change",
@@ -1088,15 +1167,15 @@
         {
           "url_name": "projects:change_edit",
           "method": "GET",
-          "status": 200,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "GET projects:change_edit が 200 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P25-11",
@@ -1109,8 +1188,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 1画面で結論が分かること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -1125,15 +1204,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 14
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P25-12",
@@ -1180,7 +1260,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P25-13",
@@ -1227,7 +1307,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 26
     },
     {
       "case_id": "PC-P25-14",
@@ -1274,7 +1354,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P25-15",
@@ -1321,7 +1401,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P26-01",
@@ -1368,7 +1448,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P26-02",
@@ -1415,7 +1495,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P26-03",
@@ -1462,7 +1542,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 33
+      "elapsed_ms": 41
     },
     {
       "case_id": "PC-P26-04",
@@ -1475,8 +1555,8 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、異常の発見は完了しない（重視点: 自分に関係する範囲だけ見えること）",
       "user_value": "定例を待たずに、危ない兆候をその場で拾える",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:detection_run が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:detection",
@@ -1491,15 +1571,25 @@
         {
           "url_name": "dashboard:detection_run",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:detection_run が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 27
     },
     {
       "case_id": "PC-P26-05",
@@ -1536,7 +1626,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P26-06",
@@ -1549,21 +1639,32 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、対策の起票は完了しない（重視点: 自分に関係する範囲だけ見えること）",
       "user_value": "決めた対策がその場で記録され、次の週まで残る",
-      "verdict": "NG",
-      "reason": "手順1: POST projects:issue_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:issue_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:issue_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 6
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P26-07",
@@ -1600,7 +1701,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 14
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P26-08",
@@ -1647,7 +1748,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P26-09",
@@ -1684,7 +1785,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P26-10",
@@ -1697,8 +1798,8 @@
       "priority": "P1",
       "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 自分に関係する範囲だけ見えること）",
       "user_value": "変更が何にぶつかるかを、決める前に把握できる",
-      "verdict": "NG",
-      "reason": "手順2: GET projects:change_edit が 200 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:change",
@@ -1713,15 +1814,15 @@
         {
           "url_name": "projects:change_edit",
           "method": "GET",
-          "status": 200,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "GET projects:change_edit が 200 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P26-11",
@@ -1734,8 +1835,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 自分に関係する範囲だけ見えること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -1750,15 +1851,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P26-12",
@@ -1805,7 +1907,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 25
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P26-13",
@@ -1852,7 +1954,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P26-14",
@@ -1899,7 +2001,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 35
+      "elapsed_ms": 41
     },
     {
       "case_id": "PC-P26-15",
@@ -1946,7 +2048,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P27-01",
@@ -1993,7 +2095,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P27-02",
@@ -2040,7 +2142,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 30
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P27-03",
@@ -2087,7 +2189,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 43
     },
     {
       "case_id": "PC-P27-04",
@@ -2100,8 +2202,8 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、異常の発見は完了しない（重視点: 参照しかできないことが保証されていること）",
       "user_value": "定例を待たずに、危ない兆候をその場で拾える",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:detection_run が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:detection",
@@ -2116,15 +2218,25 @@
         {
           "url_name": "dashboard:detection_run",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:detection_run が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P27-05",
@@ -2161,7 +2273,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P27-06",
@@ -2174,21 +2286,32 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、対策の起票は完了しない（重視点: 参照しかできないことが保証されていること）",
       "user_value": "決めた対策がその場で記録され、次の週まで残る",
-      "verdict": "NG",
-      "reason": "手順1: POST projects:issue_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:issue_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:issue_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 6
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P27-07",
@@ -2225,7 +2348,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P27-08",
@@ -2272,7 +2395,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P27-09",
@@ -2309,7 +2432,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P27-10",
@@ -2322,8 +2445,8 @@
       "priority": "P1",
       "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 参照しかできないことが保証されていること）",
       "user_value": "変更が何にぶつかるかを、決める前に把握できる",
-      "verdict": "NG",
-      "reason": "手順2: GET projects:change_edit が 200 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:change",
@@ -2338,15 +2461,15 @@
         {
           "url_name": "projects:change_edit",
           "method": "GET",
-          "status": 200,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "GET projects:change_edit が 200 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P27-11",
@@ -2359,8 +2482,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 参照しかできないことが保証されていること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -2375,15 +2498,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P27-12",
@@ -2430,7 +2554,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 32
     },
     {
       "case_id": "PC-P27-13",
@@ -2477,7 +2601,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P27-14",
@@ -2524,7 +2648,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 33
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P27-15",
@@ -2571,7 +2695,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 28
+      "elapsed_ms": 35
     },
     {
       "case_id": "PC-P28-01",
@@ -2618,7 +2742,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P28-02",
@@ -2665,7 +2789,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 30
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P28-03",
@@ -2712,7 +2836,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 43
     },
     {
       "case_id": "PC-P28-04",
@@ -2725,8 +2849,8 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、異常の発見は完了しない（重視点: 誤って書き換えてしまわないこと）",
       "user_value": "定例を待たずに、危ない兆候をその場で拾える",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:detection_run が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:detection",
@@ -2741,15 +2865,25 @@
         {
           "url_name": "dashboard:detection_run",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:detection_run が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 61
+      "elapsed_ms": 27
     },
     {
       "case_id": "PC-P28-05",
@@ -2786,7 +2920,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 32
     },
     {
       "case_id": "PC-P28-06",
@@ -2799,21 +2933,32 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、対策の起票は完了しない（重視点: 誤って書き換えてしまわないこと）",
       "user_value": "決めた対策がその場で記録され、次の週まで残る",
-      "verdict": "NG",
-      "reason": "手順1: POST projects:issue_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:issue_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:issue_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 7
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P28-07",
@@ -2850,7 +2995,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P28-08",
@@ -2897,7 +3042,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 34
     },
     {
       "case_id": "PC-P28-09",
@@ -2934,7 +3079,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P28-10",
@@ -2947,8 +3092,8 @@
       "priority": "P1",
       "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 誤って書き換えてしまわないこと）",
       "user_value": "変更が何にぶつかるかを、決める前に把握できる",
-      "verdict": "NG",
-      "reason": "手順2: GET projects:change_edit が 200 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:change",
@@ -2963,15 +3108,15 @@
         {
           "url_name": "projects:change_edit",
           "method": "GET",
-          "status": 200,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "GET projects:change_edit が 200 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P28-11",
@@ -2984,8 +3129,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 誤って書き換えてしまわないこと）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -3000,15 +3145,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P28-12",
@@ -3055,7 +3201,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 25
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P28-13",
@@ -3102,7 +3248,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P28-14",
@@ -3149,7 +3295,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 41
     },
     {
       "case_id": "PC-P28-15",
@@ -3196,7 +3342,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P29-01",
@@ -3243,7 +3389,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P29-02",
@@ -3290,7 +3436,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P29-03",
@@ -3337,7 +3483,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 40
     },
     {
       "case_id": "PC-P29-04",
@@ -3350,8 +3496,8 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、異常の発見は完了しない（重視点: 全体像を短時間で掴めること）",
       "user_value": "定例を待たずに、危ない兆候をその場で拾える",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:detection_run が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:detection",
@@ -3366,15 +3512,25 @@
         {
           "url_name": "dashboard:detection_run",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:detection_run が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P29-05",
@@ -3411,7 +3567,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P29-06",
@@ -3424,21 +3580,32 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、対策の起票は完了しない（重視点: 全体像を短時間で掴めること）",
       "user_value": "決めた対策がその場で記録され、次の週まで残る",
-      "verdict": "NG",
-      "reason": "手順1: POST projects:issue_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:issue_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:issue_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 7
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P29-07",
@@ -3475,7 +3642,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P29-08",
@@ -3522,7 +3689,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 36
     },
     {
       "case_id": "PC-P29-09",
@@ -3559,7 +3726,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 70
     },
     {
       "case_id": "PC-P29-10",
@@ -3572,8 +3739,8 @@
       "priority": "P1",
       "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 全体像を短時間で掴めること）",
       "user_value": "変更が何にぶつかるかを、決める前に把握できる",
-      "verdict": "NG",
-      "reason": "手順2: GET projects:change_edit が 200 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:change",
@@ -3588,15 +3755,15 @@
         {
           "url_name": "projects:change_edit",
           "method": "GET",
-          "status": 200,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "GET projects:change_edit が 200 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 22
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P29-11",
@@ -3609,8 +3776,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 全体像を短時間で掴めること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -3625,15 +3792,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 16
+      "elapsed_ms": 19
     },
     {
       "case_id": "PC-P29-12",
@@ -3680,7 +3848,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 24
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P29-13",
@@ -3727,7 +3895,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 19
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P29-14",
@@ -3774,7 +3942,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 34
+      "elapsed_ms": 42
     },
     {
       "case_id": "PC-P29-15",
@@ -3821,7 +3989,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 29
+      "elapsed_ms": 37
     },
     {
       "case_id": "PC-P30-01",
@@ -3868,7 +4036,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P30-02",
@@ -3915,7 +4083,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 38
     },
     {
       "case_id": "PC-P30-03",
@@ -3962,7 +4130,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 38
+      "elapsed_ms": 41
     },
     {
       "case_id": "PC-P30-04",
@@ -3975,8 +4143,8 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、異常の発見は完了しない（重視点: 似た案件を探し当てられること）",
       "user_value": "定例を待たずに、危ない兆候をその場で拾える",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:detection_run が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:detection",
@@ -3991,15 +4159,25 @@
         {
           "url_name": "dashboard:detection_run",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:detection_run が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
+        },
+        {
+          "url_name": "dashboard:detection",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 20
+      "elapsed_ms": 29
     },
     {
       "case_id": "PC-P30-05",
@@ -4036,7 +4214,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 23
+      "elapsed_ms": 28
     },
     {
       "case_id": "PC-P30-06",
@@ -4049,21 +4227,32 @@
       "priority": "P1",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、対策の起票は完了しない（重視点: 似た案件を探し当てられること）",
       "user_value": "決めた対策がその場で記録され、次の週まで残る",
-      "verdict": "NG",
-      "reason": "手順1: POST projects:issue_create が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "projects:issue_create",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST projects:issue_create が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
+        },
+        {
+          "url_name": "projects:issue_list",
+          "method": "GET",
+          "status": 200,
+          "expected_status": [
+            200
+          ],
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 7
+      "elapsed_ms": 21
     },
     {
       "case_id": "PC-P30-07",
@@ -4100,7 +4289,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 18
+      "elapsed_ms": 20
     },
     {
       "case_id": "PC-P30-08",
@@ -4147,7 +4336,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 30
+      "elapsed_ms": 34
     },
     {
       "case_id": "PC-P30-09",
@@ -4197,8 +4386,8 @@
       "priority": "P1",
       "expected": "一連の画面が 200 で表示され、変更の影響評価を最後まで完了できる（重視点: 似た案件を探し当てられること）",
       "user_value": "変更が何にぶつかるかを、決める前に把握できる",
-      "verdict": "NG",
-      "reason": "手順2: GET projects:change_edit が 200 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:change",
@@ -4213,15 +4402,15 @@
         {
           "url_name": "projects:change_edit",
           "method": "GET",
-          "status": 200,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "GET projects:change_edit が 200 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": ""
         }
       ],
-      "elapsed_ms": 24
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P30-11",
@@ -4234,8 +4423,8 @@
       "priority": "P0",
       "expected": "参照は 200 で表示されるが、記録を伴う操作は 403 で拒否され、意思決定の記録は完了しない（重視点: 似た案件を探し当てられること）",
       "user_value": "決めた理由が残り、半年後に「なぜそうしたか」を説明できる",
-      "verdict": "NG",
-      "reason": "手順2: POST dashboard:intervention_decide が 302 を返した（期待 [403]）",
+      "verdict": "OK",
+      "reason": "",
       "steps": [
         {
           "url_name": "dashboard:intervention",
@@ -4250,15 +4439,16 @@
         {
           "url_name": "dashboard:intervention_decide",
           "method": "POST",
-          "status": 302,
+          "status": 403,
           "expected_status": [
             403
           ],
-          "verdict": "NG",
-          "reason": "POST dashboard:intervention_decide が 302 を返した（期待 [403]）"
+          "verdict": "OK",
+          "reason": "",
+          "effect_delta": 0
         }
       ],
-      "elapsed_ms": 17
+      "elapsed_ms": 18
     },
     {
       "case_id": "PC-P30-12",
@@ -4305,7 +4495,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 26
+      "elapsed_ms": 30
     },
     {
       "case_id": "PC-P30-13",
@@ -4352,7 +4542,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 21
+      "elapsed_ms": 25
     },
     {
       "case_id": "PC-P30-14",
@@ -4399,7 +4589,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 37
+      "elapsed_ms": 41
     },
     {
       "case_id": "PC-P30-15",
@@ -4446,7 +4636,7 @@
           "reason": ""
         }
       ],
-      "elapsed_ms": 31
+      "elapsed_ms": 37
     }
   ]
 }
