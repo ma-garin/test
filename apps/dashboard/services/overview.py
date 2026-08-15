@@ -13,12 +13,22 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from django.db.models import Avg, Count, Q, QuerySet
+from django.db.models import Avg, Case, Count, IntegerField, Q, QuerySet, When
 from django.utils import timezone
 
 from apps.dashboard.models import Alert, InterventionProposal
 from apps.documents.models import Document, DocumentStatus
 from apps.projects.models import Issue, Project, Risk, WbsTask
+
+#: 重要度の並び順。`severity` は文字列なので、そのまま並べると
+#: critical → info → warning の辞書順になり、警告が情報より下へ落ちる。
+_SEVERITY_RANK = Case(
+    When(severity=Alert.Severity.CRITICAL, then=0),
+    When(severity=Alert.Severity.WARNING, then=1),
+    When(severity=Alert.Severity.INFO, then=2),
+    default=3,
+    output_field=IntegerField(),
+)
 
 #: 期限接近とみなす日数。
 DUE_SOON_DAYS = 7
@@ -208,21 +218,23 @@ def build_overview(projects: QuerySet[Project]) -> Overview:
         for position, alert in enumerate(
             Alert.objects.filter(project__in=projects, status=Alert.Status.OPEN)
             .select_related("project")
-            .order_by("severity", "-detected_at")[:5],
+            # `severity` は文字列なので、そのまま並べると critical → info → warning に
+            # なり、警告が情報より下へ落ちる。重要度の順序は明示して並べる。
+            .annotate(severity_rank=_SEVERITY_RANK)
+            .order_by("severity_rank", "-detected_at")[:5],
             start=1,
         )
     ]
 
-    documents = Document.objects.filter(
-        project__in=projects, status=DocumentStatus.ACTIVE, deleted_at__isnull=True
-    )
+    # 選択中の案件がある状態で、文書だけテナント全体を数えると、他の数字と
+    # 母数が食い違う。案件配下の文書と、案件に紐づかないテナント共通ナレッジを
+    # 合わせて数える。
     tenant_ids = {project.tenant_id for project in annotated}
-
-    if tenant_ids:
-        # 案件に紐づかないテナント共通ナレッジも件数に含める。
-        documents = Document.objects.filter(
-            tenant_id__in=tenant_ids, status=DocumentStatus.ACTIVE, deleted_at__isnull=True
-        )
+    documents = Document.objects.filter(
+        Q(project__in=projects) | Q(project__isnull=True, tenant_id__in=tenant_ids),
+        status=DocumentStatus.ACTIVE,
+        deleted_at__isnull=True,
+    )
 
     average = projects.aggregate(value=Avg("progress_percent"))["value"] or Decimal(0)
 

@@ -143,15 +143,31 @@ def business_days_between(start: date, end: date) -> int:
     `end` が `start` より前なら負の値を返す。
     """
 
-    step = 1 if end > start else -1
-    days = 0
-    current = start
+    if start == end:
+        return 0
 
-    while current != end:
-        current += timedelta(days=step)
+    # 数える区間は `start` を含まず `end` を含む（逆順のときは `end` を含み `start` を含まない）。
+    if end > start:
+        anchor, length, sign = start + timedelta(days=1), (end - start).days, 1
+    else:
+        anchor, length, sign = end, (start - end).days, -1
 
-        if current.weekday() < 5:
-            days += step
+    return _business_days_in(anchor, length) * sign
+
+
+def _business_days_in(anchor: date, length: int) -> int:
+    """`anchor` から `length` 日ぶんの区間に含まれる平日の数。
+
+    1 日ずつ回すと、日付の入力誤り（例: 1900 年）でリクエストが事実上止まる。
+    週数から算術で求め、端数の 7 日未満だけを数える。
+    """
+
+    full_weeks, remainder = divmod(length, 7)
+    days = full_weeks * 5
+
+    for offset in range(remainder):
+        if (anchor + timedelta(days=offset)).weekday() < 5:
+            days += 1
 
     return days
 

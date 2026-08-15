@@ -95,9 +95,26 @@ def parse_criteria(params) -> FeedbackCriteria:
     days = int(raw_days) if raw_days.isdigit() and int(raw_days) in allowed_days else DEFAULT_PERIOD_DAYS
 
     raw_user = str(params.get("user", "")).strip()
-    user_id = int(raw_user) if raw_user.isdigit() else None
+    # 利用者の主キーは UUID。数値かどうかで判定していたため、選択しても
+    # 常に None になり「絞り込んだつもりで全員の集計を見ている」状態だった。
+    # 黙って無視するのが最も危険なので、形式が合う値だけを採用する。
+    user_id = _as_uuid(raw_user)
 
     return FeedbackCriteria(days=days, user_id=user_id)
+
+
+def _as_uuid(raw: str):
+    """UUID として解釈できるならその値。できなければ None（＝絞り込まない）。"""
+
+    import uuid
+
+    if not raw:
+        return None
+
+    try:
+        return uuid.UUID(raw)
+    except (ValueError, AttributeError, TypeError):
+        return None
 
 
 def apply_criteria(queryset: QuerySet[Feedback], criteria: FeedbackCriteria) -> QuerySet[Feedback]:

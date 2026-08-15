@@ -271,6 +271,12 @@ def _check_stale_update(task: WbsTask, *, cutoff: date) -> str:
 
     # USE_TZ の設定に依存させない。naive のまま localtime に渡すと例外になる。
     updated_at = task.updated_at
+
+    if updated_at is None:
+        # 移行データなどで更新日時が入っていない。落とさず「更新されていない」扱いにする。
+        # ここで例外にすると、1 件の欠測で入力標準ルールの画面全体が開かなくなる。
+        return "最終更新が記録されていません"
+
     updated_on = (
         timezone.localtime(updated_at).date()
         if timezone.is_aware(updated_at)

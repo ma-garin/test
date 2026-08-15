@@ -40,6 +40,9 @@ class SkipReason:
     WITHIN_THRESHOLD = "within_threshold"
     DUPLICATE = "duplicate"
     LIMIT_REACHED = "limit_reached"
+    #: 検知器そのものが落ちた。黙って「検知なし」にすると、
+    #: 危険が無いのか見られていないのかを利用者が区別できない。
+    DETECTOR_FAILED = "detector_failed"
 
 
 SKIP_LABELS = {
@@ -47,6 +50,7 @@ SKIP_LABELS = {
     SkipReason.WITHIN_THRESHOLD: "しきい値内",
     SkipReason.DUPLICATE: "既に未対応のアラートあり",
     SkipReason.LIMIT_REACHED: "1回あたりの上限に到達",
+    SkipReason.DETECTOR_FAILED: "検知に失敗（結果は不明）",
 }
 
 

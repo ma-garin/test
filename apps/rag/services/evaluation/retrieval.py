@@ -67,14 +67,21 @@ def evaluate_case(
         )
 
     hits = search(index, question.question, top_k=top_k, use_vector=use_vector)
-    ranked_ids = [str(hit.chunk.document_id) for hit in hits]
+    # 業務データ由来のチャンクは文書に紐づかない（`document` が None）。
+    # そのまま並べると "None" が順位に混ざり、Precision の分母を膨らませて
+    # 指標を実際より悪く見せる。採点は文書由来のヒットだけで行う。
+    ranked_ids = [str(hit.chunk.document_id) for hit in hits if hit.chunk.document_id]
     coverage, missing_terms = _term_coverage(list(question.expected_terms or []), hits)
     detail = {
         "retrieved": len(hits),
         "term_coverage": round(coverage, 4),
         "missing_terms": missing_terms,
         "use_vector": use_vector,
-        "top_documents": list(dict.fromkeys(hit.chunk.document.title for hit in hits))[:5],
+        "top_documents": list(
+            dict.fromkeys(hit.chunk.document.title for hit in hits if hit.chunk.document_id)
+        )[:5],
+        # 文書に紐づかないヒットの数。指標に入らないぶん、見えるようにしておく。
+        "business_hits": sum(1 for hit in hits if not hit.chunk.document_id),
     }
 
     if not expected_ids:

@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
@@ -35,6 +36,8 @@ from apps.dashboard.services.detection.findings import (
 from apps.dashboard.services.detection.proposals import build_proposals
 from apps.dashboard.services.detection.rules import max_alerts_per_run
 from apps.projects.models import Project
+
+logger = logging.getLogger(__name__)
 
 #: 重要度の優先順位。上限で打ち切るとき、重いものを先に残す。
 _SEVERITY_ORDER = {
@@ -127,12 +130,34 @@ def run_detection(
 
 
 def _run_detectors(project: Project, *, now: datetime, today: date):
-    """検知器を順に呼ぶ。1 つが落ちても他を止めないよう、呼び出しはここに集約する。"""
+    """検知器を順に呼ぶ。1 つが落ちても他を止めない。
 
-    yield critical_path.detect(project, today=today)
-    yield silent_fire.detect(project, today=today)
-    yield change_frequency.detect(project, now=now)
-    yield defect_rate.detect(project, today=today)
+    検知は「危ないものを見つける」機能なので、1 つの検知器が想定外のデータで
+    落ちたときに画面ごと 500 になると、他の 3 つが見つけていたはずの危険まで
+    見えなくなる。落ちた検知器は結果から外し、落ちたこと自体を Skip として残す。
+    """
+
+    detectors = (
+        ("critical_path", lambda: critical_path.detect(project, today=today)),
+        ("silent_fire", lambda: silent_fire.detect(project, today=today)),
+        ("change_frequency", lambda: change_frequency.detect(project, now=now)),
+        ("defect_rate", lambda: defect_rate.detect(project, today=today)),
+    )
+
+    for name, run in detectors:
+        try:
+            yield run()
+        except Exception as error:  # noqa: BLE001 - 1 つの失敗で全体を止めない
+            logger.exception("検知器 %s が失敗しました（案件 %s）", name, project.code)
+
+            yield [], [
+                Skip(
+                    project,
+                    name,
+                    SkipReason.DETECTOR_FAILED,
+                    f"検知器が失敗しました（{type(error).__name__}）。他の検知は続行しています。",
+                )
+            ]
 
 
 def _filter_findings(

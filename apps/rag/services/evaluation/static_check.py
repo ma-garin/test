@@ -39,9 +39,12 @@ def _index_issues(index: VectorIndex) -> tuple[list[str], dict]:
 
     missing_vectors = sorted(chunk_ids - vector_ids)
     orphan_vectors = sorted(vector_ids - chunk_ids)
+    # 業務データ由来のチャンクは文書を持たない。文書の状態を見る検査は
+    # 文書由来のものだけが対象になる。
+    document_chunks = [chunk for chunk in chunks if chunk.document_id]
     stale = [
         chunk
-        for chunk in chunks
+        for chunk in document_chunks
         if chunk.document.deleted_at is not None or chunk.document.status != DocumentStatus.ACTIVE
     ]
 

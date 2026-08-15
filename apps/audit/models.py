@@ -16,10 +16,26 @@ from django.db import models
 from apps.core.models import TimeStampedModel
 
 #: 秘密値らしき文字列のパターン。保存前のマスクに使う。
+#:
+#: 監査ログは長期保存する前提なので、一度平文で入ると回収できない。
+#: このシステムが実際に扱う認証情報の形（OpenAI・Slack・Jira・GitHub）を
+#: すべて並べる。増えたらここへ足す。
 _SECRET_PATTERNS = (
+    # OpenAI
     re.compile(r"sk-[A-Za-z0-9_\-]{8,}"),
     re.compile(r"org-[A-Za-z0-9_\-]{8,}"),
     re.compile(r"proj_[A-Za-z0-9_\-]{8,}"),
+    # Slack（Webhook URL とトークン）
+    re.compile(r"https://hooks\.slack\.com/services/[A-Za-z0-9/_\-]+"),
+    re.compile(r"xox[baprs]-[A-Za-z0-9\-]{8,}"),
+    # Microsoft Teams の受信 Webhook
+    re.compile(r"https://[A-Za-z0-9.\-]*webhook\.office\.com/[A-Za-z0-9/@_\-]+"),
+    # Atlassian（Jira / Confluence）の API トークン
+    re.compile(r"ATATT[A-Za-z0-9_\-=]{8,}"),
+    # GitHub の各種トークン
+    re.compile(r"gh[pousr]_[A-Za-z0-9]{16,}"),
+    re.compile(r"github_pat_[A-Za-z0-9_]{20,}"),
+    # 一般形（key=value）
     re.compile(r"(?i)(api[_-]?key|password|secret|token)\s*[=:]\s*\S+"),
 )
 
