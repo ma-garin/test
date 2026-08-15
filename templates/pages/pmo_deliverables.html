@@ -17,18 +17,18 @@
     </div>
     <div class="kpi">
       <div class="kpi-l">平均赤字率</div>
-      <div class="kpi-v" style="color:var(--{% if report.correction_tone == 'g' %}green{% else %}yellow{% endif %})">{{ report.average_correction_percent }}<small>%</small></div>
+      <div class="kpi-v tone-{% if report.correction_tone == 'g' %}g{% else %}y{% endif %}">{{ report.average_correction_percent }}<small>%</small></div>
       <div class="kpi-s">目標 {{ target_percent }}%未満 ／ 実測 {{ report.measured_rows|length }}件</div>
       <div class="kpi-bar"><div class="kpi-fill {{ report.correction_tone }}" style="width:{{ report.average_correction_percent }}%"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">承認ブロック中</div>
-      <div class="kpi-v" style="color:var(--red)">{{ report.blocked_count }}</div>
+      <div class="kpi-v tone-r">{{ report.blocked_count }}</div>
       <div class="kpi-s">根拠不足で承認へ進めない</div>
     </div>
     <div class="kpi">
       <div class="kpi-l">承認済み</div>
-      <div class="kpi-v" style="color:var(--green)">{{ report.approved_count }}</div>
+      <div class="kpi-v tone-g">{{ report.approved_count }}</div>
       <div class="kpi-s">確定情報として扱える</div>
     </div>
   </div>
@@ -41,19 +41,21 @@
     <form class="form" method="post" action="{% url 'pmo:deliverables' %}">
       {% csrf_token %}
       <input type="hidden" name="action" value="generate">
+      {% comment %}
+        ラベルで入力欄を包む書き方と、エラーを離れた場所に出す書き方が混ざっていた。
+        他の画面と同じ partials/form_field.html へ寄せる。
+      {% endcomment %}
       {% if generate_form.non_field_errors %}
-        <div class="callout d">{{ generate_form.non_field_errors }}</div>
+        <div class="callout d form-errors" role="alert">
+          {% for error in generate_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
       {% endif %}
       <div class="search-row">
-        <label>案件<br>{{ generate_form.project }}</label>
-        <label>種類<br>{{ generate_form.generator }}</label>
+        {% include "partials/form_field.html" with field=generate_form.project extra_class="grow" %}
+        {% include "partials/form_field.html" with field=generate_form.generator %}
         <button class="btn-b" type="submit">生成する</button>
       </div>
-      {% if generate_form.project.errors %}<div class="callout d">{{ generate_form.project.errors }}</div>{% endif %}
-      <div class="stack">
-        <label>{{ generate_form.notes.label }}<br>{{ generate_form.notes }}</label>
-        {% if generate_form.notes.errors %}<div class="callout d">{{ generate_form.notes.errors }}</div>{% endif %}
-      </div>
+      {% include "partials/form_field.html" with field=generate_form.notes %}
       <div class="callout w">
         <p>数値は WBS・課題・リスク・不具合・品質指標・アラートから集計します。AIモデルは使いません。算出根拠は生成後の処理トレースに残ります。</p>
       </div>
@@ -67,11 +69,12 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>タイトル</th><th>案件</th><th>種別</th><th>版</th><th>状態</th><th>赤字率</th><th>承認可否</th></tr></thead>
+        <caption class="visually-hidden">成果物一覧</caption>
+        <thead><tr><th scope="col">タイトル</th><th scope="col">案件</th><th scope="col">種別</th><th scope="col">版</th><th scope="col">状態</th><th scope="col">赤字率</th><th scope="col">承認可否</th></tr></thead>
         <tbody>
           {% for row in page.object_list %}
             <tr>
-              <td><a href="?deliverable={{ row.deliverable.pk }}" style="color:var(--blue);font-weight:900">{{ row.deliverable.title }}</a></td>
+              <td><a href="?deliverable={{ row.deliverable.pk }}" class="link-strong">{{ row.deliverable.title }}</a></td>
               <td>{{ row.deliverable.project.name }}</td>
               <td class="nowrap">{{ row.deliverable.get_kind_display }}</td>
               <td class="nowrap">v{{ row.deliverable.version }}</td>
@@ -103,7 +106,8 @@
       {% if export_templates %}
         <div class="t-wrap">
           <table class="t">
-            <thead><tr><th>ひな型</th><th class="nowrap">マッピング状態</th><th class="nowrap">出力</th></tr></thead>
+            <caption class="visually-hidden">Excel で出力</caption>
+            <thead><tr><th scope="col">ひな型</th><th class="nowrap" scope="col">マッピング状態</th><th class="nowrap" scope="col">出力</th></tr></thead>
             <tbody>
               {% for export_template in export_templates %}
                 <tr>
@@ -117,7 +121,7 @@
         </div>
         <div class="callout w"><p>元のひな型は書き換えません。出力できなかった項目は出力結果の画面に一覧で出ますので、空欄のまま提出しないよう必ず確認してください。</p></div>
       {% else %}
-        <div class="empty">ひな型が登録されていません。<a href="{% url 'documents:template_list' %}" style="color:var(--blue)">ひな型管理</a>から登録してください。</div>
+        <div class="empty">ひな型が登録されていません。<a href="{% url 'documents:template_list' %}" class="tone-b">ひな型管理</a>から登録してください。</div>
       {% endif %}
     </div>
 
@@ -134,12 +138,12 @@
         </div>
         <div class="kpi">
           <div class="kpi-l">一致</div>
-          <div class="kpi-v" style="color:var(--green)">{{ selected.fact_result.matched_count }}</div>
+          <div class="kpi-v tone-g">{{ selected.fact_result.matched_count }}</div>
           <div class="kpi-s">実データと同じ値</div>
         </div>
         <div class="kpi">
           <div class="kpi-l">不一致</div>
-          <div class="kpi-v" style="color:var(--red)">{{ selected.fact_result.mismatched_count }}</div>
+          <div class="kpi-v tone-r">{{ selected.fact_result.mismatched_count }}</div>
           <div class="kpi-s">1件でもあれば承認へ進めません</div>
         </div>
         <div class="kpi">
@@ -157,7 +161,8 @@
         {% if selected.fact_result.claims %}
           <div class="t-wrap">
             <table class="t">
-              <thead><tr><th class="nowrap">判定</th><th class="nowrap">項目</th><th>本文の該当箇所</th><th class="nowrap">書かれていた値</th><th class="nowrap">実データ</th><th class="nowrap">根拠</th></tr></thead>
+              <caption class="visually-hidden">事実確認</caption>
+              <thead><tr><th class="nowrap" scope="col">判定</th><th class="nowrap" scope="col">項目</th><th scope="col">本文の該当箇所</th><th class="nowrap" scope="col">書かれていた値</th><th class="nowrap" scope="col">実データ</th><th class="nowrap" scope="col">根拠</th></tr></thead>
               <tbody>
                 {% for claim in selected.fact_result.claims %}
                   <tr>
@@ -234,7 +239,7 @@
           <dt>作成者</dt><dd>{{ selected.deliverable.created_by|default:"—" }}</dd>
           <dt>状態</dt><dd>{{ selected.deliverable.get_status_display }}</dd>
           <dt>生成元</dt>
-          <dd>{% if selected.deliverable.agent_run %}<a href="{% url 'agents:run_detail' selected.deliverable.agent_run.pk %}" style="color:var(--blue)">処理トレース</a>{% else %}AI未使用{% endif %}</dd>
+          <dd>{% if selected.deliverable.agent_run %}<a href="{% url 'agents:run_detail' selected.deliverable.agent_run.pk %}" class="tone-b">処理トレース</a>{% else %}AI未使用{% endif %}</dd>
         </dl>
       </div>
     </div>
@@ -247,7 +252,8 @@
       {% if diff.lines %}
         <div class="t-wrap">
           <table class="t">
-            <thead><tr><th class="nowrap">区分</th><th>本文</th></tr></thead>
+            <caption class="visually-hidden">AI生成本文との差分</caption>
+            <thead><tr><th class="nowrap" scope="col">区分</th><th scope="col">本文</th></tr></thead>
             <tbody>
               {% for line in diff.lines %}
                 <tr>

@@ -80,7 +80,7 @@
     </div>
 
     {% if personal_allowed %}
-      <p class="muted" style="margin:0 0 12px">
+      <p class="muted u-mb-6">
         自分のAPIキーで動かせます。空欄の項目はテナント既定、それも無ければ環境変数の値が使われます。
         入力したキーは暗号化して保存し、画面にもログにも出しません。
       </p>
@@ -123,7 +123,7 @@
       </div>
 
       {% if can_manage_tenant %}
-        <p class="muted" style="margin:0 0 12px">
+        <p class="muted u-mb-6">
           個人設定を入れていない利用者に適用されます。Embedding モデルはここでしか変えられません。
           利用者ごとに Embedding が違うと、同じインデックスを別のベクトル空間で検索することになり、検索順位が意味を失うためです。
         </p>

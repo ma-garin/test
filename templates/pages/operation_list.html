@@ -7,7 +7,8 @@
     <div class="card-hdr"><span class="card-t">操作ログ</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>日時</th><th>操作</th><th>対象</th><th>成否</th><th>実施者</th><th>案件</th></tr></thead>
+        <caption class="visually-hidden">操作ログ</caption>
+        <thead><tr><th scope="col">日時</th><th scope="col">操作</th><th scope="col">対象</th><th scope="col">成否</th><th scope="col">実施者</th><th scope="col">案件</th></tr></thead>
         <tbody>
           {% for log in logs %}
             <tr>

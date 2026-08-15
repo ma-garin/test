@@ -3,7 +3,7 @@
 {% block subtitle %}{{ form_subtitle }}{% endblock %}
 
 {% block header_actions %}
-  <a class="btn-ghost sm" href="{% url 'dashboard:risk' %}">リスク一覧へ戻る</a>
+  <a class="btn-out sm" href="{% url 'dashboard:risk' %}">リスク一覧へ戻る</a>
 {% endblock %}
 
 {% block content %}
@@ -14,16 +14,21 @@
     </div>
     <form method="post" class="form">
       {% csrf_token %}
+      {% comment %}
+        エラーは各フィールドの直下（partials/form_field.html）に出す。
+        ここには「どの欄にも属さない」エラーだけを残す。
+      {% endcomment %}
       {% if form.non_field_errors %}
-        <div class="callout d">{{ form.non_field_errors|join:" " }}</div>
-      {% endif %}
-      {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+        <div class="callout d form-errors" role="alert">
+          {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
+      {% endif %}
+      {% comment %}
+      フィールドの描画は partials/form_field.html に一本化している。
+      エラーの出方（どこに・どんな見た目で出るか）を画面ごとに変えない。
+      {% endcomment %}
+      {% for field in form %}
+        {% include "partials/form_field.html" with field=field %}
       {% endfor %}
       <button type="submit" class="btn-b">{{ submit_label|default:"保存する" }}</button>
     </form>
@@ -35,10 +40,11 @@
         <span class="card-t">このリスクへの操作</span>
       </div>
       <div class="stack">
-        <div class="dl">
-          <div>現在の状態</div><div><span class="badge n">{{ risk.get_status_display }}</span></div>
-          <div>スコア</div><div>{{ risk.impact }} × {{ risk.probability }} = {{ risk.score }}</div>
-        </div>
+        {# .dl は dt/dd 前提のスタイル。div のままではラベルと値の区別が付かない。 #}
+        <dl class="dl">
+          <dt>現在の状態</dt><dd><span class="badge n">{{ risk.get_status_display }}</span></dd>
+          <dt>スコア</dt><dd>{{ risk.impact }} × {{ risk.probability }} = {{ risk.score }}</dd>
+        </dl>
         <form method="post" action="{% url 'projects:risk_close' risk.pk %}" class="form">
           {% csrf_token %}
           <button type="submit" class="btn-out">クローズする</button>

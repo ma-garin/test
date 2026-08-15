@@ -21,7 +21,7 @@
       </dl>
       <div class="callout">
         <p>回答は「<strong>{{ screen_context.headline }}</strong>」として整理します。別の話題にする場合は
-          <a href="{% url 'pmo:consultation' %}" style="color:var(--blue);font-weight:900">画面文脈を外す</a>。</p>
+          <a href="{% url 'pmo:consultation' %}" class="link-strong">画面文脈を外す</a>。</p>
       </div>
     </div>
   {% endif %}
@@ -35,15 +35,22 @@
       </span>
     </div>
     <div class="ai-pb">
+      {# 他の画面と同じフィールド描画へ寄せる。失敗した理由は入力欄の直下に出す。 #}
       <form method="get" class="form">
         {% if screen_context %}
           <input type="hidden" name="screen" value="{{ screen_context.key }}">
           <input type="hidden" name="subject" value="{{ screen_context.subject }}">
         {% endif %}
-        <div>
-          <label for="q">相談内容</label>
-          <textarea name="q" id="q" rows="3" placeholder="例: 結合試験が5日遅れています。どう整理すべきですか。">{{ question }}</textarea>
-        </div>
+
+        {% include "partials/form_field_raw.html" with label="相談内容" name="q" input_id="q" type="textarea" rows=3 value=question placeholder="例: 結合試験が5日遅れています。どう整理すべきですか。" %}
+
+        {% if question and not result %}
+          {# 失敗の理由は入力欄の直下に置く。画面の一番下に出しても、書き直す人には見えていない。 #}
+          <div class="field-errors" role="alert">
+            テナントが選択されていないため、検索を実行できませんでした。ヘッダーからテナントを選び直してください。
+          </div>
+        {% endif %}
+
         <div class="actions"><button type="submit" class="btn-b">整理する</button></div>
       </form>
     </div>
@@ -124,12 +131,10 @@
 
       <div class="callout">
         <p><strong>AI が作成した内容です。</strong>人が確認・承認するまでは確定情報として扱いません。</p>
-        <p>処理の詳細は <a href="{% url 'agents:run_detail' result.run.pk %}" style="color:var(--blue);font-weight:900">トレース</a> で確認できます。</p>
+        <p>処理の詳細は <a href="{% url 'agents:run_detail' result.run.pk %}" class="link-strong">トレース</a> で確認できます。</p>
       </div>
 
     {% endwith %}
-  {% elif question %}
-    <div class="callout w">テナントが選択されていないため、検索を実行できませんでした。</div>
   {% endif %}
 
 {% endblock %}

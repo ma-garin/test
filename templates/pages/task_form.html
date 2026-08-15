@@ -14,24 +14,24 @@
       {% if task %}<a class="card-act" href="{% url 'projects:task_detail' task.pk %}">詳細を見る</a>{% endif %}
     </div>
 
-    {% if form.errors %}
-      <div class="callout d">
-        <p>入力内容を確認してください。</p>
-        {% for field in form %}
-          {% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}
-        {% endfor %}
+    {% comment %}
+      エラーは各フィールドの直下（partials/form_field.html）に出す。
+      ここには「どの欄にも属さない」エラーだけを残す。
+    {% endcomment %}
+    {% if form.non_field_errors %}
+      <div class="callout d form-errors" role="alert">
         {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
       </div>
     {% endif %}
 
     <form method="post" class="form">
       {% csrf_token %}
+      {% comment %}
+      フィールドの描画は partials/form_field.html に一本化している。
+      エラーの出方（どこに・どんな見た目で出るか）を画面ごとに変えない。
+      {% endcomment %}
       {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<p class="ps">{{ field.help_text }}</p>{% endif %}
-        </div>
+        {% include "partials/form_field.html" with field=field %}
       {% endfor %}
       <button type="submit" class="btn-b">{% if task %}更新する{% else %}作成する{% endif %}</button>
     </form>

@@ -89,15 +89,15 @@
         <div class="empty">まだメッセージがありません。下の入力欄から質問してください。</div>
       {% endfor %}
 
+      {# aria-label だけだと、拡大表示や音声入力でラベルを掴めない。
+         他の画面と同じ partials/form_field_raw.html へ寄せ、ラベルは視覚的にだけ隠す。 #}
       <form method="post" action="{% url 'rag:chat' %}" class="search-row">
         {% csrf_token %}
         {% if session %}<input type="hidden" name="session" value="{{ session.pk }}">{% endif %}
-        <input type="text" name="message" placeholder="登録文書・業務データへ質問する（例: この案件の課題は？）" aria-label="質問" required>
-        <select name="scope" aria-label="検索範囲">
-          {% for value, label in scope_choices %}
-            <option value="{{ value }}"{% if scope.value == value %} selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
+
+        {% include "partials/form_field_raw.html" with label="質問" name="message" input_id="chat-message" required=1 placeholder="登録文書・業務データへ質問する（例: この案件の課題は？）" error_text=chat_error extra_class="grow" %}
+        {% include "partials/form_field_raw.html" with label="検索範囲" name="scope" input_id="chat-scope" type="select" choices=scope_choices selected=scope.value %}
+
         <button type="submit" class="btn-b">送信</button>
       </form>
     </div>
@@ -105,11 +105,12 @@
     <div class="card">
       <div class="card-hdr"><span class="card-t">会話履歴</span><span class="card-act">{{ sessions|length }}件</span></div>
       <table class="t">
-        <thead><tr><th>タイトル</th><th>案件</th><th>最終更新</th></tr></thead>
+        <caption class="visually-hidden">会話履歴</caption>
+        <thead><tr><th scope="col">タイトル</th><th scope="col">案件</th><th scope="col">最終更新</th></tr></thead>
         <tbody>
           {% for item in sessions %}
             <tr>
-              <td><a href="{% url 'rag:chat' %}?session={{ item.pk }}" style="color:var(--blue);font-weight:900">{{ item.title|default:"（無題）" }}</a></td>
+              <td><a href="{% url 'rag:chat' %}?session={{ item.pk }}" class="link-strong">{{ item.title|default:"（無題）" }}</a></td>
               <td class="nowrap">{{ item.project.name|default:"—" }}</td>
               <td class="nowrap">{{ item.updated_at|date:"n/j H:i" }}</td>
             </tr>

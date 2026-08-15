@@ -3,13 +3,14 @@
 {% block content %}
   <form method="post" class="form">
     {% csrf_token %}
-    {% if error or form.errors %}
-      <div class="callout d">{{ error|default:"メールアドレスの形式が正しくありません。" }}</div>
+    {% comment %}
+      理由は入力欄の直下に出す（partials/form_field.html と同じ形）。
+      view から渡る error はフォームに属さない失敗なので、上に残す。
+    {% endcomment %}
+    {% if error %}
+      <div class="callout d form-errors" role="alert">{{ error }}</div>
     {% endif %}
-    <div>
-      <label for="{{ form.email.id_for_label }}">メールアドレス</label>
-      {{ form.email }}
-    </div>
+    {% include "partials/form_field.html" with field=form.email %}
     <button type="submit" class="btn-b">ログイン</button>
   </form>
   <p class="auth-note">

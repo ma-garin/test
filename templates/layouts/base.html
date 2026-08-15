@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
+{# サイドバーは 24 項目ある。本文へ行くのに毎回そこを抜けさせない。 #}
+<a class="skip-link" href="#main-content">本文へスキップ</a>
 <div class="shell">
 
   <header class="hdr">
@@ -41,13 +43,16 @@
     <div class="sb-scroll">
       {% for section in nav_sections %}
         <div class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}">
-          <button class="sb-hd" type="button">
+          {# 開閉ボタンは「いま開いているか」と「何を開閉するか」を支援技術へ伝える。 #}
+          <button class="sb-hd" type="button"
+                  aria-expanded="{% if section.is_current %}true{% else %}false{% endif %}"
+                  aria-controls="sb-sec-{{ section.key }}">
             {{ section.label }}
             <span class="sb-caret" aria-hidden="true">▶</span>
           </button>
           {# 畳んだときだけ出る見出し。区切り線だけだと、どの領域を見ているか分からなくなる。 #}
           <div class="sb-mini-hd" aria-hidden="true" title="{{ section.label }}">{{ section.label|slice:":2" }}</div>
-          <div class="sb-sec-body">
+          <div class="sb-sec-body" id="sb-sec-{{ section.key }}">
             {% for item in section.items %}
               <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
                  href="{% url item.url_name %}" title="{{ item.label }}">
@@ -60,13 +65,16 @@
       {% endfor %}
     </div>
 
-    <button class="sb-collapse" type="button" id="nav-collapse" aria-expanded="true">
+    {# ラベルは畳むと display:none、アイコンは aria-hidden。
+       そのままでは読み上げ名が空になるので、名前は aria-label で必ず持たせる。 #}
+    <button class="sb-collapse" type="button" id="nav-collapse"
+            aria-expanded="true" aria-controls="sidebar" aria-label="サイドバーを折りたたむ">
       <span class="sb-collapse-ico" aria-hidden="true">‹</span>
       <span class="sb-label">折りたたむ</span>
     </button>
   </nav>
 
-  <main class="main">
+  <main class="main" id="main-content" tabindex="-1">
     <div class="ph">
       <div>
         <div class="pk">{% block kicker %}{{ page_kicker|default:"VERIRAG" }}{% endblock %}</div>
@@ -76,9 +84,18 @@
       <div class="ph-right">{% block header_actions %}{% endblock %}</div>
     </div>
 
-    {% for message in messages %}
-      <div class="callout{% if message.tags == 'error' %} d{% elif message.tags == 'warning' %} w{% elif message.tags == 'success' %} ok{% endif %}">{{ message }}</div>
-    {% endfor %}
+    {% comment %}
+      操作の結果は、画面を見ていない人にも届く必要がある。領域自体を live にして、
+      あとから差し込まれた本文が読み上げられるようにする。
+
+      tags は extra_tags が付くと "error danger" のように連結されるため、
+      == での完全一致は取りこぼす。必ず含有判定で見る。
+    {% endcomment %}
+    <div role="status" aria-live="polite" aria-atomic="false">
+      {% for message in messages %}
+        <div class="callout{% if 'error' in message.tags %} d{% elif 'warning' in message.tags %} w{% elif 'success' in message.tags %} ok{% endif %}">{{ message }}</div>
+      {% endfor %}
+    </div>
 
     {% block content %}{% endblock %}
   </main>
@@ -97,7 +114,11 @@
 
   function apply(collapsed) {
     shell.classList.toggle('nav-collapsed', collapsed);
+    // 狭い画面では既定が「畳んだ状態」なので、開いていることを明示的に持たせる。
+    // これが無いと、スマホで開こうとしても CSS 側の既定に負ける。
+    shell.classList.toggle('nav-expanded', !collapsed);
     button.setAttribute('aria-expanded', String(!collapsed));
+    button.setAttribute('aria-label', collapsed ? 'サイドバーを開く' : 'サイドバーを折りたたむ');
   }
 
   try { apply(localStorage.getItem(KEY) === '1'); } catch (e) { /* 保存できなくても動く */ }
@@ -121,6 +142,14 @@
 
   try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { saved = null; }
 
+  // 見た目（open クラス）と読み上げ（aria-expanded）は必ず同時に動かす。
+  // 片方だけ更新すると、キーボード利用者には常に閉じて見える。
+  function sync(sec) {
+    var head = sec.querySelector('.sb-hd');
+
+    if (head) { head.setAttribute('aria-expanded', String(sec.classList.contains('open'))); }
+  }
+
   if (saved) {
     nav.querySelectorAll('.sb-sec').forEach(function (sec) {
       if (sec.classList.contains('current')) { return; }
@@ -128,9 +157,12 @@
     });
   }
 
+  nav.querySelectorAll('.sb-sec').forEach(sync);
+
   nav.querySelectorAll('.sb-hd').forEach(function (btn) {
     btn.addEventListener('click', function () {
       btn.parentElement.classList.toggle('open');
+      sync(btn.parentElement);
 
       var open = [];
       nav.querySelectorAll('.sb-sec.open').forEach(function (sec) { open.push(sec.dataset.sec); });

@@ -98,8 +98,9 @@
       </div>
       <div class="t-wrap">
         <table class="t">
+          <caption class="visually-hidden">前回との差分</caption>
           <thead>
-            <tr><th>指標</th><th>今回</th><th>前回</th><th>差分</th></tr>
+            <tr><th scope="col">指標</th><th scope="col">今回</th><th scope="col">前回</th><th scope="col">差分</th></tr>
           </thead>
           <tbody>
             {% for delta in deltas %}
@@ -113,6 +114,11 @@
                   {% else %}—{% endif %}
                 </td>
               </tr>
+            {% empty %}
+              <tr><td colspan="4"><div class="empty">
+                <p>比較できる指標がありません。</p>
+                <p>評価が 1 度も完了していないか、Golden が 0 件で指標を計算できていません。</p>
+              </div></td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -136,8 +142,9 @@
       </div>
       <div class="t-wrap">
         <table class="t">
+          <caption class="visually-hidden">ケース別の結果 {{ cases|length }}件</caption>
           <thead>
-            <tr><th>#</th><th>質問</th><th>判定</th><th>初出順位</th><th>Recall</th><th>逆順位</th><th>検出事項</th></tr>
+            <tr><th scope="col">#</th><th scope="col">質問</th><th scope="col">判定</th><th scope="col">初出順位</th><th scope="col">Recall</th><th scope="col">逆順位</th><th scope="col">検出事項</th></tr>
           </thead>
           <tbody>
             {% for case in cases %}
@@ -158,6 +165,11 @@
                 <td class="nowrap">{% if case.reciprocal_rank != None %}{{ case.reciprocal_rank|floatformat:2 }}{% else %}—{% endif %}</td>
                 <td>{% for issue in case.issues %}<div>{{ issue }}</div>{% empty %}—{% endfor %}</td>
               </tr>
+            {% empty %}
+              <tr><td colspan="7"><div class="empty">
+                <p>ケースがありません。</p>
+                <p>このスイートに紐づく Golden 質問が 0 件です。下の「Golden を追加する」から登録してください。</p>
+              </div></td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -173,8 +185,9 @@
     {% if golden_rows %}
       <div class="t-wrap">
         <table class="t">
+          <caption class="visually-hidden">Golden Dataset {{ golden_rows|length }}件</caption>
           <thead>
-            <tr><th>質問</th><th>カテゴリ</th><th>期待する文書</th><th>期待キーワード</th><th>状態</th></tr>
+            <tr><th scope="col">質問</th><th scope="col">カテゴリ</th><th scope="col">期待する文書</th><th scope="col">期待キーワード</th><th scope="col">状態</th></tr>
           </thead>
           <tbody>
             {% for row in golden_rows %}
@@ -209,29 +222,40 @@
     <div class="card-hdr">
       <span class="card-t">Golden を追加する</span>
     </div>
-    <form method="post" class="form stack">
+    {# ラベルで入力欄を包む書き方と for/id で結ぶ書き方が混在していたので、
+       他の画面と同じ partials/form_field_raw.html へ寄せる。 #}
+    <form method="post" class="form">
       {% csrf_token %}
       <input type="hidden" name="action" value="add_golden">
-      <label>質問
-        <input type="text" name="question" required placeholder="例: 結合試験の完了判定基準は何ですか？">
-      </label>
-      <label>カテゴリ
-        <input type="text" name="category" placeholder="例: テスト管理">
-      </label>
-      <label>期待する文書（複数選択可）
-        <select name="expected_documents" multiple size="5">
-          {% for document in documents %}
-            <option value="{{ document.pk }}">{{ document.title }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label>期待キーワード（読点またはカンマ区切り）
-        <input type="text" name="expected_terms" placeholder="例: 完了判定, 消化率">
-      </label>
-      <label>
-        <input type="checkbox" name="must_abstain" value="1">
-        根拠が無ければ回答を抑制すべき質問として扱う
-      </label>
+
+      {# 画面上部のまとめ表示だけだと、入力欄へ戻ったときに理由が見えていない。入力欄にも出す。 #}
+      {% include "partials/form_field_raw.html" with label="質問" name="question" input_id="golden-question" required=1 placeholder="例: 結合試験の完了判定基準は何ですか？" error_text=error|yesno:"質問文が空です。Golden 質問には必ず質問文を入力してください。," %}
+
+      {% include "partials/form_field_raw.html" with label="カテゴリ" name="category" input_id="golden-category" placeholder="例: テスト管理" %}
+
+      {% if documents %}
+        {% include "partials/form_field_raw.html" with label="期待する文書（複数選択可）" name="expected_documents" input_id="golden-documents" type="select" multiple=1 size=5 objects=documents option_label="title" %}
+      {% else %}
+        {# 空の複数選択リストだけが出ると、選び忘れたのか選べないのか分からない。 #}
+        <div class="field">
+          <span class="field-label">期待する文書（複数選択可）</span>
+          <div class="empty">
+            <p>選べる文書がありません。</p>
+            <p>このテナントに文書が 1 件も登録されていないか、あなたに参照権限のある文書がありません。
+            先に「文書アップロード」から登録してください。期待する文書を指定しない Golden も登録できますが、Recall は測れません。</p>
+          </div>
+        </div>
+      {% endif %}
+
+      {% include "partials/form_field_raw.html" with label="期待キーワード（読点またはカンマ区切り）" name="expected_terms" input_id="golden-terms" placeholder="例: 完了判定, 消化率" %}
+
+      <div class="field">
+        <label class="field-label" for="golden-abstain">
+          <input type="checkbox" name="must_abstain" id="golden-abstain" value="1">
+          根拠が無ければ回答を抑制すべき質問として扱う
+        </label>
+      </div>
+
       <div class="actions">
         <button type="submit" class="btn-b">登録する</button>
       </div>
@@ -246,8 +270,9 @@
       </div>
       <div class="t-wrap">
         <table class="t">
+          <caption class="visually-hidden">実行履歴</caption>
           <thead>
-            <tr><th>実行日時</th><th>スイート</th><th>件数</th><th>Recall@K</th><th>MRR</th><th>検出事項</th></tr>
+            <tr><th scope="col">実行日時</th><th scope="col">スイート</th><th scope="col">件数</th><th scope="col">Recall@K</th><th scope="col">MRR</th><th scope="col">検出事項</th></tr>
           </thead>
           <tbody>
             {% for item in history %}

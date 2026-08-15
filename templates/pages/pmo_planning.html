@@ -23,11 +23,12 @@
       </div>
       <div class="t-wrap">
         <table class="t">
-          <thead><tr><th>計画名</th><th>案件</th><th>状態</th><th>更新</th></tr></thead>
+          <caption class="visually-hidden">計画ドラフト一覧</caption>
+          <thead><tr><th scope="col">計画名</th><th scope="col">案件</th><th scope="col">状態</th><th scope="col">更新</th></tr></thead>
           <tbody>
             {% for draft in drafts %}
               <tr>
-                <td><a href="?draft={{ draft.pk }}" style="color:var(--blue);font-weight:900">{{ draft.title }}</a></td>
+                <td><a href="?draft={{ draft.pk }}" class="link-strong">{{ draft.title }}</a></td>
                 <td>{{ draft.project.name }}</td>
                 <td><span class="badge {% if draft.status == 'finalized' %}g{% elif draft.status == 'reviewing' %}b{% else %}n{% endif %}">{{ draft.get_status_display }}</span></td>
                 <td class="nowrap">{{ draft.updated_at|date:"n/j H:i" }}</td>
@@ -52,7 +53,7 @@
           <dt>案件</dt><dd>{{ selected.project.name }}</dd>
           <dt>状態</dt><dd>{{ selected.get_status_display }}</dd>
           <dt>生成元</dt>
-          <dd>{% if selected.agent_run %}<a href="{% url 'agents:run_detail' selected.agent_run.pk %}" style="color:var(--blue)">処理トレース</a>{% else %}AI未使用{% endif %}</dd>
+          <dd>{% if selected.agent_run %}<a href="{% url 'agents:run_detail' selected.agent_run.pk %}" class="tone-b">処理トレース</a>{% else %}AI未使用{% endif %}</dd>
         </dl>
         <div class="steps">
           {% for point in selected.review_points %}

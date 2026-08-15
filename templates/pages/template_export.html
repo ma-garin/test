@@ -21,12 +21,12 @@
   <div class="kpi-g">
     <div class="kpi">
       <div class="kpi-l">書き込んだ項目</div>
-      <div class="kpi-v" style="color:var(--green)">{{ result.written|length }}</div>
+      <div class="kpi-v tone-g">{{ result.written|length }}</div>
       <div class="kpi-s">{{ template.name }}</div>
     </div>
     <div class="kpi">
       <div class="kpi-l">未出力の項目</div>
-      <div class="kpi-v" style="color:var(--red)">{{ result.skipped|length }}</div>
+      <div class="kpi-v tone-r">{{ result.skipped|length }}</div>
       <div class="kpi-s">空欄の理由は下の表で確認できます</div>
     </div>
     <div class="kpi">
@@ -48,16 +48,29 @@
     </div>
     <form class="form" method="get" action="{% url 'documents:template_export' template.pk %}">
       {% if deliverable %}<input type="hidden" name="deliverable" value="{{ deliverable.pk }}">{% endif %}
-      <div class="stack">
-        <label>案件<br>
-          <select name="project">
-            <option value="">選択しない</option>
-            {% for item in projects %}
-              <option value="{{ item.pk }}" {% if project and item.pk == project.pk %}selected{% endif %}>{{ item.code }} {{ item.name }}</option>
-            {% endfor %}
-          </select>
-        </label>
-      </div>
+
+      {% if projects %}
+        {# 出力に失敗した理由は、押した場所（案件の選択欄）の近くに出す。
+           画面上部のまとめだけだと、選び直すときにもう理由が見えていない。 #}
+        {% include "partials/form_field_raw.html" with label="案件" name="project" input_id="export-project" type="select" blank_label="選択しない" objects=projects option_label="code_name" selected=project.pk %}
+        {% if not result.ok %}
+          <div class="field-errors">{{ result.message }}</div>
+        {% endif %}
+      {% else %}
+        {% comment %}
+          案件が 0 件だと「選択しない」だけの select が出て、実データを書き込めない理由が
+          分からない。データが無いのか、権限が無いのかを書き分ける。
+        {% endcomment %}
+        <div class="field">
+          <span class="field-label">案件</span>
+          <div class="empty">
+            <p>選べる案件がありません。ひな型の項目は空欄のまま出力されます。</p>
+            <p>このテナントに案件が無いか、あなたが案件メンバーに登録されていません。
+            実データを書き込みたい場合は、テナント管理者に案件メンバーへの追加を依頼してください。</p>
+          </div>
+        </div>
+      {% endif %}
+
       <div class="actions">
         <button class="btn-b" type="submit">この条件で作り直す</button>
         {% if result.ok %}<a class="btn-out" href="?{{ download_query }}">Excelをダウンロード</a>{% endif %}
@@ -72,7 +85,8 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>項目</th><th class="nowrap">書き込み先</th><th>値</th></tr></thead>
+        <caption class="visually-hidden">書き込んだ項目</caption>
+        <thead><tr><th scope="col">項目</th><th class="nowrap" scope="col">書き込み先</th><th scope="col">値</th></tr></thead>
         <tbody>
           {% for item in result.written %}
             <tr>
@@ -99,7 +113,8 @@
       </div>
       <div class="t-wrap">
         <table class="t">
-          <thead><tr><th>項目</th><th class="nowrap">書き込み先</th><th>理由</th></tr></thead>
+          <caption class="visually-hidden">未出力の項目</caption>
+          <thead><tr><th scope="col">項目</th><th class="nowrap" scope="col">書き込み先</th><th scope="col">理由</th></tr></thead>
           <tbody>
             {% for item in result.skipped %}
               <tr>

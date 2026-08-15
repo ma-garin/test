@@ -22,7 +22,7 @@
     </div>
     <div class="kpi">
       <div class="kpi-l">マッピング済み項目</div>
-      <div class="kpi-v" style="color:var(--blue)">{{ mapped_total }}</div>
+      <div class="kpi-v tone-b">{{ mapped_total }}</div>
       <div class="kpi-s">回答項目 → セル位置の対応</div>
     </div>
   </div>
@@ -50,7 +50,8 @@
 
       <div class="t-wrap">
         <table class="t">
-          <thead><tr><th>回答項目</th><th>書き込み先セル</th></tr></thead>
+          <caption class="visually-hidden">{{ card.template.name }}</caption>
+          <thead><tr><th scope="col">回答項目</th><th scope="col">書き込み先セル</th></tr></thead>
           <tbody>
             {% for row in card.rows %}
               <tr>

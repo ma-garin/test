@@ -12,17 +12,17 @@
     </div>
     <div class="kpi">
       <div class="kpi-l">合格</div>
-      <div class="kpi-v" style="color:var(--green)">{{ report.passed_count }}<small>/{{ report.criteria|length }}</small></div>
+      <div class="kpi-v tone-g">{{ report.passed_count }}<small>/{{ report.criteria|length }}</small></div>
       <div class="kpi-s">目標値を満たした条件</div>
     </div>
     <div class="kpi">
       <div class="kpi-l">不合格</div>
-      <div class="kpi-v" style="color:var(--red)">{{ report.failed_count }}</div>
+      <div class="kpi-v tone-r">{{ report.failed_count }}</div>
       <div class="kpi-s">測れていて、目標に届いていない条件</div>
     </div>
     <div class="kpi">
       <div class="kpi-l">判定不能</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ report.unknown_count }}</div>
+      <div class="kpi-v tone-y">{{ report.unknown_count }}</div>
       <div class="kpi-s">データ不足で合否を言えない条件</div>
     </div>
   </div>
@@ -39,10 +39,11 @@
       <span class="card-t">受け入れ条件の判定</span>
       <span class="card-act">目標値は設定（POC_TARGETS）で変更できます</span>
     </div>
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">受け入れ条件の判定</caption>
         <thead>
-          <tr><th>#</th><th>受け入れ条件</th><th>基準</th><th>実績</th><th>目標</th><th>判定</th></tr>
+          <tr><th scope="col">#</th><th scope="col">受け入れ条件</th><th scope="col">基準</th><th scope="col">実績</th><th scope="col">目標</th><th scope="col">判定</th></tr>
         </thead>
         <tbody>
           {% for item in report.criteria %}
@@ -59,7 +60,7 @@
               <td class="nowrap"><span class="badge {{ item.verdict_tone }}">{{ item.verdict_label }}</span></td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="dashboard-empty">判定対象の受け入れ条件が設定されていません。</div></td></tr>
+            <tr><td colspan="6"><div class="empty">判定対象の受け入れ条件が設定されていません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -72,22 +73,24 @@
       <span class="card-act">{{ report.blocked_deliverables|length }}件がブロック中</span>
     </div>
     {% if report.blocked_deliverables %}
-      <div class="dl">
+      {# .dl は dt/dd の 2 列レイアウト。手順の並びに使うと段組みが崩れる。 #}
+      <div class="callout">
         <p><strong>実演手順</strong></p>
         <p>1. 下表の成果物を「成果物」画面で開く。</p>
         <p>2. 承認申請を実行する。</p>
         <p>3. 根拠評価が不足と判定しているため、サーバ側で拒否され承認へ進めないことを確認する。</p>
         <p>4. 根拠を追加したうえで再評価すると、同じ操作が通ることを確認する。</p>
       </div>
-      <div class="dashboard-risk-wrap">
-        <table class="dashboard-risk-table">
+      <div class="t-wrap wide">
+        <table class="t">
+          <caption class="visually-hidden">HITL 承認前ブロックの実演手順（#54）</caption>
           <thead>
-            <tr><th>成果物</th><th>案件</th><th>状態</th><th>ブロック理由</th></tr>
+            <tr><th scope="col">成果物</th><th scope="col">案件</th><th scope="col">状態</th><th scope="col">ブロック理由</th></tr>
           </thead>
           <tbody>
             {% for row in report.blocked_deliverables %}
               <tr>
-                <td>{{ row.deliverable.title }} <span class="sg">v{{ row.deliverable.version }}</span></td>
+                <td>{{ row.deliverable.title }} <span class="muted">v{{ row.deliverable.version }}</span></td>
                 <td class="nowrap">{{ row.deliverable.project.code }}</td>
                 <td class="nowrap"><span class="badge a">{{ row.deliverable.get_status_display }}</span></td>
                 <td>{{ row.reason }}</td>

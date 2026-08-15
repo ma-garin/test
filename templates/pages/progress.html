@@ -21,27 +21,27 @@
   <div class="kpi-g">
     <div class="kpi">
       <div class="kpi-l">遅延している案件</div>
-      <div class="kpi-v" style="color:var(--red)">{{ report.delayed_projects }}</div>
+      <div class="kpi-v tone-r">{{ report.delayed_projects }}</div>
       <div class="kpi-s">計画を下回っている案件</div>
-      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill r u-w-full"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">平均の計画差</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ report.average_gap }}<small>pt</small></div>
+      <div class="kpi-v tone-y">{{ report.average_gap }}<small>pt</small></div>
       <div class="kpi-s">実績 − 計画</div>
-      <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill a u-w-60"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">遅延見込みタスク</div>
-      <div class="kpi-v" style="color:var(--orange)">{{ report.delayed_tasks|length }}</div>
+      <div class="kpi-v tone-o">{{ report.delayed_tasks|length }}</div>
       <div class="kpi-s">期限超過＋期限接近で進捗不足</div>
-      <div class="kpi-bar"><div class="kpi-fill a" style="width:70%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill a u-w-70"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">ブロック中</div>
       <div class="kpi-v">{{ report.blocked_tasks|length }}</div>
       <div class="kpi-s">着手できないタスク</div>
-      <div class="kpi-bar"><div class="kpi-fill b" style="width:50%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill b u-w-50"></div></div>
     </div>
   </div>
 
@@ -58,18 +58,19 @@
       <p>完了予測日は直近14日の消化速度から算出します。速度が出せない場合は日付を出しません。</p>
     </div>
 
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">出来高管理（EVM）と完了予測</caption>
         <thead>
           <tr>
-            <th>案件</th><th>計画(PV)</th><th>出来高(EV)</th><th>実績(AC)</th>
-            <th>SPI</th><th>CPI</th><th>総工数見込</th><th>残工数</th><th>完了予測</th><th>工数入力率</th>
+            <th scope="col">案件</th><th scope="col">計画(PV)</th><th scope="col">出来高(EV)</th><th scope="col">実績(AC)</th>
+            <th scope="col">SPI</th><th scope="col">CPI</th><th scope="col">総工数見込</th><th scope="col">残工数</th><th scope="col">完了予測</th><th scope="col">工数入力率</th>
           </tr>
         </thead>
         <tbody>
           {% for ev in earned_values %}
             <tr>
-              <td><a href="{% url 'projects:detail' ev.project.pk %}" style="color:var(--blue);font-weight:900">{{ ev.project.name }}</a></td>
+              <td><a href="{% url 'projects:detail' ev.project.pk %}" class="link-strong">{{ ev.project.name }}</a></td>
               <td class="nowrap">{{ ev.planned_value|floatformat:"-1" }}h</td>
               <td class="nowrap">{{ ev.earned_value|floatformat:"-1" }}h</td>
               <td class="nowrap">{{ ev.actual_cost|floatformat:"-1" }}h</td>
@@ -101,7 +102,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="10"><div class="dashboard-empty">対象の案件がありません。</div></td></tr>
+            <tr><td colspan="10"><div class="empty">対象の案件がありません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -113,15 +114,16 @@
       <span class="card-t">案件別の計画実績差</span>
       <span class="card-act">{% if report.worst %}最も遅れているのは {{ report.worst.project.name }}{% endif %}</span>
     </div>
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">案件別の計画実績差</caption>
         <thead>
-          <tr><th>案件</th><th>タスク数</th><th>計画</th><th>実績</th><th>差</th><th>期限超過</th><th>ブロック</th><th>見通し</th></tr>
+          <tr><th scope="col">案件</th><th scope="col">タスク数</th><th scope="col">計画</th><th scope="col">実績</th><th scope="col">差</th><th scope="col">期限超過</th><th scope="col">ブロック</th><th scope="col">見通し</th></tr>
         </thead>
         <tbody>
           {% for row in report.rows %}
             <tr>
-              <td><a href="{% url 'projects:detail' row.project.pk %}" style="color:var(--blue);font-weight:900">{{ row.project.name }}</a></td>
+              <td><a href="{% url 'projects:detail' row.project.pk %}" class="link-strong">{{ row.project.name }}</a></td>
               <td>{{ row.total_tasks }}</td>
               <td class="nowrap">{{ row.planned_percent }}%</td>
               <td class="nowrap">{{ row.actual_percent }}%</td>
@@ -131,7 +133,7 @@
               <td><span class="badge {{ row.tone }}">{{ row.forecast_label }}</span></td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="dashboard-empty">参照できる案件がありません。</div></td></tr>
+            <tr><td colspan="8"><div class="empty">参照できる案件がありません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -149,12 +151,13 @@
       見込日が未入力の場合のみ本日基準で測るため、「見込みを入れていない＝遅れていない」にはなりません。</p>
     </div>
 
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">マイルストーン予実</caption>
         <thead>
           <tr>
-            <th>マイルストーン</th><th>案件</th><th>区分</th>
-            <th>計画日</th><th>見込日</th><th>実績日</th><th>遅延</th><th>基準</th><th>状態</th>
+            <th scope="col">マイルストーン</th><th scope="col">案件</th><th scope="col">区分</th>
+            <th scope="col">計画日</th><th scope="col">見込日</th><th scope="col">実績日</th><th scope="col">遅延</th><th scope="col">基準</th><th scope="col">状態</th>
           </tr>
         </thead>
         <tbody>
@@ -163,7 +166,7 @@
               <td>
                 {% if row.is_gate %}<strong>{{ row.milestone.name }}</strong>{% else %}{{ row.milestone.name }}{% endif %}
               </td>
-              <td><a href="{% url 'projects:detail' row.milestone.project.pk %}" style="color:var(--blue);font-weight:900">{{ row.milestone.project.name }}</a></td>
+              <td><a href="{% url 'projects:detail' row.milestone.project.pk %}" class="link-strong">{{ row.milestone.project.name }}</a></td>
               <td class="nowrap">
                 {% if row.is_gate %}<span class="badge r">品質ゲート</span>
                 {% else %}<span class="badge n">通常</span>{% endif %}
@@ -179,7 +182,7 @@
               <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.status_label }}</span></td>
             </tr>
           {% empty %}
-            <tr><td colspan="9"><div class="dashboard-empty">マイルストーンが登録されていません。対象なしのため、遅延の有無は判定できません。</div></td></tr>
+            <tr><td colspan="9"><div class="empty">マイルストーンが登録されていません。対象なしのため、遅延の有無は判定できません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -196,7 +199,7 @@
         <div class="pb-row">
           <div class="pb-lr">
             <span class="pb-t">{{ task.name }}</span>
-            <span class="pb-v" style="color:var(--red)">{{ task.planned_end|date:"n/j"|default:"期限未設定" }}</span>
+            <span class="pb-v tone-r">{{ task.planned_end|date:"n/j"|default:"期限未設定" }}</span>
           </div>
           <div class="ps">{{ task.project.name }} ／ 担当 {{ task.owner|default:"未割当" }} ／ 進捗 {{ task.progress_percent|floatformat:0 }}%</div>
         </div>
@@ -214,7 +217,7 @@
         <div class="pb-row">
           <div class="pb-lr">
             <span class="pb-t">{{ task.name }}</span>
-            <span class="pb-v" style="color:var(--orange)">{{ task.planned_end|date:"n/j"|default:"—" }}</span>
+            <span class="pb-v tone-o">{{ task.planned_end|date:"n/j"|default:"—" }}</span>
           </div>
           <div class="ps">{{ task.project.name }} ／ ボール保持 {{ task.ball_holder|default:"未設定" }}</div>
         </div>

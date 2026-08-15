@@ -16,25 +16,25 @@
       <div class="kpi-l">対象リスク</div>
       <div class="kpi-v">{{ report.total }}</div>
       <div class="kpi-s">{% if status %}絞り込み中{% else %}全件{% endif %}</div>
-      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill b u-w-full"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">高スコア</div>
-      <div class="kpi-v" style="color:var(--red)">{{ report.high_count }}</div>
+      <div class="kpi-v tone-r">{{ report.high_count }}</div>
       <div class="kpi-s">優先して対策するもの</div>
-      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill r u-w-full"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">顕在化</div>
-      <div class="kpi-v" style="color:var(--orange)">{{ report.materialized_count }}</div>
+      <div class="kpi-v tone-o">{{ report.materialized_count }}</div>
       <div class="kpi-s">課題へ移すべきもの</div>
-      <div class="kpi-bar"><div class="kpi-fill a" style="width:70%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill a u-w-70"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">対策なし</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ report.without_mitigation }}</div>
+      <div class="kpi-v tone-y">{{ report.without_mitigation }}</div>
       <div class="kpi-s">対応方針が未記入</div>
-      <div class="kpi-bar"><div class="kpi-fill a" style="width:50%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill a u-w-50"></div></div>
     </div>
   </div>
 
@@ -43,19 +43,24 @@
       <span class="card-t">リスク一覧</span>
       {% if status %}<a class="card-act" href="{% url 'dashboard:risk' %}">条件をクリア</a>{% endif %}
     </div>
+    {# 絞り込みの select にもラベルを結び付ける。1件目の option はラベルの代わりにならない。 #}
     <form method="get" class="search-row">
-      <select name="status">
-        <option value="">状態（すべて）</option>
-        {% for value, label in report.status_choices %}
-          <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
+      <div class="search-field grow">
+        <label class="visually-hidden" for="filter-status">状態で絞り込む</label>
+        <select name="status" id="filter-status">
+          <option value="">状態（すべて）</option>
+          {% for value, label in report.status_choices %}
+            <option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
       <button type="submit" class="btn-b sm">絞り込む</button>
     </form>
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">リスク一覧</caption>
         <thead>
-          <tr><th>案件</th><th>リスク</th><th>影響</th><th>確率</th><th>スコア</th><th>対策</th><th>期限</th><th>状態</th><th>操作</th></tr>
+          <tr><th scope="col">案件</th><th scope="col">リスク</th><th scope="col">影響</th><th scope="col">確率</th><th scope="col">スコア</th><th scope="col">対策</th><th scope="col">期限</th><th scope="col">状態</th><th scope="col">操作</th></tr>
         </thead>
         <tbody>
           {% for row in report.rows %}
@@ -74,7 +79,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="9"><div class="dashboard-empty">{% if status %}条件に一致するリスクがありません。{% else %}登録されたリスクがありません。{% endif %}</div></td></tr>
+            <tr><td colspan="9"><div class="empty">{% if status %}条件に一致するリスクがありません。{% else %}登録されたリスクがありません。{% endif %}</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

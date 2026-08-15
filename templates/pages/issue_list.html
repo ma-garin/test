@@ -16,8 +16,9 @@
     </div>
     <div class="t-wrap">
       <table class="t">
+        <caption class="visually-hidden">課題一覧</caption>
         <thead>
-          <tr><th>案件</th><th>課題</th><th>重大度</th><th>担当</th><th>期限</th><th>外部キー</th><th>状態</th><th>操作</th></tr>
+          <tr><th scope="col">案件</th><th scope="col">課題</th><th scope="col">重大度</th><th scope="col">担当</th><th scope="col">期限</th><th scope="col">外部キー</th><th scope="col">状態</th><th scope="col">操作</th></tr>
         </thead>
         <tbody>
           {% for issue in issues %}

@@ -9,25 +9,25 @@
       <div class="kpi-l">計測済みの指標</div>
       <div class="kpi-v">{{ report.rows|length }}<small>/4</small></div>
       <div class="kpi-s">計測データ {{ report.measured_count }}件</div>
-      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill b u-w-full"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">改善した指標</div>
-      <div class="kpi-v" style="color:var(--green)">{{ report.improved_count }}</div>
+      <div class="kpi-v tone-g">{{ report.improved_count }}</div>
       <div class="kpi-s">基準値より良くなったもの</div>
-      <div class="kpi-bar"><div class="kpi-fill g" style="width:60%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill g u-w-60"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">目標達成</div>
-      <div class="kpi-v" style="color:var(--blue)">{{ report.achieved_count }}</div>
+      <div class="kpi-v tone-b">{{ report.achieved_count }}</div>
       <div class="kpi-s">目標値に到達した指標</div>
-      <div class="kpi-bar"><div class="kpi-fill b" style="width:50%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill b u-w-50"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">未計測</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ report.missing_kinds|length }}</div>
+      <div class="kpi-v tone-y">{{ report.missing_kinds|length }}</div>
       <div class="kpi-s">効果を語れない指標</div>
-      <div class="kpi-bar"><div class="kpi-fill a" style="width:40%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill a u-w-40"></div></div>
     </div>
   </div>
 
@@ -36,10 +36,11 @@
       <span class="card-t">効果測定（指標ごとの最新計測）</span>
       <a class="btn-out" href="{% url 'dashboard:poc' %}">PoC合否判定を見る</a>
     </div>
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">効果測定（指標ごとの最新計測）</caption>
         <thead>
-          <tr><th>指標</th><th>案件</th><th>基準値</th><th>実績</th><th>目標</th><th>改善率</th><th>判定</th><th>計測日</th></tr>
+          <tr><th scope="col">指標</th><th scope="col">案件</th><th scope="col">基準値</th><th scope="col">実績</th><th scope="col">目標</th><th scope="col">改善率</th><th scope="col">判定</th><th scope="col">計測日</th></tr>
         </thead>
         <tbody>
           {% for row in report.rows %}
@@ -61,7 +62,7 @@
               <td class="nowrap">{{ row.measurement.measured_on|date:"n/j" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="dashboard-empty">KPIの計測データがありません。</div></td></tr>
+            <tr><td colspan="8"><div class="empty">KPIの計測データがありません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

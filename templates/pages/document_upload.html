@@ -10,7 +10,7 @@
 
   {% if result %}
     {% if result.is_registered %}
-      <div class="callout g">
+      <div class="callout ok">
         <p><strong>登録しました。</strong>{{ result.document.title }}（{{ result.document.get_file_type_display }} / {{ result.document.file_size }} バイト）</p>
         <p>本文変換とインデックス構築は別処理です。検索対象にするには <code>python manage.py rebuild_index</code> を実行してください。</p>
       </div>
@@ -31,29 +31,34 @@
       <span class="card-act">上限 {{ max_size_mb }}MB</span>
     </div>
 
+    {% comment %}
+      検証エラーは「どの欄を直せばよいか」まで示す。まとめて上に出すだけだと、
+      入力欄まで戻ったときにもう理由が見えていない。
+      検証（validation.py）はすべてファイルについての判定なので、ファイル欄に付ける。
+    {% endcomment %}
     <form method="post" enctype="multipart/form-data" class="form">
       {% csrf_token %}
-      <div>
-        <label for="file">ファイル</label>
-        <input type="file" name="file" id="file" required>
-      </div>
-      <div>
-        <label for="title">文書名</label>
-        <input type="text" name="title" id="title" maxlength="300" placeholder="未入力ならファイル名を使います">
-      </div>
-      <div>
-        <label for="project">参照範囲</label>
-        <select name="project" id="project">
-          <option value="">テナント共通ナレッジ</option>
-          {% for project in projects %}
-            <option value="{{ project.pk }}">{{ project.code }} / {{ project.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label for="source_note">出典メモ</label>
-        <input type="text" name="source_note" id="source_note" maxlength="300" placeholder="例: 2026年度 品質管理標準 第3版">
-      </div>
+
+      {% include "partials/form_field_raw.html" with label="ファイル" name="file" input_id="file" type="file" required=1 errors=result.errors help="対応形式: "|add:accepted_extensions %}
+
+      {% include "partials/form_field_raw.html" with label="文書名" name="title" input_id="title" maxlength=300 placeholder="未入力ならファイル名を使います" %}
+
+      {% if projects %}
+        {% include "partials/form_field_raw.html" with label="参照範囲" name="project" input_id="project" type="select" blank_label="テナント共通ナレッジ" objects=projects option_label="code_slash_name" help="案件を選ぶと、その案件の参照者だけが検索できます。" %}
+      {% else %}
+        {# 案件が 0 件のときに空の select を出すと、選ばなかったのか選べなかったのか分からない。 #}
+        <div class="field">
+          <span class="field-label">参照範囲</span>
+          <div class="empty">
+            <p>参照できる案件がないため、テナント共通ナレッジとして登録します。</p>
+            <p>特定の案件に紐づけたい場合は、案件メンバーへの追加をテナント管理者に依頼してください。</p>
+          </div>
+          <input type="hidden" name="project" value="">
+        </div>
+      {% endif %}
+
+      {% include "partials/form_field_raw.html" with label="出典メモ" name="source_note" input_id="source_note" maxlength=300 placeholder="例: 2026年度 品質管理標準 第3版" %}
+
       <div class="actions"><button type="submit" class="btn-b">検証して登録する</button></div>
     </form>
   </div>

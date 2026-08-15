@@ -22,7 +22,8 @@
       </div>
       <div class="t-wrap">
         <table class="t">
-          <thead><tr><th>テンプレート</th><th>想定意図</th><th>本文</th><th>操作</th></tr></thead>
+          <caption class="visually-hidden">{{ category }}</caption>
+          <thead><tr><th scope="col">テンプレート</th><th scope="col">想定意図</th><th scope="col">本文</th><th scope="col">操作</th></tr></thead>
           <tbody>
             {% for entry in entries %}
               {% if entry.category == category %}

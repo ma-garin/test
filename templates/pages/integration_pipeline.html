@@ -32,12 +32,12 @@
     </div>
     <div class="kpi">
       <div class="kpi-l">RAGインデックス最終構築</div>
-      <div class="kpi-v" style="font-size:16px">{{ overview.last_index_at|date:"n/j H:i"|default:"未実施" }}</div>
+      <div class="kpi-v sm">{{ overview.last_index_at|date:"n/j H:i"|default:"未実施" }}</div>
       <div class="kpi-s">{% if overview.last_index_job %}{{ overview.last_index_job.get_job_type_display }}{% else %}構築履歴がありません{% endif %}</div>
     </div>
     <div class="kpi">
       <div class="kpi-l">集計時刻</div>
-      <div class="kpi-v" style="font-size:16px">{{ overview.generated_at|date:"n/j H:i" }}</div>
+      <div class="kpi-v sm">{{ overview.generated_at|date:"n/j H:i" }}</div>
       <div class="kpi-s">画面を開いた時点の値</div>
     </div>
   </div>
@@ -49,8 +49,9 @@
     </div>
     <div class="t-wrap">
       <table class="t">
+        <caption class="visually-hidden">接続ごとの同期状態</caption>
         <thead>
-          <tr><th>接続</th><th>連携先</th><th>モード</th><th>最終同期</th><th>最終成功</th><th>経過</th><th>直近ジョブ</th><th>鮮度</th></tr>
+          <tr><th scope="col">接続</th><th scope="col">連携先</th><th scope="col">モード</th><th scope="col">最終同期</th><th scope="col">最終成功</th><th scope="col">経過</th><th scope="col">直近ジョブ</th><th scope="col">鮮度</th></tr>
         </thead>
         <tbody>
           {% for row in overview.rows %}
@@ -85,8 +86,9 @@
     </div>
     <div class="t-wrap">
       <table class="t">
+        <caption class="visually-hidden">直近の同期ジョブ</caption>
         <thead>
-          <tr><th>実行日時</th><th>接続</th><th>状態</th><th>新規</th><th>更新</th><th>失敗</th><th>メッセージ</th></tr>
+          <tr><th scope="col">実行日時</th><th scope="col">接続</th><th scope="col">状態</th><th scope="col">新規</th><th scope="col">更新</th><th scope="col">失敗</th><th scope="col">メッセージ</th></tr>
         </thead>
         <tbody>
           {% for job in overview.recent_jobs %}

@@ -7,7 +7,8 @@
     <div class="card-hdr"><span class="card-t">案件一覧</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>コード</th><th>案件名</th><th>状態</th><th>信号</th><th>進捗</th><th>PM</th><th>PMO</th><th>区分</th></tr></thead>
+        <caption class="visually-hidden">案件一覧</caption>
+        <thead><tr><th scope="col">コード</th><th scope="col">案件名</th><th scope="col">状態</th><th scope="col">信号</th><th scope="col">進捗</th><th scope="col">PM</th><th scope="col">PMO</th><th scope="col">区分</th></tr></thead>
         <tbody>
           {% for project in projects %}
             <tr>

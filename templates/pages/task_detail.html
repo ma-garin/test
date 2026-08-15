@@ -20,17 +20,17 @@
     </div>
     <div class="kpi">
       <div class="kpi-l">期限</div>
-      <div class="kpi-v" style="font-size:16px">{{ task.planned_end|date:"Y/n/j"|default:"未設定" }}</div>
+      <div class="kpi-v sm">{{ task.planned_end|date:"Y/n/j"|default:"未設定" }}</div>
       <div class="kpi-s">遅れ {{ task.delay_days|default:"—" }}日</div>
     </div>
     <div class="kpi">
       <div class="kpi-l">担当</div>
-      <div class="kpi-v" style="font-size:16px">{{ task.owner|default:"—" }}</div>
+      <div class="kpi-v sm">{{ task.owner|default:"—" }}</div>
       <div class="kpi-s">ボール保持者 {{ task.ball_holder|default:"—" }}</div>
     </div>
     <div class="kpi">
       <div class="kpi-l">優先度</div>
-      <div class="kpi-v" style="font-size:16px">{{ task.get_priority_display }}</div>
+      <div class="kpi-v sm">{{ task.get_priority_display }}</div>
       <div class="kpi-s">{{ task.get_follow_up_state_display }}</div>
     </div>
   </div>
@@ -83,7 +83,8 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>関係</th><th>WBS</th><th>タスク</th><th>担当</th><th>期限</th><th>状態</th></tr></thead>
+        <caption class="visually-hidden">関連タスク</caption>
+        <thead><tr><th scope="col">関係</th><th scope="col">WBS</th><th scope="col">タスク</th><th scope="col">担当</th><th scope="col">期限</th><th scope="col">状態</th></tr></thead>
         <tbody>
           {% for related in related_tasks %}
             <tr>

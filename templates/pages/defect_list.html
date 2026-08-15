@@ -3,17 +3,23 @@
 {% block kicker %}品質管理{% endblock %}
 {% block subtitle %}検出した不具合の状態・重大度・検出工程を追跡します。{% endblock %}
 
+{% block header_actions %}
+  {# 「新規作成」は全画面 header_actions の btn-b sm に統一している。 #}
+  <a class="btn-b sm" href="{% url 'projects:defect_create' %}">新規作成</a>
+  <a class="btn-out sm" href="{% url 'projects:issue_list' %}">課題一覧へ</a>
+{% endblock %}
+
 {% block content %}
 
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">不具合一覧</span>
-      <a class="card-act" href="{% url 'projects:defect_create' %}">新規作成</a>
     </div>
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">不具合一覧</caption>
         <thead>
-          <tr><th>案件</th><th>不具合</th><th>重大度</th><th>状態</th><th>検出工程</th><th>検出日</th><th>原文</th><th>操作</th></tr>
+          <tr><th scope="col">案件</th><th scope="col">不具合</th><th scope="col">重大度</th><th scope="col">状態</th><th scope="col">検出工程</th><th scope="col">検出日</th><th scope="col">原文</th><th scope="col">操作</th></tr>
         </thead>
         <tbody>
           {% for defect in defects %}
@@ -28,7 +34,7 @@
               <td class="nowrap">
                 <a class="btn-ghost sm" href="{% url 'projects:defect_edit' defect.pk %}">編集</a>
                 {% if defect.status != 'closed' %}
-                  <form method="post" action="{% url 'projects:defect_close' defect.pk %}" style="display:inline">
+                  <form method="post" action="{% url 'projects:defect_close' defect.pk %}" class="inline-form">
                     {% csrf_token %}
                     <button type="submit" class="btn-out sm">クローズ</button>
                   </form>
@@ -36,7 +42,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="dashboard-empty">登録された不具合がありません。</div></td></tr>
+            <tr><td colspan="8"><div class="empty">登録された不具合がありません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

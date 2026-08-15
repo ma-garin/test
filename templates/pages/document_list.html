@@ -12,7 +12,8 @@
     <div class="card-hdr"><span class="card-t">文書台帳</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>文書名</th><th>種別</th><th>参照範囲</th><th>状態</th><th>本文抽出</th><th>最終インデックス</th><th>再構築</th></tr></thead>
+        <caption class="visually-hidden">文書台帳</caption>
+        <thead><tr><th scope="col">文書名</th><th scope="col">種別</th><th scope="col">参照範囲</th><th scope="col">状態</th><th scope="col">本文抽出</th><th scope="col">最終インデックス</th><th scope="col">再構築</th></tr></thead>
         <tbody>
           {% for row in rows %}
             <tr>

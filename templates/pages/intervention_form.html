@@ -25,28 +25,19 @@
     <div class="card-hdr"><span class="card-t">判断を記録する</span><span class="card-act">1回限り</span></div>
     <form method="post" class="form">
       {% csrf_token %}
-      {% if form.errors %}
-        <div class="callout d">
-          <p>入力内容を確認してください。</p>
-          {% for field in form %}
-            {% for error in field.errors %}<p>{{ field.label }}: {{ error }}</p>{% endfor %}
-          {% endfor %}
+      {% comment %}
+        エラーは各フィールドの直下（partials/form_field.html）に出す。
+        ここには「どの欄にも属さない」エラーだけを残す。上にまとめて出すと、
+        入力欄まで戻ったときに理由が見えていない。
+      {% endcomment %}
+      {% if form.non_field_errors %}
+        <div class="callout d form-errors" role="alert">
           {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
       {% endif %}
-      <div>
-        <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
-        {{ form.status }}
-      </div>
-      <div>
-        <label for="{{ form.decision_reason.id_for_label }}">{{ form.decision_reason.label }}</label>
-        {{ form.decision_reason }}
-      </div>
-      <div>
-        <label for="{{ form.modified_action.id_for_label }}">{{ form.modified_action.label }}</label>
-        {{ form.modified_action }}
-        <div class="ps">「修正して採用」を選ぶ場合は必須です。AIの原案と区別して残します。</div>
-      </div>
+      {% include "partials/form_field.html" with field=form.status %}
+      {% include "partials/form_field.html" with field=form.decision_reason %}
+      {% include "partials/form_field.html" with field=form.modified_action help="「修正して採用」を選ぶ場合は必須です。AIの原案と区別して残します。" %}
       <div class="actions">
         <button type="submit" class="btn-b">この内容で判断を記録する</button>
         <a class="btn-ghost" href="{% url 'dashboard:intervention' %}">やめる</a>

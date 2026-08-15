@@ -20,15 +20,16 @@
     </div>
     <div class="t-wrap">
       <table class="t">
+        <caption class="visually-hidden">接続一覧</caption>
         <thead>
-          <tr><th>表示名</th><th>連携先</th><th>取込先の案件</th><th>モード</th><th>資格情報</th><th>最終同期</th><th>直近の同期</th><th>操作</th></tr>
+          <tr><th scope="col">表示名</th><th scope="col">連携先</th><th scope="col">取込先の案件</th><th scope="col">モード</th><th scope="col">資格情報</th><th scope="col">最終同期</th><th scope="col">直近の同期</th><th scope="col">操作</th></tr>
         </thead>
         <tbody>
           {% for row in rows %}
             <tr>
               <td>{{ row.connection.name }}{% if not row.connection.is_active %} <span class="badge n">無効</span>{% endif %}</td>
               <td class="nowrap">{{ row.connection.get_provider_display }}</td>
-              <td>{% if row.connection.project %}{{ row.connection.project.code }}{% else %}<span class="sg">未設定</span>{% endif %}</td>
+              <td>{% if row.connection.project %}{{ row.connection.project.code }}{% else %}<span class="muted">未設定</span>{% endif %}</td>
               <td class="nowrap">
                 {% if row.connection.is_live %}
                   <span class="badge a">実API</span>
@@ -43,16 +44,16 @@
                   <span class="badge {{ row.latest_job.tone }}">{{ row.latest_job.get_status_display }}</span>
                   <span class="ps">新規 {{ row.latest_job.created_count }} / 更新 {{ row.latest_job.updated_count }} / 変更なし {{ row.latest_job.skipped_count }} / 失敗 {{ row.latest_job.failed_count }}</span>
                 {% else %}
-                  <span class="sg">実行なし</span>
+                  <span class="muted">実行なし</span>
                 {% endif %}
               </td>
               <td class="nowrap">
-                <form method="post" action="{% url 'integrations:check' row.connection.pk %}" style="display:inline">
+                <form method="post" action="{% url 'integrations:check' row.connection.pk %}" class="inline-form">
                   {% csrf_token %}
                   <button type="submit" class="btn-ghost sm">疎通確認</button>
                 </form>
                 {% if row.connection.can_pull_issues %}
-                  <form method="post" action="{% url 'integrations:sync' row.connection.pk %}" style="display:inline">
+                  <form method="post" action="{% url 'integrations:sync' row.connection.pk %}" class="inline-form">
                     {% csrf_token %}
                     <button type="submit" class="btn-out sm">同期実行</button>
                   </form>

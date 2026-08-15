@@ -14,8 +14,9 @@
     </div>
     <div class="t-wrap">
       <table class="t">
+        <caption class="visually-hidden">同期履歴</caption>
         <thead>
-          <tr><th>実行日時</th><th>接続</th><th>方向</th><th>状態</th><th>新規</th><th>更新</th><th>変更なし</th><th>失敗</th><th>所要</th><th>実行者</th><th>メッセージ</th></tr>
+          <tr><th scope="col">実行日時</th><th scope="col">接続</th><th scope="col">方向</th><th scope="col">状態</th><th scope="col">新規</th><th scope="col">更新</th><th scope="col">変更なし</th><th scope="col">失敗</th><th scope="col">所要</th><th scope="col">実行者</th><th scope="col">メッセージ</th></tr>
         </thead>
         <tbody>
           {% for job in jobs %}

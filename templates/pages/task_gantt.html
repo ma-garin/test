@@ -9,47 +9,22 @@
 {% endblock %}
 
 {% block content %}
-  {% comment %}
-  app.css は共有資産なので触らず、この画面だけで使う指定をここに閉じ込める。
-  既存クラスとの衝突を避けるため、名前はすべて gantt- で始める。
-  {% endcomment %}
-  <style>
-    .gantt-scroll { overflow-x: auto; }
-    .gantt { min-width: 720px; }
-    .gantt-axis { position: relative; height: 20px; margin-left: 260px; border-bottom: 1px solid var(--line, #e2e8f0); }
-    .gantt-tick { position: absolute; top: 0; font-size: 11px; color: var(--muted, #64748b); transform: translateX(-50%); white-space: nowrap; }
-    .gantt-tick:first-child { transform: none; }
-    .gantt-group { margin-top: 14px; }
-    .gantt-group-name { font-size: 12px; font-weight: 600; color: var(--muted, #64748b); margin-bottom: 6px; }
-    .gantt-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
-    .gantt-label { width: 252px; flex: 0 0 252px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .gantt-code { color: var(--muted, #64748b); margin-right: 6px; }
-    .gantt-track { position: relative; flex: 1 1 auto; height: 20px; background: var(--line, #eef2f7); border-radius: 4px; }
-    .gantt-bar { position: absolute; top: 2px; height: 16px; border-radius: 4px; overflow: hidden; background: rgba(59, 130, 246, .25); border: 1px solid var(--blue, #3b82f6); }
-    .gantt-bar.r { background: rgba(239, 68, 68, .22); border-color: var(--red, #ef4444); }
-    .gantt-bar.a { background: rgba(245, 158, 11, .22); border-color: var(--orange, #f59e0b); }
-    .gantt-fill { height: 100%; background: var(--blue, #3b82f6); opacity: .85; }
-    .gantt-bar.r .gantt-fill { background: var(--red, #ef4444); }
-    .gantt-bar.a .gantt-fill { background: var(--orange, #f59e0b); }
-    .gantt-pct { position: absolute; top: 0; left: 4px; font-size: 10px; line-height: 16px; color: var(--fg, #0f172a); }
-    .gantt-today { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 2px dashed var(--red, #ef4444); }
-    .gantt-legend { font-size: 11px; color: var(--muted, #64748b); margin-top: 12px; }
-    .gantt-undated { margin-top: 8px; font-size: 12px; }
-    .gantt-undated li { padding: 2px 0; }
-  </style>
+  {# ガントの指定は app.css の「ガント」節へ移した（キャッシュも読み込み順も効かせるため）。 #}
 
   {% include "partials/task_filters.html" %}
 
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">ガント表示</span>
+      {# 棒の数はこのページに載っている分だけ。全体件数と並べて出さないと、
+         KPI や一覧の件数と食い違って見える。 #}
       <span class="card-act">
-        {% if chart.has_bars %}{{ chart.start|date:"Y/n/j" }} 〜 {{ chart.end|date:"Y/n/j" }}（{{ chart.bar_count }}件）{% else %}期間を描けるタスクがありません{% endif %}
+        {% if chart.has_bars %}{{ chart.start|date:"Y/n/j" }} 〜 {{ chart.end|date:"Y/n/j" }}（このページ {{ chart.bar_count }}件 / 対象 {{ board.total }}件）{% else %}期間を描けるタスクがありません{% endif %}
       </span>
     </div>
 
     {% if chart.is_empty %}
-      <div class="dashboard-empty">{% if board.filters.is_active %}条件に一致するタスクがありません。{% else %}参照できるタスクがありません。{% endif %}</div>
+      <div class="empty">{% if board.filters.is_active %}条件に一致するタスクがありません。{% else %}参照できるタスクがありません。{% endif %}</div>
     {% else %}
       {% if chart.has_bars %}
         <div class="gantt-scroll">
@@ -70,8 +45,13 @@
                     </div>
                     <div class="gantt-track">
                       {% if chart.has_today %}<div class="gantt-today" style="left:{{ chart.today_left|unlocalize }}%"></div>{% endif %}
+                      {# 棒の情報が title だけだと、キーボードと読み上げでは取り出せない。
+                         フォーカスできるようにし、同じ内容をアクセシブルネームにも持たせる。 #}
                       <div class="gantt-bar {{ bar.tone }}"
+                           tabindex="0"
+                           role="img"
                            style="left:{{ bar.left|unlocalize }}%;width:{{ bar.width|unlocalize }}%"
+                           aria-label="{{ bar.task.wbs_code }} {{ bar.task.name }}：{{ bar.task.planned_start|date:'Y/n/j' }} 〜 {{ bar.task.planned_end|date:'Y/n/j' }}、進捗 {{ bar.task.progress_percent|floatformat:0 }}%"
                            title="{{ bar.task.planned_start|date:'Y/n/j' }} 〜 {{ bar.task.planned_end|date:'Y/n/j' }} 進捗 {{ bar.task.progress_percent|floatformat:0 }}%">
                         <div class="gantt-fill" style="width:{{ bar.progress_width|unlocalize }}%"></div>
                         <span class="gantt-pct">{{ bar.task.progress_percent|floatformat:0 }}%</span>
@@ -101,5 +81,9 @@
         </div>
       {% endif %}
     {% endif %}
+
+    {# ページ送りが無いと、51 件目以降のタスクへガント表示からは到達できない。
+       一覧（task_list.html）と同じ page / page_window / page_query を使う。 #}
+    {% include "partials/pager.html" %}
   </div>
 {% endblock %}

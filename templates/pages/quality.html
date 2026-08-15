@@ -7,27 +7,27 @@
   <div class="kpi-g">
     <div class="kpi">
       <div class="kpi-l">消化率</div>
-      <div class="kpi-v" style="color:var(--blue)">{{ report.consumption_percent }}<small>%</small></div>
+      <div class="kpi-v tone-b">{{ report.consumption_percent }}<small>%</small></div>
       <div class="kpi-s">{{ report.consumption_source }}</div>
       <div class="kpi-bar"><div class="kpi-fill b" style="width:{{ report.consumption_percent }}%"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">不具合の収束</div>
-      <div class="kpi-v" style="color:var(--green)">{{ report.closed_percent }}<small>%</small></div>
+      <div class="kpi-v tone-g">{{ report.closed_percent }}<small>%</small></div>
       <div class="kpi-s">クローズ {{ report.closed_defects }}件 / 全 {{ report.total_defects }}件</div>
       <div class="kpi-bar"><div class="kpi-fill g" style="width:{{ report.closed_percent }}%"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">未解決の重大不具合</div>
-      <div class="kpi-v" style="color:var(--red)">{{ report.open_critical }}</div>
+      <div class="kpi-v tone-r">{{ report.open_critical }}</div>
       <div class="kpi-s">先に潰すべきもの</div>
-      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill r u-w-full"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">品質ゲート不合格</div>
-      <div class="kpi-v" style="color:var(--orange)">{{ report.gate_failures }}</div>
+      <div class="kpi-v tone-o">{{ report.gate_failures }}</div>
       <div class="kpi-s">目標未達の指標</div>
-      <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill a u-w-60"></div></div>
     </div>
   </div>
 
@@ -36,10 +36,11 @@
       <span class="card-t">品質指標（指標ごとの最新値）</span>
       <span class="card-act">実データ</span>
     </div>
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">品質指標（指標ごとの最新値）</caption>
         <thead>
-          <tr><th>案件</th><th>指標</th><th>実績</th><th>目標</th><th>計測日</th><th>判定</th></tr>
+          <tr><th scope="col">案件</th><th scope="col">指標</th><th scope="col">実績</th><th scope="col">目標</th><th scope="col">計測日</th><th scope="col">判定</th></tr>
         </thead>
         <tbody>
           {% for row in report.metric_rows %}
@@ -52,7 +53,7 @@
               <td><span class="badge {{ row.tone }}">{{ row.gate_label }}</span></td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="dashboard-empty">品質指標が登録されていません。</div></td></tr>
+            <tr><td colspan="6"><div class="empty">品質指標が登録されていません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

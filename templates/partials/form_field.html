@@ -1,0 +1,40 @@
+{% comment %}
+共通のフィールド描画。
+
+これまでエラーの見せ方が 3 系統に分かれていた（フォーム上部にまとめる／
+field.errors を callout で出す／そもそも出さない）。どこに何が出るか予測できないと、
+利用者は「直した」つもりで同じ失敗を繰り返す。ここに寄せて 1 つにする。
+
+見せ方の約束:
+  - ラベルは必ず入力欄と紐づける（for / id）。
+  - 必須は記号だけに頼らず、読み上げにも「（必須）」を渡す。
+  - エラーは入力欄そのものを赤くし、理由を直下に置く（離れた場所に出さない）。
+
+使い方:
+  Django のフォームフィールド:
+    {% include "partials/form_field.html" with field=field %}
+  手書きの入力欄（フォームオブジェクトを持たない画面）:
+    {% include "partials/form_field.html" with label="文書名" input_id="title" errors=errors.title %}
+      ...この場合は入力欄そのものを contents ブロックとして書けないため、
+      手書き側は下の raw 版（partials/form_field_raw.html）を使う。
+{% endcomment %}
+<div class="field{% if extra_class %} {{ extra_class }}{% endif %}{% if field.errors %} has-error{% endif %}">
+  <label class="field-label" for="{{ field.id_for_label }}">
+    {{ field.label }}{% if field.field.required %}<span class="field-req" aria-hidden="true">*</span><span class="visually-hidden">（必須）</span>{% endif %}
+  </label>
+
+  {{ field }}
+
+  {# help を渡すと、フォーム側の help_text より優先する（画面固有の補足用）。 #}
+  {% if help %}
+    <div class="field-help">{{ help }}</div>
+  {% elif field.help_text %}
+    <div class="field-help">{{ field.help_text }}</div>
+  {% endif %}
+
+  {% if field.errors %}
+    <div class="field-errors">
+      {% for error in field.errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+</div>

@@ -26,13 +26,13 @@
         <div class="kpi-l">判定対象タスク</div>
         <div class="kpi-v">{{ report.target_tasks }}</div>
         <div class="kpi-s">アーカイブ済みを除く</div>
-        <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+        <div class="kpi-bar"><div class="kpi-fill b u-w-full"></div></div>
       </div>
       <div class="kpi">
         <div class="kpi-l">ルール違反</div>
-        <div class="kpi-v" style="color:var(--red)">{{ report.total_violations }}</div>
+        <div class="kpi-v tone-r">{{ report.total_violations }}</div>
         <div class="kpi-s">タスク {{ report.violating_tasks }}件</div>
-        <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+        <div class="kpi-bar"><div class="kpi-fill r u-w-full"></div></div>
       </div>
       <div class="kpi">
         <div class="kpi-l">遵守率</div>
@@ -42,9 +42,9 @@
       </div>
       <div class="kpi">
         <div class="kpi-l">催促先</div>
-        <div class="kpi-v" style="color:var(--orange)">{{ report.assignees|length }}</div>
+        <div class="kpi-v tone-o">{{ report.assignees|length }}</div>
         <div class="kpi-s">{% if report.worst %}最多は {{ report.worst.assignee }}{% else %}—{% endif %}</div>
-        <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
+        <div class="kpi-bar"><div class="kpi-fill a u-w-60"></div></div>
       </div>
     </div>
   {% endif %}
@@ -54,10 +54,11 @@
       <span class="card-t">ルール別の違反件数</span>
       <span class="card-act">{{ report.status_note }}</span>
     </div>
-    <div class="dashboard-risk-wrap">
-      <table class="dashboard-risk-table">
+    <div class="t-wrap wide">
+      <table class="t">
+        <caption class="visually-hidden">ルール別の違反件数</caption>
         <thead>
-          <tr><th>ルール</th><th>判定内容</th><th>件数</th></tr>
+          <tr><th scope="col">ルール</th><th scope="col">判定内容</th><th scope="col">件数</th></tr>
         </thead>
         <tbody>
           {% for summary in report.rule_summaries %}
@@ -73,7 +74,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="3"><div class="dashboard-empty">有効なルールがありません。設定 OPS_RULES を確認してください。</div></td></tr>
+            <tr><td colspan="3"><div class="empty">有効なルールがありません。設定 OPS_RULES を確認してください。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -96,10 +97,11 @@
           対象タスク {{ summary.task_count }}件 ／
           {% for rule in summary.rule_counts %}{{ rule.label }} {{ rule.count }}{% if not forloop.last %} ・ {% endif %}{% endfor %}
         </div>
-        <div class="dashboard-risk-wrap">
-          <table class="dashboard-risk-table">
+        <div class="t-wrap wide">
+          <table class="t">
+            <caption class="visually-hidden">担当者別の未更新一覧</caption>
             <thead>
-              <tr><th>案件</th><th>WBS</th><th>タスク</th><th>状態</th><th>ルール</th><th>根拠</th></tr>
+              <tr><th scope="col">案件</th><th scope="col">WBS</th><th scope="col">タスク</th><th scope="col">状態</th><th scope="col">ルール</th><th scope="col">根拠</th></tr>
             </thead>
             <tbody>
               {% for violation in summary.violations %}
@@ -107,12 +109,14 @@
                   <td class="nowrap">{{ violation.task.project.name }}</td>
                   <td class="nowrap">{{ violation.task.wbs_code }}</td>
                   <td>
-                    <a href="{% url 'projects:detail' violation.task.project.pk %}" style="color:var(--blue);font-weight:900">{{ violation.task.name }}</a>
+                    <a href="{% url 'projects:detail' violation.task.project.pk %}" class="link-strong">{{ violation.task.name }}</a>
                   </td>
                   <td class="nowrap">{{ violation.task.get_status_display }}</td>
                   <td class="nowrap"><span class="badge {{ violation.tone }}">{{ violation.label }}</span></td>
                   <td>{{ violation.detail }}</td>
                 </tr>
+              {% empty %}
+                <tr><td colspan="6"><div class="empty">この担当者の違反明細は記録されていません。</div></td></tr>
               {% endfor %}
             </tbody>
           </table>

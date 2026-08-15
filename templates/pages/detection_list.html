@@ -15,27 +15,27 @@
   <div class="kpi-g">
     <div class="kpi">
       <div class="kpi-l">検知</div>
-      <div class="kpi-v" style="color:var(--red)">{{ result.finding_count }}</div>
+      <div class="kpi-v tone-r">{{ result.finding_count }}</div>
       <div class="kpi-s">案件 {{ result.project_count }}件を検査</div>
-      <div class="kpi-bar"><div class="kpi-fill r" style="width:100%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill r u-w-full"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">判定不能</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ result.undetermined|length }}</div>
+      <div class="kpi-v tone-y">{{ result.undetermined|length }}</div>
       <div class="kpi-s">観測数が足りない項目</div>
-      <div class="kpi-bar"><div class="kpi-fill a" style="width:60%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill a u-w-60"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">重複で見送り</div>
       <div class="kpi-v">{{ result.duplicate_count }}</div>
       <div class="kpi-s">未対応アラートが残っている対象</div>
-      <div class="kpi-bar"><div class="kpi-fill b" style="width:40%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill b u-w-40"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">見送り合計</div>
       <div class="kpi-v">{{ result.skips|length }}</div>
       <div class="kpi-s">理由つきで記録</div>
-      <div class="kpi-bar"><div class="kpi-fill g" style="width:50%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill g u-w-50"></div></div>
     </div>
   </div>
 
@@ -74,8 +74,9 @@
     </div>
     <div class="t-wrap">
       <table class="t">
+        <caption class="visually-hidden">検知しなかった項目と理由</caption>
         <thead>
-          <tr><th>案件</th><th>検知</th><th>結果</th><th>理由</th></tr>
+          <tr><th scope="col">案件</th><th scope="col">検知</th><th scope="col">結果</th><th scope="col">理由</th></tr>
         </thead>
         <tbody>
           {% for label, skip in skip_rows %}

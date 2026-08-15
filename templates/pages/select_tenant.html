@@ -3,16 +3,28 @@
 {% block subtitle %}参照するテナントを選びます。所属外のテナントは選択できません。{% endblock %}
 
 {% block content %}
-  <div class="card" style="max-width:520px">
-    <form method="post" class="form">
-      {% csrf_token %}
-      <div>
-        <label for="tenant">テナント</label>
-        <select name="tenant" id="tenant">
-          {% for tenant in tenants %}<option value="{{ tenant.pk }}">{{ tenant.name }}</option>{% endfor %}
-        </select>
+  <div class="card card--narrow">
+    {% if tenants %}
+      <form method="post" class="form">
+        {% csrf_token %}
+        {% if form_errors %}
+          <div class="callout d form-errors">
+            {% for error in form_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+        {% include "partials/form_field_raw.html" with label="テナント" name="tenant" input_id="tenant" type="select" objects=tenants option_label="name" selected=current_tenant.pk required=1 errors=field_errors.tenant help="所属しているテナントだけが並びます。" %}
+        <div class="actions"><button type="submit" class="btn-b">切り替える</button></div>
+      </form>
+    {% else %}
+      {% comment %}
+        選択肢が 0 件のとき、空の select と「切り替える」ボタンだけが残ると
+        「壊れている」ようにしか見えない。理由を書き分けて出す。
+      {% endcomment %}
+      <div class="empty">
+        <p><strong>切り替えられるテナントがありません。</strong></p>
+        <p>アカウントがどのテナントにも所属していないか、所属が無効化されています。
+        システム管理者にテナントへの所属追加を依頼してください。</p>
       </div>
-      <div class="actions"><button type="submit" class="btn-b">切り替える</button></div>
-    </form>
+    {% endif %}
   </div>
 {% endblock %}

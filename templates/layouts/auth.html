@@ -16,6 +16,17 @@
         <span>AI PROJECT CONTROL</span>
       </span>
     </div>
+    {% comment %}
+      ログイン画面にもフラッシュメッセージは届く（「ログアウトしました」「セッションが
+      切れました」など）。ここに出す場所が無いと、利用者は理由の分からないまま
+      ログイン画面に戻される。
+    {% endcomment %}
+    <div role="status" aria-live="polite" aria-atomic="false">
+      {% for message in messages %}
+        <div class="callout{% if 'error' in message.tags %} d{% elif 'warning' in message.tags %} w{% elif 'success' in message.tags %} ok{% endif %}">{{ message }}</div>
+      {% endfor %}
+    </div>
+
     {% block content %}{% endblock %}
   </div>
 </div>

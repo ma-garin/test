@@ -19,10 +19,19 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ next }}">
 
-      <div class="dashboard-risk-wrap">
-        <table class="dashboard-risk-table">
+      {% comment %}
+        選択に失敗したときの理由を、選ぶ場所のすぐ上に出す。
+        画面上部のフラッシュだけだと、長い一覧を下までスクロールしたあとでは見えていない。
+      {% endcomment %}
+      {% if project_error %}
+        <div class="field-errors" role="alert">{{ project_error }}</div>
+      {% endif %}
+
+      <div class="t-wrap wide">
+        <table class="t">
+          <caption class="visually-hidden">対象案件</caption>
           <thead>
-            <tr><th></th><th>案件</th><th>状態</th><th>進捗</th><th>PM</th><th>PMO</th></tr>
+            <tr><th scope="col"></th><th scope="col">案件</th><th scope="col">状態</th><th scope="col">進捗</th><th scope="col">PM</th><th scope="col">PMO</th></tr>
           </thead>
           <tbody>
             <tr>
@@ -46,7 +55,25 @@
                 <td>{{ project.pmo_manager|default:"—" }}</td>
               </tr>
             {% empty %}
-              <tr><td colspan="6"><div class="dashboard-empty">参照できる案件がありません。</div></td></tr>
+              <tr>
+                <td colspan="6">
+                  {% comment %}
+                    「案件が無い」のか「権限が無い」のかを書き分ける（project_list.html と同じ）。
+                    同じ文言だと、利用者は自分の権限を疑えず問い合わせもできない。
+                  {% endcomment %}
+                  {% if tenant_project_count %}
+                    <div class="callout w">
+                      <p><strong>あなたが参加している案件がありません。</strong>
+                      このテナントには案件が {{ tenant_project_count }}件 ありますが、
+                      いずれもメンバーに登録されていないため選べません。</p>
+                      <p>テナント管理者に、案件メンバーへの追加を依頼してください。
+                      それまでは「全案件」のまま（参照できる範囲だけ）表示されます。</p>
+                    </div>
+                  {% else %}
+                    <div class="empty">このテナントに案件が登録されていません。</div>
+                  {% endif %}
+                </td>
+              </tr>
             {% endfor %}
           </tbody>
         </table>
@@ -54,7 +81,7 @@
 
       <div class="actions">
         <button type="submit" class="btn-b">この対象で表示する</button>
-        <a class="btn-ghost" href="{{ next }}">戻る</a>
+        <a class="btn-out" href="{{ next }}">戻る</a>
       </div>
     </form>
   </div>

@@ -1,0 +1,72 @@
+{% comment %}
+フォームオブジェクトを持たない画面（手書きの input/select）向けの共通描画。
+
+partials/form_field.html と同じ見た目・同じエラー位置になるようにしている。
+片方だけ直してもう片方が取り残されないよう、クラス名は共有している。
+
+パラメータ:
+  label       表示ラベル（必須）
+  name        input の name（必須）
+  input_id    id。省略時は name をそのまま使う
+  type        text / textarea / file / checkbox / select（既定は text）
+  value       初期値
+  placeholder プレースホルダ
+  help        補足説明
+  errors      エラー文字列のリスト（または 1 本の文字列）
+  required    真なら required 属性と「（必須）」を付ける
+  maxlength   text の最大長
+  rows        textarea の行数
+  wide        真なら .search-field ではなく縦積み（既定）
+
+  select のとき:
+    choices        (value, label) の 2 要素タプルのリスト
+    objects        モデルの並び。option の value は pk を使う
+    option_label   objects のラベルの作り方
+                     name            → {{ item.name }}
+                     title           → {{ item.title }}
+                     code_name       → {{ item.code }} {{ item.name }}
+                     code_slash_name → {{ item.code }} / {{ item.name }}
+    blank_label    先頭に置く空の選択肢の文言（省略時は出さない）
+    selected       選択済みの値
+    multiple       真なら複数選択
+    size           multiple のときの表示行数
+{% endcomment %}
+{% firstof input_id name as field_id %}
+<div class="field{% if extra_class %} {{ extra_class }}{% endif %}{% if errors or error_text %} has-error{% endif %}">
+  <label class="field-label" for="{{ field_id }}">
+    {{ label }}{% if required %}<span class="field-req" aria-hidden="true">*</span><span class="visually-hidden">（必須）</span>{% endif %}
+  </label>
+
+  {% if type == "select" %}
+    <select name="{{ name }}" id="{{ field_id }}"{% if multiple %} multiple size="{{ size|default:5 }}"{% endif %}{% if required %} required{% endif %}>
+      {% if blank_label %}<option value="">{{ blank_label }}</option>{% endif %}
+      {% for value, choice_label in choices %}
+        <option value="{{ value }}"{% if selected == value %} selected{% endif %}>{{ choice_label }}</option>
+      {% endfor %}
+      {% for item in objects %}
+        <option value="{{ item.pk }}"{% if selected == item.pk %} selected{% endif %}>{% if option_label == "title" %}{{ item.title }}{% elif option_label == "code_name" %}{{ item.code }} {{ item.name }}{% elif option_label == "code_slash_name" %}{{ item.code }} / {{ item.name }}{% else %}{{ item.name }}{% endif %}</option>
+      {% endfor %}
+    </select>
+  {% elif type == "textarea" %}
+    <textarea name="{{ name }}" id="{{ field_id }}" rows="{{ rows|default:3 }}"{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if required %} required{% endif %}>{{ value|default:"" }}</textarea>
+  {% elif type == "file" %}
+    <input type="file" name="{{ name }}" id="{{ field_id }}"{% if required %} required{% endif %}>
+  {% elif type == "checkbox" %}
+    <input type="checkbox" name="{{ name }}" id="{{ field_id }}" value="{{ value|default:'1' }}"{% if checked %} checked{% endif %}>
+  {% else %}
+    <input type="text" name="{{ name }}" id="{{ field_id }}" value="{{ value|default:'' }}"{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}{% if required %} required{% endif %}>
+  {% endif %}
+
+  {% if help %}
+    <div class="field-help">{{ help }}</div>
+  {% endif %}
+
+  {% if errors or error_text %}
+    {# errors は必ず文字列のリストで渡すこと（文字列を直接渡すと 1 文字ずつ回る）。
+       1 本だけのときは error_text を使う。 #}
+    <div class="field-errors">
+      {% if error_text %}<div>{{ error_text }}</div>{% endif %}
+      {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+</div>

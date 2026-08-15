@@ -13,23 +13,23 @@
       <div class="kpi-l">対象フィードバック</div>
       <div class="kpi-v">{{ stats.total }}<small>件</small></div>
       <div class="kpi-s">{{ criteria.period_label }}</div>
-      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill b u-w-full"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">役に立った率</div>
-      <div class="kpi-v" style="color:var(--green)">{{ stats.good_percent }}<small>%</small></div>
+      <div class="kpi-v tone-g">{{ stats.good_percent }}<small>%</small></div>
       <div class="kpi-s">{{ stats.good_count }}件 / 役に立たなかった {{ stats.bad_count }}件</div>
       <div class="kpi-bar"><div class="kpi-fill g" style="width:{{ stats.good_percent }}%"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">事実誤認あり</div>
-      <div class="kpi-v" style="color:var(--red)">{{ stats.fact_error_count }}</div>
+      <div class="kpi-v tone-r">{{ stats.fact_error_count }}</div>
       <div class="kpi-s">誤認なし {{ stats.fact_ok_count }}件（受入条件は 0 件）</div>
       <div class="kpi-bar"><div class="kpi-fill r" style="width:{{ stats.fact_error_percent }}%"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">事実誤認率</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ stats.fact_error_percent }}<small>%</small></div>
+      <div class="kpi-v tone-y">{{ stats.fact_error_percent }}<small>%</small></div>
       <div class="kpi-s">対象 {{ stats.total }}件に対する割合</div>
       <div class="kpi-bar"><div class="kpi-fill a" style="width:{{ stats.fact_error_percent }}%"></div></div>
     </div>
@@ -45,7 +45,7 @@
             <span class="pb-v">{{ bucket.count }}件</span>
           </div>
           <div class="pb-tr"><div class="pb-f {{ bucket.tone }}" style="width:{{ bucket.percent }}%"></div></div>
-          <div class="ps" style="margin-top:4px">構成比 {{ bucket.percent }}%</div>
+          <div class="ps u-mt-2">構成比 {{ bucket.percent }}%</div>
         </div>
       {% endfor %}
       {% if not stats.total %}
@@ -84,7 +84,8 @@
   <div class="card">
     <div class="card-hdr"><span class="card-t">フィードバック明細</span><span class="card-act">{{ page.paginator.count }}件</span></div>
     <table class="t">
-      <thead><tr><th>日時</th><th>評価</th><th>事実誤認</th><th>コメント</th><th>投稿者</th></tr></thead>
+      <caption class="visually-hidden">フィードバック明細</caption>
+      <thead><tr><th scope="col">日時</th><th scope="col">評価</th><th scope="col">事実誤認</th><th scope="col">コメント</th><th scope="col">投稿者</th></tr></thead>
       <tbody>
         {% for feedback in feedbacks %}
           <tr>

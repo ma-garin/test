@@ -18,27 +18,27 @@
       <div class="steps">
         <div class="pb-row">
           <div class="pb-lr"><span class="pb-t">1. 状況を掴む</span><span class="pb-v">管制ダッシュボード</span></div>
-          <div class="ps">ヘルススコアと重要アラートで、危ない案件から確認します。<a href="{% url 'dashboard:control' %}" style="color:var(--blue)">開く</a></div>
+          <div class="ps">ヘルススコアと重要アラートで、危ない案件から確認します。<a href="{% url 'dashboard:control' %}" class="tone-b">開く</a></div>
         </div>
         <div class="pb-row">
           <div class="pb-lr"><span class="pb-t">2. 案件を読む</span><span class="pb-v">案件管理</span></div>
-          <div class="ps">課題・リスク・WBSを見て、遅れの原因を自分の言葉にします。<a href="{% url 'projects:list' %}" style="color:var(--blue)">開く</a></div>
+          <div class="ps">課題・リスク・WBSを見て、遅れの原因を自分の言葉にします。<a href="{% url 'projects:list' %}" class="tone-b">開く</a></div>
         </div>
         <div class="pb-row">
           <div class="pb-lr"><span class="pb-t">3. 相談する</span><span class="pb-v">PMO相談</span></div>
-          <div class="ps">プロンプト集のテンプレートに前提を足して相談します。<a href="{% url 'pmo:prompt_library' %}" style="color:var(--blue)">開く</a></div>
+          <div class="ps">プロンプト集のテンプレートに前提を足して相談します。<a href="{% url 'pmo:prompt_library' %}" class="tone-b">開く</a></div>
         </div>
         <div class="pb-row">
           <div class="pb-lr"><span class="pb-t">4. 計画に落とす</span><span class="pb-v">計画策定</span></div>
-          <div class="ps">レビュー観点を1つずつ潰してから確定します。<a href="{% url 'pmo:planning' %}" style="color:var(--blue)">開く</a></div>
+          <div class="ps">レビュー観点を1つずつ潰してから確定します。<a href="{% url 'pmo:planning' %}" class="tone-b">開く</a></div>
         </div>
         <div class="pb-row">
           <div class="pb-lr"><span class="pb-t">5. 報告を作る</span><span class="pb-v">成果物支援</span></div>
-          <div class="ps">AI生成本文を必ず読み、事実と異なる箇所を直します。<a href="{% url 'pmo:deliverables' %}" style="color:var(--blue)">開く</a></div>
+          <div class="ps">AI生成本文を必ず読み、事実と異なる箇所を直します。<a href="{% url 'pmo:deliverables' %}" class="tone-b">開く</a></div>
         </div>
         <div class="pb-row">
           <div class="pb-lr"><span class="pb-t">6. 承認する</span><span class="pb-v">報告生成・承認</span></div>
-          <div class="ps">承認して初めて確定情報になります。<a href="{% url 'pmo:approvals' %}" style="color:var(--blue)">開く</a></div>
+          <div class="ps">承認して初めて確定情報になります。<a href="{% url 'pmo:approvals' %}" class="tone-b">開く</a></div>
         </div>
       </div>
     </div>
@@ -72,10 +72,16 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>コード</th><th>名称</th></tr></thead>
+        <caption class="visually-hidden">成果物の種別</caption>
+        <thead><tr><th scope="col">コード</th><th scope="col">名称</th></tr></thead>
         <tbody>
           {% for value, label in deliverable_kinds %}
             <tr><td class="nowrap"><code>{{ value }}</code></td><td>{{ label }}</td></tr>
+          {% empty %}
+            <tr><td colspan="2"><div class="empty">
+              <p>登録できる成果物の種別が定義されていません。</p>
+              <p>種別はコード側（成果物モデルの選択肢）で定義します。設定漏れの可能性があるため、システム管理者へ連絡してください。</p>
+            </div></td></tr>
           {% endfor %}
         </tbody>
       </table>

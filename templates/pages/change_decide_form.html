@@ -2,12 +2,16 @@
 {% block kicker %}AIプロジェクト管制{% endblock %}
 {% block subtitle %}承認・却下は監査対象です。判断者・判断日時・理由を記録します。{% endblock %}
 
+{% block header_actions %}
+  {# 「戻る」導線は全画面 header_actions の btn-out sm に統一している。 #}
+  <a class="btn-out sm" href="{% url 'dashboard:change' %}">変更要求一覧へ戻る</a>
+{% endblock %}
+
 {% block content %}
 
   <div class="card">
     <div class="card-hdr">
       <span class="card-t">{{ change.title }}</span>
-      <a class="card-act" href="{% url 'dashboard:change' %}">一覧へ戻る</a>
     </div>
     <dl class="dl">
       <dt>案件</dt><dd>{{ change.project.code }} {{ change.project.name }}</dd>
@@ -29,13 +33,12 @@
     <div class="callout w">この操作は操作ログに残ります。理由は必須です。</div>
     <form method="post" class="form">
       {% csrf_token %}
+      {% comment %}
+      フィールドの描画は partials/form_field.html に一本化している。
+      エラーの出方（どこに・どんな見た目で出るか）を画面ごとに変えない。
+      {% endcomment %}
       {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% for error in field.errors %}<div class="callout d">{{ error }}</div>{% endfor %}
-        </div>
+        {% include "partials/form_field.html" with field=field %}
       {% endfor %}
       <button type="submit" class="btn-b">判断を確定する</button>
     </form>

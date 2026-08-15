@@ -8,33 +8,60 @@
     <span class="card-t">絞り込み</span>
     {% if board.filters.is_active %}<a class="card-act" href="{% url 'dashboard:tasks' %}?view={{ view_mode }}">条件をクリア</a>{% endif %}
   </div>
+  {% comment %}
+  各入力には label を必ず結び付ける。placeholder や 1 件目の option は
+  ラベルの代わりにならない（入力するとプレースホルダは消え、
+  読み上げでも「何の欄か」が残らない）。
+  視覚的にはこれまでどおり見出しを出さないので .visually-hidden で隠す。
+  {% endcomment %}
   <form method="get" class="search-row">
     <input type="hidden" name="view" value="{{ view_mode }}">
-    <input type="text" name="owner" value="{{ board.filters.owner }}" placeholder="担当者">
-    <select name="status">
-      <option value="">状態（すべて）</option>
-      {% for value, label in board.status_choices %}
-        <option value="{{ value }}"{% if board.filters.status == value %} selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <select name="priority">
-      <option value="">優先度（すべて）</option>
-      {% for value, label in board.priority_choices %}
-        <option value="{{ value }}"{% if board.filters.priority == value %} selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <select name="due">
-      <option value="">期限（すべて）</option>
-      {% for value, label in board.due_choices %}
-        <option value="{{ value }}"{% if board.filters.due == value %} selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <select name="progress">
-      <option value="">進捗（すべて）</option>
-      {% for value, label in board.progress_choices %}
-        <option value="{{ value }}"{% if board.filters.progress == value %} selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
+
+    <div class="search-field grow">
+      <label class="visually-hidden" for="filter-owner">担当者</label>
+      <input type="text" name="owner" id="filter-owner" value="{{ board.filters.owner }}" placeholder="担当者">
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-status">状態</label>
+      <select name="status" id="filter-status">
+        <option value="">状態（すべて）</option>
+        {% for value, label in board.status_choices %}
+          <option value="{{ value }}"{% if board.filters.status == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-priority">優先度</label>
+      <select name="priority" id="filter-priority">
+        <option value="">優先度（すべて）</option>
+        {% for value, label in board.priority_choices %}
+          <option value="{{ value }}"{% if board.filters.priority == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-due">期限</label>
+      <select name="due" id="filter-due">
+        <option value="">期限（すべて）</option>
+        {% for value, label in board.due_choices %}
+          <option value="{{ value }}"{% if board.filters.due == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="search-field">
+      <label class="visually-hidden" for="filter-progress">進捗</label>
+      <select name="progress" id="filter-progress">
+        <option value="">進捗（すべて）</option>
+        {% for value, label in board.progress_choices %}
+          <option value="{{ value }}"{% if board.filters.progress == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
     <button type="submit" class="btn-b sm">絞り込む</button>
   </form>
 </div>

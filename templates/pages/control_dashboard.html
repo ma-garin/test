@@ -26,27 +26,27 @@
   <div class="kpi-g">
     <div class="kpi">
       <div class="kpi-l">全体進捗率</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ overview.average_progress }}<small>%</small></div>
+      <div class="kpi-v tone-y">{{ overview.average_progress }}<small>%</small></div>
       <div class="kpi-s">案件 {{ overview.project_count }}件の平均</div>
       <div class="kpi-bar"><div class="kpi-fill a" style="width:{{ overview.average_progress }}%"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">インデックス済み文書</div>
       <div class="kpi-v">{{ overview.indexed_documents }}<small>/{{ overview.total_documents }}</small></div>
-      <div class="kpi-s" style="color:var(--green)">RAG検索の対象</div>
+      <div class="kpi-s tone-g">RAG検索の対象</div>
       <div class="kpi-bar"><div class="kpi-fill b" style="width:{{ overview.document_index_percent }}%"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">オープンリスク</div>
-      <div class="kpi-v" style="color:var(--red)">{{ overview.total_open_risks }}</div>
+      <div class="kpi-v tone-r">{{ overview.total_open_risks }}</div>
       <div class="kpi-s">オープン課題 {{ overview.total_open_issues }}件</div>
       <div class="kpi-bar"><div class="kpi-fill r" style="width:{{ overview.risk_percent }}%"></div></div>
     </div>
     <div class="kpi">
       <div class="kpi-l">AI介入提案</div>
-      <div class="kpi-v" style="color:var(--blue)">{{ overview.proposal_count }}</div>
+      <div class="kpi-v tone-b">{{ overview.proposal_count }}</div>
       <div class="kpi-s">人の判断待ち</div>
-      <div class="kpi-bar"><div class="kpi-fill g" style="width:60%"></div></div>
+      <div class="kpi-bar"><div class="kpi-fill g u-w-60"></div></div>
     </div>
   </div>
 
@@ -113,7 +113,7 @@
                 <span class="badge {{ row.tone }}">{{ row.alert.get_severity_display }}</span>
               </div>
             {% empty %}
-              <div class="dashboard-empty">未対応のアラートはありません。</div>
+              <div class="empty">未対応のアラートはありません。</div>
             {% endfor %}
           </div>
         </div>
@@ -123,15 +123,16 @@
             <strong>案件別ヘルス</strong>
             <span>ヘルス低い順</span>
           </div>
-          <div class="dashboard-risk-wrap">
-            <table class="dashboard-risk-table">
+          <div class="t-wrap wide">
+            <table class="t">
+              <caption class="visually-hidden">PMOヘルス / 重要アラート</caption>
               <thead>
-                <tr><th>案件</th><th>状態</th><th>進捗</th><th>課題</th><th>リスク</th><th>ブロック</th><th>ヘルス</th></tr>
+                <tr><th scope="col">案件</th><th scope="col">状態</th><th scope="col">進捗</th><th scope="col">課題</th><th scope="col">リスク</th><th scope="col">ブロック</th><th scope="col">ヘルス</th></tr>
               </thead>
               <tbody>
                 {% for summary in overview.summaries %}
                   <tr>
-                    <td><a href="{% url 'projects:detail' summary.project.pk %}" style="color:var(--blue);font-weight:900">{{ summary.project.name }}</a></td>
+                    <td><a href="{% url 'projects:detail' summary.project.pk %}" class="link-strong">{{ summary.project.name }}</a></td>
                     <td><span class="badge {% if summary.project.rag_status == 'red' %}r{% elif summary.project.rag_status == 'yellow' %}a{% elif summary.project.rag_status == 'green' %}g{% else %}n{% endif %}">{{ summary.project.get_rag_status_display }}</span></td>
                     <td class="nowrap">{{ summary.project.progress_percent|floatformat:0 }}%</td>
                     <td>{{ summary.open_issues }}</td>
@@ -140,7 +141,7 @@
                     <td><span class="badge {{ summary.tone }}">{{ summary.health_score }}</span></td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="7"><div class="dashboard-empty">参照できる案件がありません。</div></td></tr>
+                  <tr><td colspan="7"><div class="empty">参照できる案件がありません。</div></td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -160,10 +161,10 @@
         <div class="pb-row">
           <div class="pb-lr">
             <span class="pb-t">{{ summary.project.name }}</span>
-            <span class="pb-v" style="color:var(--{% if summary.tone == 'r' %}red{% elif summary.tone == 'a' %}yellow{% else %}green{% endif %})">{{ summary.health_score }}</span>
+            <span class="pb-v tone-{% if summary.tone == 'r' %}r{% elif summary.tone == 'a' %}y{% else %}g{% endif %}">{{ summary.health_score }}</span>
           </div>
           <div class="pb-tr"><div class="pb-f {{ summary.tone }}" style="width:{{ summary.health_score }}%"></div></div>
-          <div class="ps" style="margin-top:4px">{{ summary.breakdown|join:" / " }}</div>
+          <div class="ps u-mt-2">{{ summary.breakdown|join:" / " }}</div>
         </div>
       {% empty %}
         <div class="empty">案件がありません。</div>

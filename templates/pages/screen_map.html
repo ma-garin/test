@@ -7,7 +7,8 @@
     <div class="card-hdr"><span class="card-t">画面と移植状況</span><span class="card-act">{{ items|length }}画面</span></div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>コード</th><th>画面</th><th>URL名</th><th>タグ</th><th>移植状況</th><th>参照ロール</th></tr></thead>
+        <caption class="visually-hidden">画面と移植状況</caption>
+        <thead><tr><th scope="col">コード</th><th scope="col">画面</th><th scope="col">URL名</th><th scope="col">タグ</th><th scope="col">移植状況</th><th scope="col">参照ロール</th></tr></thead>
         <tbody>
           {% for item in items %}
             <tr>
@@ -17,6 +18,17 @@
               <td class="nowrap">{% for tag in item.tags %}<span class="badge b">{{ tag|upper }}</span> {% endfor %}</td>
               <td><span class="badge {% if item.is_ready %}g{% else %}n{% endif %}">{% if item.is_ready %}実装済み{% else %}未移植{% endif %}</span></td>
               <td class="muted">{{ item.roles|join:", "|default:"全員" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">
+                {# 「定義が無い」のか「自分のロールでは見えない」のかを書き分ける。 #}
+                <div class="empty">
+                  <p>表示できる画面がありません。</p>
+                  <p>画面の定義は <code>apps/core/navigation.py</code> にあります。定義があるのにここへ出ない場合は、
+                  あなたのロール（{{ user.get_role_display }}）に参照権限が無い画面だけ、ということです。</p>
+                </div>
+              </td>
             </tr>
           {% endfor %}
         </tbody>

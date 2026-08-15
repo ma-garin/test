@@ -27,12 +27,13 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>成果物</th><th>案件</th><th>状態</th><th>赤字率</th><th>根拠</th><th>操作</th></tr></thead>
+        <caption class="visually-hidden">承認待ちの成果物</caption>
+        <thead><tr><th scope="col">成果物</th><th scope="col">案件</th><th scope="col">状態</th><th scope="col">赤字率</th><th scope="col">根拠</th><th scope="col">操作</th></tr></thead>
         <tbody>
           {% for row in page.object_list %}
             <tr>
               <td>
-                <a href="{% url 'pmo:deliverables' %}?deliverable={{ row.deliverable.pk }}" style="color:var(--blue);font-weight:900">{{ row.deliverable.title }}</a>
+                <a href="{% url 'pmo:deliverables' %}?deliverable={{ row.deliverable.pk }}" class="link-strong">{{ row.deliverable.title }}</a>
                 <div class="ps">{{ row.deliverable.get_kind_display }} ／ v{{ row.deliverable.version }}</div>
               </td>
               <td>{{ row.deliverable.project.name }}</td>
@@ -47,15 +48,30 @@
                 {% endif %}
               </td>
               <td>
-                <form method="post" action="{% url 'pmo:approvals' %}">
+                {% comment %}
+                  サーバは comment を受け取って履歴に残しているのに入力欄が無く、
+                  差し戻し理由が常に空で記録されていた。理由の書けない差し戻しは、
+                  受け取った側が何を直せばよいか分からない。
+                {% endcomment %}
+                <form method="post" action="{% url 'pmo:approvals' %}" class="stack">
                   {% csrf_token %}
                   <input type="hidden" name="deliverable" value="{{ row.deliverable.pk }}">
-                  {% if row.deliverable.status == 'pending_approval' %}
-                    <button type="submit" class="btn-b sm" name="decision" value="approved" {% if not row.can_approve %}disabled title="{{ row.blocking_reason }}"{% endif %}>承認</button>
-                    <button type="submit" class="btn-out sm" name="decision" value="rejected">差し戻し</button>
-                  {% else %}
-                    <button type="submit" class="btn-b sm" name="decision" value="requested" {% if not row.can_approve %}disabled title="{{ row.blocking_reason }}"{% endif %}>承認依頼</button>
-                  {% endif %}
+                  <div class="field">
+                    <label class="field-label" for="comment-{{ row.deliverable.pk }}">
+                      コメント（差し戻しの理由）
+                    </label>
+                    <textarea name="comment" id="comment-{{ row.deliverable.pk }}" rows="2"
+                              placeholder="例: 進捗率の根拠が第3章と一致していません"></textarea>
+                    <div class="field-help">差し戻すときは、何を直せばよいかを必ず書いてください。履歴に残ります。</div>
+                  </div>
+                  <div class="actions">
+                    {% if row.deliverable.status == 'pending_approval' %}
+                      <button type="submit" class="btn-b sm" name="decision" value="approved" {% if not row.can_approve %}disabled title="{{ row.blocking_reason }}"{% endif %}>承認</button>
+                      <button type="submit" class="btn-out sm" name="decision" value="rejected">差し戻し</button>
+                    {% else %}
+                      <button type="submit" class="btn-b sm" name="decision" value="requested" {% if not row.can_approve %}disabled title="{{ row.blocking_reason }}"{% endif %}>承認依頼</button>
+                    {% endif %}
+                  </div>
                 </form>
               </td>
             </tr>
@@ -75,7 +91,8 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>日時</th><th>成果物</th><th>判断</th><th>実施者</th><th>コメント</th></tr></thead>
+        <caption class="visually-hidden">操作履歴</caption>
+        <thead><tr><th scope="col">日時</th><th scope="col">成果物</th><th scope="col">判断</th><th scope="col">実施者</th><th scope="col">コメント</th></tr></thead>
         <tbody>
           {% for approval in history %}
             <tr>

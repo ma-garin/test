@@ -19,8 +19,8 @@
 
   <div class="kpi-g">
     <div class="kpi"><div class="kpi-l">進捗率</div><div class="kpi-v">{{ project.progress_percent|floatformat:0 }}<small>%</small></div><div class="kpi-s">計画に対する実績</div><div class="kpi-bar"><div class="kpi-fill b" style="width:{{ project.progress_percent|floatformat:0 }}%"></div></div></div>
-    <div class="kpi"><div class="kpi-l">PM</div><div class="kpi-v" style="font-size:16px">{{ project.project_manager|default:"—" }}</div><div class="kpi-s">プロジェクト責任者</div></div>
-    <div class="kpi"><div class="kpi-l">PMO</div><div class="kpi-v" style="font-size:16px">{{ project.pmo_manager|default:"—" }}</div><div class="kpi-s">PMO担当</div></div>
+    <div class="kpi"><div class="kpi-l">PM</div><div class="kpi-v sm">{{ project.project_manager|default:"—" }}</div><div class="kpi-s">プロジェクト責任者</div></div>
+    <div class="kpi"><div class="kpi-l">PMO</div><div class="kpi-v sm">{{ project.pmo_manager|default:"—" }}</div><div class="kpi-s">PMO担当</div></div>
     <div class="kpi"><div class="kpi-l">登録文書</div><div class="kpi-v">{{ project.documents.count }}</div><div class="kpi-s">案件別ナレッジ</div></div>
   </div>
 
@@ -28,7 +28,8 @@
     <div class="card">
       <div class="card-hdr"><span class="card-t">課題</span><span class="card-act">{{ project.issue_set.count }}件</span></div>
       <table class="t">
-        <thead><tr><th>課題</th><th>重大度</th><th>状態</th><th>期限</th></tr></thead>
+        <caption class="visually-hidden">課題</caption>
+        <thead><tr><th scope="col">課題</th><th scope="col">重大度</th><th scope="col">状態</th><th scope="col">期限</th></tr></thead>
         <tbody>
           {% for issue in project.issue_set.all|slice:":10" %}
             <tr>
@@ -47,7 +48,8 @@
     <div class="card">
       <div class="card-hdr"><span class="card-t">リスク</span><span class="card-act">{{ project.risk_set.count }}件</span></div>
       <table class="t">
-        <thead><tr><th>リスク</th><th>確率</th><th>影響</th><th>スコア</th><th>状態</th></tr></thead>
+        <caption class="visually-hidden">リスク</caption>
+        <thead><tr><th scope="col">リスク</th><th scope="col">確率</th><th scope="col">影響</th><th scope="col">スコア</th><th scope="col">状態</th></tr></thead>
         <tbody>
           {% for risk in project.risk_set.all|slice:":10" %}
             <tr>
@@ -69,7 +71,8 @@
     <div class="card">
       <div class="card-hdr"><span class="card-t">WBSタスク</span><span class="card-act">{{ project.wbstask_set.count }}件</span></div>
       <table class="t">
-        <thead><tr><th>WBS</th><th>タスク</th><th>状態</th><th>優先度</th><th>ボール保持者</th></tr></thead>
+        <caption class="visually-hidden">WBSタスク</caption>
+        <thead><tr><th scope="col">WBS</th><th scope="col">タスク</th><th scope="col">状態</th><th scope="col">優先度</th><th scope="col">ボール保持者</th></tr></thead>
         <tbody>
           {% for task in project.wbstask_set.all|slice:":10" %}
             <tr>
@@ -89,7 +92,8 @@
     <div class="card">
       <div class="card-hdr"><span class="card-t">変更要求 / 不具合</span></div>
       <table class="t">
-        <thead><tr><th>種別</th><th>内容</th><th>状態</th></tr></thead>
+        <caption class="visually-hidden">変更要求 / 不具合</caption>
+        <thead><tr><th scope="col">種別</th><th scope="col">内容</th><th scope="col">状態</th></tr></thead>
         <tbody>
           {% for change in project.changerequest_set.all|slice:":5" %}
             <tr><td><span class="badge p">変更</span></td><td>{{ change.title }}</td><td class="nowrap">{{ change.get_status_display }}</td></tr>
@@ -112,7 +116,8 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>メンバー</th><th>案件内の役割</th><th>閲覧</th><th>編集</th><th>承認</th><th>管理</th><th>判定の根拠</th>{% if can_manage_members %}<th>操作</th>{% endif %}</tr></thead>
+        <caption class="visually-hidden">メンバーと権限</caption>
+        <thead><tr><th scope="col">メンバー</th><th scope="col">案件内の役割</th><th scope="col">閲覧</th><th scope="col">編集</th><th scope="col">承認</th><th scope="col">管理</th><th scope="col">判定の根拠</th>{% if can_manage_members %}<th scope="col">操作</th>{% endif %}</tr></thead>
         <tbody>
           {% for row in member_rows %}
             <tr>
@@ -176,11 +181,12 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>案件</th><th>状態</th><th>進捗</th><th>類似の根拠</th></tr></thead>
+        <caption class="visually-hidden">類似案件</caption>
+        <thead><tr><th scope="col">案件</th><th scope="col">状態</th><th scope="col">進捗</th><th scope="col">類似の根拠</th></tr></thead>
         <tbody>
           {% for item in similar_projects %}
             <tr>
-              <td><a href="{% url 'projects:detail' item.project.pk %}" style="color:var(--blue);font-weight:900">{{ item.project.name }}</a><div class="ps">{{ item.project.code }}</div></td>
+              <td><a href="{% url 'projects:detail' item.project.pk %}" class="link-strong">{{ item.project.name }}</a><div class="ps">{{ item.project.code }}</div></td>
               <td class="nowrap">{{ item.project.get_status_display }}</td>
               <td class="nowrap">{{ item.project.progress_percent|floatformat:0 }}%</td>
               <td>{{ item.reason }}</td>

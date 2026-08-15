@@ -11,10 +11,10 @@
 {% block content %}
 
   <div class="kpi-g">
-    <div class="kpi"><div class="kpi-l">意図</div><div class="kpi-v" style="font-size:16px">{{ run.get_intent_display }}</div><div class="kpi-s">確信度 {{ run.intent_confidence }}</div></div>
-    <div class="kpi"><div class="kpi-l">状態</div><div class="kpi-v" style="font-size:16px">{{ run.get_status_display }}</div><div class="kpi-s">ループ {{ run.loop_count }}回</div></div>
-    <div class="kpi"><div class="kpi-l">信頼度</div><div class="kpi-v" style="font-size:16px">{% if run.evidence %}{{ run.evidence.confidence }}{% else %}—{% endif %}</div><div class="kpi-s">{% if run.evidence %}{{ run.evidence.get_recommendation_display }}{% endif %}</div></div>
-    <div class="kpi"><div class="kpi-l">所要時間</div><div class="kpi-v" style="font-size:16px">{{ run.elapsed_ms }}<small>ms</small></div><div class="kpi-s">総処理時間</div></div>
+    <div class="kpi"><div class="kpi-l">意図</div><div class="kpi-v sm">{{ run.get_intent_display }}</div><div class="kpi-s">確信度 {{ run.intent_confidence }}</div></div>
+    <div class="kpi"><div class="kpi-l">状態</div><div class="kpi-v sm">{{ run.get_status_display }}</div><div class="kpi-s">ループ {{ run.loop_count }}回</div></div>
+    <div class="kpi"><div class="kpi-l">信頼度</div><div class="kpi-v sm">{% if run.evidence %}{{ run.evidence.confidence }}{% else %}—{% endif %}</div><div class="kpi-s">{% if run.evidence %}{{ run.evidence.get_recommendation_display }}{% endif %}</div></div>
+    <div class="kpi"><div class="kpi-l">所要時間</div><div class="kpi-v sm">{{ run.elapsed_ms }}<small>ms</small></div><div class="kpi-s">総処理時間</div></div>
   </div>
 
   <div class="card">
@@ -28,7 +28,8 @@
       <dl class="dl">
         <dt>検索要否</dt><dd>{% if run.plan.search_required %}必要{% else %}不要{% endif %}</dd>
         <dt>使用ツール</dt><dd>{{ run.plan.tools|join:" → " }}</dd>
-        <dt>検索クエリ</dt><dd>{% for q in run.plan.search_queries %}<div>{{ q }}</div>{% endfor %}</dd>
+        {# 空欄のままだと「検索していない」のか「記録が落ちている」のか区別できない。 #}
+        <dt>検索クエリ</dt><dd>{% for q in run.plan.search_queries %}<div>{{ q }}</div>{% empty %}<span class="muted">検索クエリはありません（検索不要と判定されたか、計画が記録されていません）。</span>{% endfor %}</dd>
         <dt>期待する出力</dt><dd>{{ run.plan.expected_output }}</dd>
       </dl>
     </div>
@@ -42,6 +43,14 @@
             <div>
               <div class="tool">{{ step.tool_name }} <span class="badge {% if step.status == 'ok' %}g{% elif step.status == 'failed' %}r{% else %}n{% endif %}">{{ step.get_status_display }}</span></div>
               {% if step.output_summary %}<div class="out">{{ step.output_summary }}</div>{% endif %}
+            </div>
+          </li>
+        {% empty %}
+          <li>
+            <span class="n" aria-hidden="true">—</span>
+            <div class="empty">
+              <p>処理ステップが記録されていません。</p>
+              <p>ツールを 1 つも呼ばずに終了したか、実行が途中で失敗して記録が残らなかった可能性があります。上の「状態」を確認してください。</p>
             </div>
           </li>
         {% endfor %}
@@ -62,7 +71,7 @@
         <dt>内訳</dt><dd>{{ run.evidence.notes }}</dd>
       </dl>
       {% if run.evidence.missing_information %}
-        <div class="callout w" style="margin-top:12px">
+        <div class="callout w u-mt-6">
           {% for item in run.evidence.missing_information %}<p>・{{ item }}</p>{% endfor %}
         </div>
       {% endif %}
@@ -78,7 +87,8 @@
       </div>
       <div class="t-wrap">
         <table class="t">
-          <thead><tr><th>連携先</th><th>外部キー</th><th>種別</th><th>最終同期</th><th>原文</th></tr></thead>
+          <caption class="visually-hidden">外部原文（出所候補）</caption>
+          <thead><tr><th scope="col">連携先</th><th scope="col">外部キー</th><th scope="col">種別</th><th scope="col">最終同期</th><th scope="col">原文</th></tr></thead>
           <tbody>
             {% for record in external_records %}
               <tr>
@@ -99,7 +109,8 @@
   <div class="card">
     <div class="card-hdr"><span class="card-t">人による確認</span><span class="card-act">REQ-AG-010</span></div>
     <table class="t">
-      <thead><tr><th>判断</th><th>確認者</th><th>確認日時</th><th>コメント</th></tr></thead>
+      <caption class="visually-hidden">人による確認</caption>
+      <thead><tr><th scope="col">判断</th><th scope="col">確認者</th><th scope="col">確認日時</th><th scope="col">コメント</th></tr></thead>
       <tbody>
         {% for review in run.reviews.all %}
           <tr><td>{{ review.get_decision_display }}</td><td>{{ review.reviewer|default:"—" }}</td><td class="nowrap">{{ review.reviewed_at|date:"Y-m-d H:i"|default:"—" }}</td><td>{{ review.comment }}</td></tr>
