@@ -1,0 +1,6 @@
+-r base.txt
+-r ai.txt
+-r ingest.txt
+
+ruff>=0.6
+coverage>=7.6

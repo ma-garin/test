@@ -1,0 +1,1241 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QA-PMO Agent Executive Deck</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --paper: #ffffff;
+      --ink: #151a22;
+      --sub: #566170;
+      --muted: #7a8494;
+      --line: #d8dee8;
+      --teal: #0f766e;
+      --green: #167a3f;
+      --blue: #2f66c5;
+      --amber: #b85c00;
+      --red: #b42318;
+      --violet: #6d3fc7;
+      --gray: #6b7280;
+      --shadow: 0 18px 45px rgba(21, 26, 34, 0.14);
+      font-family: "Segoe UI", "Yu Gothic UI", Meiryo, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        linear-gradient(90deg, rgba(21, 26, 34, 0.045) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(21, 26, 34, 0.04) 1px, transparent 1px),
+        var(--bg);
+      background-size: 36px 36px;
+      color: var(--ink);
+    }
+
+    body {
+      padding: 22px;
+    }
+
+    .toolbar {
+      width: min(1280px, 100%);
+      margin: 0 auto 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 16px;
+      color: var(--sub);
+      font-size: 13px;
+    }
+
+    .toolbar strong {
+      color: var(--ink);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 9px 12px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--teal);
+    }
+
+    .deck {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+    }
+
+    .slide {
+      display: none;
+      position: relative;
+      aspect-ratio: 16 / 9;
+      min-height: 660px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      padding: 46px 56px 42px;
+    }
+
+    .slide.active {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 24px;
+    }
+
+    .slide::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 7px;
+      background: linear-gradient(90deg, var(--teal), var(--green), var(--blue), var(--amber));
+    }
+
+    .slide.appendix::before {
+      background: linear-gradient(90deg, var(--gray), var(--teal), var(--violet));
+    }
+
+    .slide-head,
+    .slide-foot {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .eyebrow {
+      color: var(--teal);
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .appendix .eyebrow {
+      color: var(--violet);
+    }
+
+    .page {
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .body {
+      position: relative;
+      z-index: 2;
+      min-height: 0;
+      display: grid;
+      align-content: center;
+      gap: 22px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      width: 880px;
+      max-width: 100%;
+      font-size: 56px;
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      width: 900px;
+      max-width: 100%;
+      font-size: 42px;
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 22px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      width: 780px;
+      max-width: 100%;
+      color: var(--sub);
+      font-size: 20px;
+      line-height: 1.68;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .stamp {
+      display: inline-grid;
+      place-items: center;
+      min-width: 72px;
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: var(--sub);
+      background: #f9fbfd;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1.03fr 0.97fr;
+      gap: 34px;
+      align-items: center;
+      min-height: 0;
+    }
+
+    .split > *,
+    .grid2 > *,
+    .grid3 > *,
+    .grid4 > *,
+    .value-chain > *,
+    .roadmap > * {
+      min-width: 0;
+    }
+
+    .split.wide-left {
+      grid-template-columns: 1.22fr 0.78fr;
+    }
+
+    .split.wide-right {
+      grid-template-columns: 0.8fr 1.2fr;
+    }
+
+    .grid2,
+    .grid3,
+    .grid4 {
+      display: grid;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .grid2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+      padding: 18px;
+      min-height: 124px;
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+
+    .card p {
+      color: var(--sub);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: #ffffff;
+      min-height: 134px;
+    }
+
+    .metric .num {
+      display: block;
+      color: var(--teal);
+      font-size: 40px;
+      line-height: 1;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .metric .label {
+      display: block;
+      margin-top: 10px;
+      color: var(--sub);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .metric.green .num { color: var(--green); }
+    .metric.blue .num { color: var(--blue); }
+    .metric.amber .num { color: var(--amber); }
+    .metric.red .num { color: var(--red); }
+    .metric.violet .num { color: var(--violet); }
+
+    .statement {
+      padding: 22px 24px;
+      border-left: 7px solid var(--teal);
+      background: #f7fbfb;
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 24px;
+      line-height: 1.45;
+      font-weight: 800;
+    }
+
+    .value-chain {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .step {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+      min-height: 160px;
+    }
+
+    .step::after {
+      content: "";
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      width: 12px;
+      height: 2px;
+      background: var(--line);
+    }
+
+    .step:last-child::after {
+      display: none;
+    }
+
+    .step-num {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--teal);
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .step h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .bars {
+      display: grid;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      background: #fff;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 42px;
+      gap: 12px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--sub);
+    }
+
+    .bar-track {
+      height: 16px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e9eef5;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+    }
+
+    .donut-wrap {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 24px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      background: #fff;
+    }
+
+    .donut {
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--green) 0 20.37%,
+        var(--blue) 20.37% 57.41%,
+        var(--amber) 57.41% 75.93%,
+        var(--red) 75.93% 100%
+      );
+      position: relative;
+    }
+
+    .donut::after {
+      content: "54";
+      position: absolute;
+      inset: 46px;
+      border-radius: 50%;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 46px;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .legend {
+      display: grid;
+      gap: 9px;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 14px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      color: var(--sub);
+      font-size: 14px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+
+    .matrix {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      min-height: 440px;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .quadrant {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fbfcfe;
+    }
+
+    .quadrant strong {
+      display: block;
+      font-size: 17px;
+      margin-bottom: 10px;
+    }
+
+    .quadrant ul,
+    .risk-table ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .axis-y,
+    .axis-x {
+      position: absolute;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .axis-y {
+      left: 10px;
+      top: 50%;
+      transform: rotate(-90deg) translateX(-50%);
+      transform-origin: left top;
+    }
+
+    .axis-x {
+      right: 28px;
+      bottom: 8px;
+    }
+
+    .roadmap {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .phase {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 18px;
+      min-height: 220px;
+      position: relative;
+    }
+
+    .phase::before {
+      content: "";
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 54px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--teal);
+    }
+
+    .phase:nth-child(2)::before { background: var(--blue); }
+    .phase:nth-child(3)::before { background: var(--amber); }
+    .phase:nth-child(4)::before { background: var(--green); }
+
+    .phase .period {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 28px;
+    }
+
+    .phase h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .phase p {
+      color: var(--sub);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .table {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .table-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr 1fr;
+      border-bottom: 1px solid var(--line);
+      min-height: 58px;
+    }
+
+    .table-row:last-child {
+      border-bottom: 0;
+    }
+
+    .table-row > div {
+      padding: 12px 14px;
+      border-right: 1px solid var(--line);
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--sub);
+    }
+
+    .table-row > div:last-child {
+      border-right: 0;
+    }
+
+    .table-row.head > div {
+      background: #f3f6fa;
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .pill.green { background: var(--green); }
+    .pill.blue { background: var(--blue); }
+    .pill.amber { background: var(--amber); }
+    .pill.red { background: var(--red); }
+    .pill.gray { background: var(--gray); }
+    .pill.violet { background: var(--violet); }
+
+    .decision-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 22px;
+      border: 2px solid var(--teal);
+      border-radius: 8px;
+      padding: 24px;
+      background: #f7fbfb;
+    }
+
+    .decision-box h3 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .decision-box p {
+      color: var(--sub);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .decision-stamp {
+      min-width: 176px;
+      min-height: 96px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--teal);
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .progress {
+      height: 8px;
+      border-radius: 999px;
+      background: #e7ecf3;
+      overflow: hidden;
+      width: 240px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--teal), var(--green), var(--blue), var(--amber));
+      border-radius: inherit;
+    }
+
+    .slide-foot {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mini-line {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .milestones {
+      display: grid;
+      gap: 12px;
+    }
+
+    .milestone {
+      display: grid;
+      grid-template-columns: 100px 1fr auto;
+      gap: 14px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px 15px;
+      background: #fff;
+    }
+
+    .milestone .date {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .milestone strong {
+      font-size: 15px;
+    }
+
+    .milestone p {
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.45;
+      margin-top: 3px;
+    }
+
+    .risk-table {
+      display: grid;
+      gap: 12px;
+    }
+
+    .risk-item {
+      display: grid;
+      grid-template-columns: 1.1fr 1.2fr 0.9fr;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+      align-items: start;
+    }
+
+    .risk-item strong {
+      font-size: 16px;
+    }
+
+    .cover-mark {
+      position: absolute;
+      right: 54px;
+      bottom: 64px;
+      width: 420px;
+      height: 260px;
+      border: 1px solid rgba(21, 26, 34, 0.12);
+      border-radius: 8px;
+      z-index: 1;
+      opacity: 0.82;
+      background:
+        linear-gradient(90deg, transparent 31%, rgba(15, 118, 110, 0.12) 31% 33%, transparent 33%),
+        linear-gradient(0deg, transparent 45%, rgba(47, 102, 197, 0.12) 45% 47%, transparent 47%),
+        #fbfcfe;
+    }
+
+    .cover-mark::before,
+    .cover-mark::after {
+      content: "";
+      position: absolute;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .cover-mark::before {
+      left: 34px;
+      top: 38px;
+      width: 142px;
+      height: 82px;
+      box-shadow: 164px 0 0 #fff, 82px 114px 0 #fff;
+    }
+
+    .cover-mark::after {
+      left: 58px;
+      top: 154px;
+      width: 300px;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--teal) 0 42%, var(--amber) 42% 70%, var(--blue) 70%);
+    }
+
+    @media (max-width: 940px) {
+      body {
+        padding: 12px;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .slide {
+        aspect-ratio: auto;
+        min-height: 760px;
+        padding: 34px 28px 30px;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+
+      h2 {
+        font-size: 32px;
+      }
+
+      .split,
+      .split.wide-left,
+      .split.wide-right,
+      .grid2,
+      .grid3,
+      .grid4,
+      .value-chain,
+      .roadmap,
+      .donut-wrap,
+      .decision-box {
+        grid-template-columns: 1fr;
+      }
+
+      .step::after {
+        display: none;
+      }
+
+      .matrix {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+
+      .table-row,
+      .risk-item,
+      .milestone {
+        grid-template-columns: 1fr;
+      }
+
+      .cover-mark {
+        display: none;
+      }
+    }
+
+    @media print {
+      body {
+        padding: 0;
+        background: #fff;
+      }
+
+      .toolbar {
+        display: none;
+      }
+
+      .deck {
+        width: 100%;
+      }
+
+      .slide,
+      .slide.active {
+        display: grid;
+        width: 100%;
+        height: 100vh;
+        break-after: page;
+        border: 0;
+        box-shadow: none;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="toolbar">
+    <div><strong>QA-PMO Agent</strong> Executive Product Deck / Main 15 + Appendix 5</div>
+    <div class="actions">
+      <button id="prevBtn" type="button">Prev</button>
+      <button id="nextBtn" type="button">Next</button>
+      <span id="counter" class="stamp">1 / 20</span>
+    </div>
+  </header>
+
+  <main class="deck" id="deck">
+    <section class="slide active" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">Executive Product Introduction</div><div class="page">Main 01 / 15</div></div>
+      <div class="body split wide-left">
+        <div>
+          <h1>QA-PMO Agent<br>PMO判断を「速く、根拠付きで、測れる」業務OSへ。</h1>
+          <p class="lead">レポート作成、品質・リスク判断、ナレッジ検索、HITL承認を一つの流れに統合する、QA/PMO向けAI支援基盤です。</p>
+        </div>
+        <div class="grid2">
+          <div class="metric green"><span class="num">42/42</span><span class="label">PMO Agent開発タスク完了<br>2026/06/17時点</span></div>
+          <div class="metric blue"><span class="num">54</span><span class="label">MVP要求機能を棚卸し<br>既存機能と照合済み</span></div>
+          <div class="metric amber"><span class="num">213</span><span class="label">グローバルRAGチャンク<br>PMO標準文書D01-D13</span></div>
+          <div class="metric violet"><span class="num">167</span><span class="label">案件別RAGチャンク<br>PMO Agent開発案件</span></div>
+        </div>
+      </div>
+      <div class="cover-mark" aria-hidden="true"></div>
+      <div class="slide-foot"><span>Source: C:\VeriRAG_test local scan, 2026/06/18</span><span>Decision audience version</span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">1. Decision Thesis</div><div class="page">Main 02 / 15</div></div>
+      <div class="body">
+        <h2>AI導入の勝ち筋は、モデル単体ではなく「PMO判断の業務プロセス化」。</h2>
+        <div class="grid3">
+          <div class="card"><strong>経営課題</strong><p>会議・報告・品質判断が属人化し、リスク発見と説明責任が遅れる。</p></div>
+          <div class="card"><strong>解決仮説</strong><p>生成AIを、RAG根拠、HITL承認、監査ログ、KPI測定と接続する。</p></div>
+          <div class="card"><strong>投資判断</strong><p>全社展開ではなく、実データ接続を伴う限定パイロットで合否を測る。</p></div>
+        </div>
+        <div class="statement">本日の論点: 「AIで何ができるか」ではなく、「品質・リスク・報告業務のどこを、どの根拠で、どれだけ短縮できるか」。</div>
+      </div>
+      <div class="slide-foot"><span>Recommendation: controlled pilot</span><div class="progress"><div class="progress-fill"></div></div></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">2. Burning Platform</div><div class="page">Main 03 / 15</div></div>
+      <div class="body split">
+        <div>
+          <h2>PMOのボトルネックは、情報不足ではなく「判断可能な形に整える時間」。</h2>
+          <p class="lead">Jira、会議メモ、品質台帳、標準プロセス、過去知見が分断されるほど、PMOは判断より前処理に時間を使います。</p>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span>情報収集</span><div class="bar-track"><div class="bar-fill" style="width: 84%; background: var(--gray);"></div></div><strong>高</strong></div>
+          <div class="bar-row"><span>整理/要約</span><div class="bar-track"><div class="bar-fill" style="width: 92%; background: var(--amber);"></div></div><strong>高</strong></div>
+          <div class="bar-row"><span>根拠確認</span><div class="bar-track"><div class="bar-fill" style="width: 78%; background: var(--red);"></div></div><strong>高</strong></div>
+          <div class="bar-row"><span>意思決定</span><div class="bar-track"><div class="bar-fill" style="width: 44%; background: var(--teal);"></div></div><strong>低</strong></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Executive message: PMO時間を「資料作成」から「意思決定」へ戻す</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">3. Product Definition</div><div class="page">Main 04 / 15</div></div>
+      <div class="body">
+        <h2>QA-PMO Agentは、既存データと標準知識の上に乗る「AI PMO実務レイヤ」。</h2>
+        <div class="value-chain">
+          <div class="step"><div class="step-num">1</div><h3>Collect</h3><p>PDF/Office、案件別資料、タスク、品質・リスク情報を集約。</p></div>
+          <div class="step"><div class="step-num">2</div><h3>Retrieve</h3><p>標準プロセスと案件別RAGから根拠候補を取得。</p></div>
+          <div class="step"><div class="step-num">3</div><h3>Generate</h3><p>週次報告、品質レポート、障害サマリー、議事録ToDoを生成。</p></div>
+          <div class="step"><div class="step-num">4</div><h3>Review</h3><p>根拠不足、推論過程、未確認事項を人が確認。</p></div>
+          <div class="step"><div class="step-num">5</div><h3>Govern</h3><p>承認ログ、監査ログ、KPI効果測定で改善を継続。</p></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Positioning: reporting automation + PMO governance + knowledge reuse</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">4. Executive Value</div><div class="page">Main 05 / 15</div></div>
+      <div class="body grid3">
+        <div class="card"><strong>1. レポート作業を削減</strong><p>週次報告、経営向け1枚、品質レポートをドラフト化。編集と承認を同じ画面で扱う。</p><div class="tagline"><span class="pill green">Productivity</span></div></div>
+        <div class="card"><strong>2. リスク判断を前倒し</strong><p>遅延、重大不具合、承認待ち変更、品質ゲートの論点を早く可視化。</p><div class="tagline"><span class="pill amber">Risk</span></div></div>
+        <div class="card"><strong>3. AI出力を検証可能に</strong><p>参照ソース、推論trace、根拠なし主張警告、HITL承認で監査に耐える形へ。</p><div class="tagline"><span class="pill blue">Trust</span></div></div>
+      </div>
+      <div class="slide-foot"><span>Decision-maker lens: productivity, risk reduction, governance</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">5. MVP Coverage</div><div class="page">Main 06 / 15</div></div>
+      <div class="body split">
+        <div>
+          <h2>MVP要求54機能のうち、41機能は既に何らかの形で存在。</h2>
+          <p class="lead">残る13機能は、主に外部ツール連携、厳密な自動ブロック、赤字率・先行検知の実測です。</p>
+        </div>
+        <div class="donut-wrap">
+          <div class="donut" aria-label="54機能分類"></div>
+          <div class="legend">
+            <div class="legend-row"><span class="swatch" style="background: var(--green);"></span><span>あり</span><strong>11</strong></div>
+            <div class="legend-row"><span class="swatch" style="background: var(--blue);"></span><span>一部あり</span><strong>20</strong></div>
+            <div class="legend-row"><span class="swatch" style="background: var(--amber);"></span><span>モックあり</span><strong>10</strong></div>
+            <div class="legend-row"><span class="swatch" style="background: var(--red);"></span><span>なし</span><strong>13</strong></div>
+            <p class="small">対象: qa_pmo_mvp_scope_directory_mapping.csv</p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Interpretation: prototype breadth is high; hardening scope is now clear</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">6. Readiness Heatmap</div><div class="page">Main 07 / 15</div></div>
+      <div class="body">
+        <h2>投資判断上の焦点は、機能有無ではなく「本番価値に直結する領域の成熟度」。</h2>
+        <div class="table">
+          <div class="table-row head"><div>領域</div><div>現在地</div><div>決裁者に刺さる価値</div><div>次に必要なこと</div></div>
+          <div class="table-row"><div>成果物生成/HITL</div><div><span class="pill green">高</span> 週次/経営報告、承認UIあり</div><div>PMO工数削減を直接測れる</div><div>赤字率・事実誤認の運用測定</div></div>
+          <div class="table-row"><div>RAG/根拠トレース</div><div><span class="pill green">高</span> 標準/案件別RAGあり</div><div>AI回答を監査可能にする</div><div>外部原文リンクと権限制御</div></div>
+          <div class="table-row"><div>予兆検知</div><div><span class="pill amber">中</span> デモ/ルール中心</div><div>炎上前の介入判断</div><div>実データ時系列で先行性検証</div></div>
+          <div class="table-row"><div>外部連携</div><div><span class="pill red">低</span> Jira/Slack等は未実装</div><div>データ鮮度と現場定着</div><div>読取り専用から段階導入</div></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Current path: strengthen high-readiness use cases first</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">7. Differentiation</div><div class="page">Main 08 / 15</div></div>
+      <div class="body matrix">
+        <div class="axis-y">業務実装度</div><div class="axis-x">説明責任・監査性</div>
+        <div class="quadrant"><strong>チャットAI</strong><ul><li>汎用回答は速い</li><li>根拠・承認・業務履歴が弱い</li></ul></div>
+        <div class="quadrant"><strong>RAG検索</strong><ul><li>根拠文書検索に強い</li><li>報告生成やHITLまでは弱い</li></ul></div>
+        <div class="quadrant"><strong>BI/ダッシュボード</strong><ul><li>数値可視化に強い</li><li>文脈説明と次アクション生成が弱い</li></ul></div>
+        <div class="quadrant" style="border-color: var(--teal); background: #f5fbfa;"><strong>QA-PMO Agent</strong><ul><li>生成・根拠・承認・評価を一気通貫</li><li>PMO標準プロセスと案件RAGを両立</li><li>PoC指標を測れる形で管理</li></ul></div>
+      </div>
+      <div class="slide-foot"><span>Strategic position: enterprise PMO workflow, not a standalone chatbot</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">8. System Blueprint</div><div class="page">Main 09 / 15</div></div>
+      <div class="body">
+        <h2>既存実装は、導入に必要な5層を既に持っている。</h2>
+        <div class="grid4">
+          <div class="metric"><span class="num">13</span><span class="label">Active PMO標準文書<br>D01-D13</span></div>
+          <div class="metric blue"><span class="num">3</span><span class="label">Active Excelテンプレート<br>台帳・要求定義等</span></div>
+          <div class="metric violet"><span class="num">48</span><span class="label">評価/Smokeレポート<br>eval/reports</span></div>
+          <div class="metric green"><span class="num">17</span><span class="label">単体テストファイル<br>tests配下</span></div>
+        </div>
+        <div class="value-chain">
+          <div class="step"><div class="step-num">A</div><h3>Data</h3><p>PDF/Office、プロジェクト資料、タスク、KPI。</p></div>
+          <div class="step"><div class="step-num">B</div><h3>Index</h3><p>FAISS、lexical、local_hash/OpenAI。</p></div>
+          <div class="step"><div class="step-num">C</div><h3>Agent</h3><p>Orchestrator、Planning Agent、PMO支援。</p></div>
+          <div class="step"><div class="step-num">D</div><h3>Governance</h3><p>HITL、承認ログ、根拠警告。</p></div>
+          <div class="step"><div class="step-num">E</div><h3>Evaluation</h3><p>Golden Dataset、静的/検索/API dry-run。</p></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Evidence: local repository scan; no secrets inspected</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">9. Trust Architecture</div><div class="page">Main 10 / 15</div></div>
+      <div class="body split wide-right">
+        <div>
+          <h2>AIを「自動判断者」ではなく「根拠付き判断支援者」として運用する。</h2>
+          <p class="lead">決裁者が最も懸念するのは、精度よりも説明責任です。MVPはAI出力を承認前に止め、根拠を確認できる形へ寄せています。</p>
+        </div>
+        <div class="grid2">
+          <div class="card"><strong>HITL承認</strong><p>修正依頼、再生成、承認状態を保持。自動承認ではない。</p></div>
+          <div class="card"><strong>根拠トレース</strong><p>参照ソース、chunk、PMO観点対応表を表示。</p></div>
+          <div class="card"><strong>幻覚抑制評価</strong><p>G08など根拠不足ケースで抑制回答を評価対象化。</p></div>
+          <div class="card"><strong>監査ログ</strong><p>タスク保存、AI提案保存、承認ログを記録。</p></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Governance principle: human owns decision, AI prepares evidence</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">10. KPI Model</div><div class="page">Main 11 / 15</div></div>
+      <div class="body split">
+        <div>
+          <h2>PoCは「見栄え」ではなく、合否を数値で決める。</h2>
+          <p class="lead">決裁に必要なKPIは、作業時間、赤字率、事実誤認、HITLブロックの4つに集約できます。</p>
+        </div>
+        <div class="table">
+          <div class="table-row head"><div>指標</div><div>目標</div><div>現在の準備</div><div>次の実測</div></div>
+          <div class="table-row"><div>レポート作業時間</div><div>50%以上削減</div><div><span class="pill blue">一部あり</span> KPIストア</div><div>Before/After実案件測定</div></div>
+          <div class="table-row"><div>赤字率</div><div>20%未満</div><div><span class="pill red">未確認</span></div><div>編集差分計測</div></div>
+          <div class="table-row"><div>事実誤認</div><div>0件</div><div><span class="pill amber">一部あり</span> 根拠評価</div><div>人手レビュー基準固定</div></div>
+          <div class="table-row"><div>HITLブロック</div><div>実演</div><div><span class="pill amber">一部あり</span> 警告/承認</div><div>承認前ブロック条件の厳格化</div></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Current KPI store includes quantified effect fields; production-grade measurement remains next gate</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">11. Adoption Path</div><div class="page">Main 12 / 15</div></div>
+      <div class="body">
+        <h2>導入は、外部書き戻しを急がず「読取り・生成・承認」から始める。</h2>
+        <div class="roadmap">
+          <div class="phase"><div class="period">Step 1 / 4 weeks</div><h3>Controlled Pilot</h3><p>対象1-2案件。週次報告・品質報告・HITL承認を実運用で測定。</p></div>
+          <div class="phase"><div class="period">Step 2 / 4-8 weeks</div><h3>Read-only Connectors</h3><p>Jira/Confluence/Slack等を読取り専用で接続。原文リンクを根拠化。</p></div>
+          <div class="phase"><div class="period">Step 3 / 8-12 weeks</div><h3>Governance Gate</h3><p>赤字率、事実誤認、承認前ブロック、監査ログの合格基準を固定。</p></div>
+          <div class="phase"><div class="period">Step 4 / After Gate</div><h3>Scale</h3><p>標準テンプレート、案件別RAG、PMO横断ダッシュボードを展開。</p></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Do not start with autonomous write-back; start with measurable decision support</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">12. Investment Options</div><div class="page">Main 13 / 15</div></div>
+      <div class="body">
+        <h2>選択肢は3つ。推奨は「限定パイロットで実データ計測」。</h2>
+        <div class="table">
+          <div class="table-row head"><div>選択肢</div><div>内容</div><div>得られるもの</div><div>リスク</div></div>
+          <div class="table-row"><div><span class="pill gray">Hold</span> 様子見</div><div>デモ環境を維持</div><div>コスト最小</div><div>業務効果が測れず、現場課題は残る</div></div>
+          <div class="table-row"><div><span class="pill green">Recommend</span> 限定パイロット</div><div>1-2案件、読取り中心、KPI測定</div><div>投資判断に必要な実測値</div><div>外部連携範囲の制御が必要</div></div>
+          <div class="table-row"><div><span class="pill amber">Scale Now</span> 先行展開</div><div>複数部門へ横展開</div><div>早期インパクト</div><div>ガバナンスと品質基準が追いつかない</div></div>
+        </div>
+        <div class="decision-box">
+          <div><h3>推奨決裁: Controlled Pilotを承認</h3><p>対象案件、接続データ、KPI基準、承認者、評価期間を固定し、次回会議でGreen/Yellow/Redを判定する。</p></div>
+          <div class="decision-stamp">Approve<br>Pilot</div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Investment posture: measured expansion, not big-bang deployment</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">13. Risk & Control</div><div class="page">Main 14 / 15</div></div>
+      <div class="body">
+        <h2>決裁前に押さえるべきリスクは明確。制御可能な順に潰す。</h2>
+        <div class="risk-table">
+          <div class="risk-item"><strong>外部連携未実装</strong><p class="small">Jira/Slack/Confluence/Gitは現時点で未接続。</p><div><span class="pill amber">Mitigation</span><p class="small">読取り専用から開始し、書き戻しは対象外。</p></div></div>
+          <div class="risk-item"><strong>PoC KPIの実測不足</strong><p class="small">赤字率、先行検知日数、事実誤認は運用評価が必要。</p><div><span class="pill blue">Mitigation</span><p class="small">評価票とレビュー基準を先に固定。</p></div></div>
+          <div class="risk-item"><strong>本番反映前の統制</strong><p class="small">現状は検証環境。PoC判定はYellow継続。</p><div><span class="pill green">Mitigation</span><p class="small">本番反映判定を別ゲート化。</p></div></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Risk stance: visible, bounded, pilot-addressable</span><span></span></div>
+    </section>
+
+    <section class="slide" data-section="Main">
+      <div class="slide-head"><div class="eyebrow">14. Decision Request</div><div class="page">Main 15 / 15</div></div>
+      <div class="body">
+        <h2>本日決めたいこと: 「製品化可否」ではなく「実データで投資判断する権利」。</h2>
+        <div class="grid3">
+          <div class="card"><strong>1. Pilot Scope</strong><p>対象案件、PMOユーザー、レポート種別、品質/リスク観点を決める。</p></div>
+          <div class="card"><strong>2. Success Gate</strong><p>工数削減、赤字率、事実誤認、HITLブロックの判定基準を承認。</p></div>
+          <div class="card"><strong>3. Guardrails</strong><p>読取り専用、書き戻し対象外、承認前ブロック、本番反映ゲートを固定。</p></div>
+        </div>
+        <div class="statement">意思決定メッセージ: 既に「見せるプロトタイプ」ではなく、「測って次を決めるPoC基盤」まで来ています。</div>
+      </div>
+      <div class="slide-foot"><span>End of main deck</span><span>Appendix follows</span></div>
+    </section>
+
+    <section class="slide appendix" data-section="Appendix">
+      <div class="slide-head"><div class="eyebrow">Appendix A1. Current Work Report</div><div class="page">Appendix 01 / 05</div></div>
+      <div class="body split">
+        <div>
+          <h2>開発進捗はP0/P1/P2すべて完了。本番未反映のためPoC表示はYellow。</h2>
+          <p class="lead">2026/06/17 21:30 JST時点のプロジェクトREADMEでは、WBS/タスク42件が完了。次サイクルは本番反映指示までTest環境で運用確認です。</p>
+        </div>
+        <div class="grid2">
+          <div class="metric green"><span class="num">9/9</span><span class="label">P0 完了</span></div>
+          <div class="metric green"><span class="num">20/20</span><span class="label">P1 完了</span></div>
+          <div class="metric green"><span class="num">13/13</span><span class="label">P2 完了</span></div>
+          <div class="metric amber"><span class="num">Yellow</span><span class="label">本番未反映のため継続</span></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Source: 08.projects/rag_test_pmo_agent_development_20260616/README.md</span><span></span></div>
+    </section>
+
+    <section class="slide appendix" data-section="Appendix">
+      <div class="slide-head"><div class="eyebrow">Appendix A2. Milestones</div><div class="page">Appendix 02 / 05</div></div>
+      <div class="body">
+        <h2>開発マイルストーンは、RAG基盤からHITL/効果測定まで到達。</h2>
+        <div class="milestones">
+          <div class="milestone"><div class="date">06/17 11:55</div><div><strong>P0-A 案件別RAG索引</strong><p>project-local FAISS/chunks/lexical resourcesを作成・確認。</p></div><span class="pill green">Done</span></div>
+          <div class="milestone"><div class="date">06/17 12:45</div><div><strong>P0-B タスクCRUD共有保存</strong><p>task_store保存、競合/履歴/監査ログの基盤を整備。</p></div><span class="pill green">Done</span></div>
+          <div class="milestone"><div class="date">06/17 13:13</div><div><strong>P1-A 実データ接続テンプレート</strong><p>WBS/課題/リスク/品質/非機能/予算/KPIの7領域。</p></div><span class="pill green">Done</span></div>
+          <div class="milestone"><div class="date">06/17 16:58</div><div><strong>P1-B 承認ログ・根拠警告</strong><p>AI提案、HITL判断、根拠なし重要主張警告を追加。</p></div><span class="pill green">Done</span></div>
+          <div class="milestone"><div class="date">06/17 19:25</div><div><strong>P1-D 報告生成/HITL</strong><p>週次報告、経営向け1枚、編集、根拠チェック、承認ログ。</p></div><span class="pill green">Done</span></div>
+          <div class="milestone"><div class="date">06/17 21:30</div><div><strong>P2 ダッシュボード改善</strong><p>ヘルススコア、重要アラートTop3、リスク観点ソート、ドリルダウン。</p></div><span class="pill green">Done</span></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Condensed milestone view for steering committee</span><span></span></div>
+    </section>
+
+    <section class="slide appendix" data-section="Appendix">
+      <div class="slide-head"><div class="eyebrow">Appendix A3. Asset Inventory</div><div class="page">Appendix 03 / 05</div></div>
+      <div class="body">
+        <h2>既存資産は、デモではなく「運用検証できる最小基盤」として揃っている。</h2>
+        <div class="grid4">
+          <div class="metric blue"><span class="num">213</span><span class="label">Global RAG chunks<br>OpenAI text-embedding-3-small</span></div>
+          <div class="metric violet"><span class="num">167</span><span class="label">Project RAG chunks<br>local-hash-512</span></div>
+          <div class="metric green"><span class="num">3</span><span class="label">Active templates<br>Excel成果物出力</span></div>
+          <div class="metric amber"><span class="num">2</span><span class="label">Report drafts stored<br>週次/経営向け</span></div>
+          <div class="metric"><span class="num">3</span><span class="label">AI proposals stored<br>承認判断候補</span></div>
+          <div class="metric green"><span class="num">42</span><span class="label">Task records<br>共有保存済み</span></div>
+          <div class="metric blue"><span class="num">48</span><span class="label">Eval reports<br>評価/Smoke</span></div>
+          <div class="metric violet"><span class="num">17</span><span class="label">Test files<br>APIなし中心</span></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Counts are local scan values as of 2026/06/18</span><span></span></div>
+    </section>
+
+    <section class="slide appendix" data-section="Appendix">
+      <div class="slide-head"><div class="eyebrow">Appendix A4. MVP Gap Detail</div><div class="page">Appendix 04 / 05</div></div>
+      <div class="body split">
+        <div>
+          <h2>要求表と現行機能の差分は、CSVとして整理済み。</h2>
+          <p class="lead">本編では経営判断に必要な要約だけを掲載。詳細は2つのCSVで、機能別・画面別に確認できます。</p>
+          <p class="small">qa_pmo_mvp_scope_directory_mapping.csv / qa_pmo_directory_extra_features.csv</p>
+        </div>
+        <div class="bars">
+          <div class="bar-row"><span>成果物生成</span><div class="bar-track"><div class="bar-fill" style="width: 78%; background: var(--green);"></div></div><strong>7</strong></div>
+          <div class="bar-row"><span>横断レイヤ</span><div class="bar-track"><div class="bar-fill" style="width: 100%; background: var(--blue);"></div></div><strong>13</strong></div>
+          <div class="bar-row"><span>管理・設定</span><div class="bar-track"><div class="bar-fill" style="width: 69%; background: var(--amber);"></div></div><strong>9</strong></div>
+          <div class="bar-row"><span>予兆検知</span><div class="bar-track"><div class="bar-fill" style="width: 46%; background: var(--teal);"></div></div><strong>6</strong></div>
+          <div class="bar-row"><span>PoC評価</span><div class="bar-track"><div class="bar-fill" style="width: 38%; background: var(--violet);"></div></div><strong>5</strong></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>CSV is the working source for feature-level discussions</span><span></span></div>
+    </section>
+
+    <section class="slide appendix" data-section="Appendix">
+      <div class="slide-head"><div class="eyebrow">Appendix A5. Open Risks</div><div class="page">Appendix 05 / 05</div></div>
+      <div class="body">
+        <h2>次フェーズ前に、技術リスクではなく「運用リスク」を先に閉じる。</h2>
+        <div class="table">
+          <div class="table-row head"><div>論点</div><div>現状</div><div>決めること</div><div>推奨</div></div>
+          <div class="table-row"><div>本番反映</div><div>Test環境でP2完了、PoC表示Yellow</div><div>反映対象と承認者</div><div>変更済みapp/script単位で判断</div></div>
+          <div class="table-row"><div>外部ツール連携</div><div>未実装</div><div>読取り対象、認証、ログ範囲</div><div>Jira/Confluenceから段階開始</div></div>
+          <div class="table-row"><div>KPI実測</div><div>効果測定ストアあり、実案件測定は未完</div><div>測定対象レポートと比較方法</div><div>2回の定例サイクルで測る</div></div>
+          <div class="table-row"><div>セキュリティ</div><div>検証環境内に運用課題あり</div><div>秘密情報、権限、監査ログ方針</div><div>Pilot前にチェックリスト化</div></div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>Appendix end</span><span></span></div>
+    </section>
+  </main>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const counter = document.getElementById("counter");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    let index = 0;
+
+    function render() {
+      slides.forEach((slide, i) => slide.classList.toggle("active", i === index));
+      counter.textContent = `${index + 1} / ${slides.length}`;
+      document.querySelectorAll(".progress-fill").forEach((bar) => {
+        bar.style.width = `${((index + 1) / slides.length) * 100}%`;
+      });
+      location.hash = `slide-${index + 1}`;
+    }
+
+    function go(delta) {
+      index = Math.max(0, Math.min(slides.length - 1, index + delta));
+      render();
+    }
+
+    prevBtn.addEventListener("click", () => go(-1));
+    nextBtn.addEventListener("click", () => go(1));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === "PageDown" || event.key === " ") {
+        event.preventDefault();
+        go(1);
+      }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        go(-1);
+      }
+      if (event.key === "Home") {
+        index = 0;
+        render();
+      }
+      if (event.key === "End") {
+        index = slides.length - 1;
+        render();
+      }
+    });
+
+    const match = location.hash.match(/slide-(\d+)/);
+    if (match) {
+      index = Math.max(0, Math.min(slides.length - 1, Number(match[1]) - 1));
+    }
+    render();
+  </script>
+</body>
+</html>

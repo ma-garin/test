@@ -1,0 +1,113 @@
+{% extends "layouts/base.html" %}
+{% load integration_links %}
+{% block kicker %}監査・トレース{% endblock %}
+{% block heading %}実行トレース{% endblock %}
+{% block subtitle %}{{ run.created_at|date:"Y-m-d H:i:s" }} ／ {{ run.get_area_display }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'agents:run_list' %}">一覧へ</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi"><div class="kpi-l">意図</div><div class="kpi-v" style="font-size:16px">{{ run.get_intent_display }}</div><div class="kpi-s">確信度 {{ run.intent_confidence }}</div></div>
+    <div class="kpi"><div class="kpi-l">状態</div><div class="kpi-v" style="font-size:16px">{{ run.get_status_display }}</div><div class="kpi-s">ループ {{ run.loop_count }}回</div></div>
+    <div class="kpi"><div class="kpi-l">信頼度</div><div class="kpi-v" style="font-size:16px">{% if run.evidence %}{{ run.evidence.confidence }}{% else %}—{% endif %}</div><div class="kpi-s">{% if run.evidence %}{{ run.evidence.get_recommendation_display }}{% endif %}</div></div>
+    <div class="kpi"><div class="kpi-l">所要時間</div><div class="kpi-v" style="font-size:16px">{{ run.elapsed_ms }}<small>ms</small></div><div class="kpi-s">総処理時間</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">入力</span></div>
+    <div class="ai-bubble">{{ run.user_input }}</div>
+  </div>
+
+  <div class="sg">
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">実行計画</span><span class="card-act">REQ-AG-003</span></div>
+      <dl class="dl">
+        <dt>検索要否</dt><dd>{% if run.plan.search_required %}必要{% else %}不要{% endif %}</dd>
+        <dt>使用ツール</dt><dd>{{ run.plan.tools|join:" → " }}</dd>
+        <dt>検索クエリ</dt><dd>{% for q in run.plan.search_queries %}<div>{{ q }}</div>{% endfor %}</dd>
+        <dt>期待する出力</dt><dd>{{ run.plan.expected_output }}</dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">処理ステップ</span><span class="card-act">REQ-AG-009</span></div>
+      <ol class="steps">
+        {% for step in run.steps.all %}
+          <li>
+            <span class="n">{{ step.order }}</span>
+            <div>
+              <div class="tool">{{ step.tool_name }} <span class="badge {% if step.status == 'ok' %}g{% elif step.status == 'failed' %}r{% else %}n{% endif %}">{{ step.get_status_display }}</span></div>
+              {% if step.output_summary %}<div class="out">{{ step.output_summary }}</div>{% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </div>
+
+  {% if run.evidence %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">根拠評価</span>
+        <span class="badge {% if run.evidence.blocks_approval %}r{% else %}g{% endif %}">{{ run.evidence.get_recommendation_display }}</span>
+      </div>
+      <dl class="dl">
+        <dt>信頼度</dt><dd>{{ run.evidence.confidence }}</dd>
+        <dt>関連度 / 網羅度</dt><dd>{{ run.evidence.get_relevance_display }} / {{ run.evidence.get_coverage_display }}</dd>
+        <dt>矛盾</dt><dd>{% if run.evidence.has_conflict %}あり{% else %}検出なし{% endif %}</dd>
+        <dt>内訳</dt><dd>{{ run.evidence.notes }}</dd>
+      </dl>
+      {% if run.evidence.missing_information %}
+        <div class="callout w" style="margin-top:12px">
+          {% for item in run.evidence.missing_information %}<p>・{{ item }}</p>{% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% external_sources run as external_records %}
+  {% if external_records %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">外部原文（出所候補）</span>
+        <span class="card-act">REQ-AU-002</span>
+      </div>
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>連携先</th><th>外部キー</th><th>種別</th><th>最終同期</th><th>原文</th></tr></thead>
+          <tbody>
+            {% for record in external_records %}
+              <tr>
+                <td class="nowrap">{{ record.connection.get_provider_display }}</td>
+                <td class="nowrap">{{ record.external_key|default:record.external_id }}</td>
+                <td class="nowrap">{{ record.get_entity_type_display }}</td>
+                <td class="nowrap">{{ record.last_synced_at|date:"n/j H:i"|default:"—" }}</td>
+                <td class="nowrap"><a class="btn-ghost sm" href="{{ record.external_url }}" target="_blank" rel="noopener noreferrer">開く →</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="ps">この実行と同じ案件の接続から取り込んだレコードです。実行が実際に参照した保証はないため、出所の候補として示しています。</div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">人による確認</span><span class="card-act">REQ-AG-010</span></div>
+    <table class="t">
+      <thead><tr><th>判断</th><th>確認者</th><th>確認日時</th><th>コメント</th></tr></thead>
+      <tbody>
+        {% for review in run.reviews.all %}
+          <tr><td>{{ review.get_decision_display }}</td><td>{{ review.reviewer|default:"—" }}</td><td class="nowrap">{{ review.reviewed_at|date:"Y-m-d H:i"|default:"—" }}</td><td>{{ review.comment }}</td></tr>
+        {% empty %}
+          <tr><td colspan="4"><div class="empty">まだ人による確認は記録されていません。</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% endblock %}

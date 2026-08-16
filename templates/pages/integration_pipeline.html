@@ -1,0 +1,110 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}管理・設定{% endblock %}
+{% block heading %}パイプライン監視{% endblock %}
+{% block subtitle %}外部同期と RAG インデックスの鮮度をまとめて見ます。止まっていることに気づけるのがこの画面の目的です。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'integrations:list' %}">接続一覧へ</a>
+  <a class="btn-out sm" href="{% url 'integrations:job_list' %}">同期履歴へ</a>
+{% endblock %}
+
+{% block content %}
+
+  {% if overview.stale_rows %}
+    <div class="callout d">
+      <p><strong>{{ overview.stale_count }} 件の接続が {{ overview.stale_after_hours }} 時間以上、同期に成功していません。</strong>取り込めていないデータがあるため、画面の数字は最新ではありません。</p>
+      {% for row in overview.stale_rows %}
+        <p>・{{ row.connection.name }}（{{ row.connection.get_provider_display }}）: {{ row.staleness_label }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">監視対象の接続</div>
+      <div class="kpi-v">{{ overview.rows|length }}</div>
+      <div class="kpi-s">うち有効 {{ overview.active_count }} 件</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">停止疑い</div>
+      <div class="kpi-v">{{ overview.stale_count }}</div>
+      <div class="kpi-s">しきい値 {{ overview.stale_after_hours }} 時間</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">RAGインデックス最終構築</div>
+      <div class="kpi-v" style="font-size:16px">{{ overview.last_index_at|date:"n/j H:i"|default:"未実施" }}</div>
+      <div class="kpi-s">{% if overview.last_index_job %}{{ overview.last_index_job.get_job_type_display }}{% else %}構築履歴がありません{% endif %}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">集計時刻</div>
+      <div class="kpi-v" style="font-size:16px">{{ overview.generated_at|date:"n/j H:i" }}</div>
+      <div class="kpi-s">画面を開いた時点の値</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">接続ごとの同期状態</span>
+      <span class="card-act">最終同期情報</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>接続</th><th>連携先</th><th>モード</th><th>最終同期</th><th>最終成功</th><th>経過</th><th>直近ジョブ</th><th>鮮度</th></tr>
+        </thead>
+        <tbody>
+          {% for row in overview.rows %}
+            <tr>
+              <td>{{ row.connection.name }}</td>
+              <td class="nowrap">{{ row.connection.get_provider_display }}</td>
+              <td class="nowrap">{{ row.connection.get_mode_display }}</td>
+              <td class="nowrap">{{ row.last_synced_at|date:"n/j H:i"|default:"—" }}</td>
+              <td class="nowrap">{{ row.last_success_at|date:"n/j H:i"|default:"—" }}</td>
+              <td class="nowrap">{% if row.hours_since_success is not None %}{{ row.hours_since_success|floatformat:1 }} 時間{% else %}—{% endif %}</td>
+              <td class="nowrap">
+                {% if row.latest_job %}
+                  <span class="badge {{ row.latest_job.tone }}">{{ row.latest_job.get_status_display }}</span>
+                {% else %}
+                  <span class="badge n">実行なし</span>
+                {% endif %}
+              </td>
+              <td class="nowrap"><span class="badge {{ row.tone }}">{{ row.staleness_label }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8"><div class="empty">監視対象の接続がありません。接続を追加すると、ここに同期の鮮度が並びます。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">直近の同期ジョブ</span>
+      <a class="card-act" href="{% url 'integrations:job_list' %}">全件を見る</a>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>実行日時</th><th>接続</th><th>状態</th><th>新規</th><th>更新</th><th>失敗</th><th>メッセージ</th></tr>
+        </thead>
+        <tbody>
+          {% for job in overview.recent_jobs %}
+            <tr>
+              <td class="nowrap">{{ job.created_at|date:"n/j H:i" }}</td>
+              <td>{{ job.connection.name }}</td>
+              <td class="nowrap"><span class="badge {{ job.tone }}">{{ job.get_status_display }}</span></td>
+              <td class="nowrap">{{ job.created_count }}</td>
+              <td class="nowrap">{{ job.updated_count }}</td>
+              <td class="nowrap">{{ job.failed_count }}</td>
+              <td>{{ job.message|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7"><div class="empty">同期ジョブの実行履歴がありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

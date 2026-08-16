@@ -1,0 +1,105 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}監査・トレース{% endblock %}
+{% block subtitle %}事実誤認の有無は PoC の受入条件「事実誤認 0 件」の集計に使います。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-b sm" href="{% url 'audit:feedback_create' %}">フィードバックを投稿</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">対象フィードバック</div>
+      <div class="kpi-v">{{ stats.total }}<small>件</small></div>
+      <div class="kpi-s">{{ criteria.period_label }}</div>
+      <div class="kpi-bar"><div class="kpi-fill b" style="width:100%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">役に立った率</div>
+      <div class="kpi-v" style="color:var(--green)">{{ stats.good_percent }}<small>%</small></div>
+      <div class="kpi-s">{{ stats.good_count }}件 / 役に立たなかった {{ stats.bad_count }}件</div>
+      <div class="kpi-bar"><div class="kpi-fill g" style="width:{{ stats.good_percent }}%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">事実誤認あり</div>
+      <div class="kpi-v" style="color:var(--red)">{{ stats.fact_error_count }}</div>
+      <div class="kpi-s">誤認なし {{ stats.fact_ok_count }}件（受入条件は 0 件）</div>
+      <div class="kpi-bar"><div class="kpi-fill r" style="width:{{ stats.fact_error_percent }}%"></div></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">事実誤認率</div>
+      <div class="kpi-v" style="color:var(--yellow)">{{ stats.fact_error_percent }}<small>%</small></div>
+      <div class="kpi-s">対象 {{ stats.total }}件に対する割合</div>
+      <div class="kpi-bar"><div class="kpi-fill a" style="width:{{ stats.fact_error_percent }}%"></div></div>
+    </div>
+  </div>
+
+  <div class="sg">
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">評価の分布</span><span class="card-act">実データ集計</span></div>
+      {% for bucket in stats.buckets %}
+        <div class="pb-row">
+          <div class="pb-lr">
+            <span class="pb-t">{{ bucket.label }}</span>
+            <span class="pb-v">{{ bucket.count }}件</span>
+          </div>
+          <div class="pb-tr"><div class="pb-f {{ bucket.tone }}" style="width:{{ bucket.percent }}%"></div></div>
+          <div class="ps" style="margin-top:4px">構成比 {{ bucket.percent }}%</div>
+        </div>
+      {% endfor %}
+      {% if not stats.total %}
+        <div class="empty">この条件に合うフィードバックはありません。</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">絞り込み</span><span class="card-act">期間・利用者</span></div>
+      <form method="get" class="form">
+        <div>
+          <label for="period">期間</label>
+          <select id="period" name="period">
+            {% for days, label in period_choices %}
+              <option value="{{ days }}" {% if days == criteria.days %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="user">利用者</label>
+          <select id="user" name="user">
+            <option value="">全員</option>
+            {% for option in reporter_options %}
+              <option value="{{ option.id }}" {% if option.id == criteria.user_id %}selected{% endif %}>{{ option.label }}（{{ option.count }}件）</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="actions">
+          <button class="btn-b sm" type="submit">この条件で集計</button>
+          <a class="btn-out sm" href="{% url 'audit:feedback_list' %}">条件をリセット</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">フィードバック明細</span><span class="card-act">{{ page.paginator.count }}件</span></div>
+    <table class="t">
+      <thead><tr><th>日時</th><th>評価</th><th>事実誤認</th><th>コメント</th><th>投稿者</th></tr></thead>
+      <tbody>
+        {% for feedback in feedbacks %}
+          <tr>
+            <td class="nowrap">{{ feedback.created_at|date:"m/d H:i" }}</td>
+            <td><span class="badge {% if feedback.rating == 3 %}g{% elif feedback.rating == 1 %}r{% else %}n{% endif %}">{{ feedback.get_rating_display }}</span></td>
+            <td>{% if feedback.has_fact_error %}<span class="badge r">あり</span>{% else %}<span class="muted">なし</span>{% endif %}</td>
+            <td>{{ feedback.comment|truncatechars:80 }}</td>
+            <td class="nowrap">{{ feedback.user|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5"><div class="empty">フィードバックはありません。</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include "partials/pager.html" %}
+  </div>
+
+{% endblock %}

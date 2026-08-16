@@ -1,0 +1,146 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ page_title|default:"VeriRAG PMO Agent" }}{% endblock %} | VeriRAG PMO Agent</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="shell">
+
+  <header class="hdr">
+    <a class="hdr-brand" href="{% url 'dashboard:control' %}">
+      <span class="hdr-mark">VR</span>
+      <span class="hdr-title">
+        <span class="hdr-name">VeriRAG PMO Agent</span>
+        <span class="hdr-sub">AI PROJECT CONTROL</span>
+      </span>
+    </a>
+
+    <div class="hdr-spacer"></div>
+
+    <div class="hdr-chips">
+      {% if current_tenant %}
+        <a class="hdr-project" href="{% url 'accounts:select_tenant' %}" title="テナントを切り替える">{{ current_tenant.name }}</a>
+      {% endif %}
+      {# 対象案件は常に見えている必要がある。絞り込み中と気づかずに数字を読むと誤解する。 #}
+      {% url 'accounts:select_project' as select_project_url %}
+      {# 案件選択画面でこれを押すと自分自身が next に入り入れ子が積み上がるため、その画面では next を付けない。 #}
+      <a class="hdr-project{% if current_project %} on{% endif %}"
+         href="{{ select_project_url }}{% if request.path != select_project_url %}?next={{ request.get_full_path|urlencode }}{% endif %}"
+         title="対象案件を切り替える">
+        {% if current_project %}{{ current_project.code }} {{ current_project.name }}{% else %}全案件{% endif %} ▾
+      </a>
+      <span class="hdr-user">{{ user.display_name|default:user.username }} <span>{{ user.get_role_display }}</span></span>
+      <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+        <button type="submit" class="hdr-chip">ログアウト</button>
+      </form>
+    </div>
+  </header>
+
+  <nav class="sb" id="sidebar">
+    <div class="sb-scroll">
+      {% for section in nav_sections %}
+        <div class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}">
+          <button class="sb-hd" type="button">
+            {{ section.label }}
+            <span class="sb-caret" aria-hidden="true">▶</span>
+          </button>
+          {# 畳んだときだけ出る見出し。区切り線だけだと、どの領域を見ているか分からなくなる。 #}
+          <div class="sb-mini-hd" aria-hidden="true" title="{{ section.label }}">{{ section.label|slice:":2" }}</div>
+          <div class="sb-sec-body">
+            {% for item in section.items %}
+              <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
+                 href="{% url item.url_name %}" title="{{ item.label }}">
+                <span class="sb-badge" aria-hidden="true">{{ item.code }}</span>
+                <span class="sb-label">{{ item.label }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <button class="sb-collapse" type="button" id="nav-collapse" aria-expanded="true">
+      <span class="sb-collapse-ico" aria-hidden="true">‹</span>
+      <span class="sb-label">折りたたむ</span>
+    </button>
+  </nav>
+
+  <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">{% block kicker %}{{ page_kicker|default:"VERIRAG" }}{% endblock %}</div>
+        <h1 class="pt">{% block heading %}{{ page_title }}{% endblock %}</h1>
+        <p class="ps">{% block subtitle %}{{ page_subtitle }}{% endblock %}</p>
+      </div>
+      <div class="ph-right">{% block header_actions %}{% endblock %}</div>
+    </div>
+
+    {% for message in messages %}
+      <div class="callout{% if message.tags == 'error' %} d{% elif message.tags == 'warning' %} w{% elif message.tags == 'success' %} ok{% endif %}">{{ message }}</div>
+    {% endfor %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+
+<script>
+// サイドバー全体の折りたたみ。畳んだ状態では 2 文字コードだけを残す。
+(function () {
+  var shell = document.querySelector('.shell');
+  var button = document.getElementById('nav-collapse');
+
+  if (!shell || !button) { return; }
+
+  var KEY = 'verirag.nav.collapsed';
+
+  function apply(collapsed) {
+    shell.classList.toggle('nav-collapsed', collapsed);
+    button.setAttribute('aria-expanded', String(!collapsed));
+  }
+
+  try { apply(localStorage.getItem(KEY) === '1'); } catch (e) { /* 保存できなくても動く */ }
+
+  button.addEventListener('click', function () {
+    var collapsed = !shell.classList.contains('nav-collapsed');
+    apply(collapsed);
+
+    try { localStorage.setItem(KEY, collapsed ? '1' : '0'); } catch (e) { /* 同上 */ }
+  });
+})();
+
+// サイドバーのセクション開閉。現在の画面を含むセクションは常に開く。
+(function () {
+  var nav = document.getElementById('sidebar');
+
+  if (!nav) { return; }
+
+  var KEY = 'verirag.nav.open';
+  var saved = null;
+
+  try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { saved = null; }
+
+  if (saved) {
+    nav.querySelectorAll('.sb-sec').forEach(function (sec) {
+      if (sec.classList.contains('current')) { return; }
+      sec.classList.toggle('open', saved.indexOf(sec.dataset.sec) !== -1);
+    });
+  }
+
+  nav.querySelectorAll('.sb-hd').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      btn.parentElement.classList.toggle('open');
+
+      var open = [];
+      nav.querySelectorAll('.sb-sec.open').forEach(function (sec) { open.push(sec.dataset.sec); });
+
+      try { localStorage.setItem(KEY, JSON.stringify(open)); } catch (e) { /* 保存できなくても動く */ }
+    });
+  });
+})();
+</script>
+</body>
+</html>

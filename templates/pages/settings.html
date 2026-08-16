@@ -1,0 +1,53 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}管理・設定{% endblock %}
+{% block subtitle %}認証情報は環境変数で管理します。この画面からは変更できません。{% endblock %}
+
+{% block content %}
+
+  <div class="callout ok">
+    <p><strong>認証情報はマスクして表示しています。</strong>生の値は画面・ログ・エクスポートに含めません。</p>
+  </div>
+
+  <div class="kpi-g">
+    <div class="kpi"><div class="kpi-l">AIプロバイダ</div><div class="kpi-v" style="font-size:15px">{{ ai_settings.provider_label }}</div><div class="kpi-s">生成・Embedding の実行先</div></div>
+    <div class="kpi"><div class="kpi-l">既定 Top-K</div><div class="kpi-v">{{ ai_settings.rag.default_top_k }}</div><div class="kpi-s">検索結果の取得件数</div></div>
+    <div class="kpi"><div class="kpi-l">ループ上限</div><div class="kpi-v">{{ ai_settings.agent.max_loops }}</div><div class="kpi-s">NFR-AG-002</div></div>
+    <div class="kpi"><div class="kpi-l">タイムアウト</div><div class="kpi-v">{{ ai_settings.agent.timeout_seconds }}<small>秒</small></div><div class="kpi-s">NFR-AG-004</div></div>
+  </div>
+
+  <div class="sg">
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">OpenAI</span><span class="card-act">マスク表示</span></div>
+      <dl class="dl">
+        <dt>APIキー</dt><dd><code>{{ ai_settings.openai.api_key }}</code></dd>
+        <dt>組織ID</dt><dd><code>{{ ai_settings.openai.org_id }}</code></dd>
+        <dt>プロジェクトID</dt><dd><code>{{ ai_settings.openai.project_id }}</code></dd>
+        <dt>回答モデル</dt><dd>{{ ai_settings.openai.model }}</dd>
+        <dt>Embedding</dt><dd>{{ ai_settings.openai.embedding_model }}</dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">Ollama / ローカル</span></div>
+      <dl class="dl">
+        <dt>Ollama URL</dt><dd>{{ ai_settings.ollama.base_url }}</dd>
+        <dt>回答モデル</dt><dd>{{ ai_settings.ollama.model }}</dd>
+        <dt>Embedding</dt><dd>{{ ai_settings.ollama.embedding_model }}</dd>
+        <dt>ローカルEmbedding</dt><dd>{{ ai_settings.local_hash.model }}（{{ ai_settings.local_hash.dim }}次元）</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">検索設定</span></div>
+    <table class="t">
+      <thead><tr><th>項目</th><th>値</th><th>説明</th></tr></thead>
+      <tbody>
+        <tr><td>既定 Top-K</td><td><span class="badge b">{{ ai_settings.rag.default_top_k }}</span></td><td class="muted">1回の検索で取得するチャンク数</td></tr>
+        <tr><td>LLMリランク</td><td><span class="badge {% if ai_settings.rag.use_llm_rerank %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_llm_rerank|yesno:"有効,無効" }}</span></td><td class="muted">LLM 必須。未設定時は計画から除外される</td></tr>
+        <tr><td>クエリ拡張</td><td><span class="badge {% if ai_settings.rag.use_query_expansion %}g{% else %}n{% endif %}">{{ ai_settings.rag.use_query_expansion|yesno:"有効,無効" }}</span></td><td class="muted">意図分類の定型語で検索語を補強</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+{% endblock %}

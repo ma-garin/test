@@ -1,0 +1,52 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}管理・設定{% endblock %}
+{% block subtitle %}同期の実行履歴です。合計ではなく内訳で残すため、「動いているのに何も取り込めていない」状態を見分けられます。{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'integrations:list' %}">接続一覧へ</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">同期履歴</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead>
+          <tr><th>実行日時</th><th>接続</th><th>方向</th><th>状態</th><th>新規</th><th>更新</th><th>変更なし</th><th>失敗</th><th>所要</th><th>実行者</th><th>メッセージ</th></tr>
+        </thead>
+        <tbody>
+          {% for job in jobs %}
+            <tr>
+              <td class="nowrap">{{ job.created_at|date:"n/j H:i" }}</td>
+              <td>{{ job.connection.name }}</td>
+              <td class="nowrap">{{ job.get_direction_display }}</td>
+              <td class="nowrap"><span class="badge {{ job.tone }}">{{ job.get_status_display }}</span></td>
+              <td class="nowrap">{{ job.created_count }}</td>
+              <td class="nowrap">{{ job.updated_count }}</td>
+              <td class="nowrap">{{ job.skipped_count }}</td>
+              <td class="nowrap">{{ job.failed_count }}</td>
+              <td class="nowrap">{% if job.duration_seconds is not None %}{{ job.duration_seconds }} 秒{% else %}—{% endif %}</td>
+              <td class="nowrap">{{ job.triggered_by.username|default:"—" }}</td>
+              <td>
+                {{ job.message|default:"—" }}
+                {% if job.detail.unmapped %}
+                  <div class="ps">対応表に無い値 {{ job.detail.unmapped|length }} 件を既定値へ寄せました。</div>
+                {% endif %}
+                {% if job.detail.failures %}
+                  <div class="ps">失敗 {{ job.detail.failures|length }} 件（先頭: {{ job.detail.failures.0.key|default:job.detail.failures.0.external_id }}）。</div>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="11"><div class="empty">同期の実行履歴がありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "partials/pager.html" %}
+  </div>
+
+{% endblock %}

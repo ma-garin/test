@@ -1,0 +1,950 @@
+<meta charset="utf-8">
+<title>VeriRAG PMO Agent — ダッシュボード設計案 10件</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:#e6e9ec;color:#1b1f24;line-height:1.6;font-size:14px;
+  font-family:"Noto Sans JP","Yu Gothic UI",Meiryo,system-ui,sans-serif}
+a{color:inherit;text-decoration:none}button,select,input{font-family:inherit}
+button{cursor:pointer}
+
+.wrap{max-width:1520px;margin:0 auto;padding:24px 20px 60px}
+.intro{background:#fff;border:1px solid #d3dae1;border-radius:10px;padding:20px 24px;margin-bottom:22px}
+.intro h1{margin:0 0 8px;font-size:20px}
+.intro p{margin:0 0 5px;color:#5f6b7a;font-size:13px}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.toc a{border:1px solid #d3dae1;border-radius:14px;padding:4px 12px;font-size:12px;font-weight:800;background:#fff}
+.toc a:hover{border-color:#2f6f8f;color:#2f6f8f}
+
+.case{margin-bottom:34px}
+.case-hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.case-no{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;
+  background:#232a33;color:#fff;font-size:12px;font-weight:900}
+.case-hd h2{margin:0;font-size:17px}
+.case-desc{color:#4a5560;font-size:13px;margin:0 0 3px}
+.case-use{color:#6b7684;font-size:12px;margin:0 0 12px}
+.case-use b{color:#232a33}
+
+/* ── シェル（全案共通・構成固定） ── */
+.frame{border:1px solid #cbd3da;border-radius:10px;overflow:hidden;box-shadow:0 3px 14px rgba(20,30,40,.09)}
+.shell{display:grid;grid-template-columns:252px 1fr;grid-template-rows:52px 1fr;
+  height:780px;background:var(--bg);overflow:hidden}
+.hdr{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding-right:16px;
+  background:var(--nav);border-bottom:1px solid rgba(255,255,255,.08)}
+.hdr-brand{display:flex;align-items:center;gap:10px;width:252px;padding:0 14px;flex-shrink:0}
+.hdr-mark{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:9px;
+  background:var(--accent);color:#fff;font-size:12px;font-weight:900;letter-spacing:.5px}
+.hdr-title{display:block;min-width:0}
+.hdr-name{display:block;color:#fff;font-size:13px;font-weight:800;line-height:1.25;white-space:nowrap}
+.hdr-sub{display:block;color:rgba(255,255,255,.55);font-size:10px;font-weight:600;white-space:nowrap}
+.hdr-spacer{flex:1}
+.hdr-chips{display:flex;gap:6px;align-items:center}
+.hdr-project{padding:4px 11px;border:1px solid rgba(255,255,255,.2);border-radius:7px;
+  background:rgba(255,255,255,.1);color:#fff;font-size:11px;font-weight:900}
+.hdr-user{color:rgba(255,255,255,.9);font-size:11px;font-weight:800}
+.hdr-user span{color:rgba(255,255,255,.55);font-weight:600}
+.hdr-chip{padding:4px 11px;border:1px solid rgba(255,255,255,.2);border-radius:7px;
+  background:rgba(255,255,255,.1);color:rgba(255,255,255,.9);font-size:11px;font-weight:800}
+
+.sb{background:var(--nav);overflow-y:auto;padding:12px 8px 24px}
+.sb-gl{color:rgba(255,255,255,.55);font-size:10px;font-weight:900;letter-spacing:.7px;
+  text-transform:uppercase;padding:0 8px;margin:14px 0 5px}
+.sb-gl:first-child{margin-top:2px}
+.sb-item{display:flex;align-items:center;gap:7px;width:100%;padding:7px 9px;border-radius:8px;
+  color:rgba(255,255,255,.9);font-size:12px;font-weight:700}
+.sb-item.active{background:rgba(255,255,255,.16);font-weight:900}
+.sb-badge{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:5px;
+  background:rgba(255,255,255,.12);font-size:9px;font-weight:900;flex-shrink:0}
+.sb-label{min-width:0;flex:1;line-height:1.25}
+.sb-tags{display:inline-flex;gap:3px;margin-left:auto;flex-shrink:0}
+.sb-tag{display:inline-flex;align-items:center;height:15px;padding:0 4px;border-radius:4px;
+  border:1px solid rgba(255,255,255,.18);font-size:8px;font-weight:900;line-height:1;color:rgba(255,255,255,.92)}
+.sb-tag.ai{background:rgba(88,140,196,.3);color:#dbeafe}
+.sb-tag.rag{background:rgba(76,168,120,.26);color:#c6 efd8}
+.sb-tag.rag{background:rgba(76,168,120,.26);color:#c9efd9}
+.sb-tag.wip{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)}
+
+/* ── メイン共通部品 ── */
+.main{overflow-y:auto;background:var(--bg);color:var(--ink);padding:20px 22px}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.pk{font-size:10px;font-weight:900;color:var(--accent);letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px}
+.pt{font-size:19px;font-weight:900;margin:0 0 3px}
+.ps{color:var(--muted);font-size:12px;margin:0}
+.ph-right{display:flex;gap:8px;flex-shrink:0}
+.btn-b{padding:6px 13px;border-radius:6px;background:var(--accent);color:#fff;border:0;font-size:12px;font-weight:900}
+.btn-out{padding:6px 13px;border-radius:6px;background:transparent;color:var(--accent);
+  border:1px solid var(--accent);font-size:12px;font-weight:800}
+.btn-ghost{padding:6px 12px;border-radius:6px;background:transparent;color:var(--muted);
+  border:1px solid var(--line);font-size:12px;font-weight:800}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:13px 15px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.card-t{font-size:13px;font-weight:900}
+.card-act{font-size:11px;font-weight:800;color:var(--accent);padding:2px 8px;border-radius:5px;background:var(--soft)}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:900;white-space:nowrap}
+.badge.r{background:var(--red-soft);color:var(--red)}
+.badge.a{background:var(--yellow-soft);color:var(--yellow)}
+.badge.g{background:var(--green-soft);color:var(--green)}
+.badge.b{background:var(--blue-soft);color:var(--blue)}
+.badge.n{background:var(--neutral);color:var(--neutral-ink)}
+.c-r{color:var(--red)}.c-a{color:var(--yellow)}.c-g{color:var(--green)}.c-b{color:var(--blue)}
+.t{width:100%;border-collapse:collapse;font-size:12px}
+.t th{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;
+  padding:7px 8px;text-align:left;border-bottom:1px solid var(--line)}
+.t td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.t tr:last-child td{border-bottom:0}
+.t a{color:var(--accent);font-weight:900}
+.chip{display:inline-flex;align-items:center;padding:3px 11px;border-radius:14px;border:1px solid var(--line);
+  background:var(--surface);font-size:11px;font-weight:800;color:var(--muted)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pb{margin-bottom:9px}
+.pb-l{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.pb-l span{font-weight:700}
+.pb-tr{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.pb-f{height:100%;border-radius:3px;background:var(--accent)}
+.pb-f.r{background:var(--red)}.pb-f.a{background:var(--yellow)}.pb-f.g{background:var(--green)}
+.ring{position:relative;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;
+  background:conic-gradient(var(--green) var(--score),var(--line) 0);font-size:14px;font-weight:900;isolation:isolate}
+.ring.a{background:conic-gradient(var(--yellow) var(--score),var(--line) 0)}
+.ring.r{background:conic-gradient(var(--red) var(--score),var(--line) 0)}
+.ring::before{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--surface);z-index:-1}
+
+/* 01 インボックス */
+.inbox{display:grid;grid-template-columns:320px 1fr;gap:12px;height:600px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:auto}
+.q-head{display:flex;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);
+  font-size:12px;position:sticky;top:0;background:var(--surface)}
+.q-head strong{font-size:12px}.q-head span{color:var(--muted);font-weight:800}
+.q-item{display:grid;grid-template-columns:auto 1fr;gap:9px;padding:11px 12px;border-bottom:1px solid var(--line);align-items:start}
+.q-item.sel{background:var(--soft);box-shadow:inset 3px 0 0 var(--accent)}
+.q-t{font-size:12px;font-weight:800;line-height:1.4}
+.q-m{color:var(--muted);font-size:11px;margin-top:2px}
+.q-detail{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;overflow:auto}
+.qd-head h2{margin:6px 0 3px;font-size:16px}
+.qd-head p{margin:0;color:var(--muted);font-size:12px}
+.qd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+.qd-grid div{border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.qd-grid span{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}
+.qd-grid strong{font-size:14px}
+.qd-sec{margin-bottom:14px}
+.qd-sec h3{font-size:12px;margin:0 0 7px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.ai-note{border-left:3px solid var(--accent);background:var(--soft);padding:10px 12px;border-radius:0 6px 6px 0}
+.ai-note p{margin:0 0 6px;font-size:12px}
+.ai-src{color:var(--muted);font-size:11px;margin:0!important}
+.act{display:grid;grid-template-columns:auto 1fr;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)}
+.act span{display:grid;place-items:center;width:20px;height:20px;border-radius:5px;background:var(--soft);
+  color:var(--accent);font-size:11px;font-weight:900}
+.act strong{display:block;font-size:12px}
+.act em{font-style:normal;color:var(--muted);font-size:11px}
+.qd-foot{display:flex;gap:8px;padding-top:12px}
+
+/* 02 タイムライン */
+.tl-legend{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--muted);font-weight:800;margin-bottom:10px}
+.lg{display:inline-block;width:11px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.lg.done{background:var(--green)}.lg.run{background:var(--accent)}.lg.late{background:var(--red)}
+.lg.wait{background:var(--yellow)}.lg.plan{background:var(--line)}
+.tl-today{margin-left:auto;color:var(--red)}
+.gantt{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px 14px}
+.gantt-head{display:grid;grid-template-columns:250px 1fr;gap:12px;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.gantt-head .gantt-label{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase}
+.gantt-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:800}
+.gantt-row{display:grid;grid-template-columns:250px 1fr;gap:12px;align-items:center;padding:7px 0}
+.gantt-label{font-size:12px;font-weight:700;display:flex;gap:7px;align-items:baseline}
+.gantt-label code{color:var(--muted);font-size:11px}
+.gantt-track{position:relative;height:22px;background:linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:20% 100%;border-radius:4px}
+.gantt-bar{position:absolute;top:2px;height:18px;border-radius:4px;display:flex;align-items:center;padding:0 7px}
+.gantt-bar span{font-size:10px;font-weight:900;color:#fff;white-space:nowrap}
+.gantt-bar.done{background:var(--green)}.gantt-bar.run{background:var(--accent)}
+.gantt-bar.late{background:var(--red)}
+.gantt-bar.wait{background:var(--yellow)}
+.gantt-bar.plan{background:var(--line)}.gantt-bar.plan span{color:var(--muted)}
+.gantt-now{position:absolute;top:44px;bottom:14px;left:calc(250px + 12px + 62%);width:2px;background:var(--red);opacity:.6}
+.chain{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chain-node{flex:1;min-width:120px;border:1px solid var(--line);border-radius:7px;padding:9px 10px}
+.chain-node.late{border-color:var(--red);background:var(--red-soft)}
+.chain-node.wait{border-color:var(--yellow);background:var(--yellow-soft)}
+.chain-node strong{display:block;font-size:12px}
+.chain-node span{color:var(--muted);font-size:11px;font-weight:800}
+.chain-arrow{color:var(--muted);font-weight:900}
+
+/* 03 ブリーフィング */
+.brief{display:grid;grid-template-columns:1fr 320px;gap:16px}
+.brief-main{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px 26px}
+.brief-lead{display:flex;gap:12px;align-items:flex-start;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:16px}
+.brief-lead p{margin:0;font-size:14px;line-height:1.85}
+.brief-main h3{font-size:13px;margin:18px 0 6px;color:var(--accent)}
+.brief-main p{margin:0 0 8px;font-size:13px;line-height:1.9}
+.brief-caution{margin-top:18px;border-left:3px solid var(--yellow);background:var(--yellow-soft);padding:10px 14px;border-radius:0 6px 6px 0}
+.brief-caution strong{display:block;font-size:12px;margin-bottom:3px}
+.brief-caution p{margin:0;font-size:12px}
+.brief-side{display:grid;gap:12px;align-content:start}
+.side-box{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.side-head{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px}
+.ev{display:grid;grid-template-columns:auto 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.ev:last-child{border-bottom:0}
+.ev-n{display:grid;place-items:center;width:19px;height:19px;border-radius:5px;background:var(--soft);
+  color:var(--accent);font-size:10px;font-weight:900}
+.ev strong{display:block;font-size:12px}
+.ev em{font-style:normal;color:var(--muted);font-size:11px;line-height:1.5}
+.conf{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.conf-bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.conf-bar i{display:block;height:100%;background:var(--yellow)}
+.conf b{font-size:15px}
+.side-note{margin:0 0 4px;color:var(--muted);font-size:11px;line-height:1.6}
+.side-proj{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px}
+.side-proj:last-child{border-bottom:0}
+
+/* 04 カンバン */
+.kb-filter{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.kb-f-sp{flex:1}
+.kb-note{font-size:11px;color:var(--muted);font-weight:800}
+.kb{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:start}
+.kb-lane{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px;min-height:200px}
+.kb-head{display:flex;align-items:center;gap:7px;margin-bottom:9px;font-size:12px}
+.kb-head strong{flex:1}
+.kb-head span{color:var(--muted);font-weight:900}
+.kb-dot{width:8px;height:8px;border-radius:50%}
+.kb-dot.r{background:var(--red)}.kb-dot.a{background:var(--yellow)}
+.kb-dot.b{background:var(--blue)}.kb-dot.g{background:var(--green)}
+.kb-card{border:1px solid var(--line);border-radius:7px;padding:9px 10px;margin-bottom:8px;background:var(--surface)}
+.kb-kind{margin-bottom:5px}
+.kb-t{font-size:12px;font-weight:800;line-height:1.45}
+.kb-m{color:var(--muted);font-size:11px;margin-top:4px}
+
+/* 05 ウォール */
+.wall{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.wall-tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
+.wall-tile.big{grid-column:span 2;padding:24px 26px}
+.wall-l{display:block;font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.wall-v{display:block;font-size:44px;font-weight:900;line-height:1.05;margin:6px 0 4px}
+.wall-tile.big .wall-v{font-size:66px}
+.wall-v small{font-size:20px;font-weight:800;color:var(--muted)}
+.wall-s{display:block;font-size:12px;color:var(--muted);font-weight:800}
+.wall-tile.r{border-color:var(--red)}.wall-tile.r .wall-v{color:var(--red)}
+.wall-tile.g .wall-v{color:var(--green)}
+.wall-tile.a .wall-v{color:var(--yellow)}
+.wall-tile.b .wall-v{color:var(--blue)}
+.wall-strip{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ws-item{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:8px;padding:14px 16px}
+.ws-item.r{border-left-color:var(--red)}.ws-item.g{border-left-color:var(--green)}
+.ws-item span{display:block;font-size:11px;color:var(--muted);font-weight:900}
+.ws-item b{display:block;font-size:16px;margin:4px 0}
+.ws-item em{font-style:normal;font-size:11px;color:var(--muted);font-weight:800}
+
+/* 06 マトリクス */
+.mx-wrap{display:grid;grid-template-columns:minmax(0,420px) 1fr;gap:16px;align-items:start}
+.mx-area{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.mx-ylabel{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.mx-grid{display:grid;grid-template-columns:22px 1fr;grid-template-rows:1fr 20px;gap:4px}
+.mx-yaxis{display:grid;grid-template-rows:repeat(5,1fr);align-items:center;font-size:10px;color:var(--muted);font-weight:900;text-align:center}
+.mx{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:3px}
+.mx-xaxis{grid-column:2;display:grid;grid-template-columns:repeat(5,1fr);font-size:10px;color:var(--muted);font-weight:900;text-align:center}
+.mx-cell{aspect-ratio:1;border-radius:4px;display:grid;place-items:center}
+.mx-cell.g{background:var(--green-soft)}.mx-cell.a{background:var(--yellow-soft)}.mx-cell.r{background:var(--red-soft)}
+.mx-dot{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:900;color:#fff}
+.mx-dot.r{background:var(--red)}.mx-dot.n{background:var(--neutral-ink)}
+.mx-xlabel{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:6px}
+.mx-side{display:grid;gap:12px;align-content:start}
+.risk-item{display:grid;grid-template-columns:auto 1fr;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+.risk-item:last-child{border-bottom:0}
+.risk-score{display:grid;place-items:center;width:38px;height:38px;border-radius:8px;font-size:14px;font-weight:900}
+.risk-score.r{background:var(--red-soft);color:var(--red)}
+.risk-score.n{background:var(--neutral);color:var(--neutral-ink)}
+.risk-item strong{display:block;font-size:12px;line-height:1.45}
+.risk-item em{font-style:normal;color:var(--muted);font-size:11px}
+.risk-item p{margin:5px 0 0;font-size:11px;color:var(--muted)}
+
+/* 07 ワークベンチ */
+.wb-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.wb-filters{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.wb-filters select,.wb-filters input{padding:5px 9px;border:1px solid var(--line);border-radius:6px;
+  font-size:11px;font-weight:800;background:var(--surface);color:var(--ink)}
+.wb-filters input{min-width:180px}
+.wb-count{font-size:11px;color:var(--muted);font-weight:800}
+.wb{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:520px}
+.wb-t th{position:sticky;top:0;background:var(--soft);z-index:1}
+.wb-t td,.wb-t th{white-space:nowrap;font-size:11px}
+.wb-name{white-space:normal!important;min-width:240px;font-weight:700}
+.tag-min{display:inline-block;padding:1px 6px;border-radius:4px;background:var(--neutral);
+  color:var(--neutral-ink);font-size:10px;font-weight:900}
+.wb-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:11px;color:var(--muted);font-weight:800}
+.wb-foot div{display:flex;gap:6px}
+
+/* 08 フィード */
+.fd-tabs{display:flex;gap:6px;margin-bottom:12px}
+.fd-layout{display:grid;grid-template-columns:1fr 300px;gap:14px;align-items:start}
+.feed{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 14px}
+.fd-item{display:grid;grid-template-columns:76px 18px 1fr;gap:10px;padding:12px 0;align-items:start}
+.fd-item+.fd-item{border-top:1px solid var(--line)}
+.fd-time{font-size:11px;color:var(--muted);font-weight:800;text-align:right;padding-top:2px}
+.fd-line{display:grid;justify-items:center;padding-top:6px}
+.fd-dot{width:9px;height:9px;border-radius:50%;background:var(--neutral-ink)}
+.fd-dot.r{background:var(--red)}.fd-dot.a{background:var(--yellow)}
+.fd-dot.g{background:var(--green)}.fd-dot.b{background:var(--blue)}
+.fd-head{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.fd-who{font-size:10px;font-weight:900;padding:1px 7px;border-radius:4px}
+.fd-who.ai{background:var(--soft);color:var(--accent)}
+.fd-who.sys{background:var(--neutral);color:var(--neutral-ink)}
+.fd-who.user{background:var(--blue-soft);color:var(--blue)}
+.fd-head strong{font-size:12.5px}
+.fd-meta{color:var(--muted);font-size:11px;margin-top:2px}
+.fd-side{display:grid;gap:12px;align-content:start}
+.fd-stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px}
+.fd-stat:last-child{border-bottom:0}
+.fd-stat b{font-size:14px}
+.pending strong{display:block;font-size:12px}
+.pending em{font-style:normal;color:var(--muted);font-size:11px}
+.pending-act{margin-top:9px}
+
+/* 09 ツリー */
+.tree{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 0;overflow:hidden}
+.tr-row{display:grid;grid-template-columns:20px 1fr auto auto 130px;gap:10px;align-items:center;
+  padding:10px 16px;border-bottom:1px solid var(--line)}
+.tr-row.lvl1{padding-left:36px;background:color-mix(in srgb,var(--bg) 45%,transparent)}
+.tr-row.lvl2{padding-left:60px}
+.tr-row.hot{background:var(--red-soft)}
+.tr-caret{color:var(--muted);font-size:11px}
+.tr-name{font-size:12.5px;font-weight:800;display:flex;gap:7px;align-items:baseline}
+.tr-name code{color:var(--muted);font-size:11px}
+.tr-row.lvl0 .tr-name{font-size:13.5px;font-weight:900}
+.tr-metrics{display:flex;gap:12px;font-size:11px;color:var(--muted);font-weight:800;white-space:nowrap}
+.tr-metrics b{color:var(--ink)}
+.tr-bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.tr-bar i{display:block;height:100%}
+.tr-bar i.g{background:var(--green)}.tr-bar i.a{background:var(--yellow)}
+.tr-bar i.r{background:var(--red)}.tr-bar i.n{background:var(--line)}
+.tr-detail{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 16px 12px 60px;
+  background:var(--soft);border-bottom:1px solid var(--line)}
+.trd-col span{display:block;font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase}
+.trd-col strong{display:block;font-size:12px;margin-top:3px;line-height:1.4}
+
+/* 10 比較 */
+.cmp-labels{display:block}
+.cmp-lcol{padding-top:150px}
+.cmp-lh{font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase;padding:0 0 8px}
+.cmp-lr{font-size:12px;font-weight:800;color:var(--muted);padding:9px 0;border-bottom:1px solid var(--line)}
+.cmp-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.cmp-col{background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--line);border-radius:8px;padding:14px 16px}
+.cmp-col.r{border-top-color:var(--red)}.cmp-col.g{border-top-color:var(--green)}
+.cmp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;min-height:44px}
+.cmp-name{font-size:13px;font-weight:900;line-height:1.4}
+.cmp-score{display:flex;align-items:center;gap:11px;margin:12px 0}
+.cmp-score span{display:block;font-size:10px;font-weight:900;color:var(--muted);text-transform:uppercase}
+.cmp-score strong{font-size:22px}
+.cmp-prog{margin-bottom:10px}
+.cmp-prog span{display:block;font-size:11px;color:var(--muted);font-weight:800;margin-top:4px}
+.cmp-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+.cmp-row span{color:var(--muted);font-weight:700}
+.cmp-row b{font-weight:900}
+.cmp-note{margin-top:12px;padding:9px 11px;border-radius:6px;font-size:11.5px;font-weight:800;line-height:1.6}
+.cmp-note.r{background:var(--red-soft);color:var(--red)}
+.cmp-note.g{background:var(--green-soft);color:var(--green)}
+.cmp-col.add{display:grid;place-items:center;border-style:dashed;background:transparent}
+.cmp-add{color:var(--muted);font-size:12px;font-weight:800}
+#v01{--bg:#f2f4f6;--surface:#fff;--ink:#1a1f26;--muted:#68737f;--line:#dde3e9;--nav:#232a33;--accent:#2f6f8f;--soft:#eaf2f6;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}#v02{--bg:#f4f5f3;--surface:#fff;--ink:#22261f;--muted:#6d7566;--line:#dfe3da;--nav:#2d3328;--accent:#5c7a3f;--soft:#eff3e9;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}#v03{--bg:#faf9f7;--surface:#fff;--ink:#1f1d1b;--muted:#6f6a64;--line:#e4e0da;--nav:#2a2724;--accent:#8a5a2b;--soft:#f6efe6;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}#v04{--bg:#f1f3f6;--surface:#fff;--ink:#1c2129;--muted:#69717e;--line:#dbe0e7;--nav:#242b36;--accent:#4a5b8c;--soft:#eef0f7;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}#v05{--bg:#14181d;--surface:#1b2028;--ink:#e8ecf1;--muted:#8c96a3;--line:#2b323b;--nav:#0e1216;--accent:#5b9dd9;--soft:#1e2732;--red:#e8837c;--red-soft:#33222a;--green:#72c39c;--green-soft:#1a2e28;--yellow:#dcb46a;--yellow-soft:#312a1b;--blue:#7fb0e0;--blue-soft:#1d2a38;--neutral:#262d36;--neutral-ink:#9aa5b1;}#v06{--bg:#f3f4f6;--surface:#fff;--ink:#1b1e24;--muted:#6b7280;--line:#dcdfe4;--nav:#26292f;--accent:#7a3b5d;--soft:#f6edf1;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}#v07{--bg:#eef0f2;--surface:#fff;--ink:#181c21;--muted:#626b75;--line:#d2d8de;--nav:#1e242b;--accent:#1f6f8b;--soft:#e9f2f5;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}#v08{--bg:#f5f5f7;--surface:#fff;--ink:#1d1f24;--muted:#6c717b;--line:#e0e2e7;--nav:#26282e;--accent:#5a5f8f;--soft:#eeeff6;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}#v09{--bg:#f2f5f4;--surface:#fff;--ink:#1a2422;--muted:#657672;--line:#dae2df;--nav:#213330;--accent:#2f6f60;--soft:#eaf3f0;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}#v10{--bg:#f4f4f5;--surface:#fff;--ink:#1c1d20;--muted:#6a6d75;--line:#dedfe3;--nav:#25262a;--accent:#3f6b53;--soft:#ecf3ef;--red:#b4453a;--red-soft:#fbeeec;--green:#2f7355;--green-soft:#ecf5f0;--yellow:#9a7218;--yellow-soft:#faf4e6;--blue:#3a6491;--blue-soft:#ecf1f7;--neutral:#eef0f3;--neutral-ink:#5c6572;}</style>
+<div class="wrap">
+  <div class="intro">
+    <h1>ダッシュボード設計案 10件</h1>
+    <p>サイドメニューとヘッダーの構成（グリッド、要素の並び、識別子バッジ、AI/RAG/WIPタグ）は全案で固定です。</p>
+    <p>変えているのはメイン領域の情報設計そのもの——何を主役に置き、どの単位で並べ、どう掘り下げさせるか。配色はその設計に合わせて選んでいます。</p>
+    <p>データは全案とも同一の体験用データ（案件2件、アラート1件、課題・リスク・不具合・変更 各1件）です。比較しやすいよう内容を揃えています。</p>
+    <div class="toc"><a href="#v01">01 対応待ちインボックス</a><a href="#v02">02 スケジュール・タイムライン</a><a href="#v03">03 AIブリーフィング</a><a href="#v04">04 案件ボード（カンバン）</a><a href="#v05">05 ステータスウォール</a><a href="#v06">06 リスク・マトリクス</a><a href="#v07">07 ワークベンチ</a><a href="#v08">08 アクティビティ・フィード</a><a href="#v09">09 階層ドリルダウン</a><a href="#v10">10 案件比較ビュー</a></div>
+  </div>
+  
+  <section class="case">
+    <div class="case-hd"><span class="case-no">01</span><h2>対応待ちインボックス</h2></div>
+    <p class="case-desc">判断が必要な項目を1本のキューに集約し、左で選び右で処理する。ダッシュボードを「眺めるもの」から「片付けるもの」へ変える。</p>
+    <p class="case-use"><b>向き:</b> 毎朝の対応漏れをなくしたい場合。何をすべきかが1画面で完結する。</p>
+    <div class="frame">
+      <div class="shell" id="v01">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">対応待ちインボックス</h1>
+        <p class="ps">判断が必要な項目だけを1本のキューに集約し、左から順に片付けます。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">すべて表示</button><button class="btn-b">まとめて処理</button></div>
+    </div>
+    <div class="inbox">
+      <div class="q">
+        <div class="q-head"><strong>対応キュー</strong><span>5件</span></div>
+        <div class="q-item sel"><span class="badge r">重大</span><div><div class="q-t">クリティカルパス上のタスクが5日遅延</div><div class="q-m">Project Atlas ／ WBS 3.2</div></div></div><div class="q-item"><span class="badge a">高</span><div><div class="q-t">テストデータの不備で結合試験が着手できない</div><div class="q-m">Project Atlas ／ 課題</div></div></div><div class="q-item"><span class="badge b">承認待ち</span><div><div class="q-t">帳票レイアウトの追加要望</div><div class="q-m">Project Atlas ／ 変更要求</div></div></div><div class="q-item"><span class="badge r">重大</span><div><div class="q-t">月次締め処理で金額端数が一致しない</div><div class="q-m">Project Atlas ／ 不具合</div></div></div><div class="q-item"><span class="badge n">監視中</span><div><div class="q-t">残不具合の収束が想定より遅い</div><div class="q-m">Project Atlas ／ リスク</div></div></div>
+      </div>
+      <div class="q-detail">
+        <div class="qd-head">
+          <span class="badge r">重大</span>
+          <h2>クリティカルパス上のタスクが5日遅延</h2>
+          <p>Project Atlas / 業務システム更改 ・ WBS 3.2 結合試験（業務シナリオ）</p>
+        </div>
+        <div class="qd-grid">
+          <div><span>担当</span><strong>開発チームA</strong></div>
+          <div><span>ボール保持者</span><strong>顧客業務部</strong></div>
+          <div><span>計画終了日</span><strong>7/25</strong></div>
+          <div><span>遅延</span><strong class="c-r">5日</strong></div>
+        </div>
+        <div class="qd-sec">
+          <h3>AIの所見</h3>
+          <div class="ai-note">
+            <p>後続の受入試験開始に影響します。重大不具合1件が未収束のため、
+            開始条件（重大不具合ゼロ）を満たせない見込みです。</p>
+            <p class="ai-src">根拠: WBS 3.2 の計画終了日超過 ／ 不具合「月次締め処理」修正中 ／ D12_テスト管理 p.1</p>
+          </div>
+        </div>
+        <div class="qd-sec">
+          <h3>推奨アクション</h3>
+          <div class="act"><span>1</span><div><strong>開始条件の再定義を品質責任者と合意する</strong>
+          <em>期待効果: 受入試験の開始を2週間前倒し</em></div></div>
+          <div class="act"><span>2</span><div><strong>テストデータ不備の是正計画を顧客業務部へ依頼する</strong>
+          <em>期限: 8/2</em></div></div>
+        </div>
+        <div class="qd-foot">
+          <button class="btn-b">採用して記録</button>
+          <button class="btn-out">修正して採用</button>
+          <button class="btn-ghost">不採用</button>
+        </div>
+      </div>
+    </div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">02</span><h2>スケジュール・タイムライン</h2></div>
+    <p class="case-desc">時間軸を主役に置き、遅延とその伝播先を線で見せる。数字ではなく期間で状況を捉える。</p>
+    <p class="case-use"><b>向き:</b> 納期リスクの説明が必要な場合。遅延が後続に効く様子をそのまま示せる。</p>
+    <div class="frame">
+      <div class="shell" id="v02">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">スケジュール・タイムライン</h1>
+        <p class="ps">計画と実績を時間軸で重ね、遅延の伝播先を見ます。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">週表示</button><button class="btn-b">今日へ</button></div>
+    </div>
+    <div class="tl-legend">
+      <span><i class="lg done"></i>完了</span><span><i class="lg run"></i>進行中</span>
+      <span><i class="lg late"></i>遅延</span><span><i class="lg wait"></i>後続影響</span>
+      <span><i class="lg plan"></i>未着手</span>
+      <b class="tl-today">▼ 本日 7/30</b>
+    </div>
+    <div class="gantt">
+      <div class="gantt-head">
+        <div class="gantt-label">WBS / タスク</div>
+        <div class="gantt-scale"><span>7/07</span><span>7/14</span><span>7/21</span><span>7/28</span><span>8/04</span><span>8/11</span></div>
+      </div>
+      <div class="gantt-row"><div class="gantt-label"><code>3.1</code>要件確定</div><div class="gantt-track"><div class="gantt-bar done" style="left:4%;width:18%"><span>完了</span></div></div></div><div class="gantt-row"><div class="gantt-label"><code>3.2</code>結合試験（業務シナリオ）</div><div class="gantt-track"><div class="gantt-bar late" style="left:20%;width:30%"><span>5日遅延</span></div></div></div><div class="gantt-row"><div class="gantt-label"><code>3.3</code>受入試験</div><div class="gantt-track"><div class="gantt-bar wait" style="left:48%;width:24%"><span>開始待ち</span></div></div></div><div class="gantt-row"><div class="gantt-label"><code>4.1</code>会計インターフェース整合確認</div><div class="gantt-track"><div class="gantt-bar run" style="left:30%;width:22%"><span>進行中 70%</span></div></div></div><div class="gantt-row"><div class="gantt-label"><code>4.2</code>店舗FAQ承認</div><div class="gantt-track"><div class="gantt-bar plan" style="left:54%;width:16%"><span>未着手</span></div></div></div>
+      <div class="gantt-now"></div>
+    </div>
+    <div class="sg">
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">遅延の伝播</span><span class="card-act">クリティカルパス</span></div>
+        <div class="chain">
+          <div class="chain-node late"><strong>3.2 結合試験</strong><span>5日遅延</span></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node wait"><strong>3.3 受入試験</strong><span>開始 5日後ろ倒し</span></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node wait"><strong>本番移行判定</strong><span>マイルストーン超過リスク</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">マイルストーン</span></div>
+        <table class="t"><thead><tr><th>名称</th><th>計画</th><th>見込</th><th>状態</th></tr></thead><tbody>
+          <tr><td>結合試験完了</td><td>7/25</td><td class="c-r">7/30</td><td><span class="badge r">超過</span></td></tr>
+          <tr><td>受入試験開始</td><td>7/28</td><td class="c-a">8/04</td><td><span class="badge a">後ろ倒し</span></td></tr>
+          <tr><td>本番移行判定</td><td>8/22</td><td>8/22</td><td><span class="badge g">維持</span></td></tr>
+        </tbody></table>
+      </div>
+    </div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">03</span><h2>AIブリーフィング</h2></div>
+    <p class="case-desc">AIの所見を文章として読ませ、根拠を右に添える。指標の羅列をやめ、結論から入る。</p>
+    <p class="case-use"><b>向き:</b> 経営報告や朝会でそのまま読み上げたい場合。</p>
+    <div class="frame">
+      <div class="shell" id="v03">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">本日のブリーフィング</h1>
+        <p class="ps">2026-07-30 09:00 時点。AIが状況を整理し、根拠を併記しています。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">根拠をすべて見る</button><button class="btn-b">報告書へ書き出す</button></div>
+    </div>
+    <div class="brief">
+      <article class="brief-main">
+        <div class="brief-lead">
+          <span class="badge r">要対応 1件</span>
+          <p>Project Atlas は<b>受入試験の開始条件を満たせない見込み</b>です。
+          結合試験が5日遅延し、重大不具合1件が未収束のためです。
+          POS-TAX0 は計画どおりで、対応は不要です。</p>
+        </div>
+
+        <h3>1. 何が起きているか</h3>
+        <p>WBS 3.2「結合試験（業務シナリオ）」が計画終了日 7/25 を5日超過しています。
+        原因はテストデータの不備で、ボールは顧客業務部にあります。
+        同時に「月次締め処理で金額端数が一致しない」不具合が修正中です。</p>
+
+        <h3>2. 何に影響するか</h3>
+        <p>後続の受入試験（3.3）の開始が5日後ろ倒しになります。
+        本番移行判定 8/22 は現時点では維持できる見込みですが、
+        不具合の収束が遅れると超過します。</p>
+
+        <h3>3. 判断が必要なこと</h3>
+        <p>受入試験の開始条件を「重大不具合ゼロ」から「重大不具合の対応計画合意」へ
+        見直すかどうか。見直せば2週間前倒しできる見込みですが、品質責任者の合意が要ります。</p>
+
+        <div class="brief-caution">
+          <strong>資料上は確認できないこと</strong>
+          <p>顧客業務部の是正計画の提出見込み日は、登録文書からは確認できませんでした。
+          直接の確認が必要です。</p>
+        </div>
+      </article>
+
+      <aside class="brief-side">
+        <div class="side-box">
+          <div class="side-head">根拠</div>
+          <div class="ev"><span class="ev-n">1</span><div><strong>WBS 3.2</strong>
+          <em>計画終了 7/25 / 実績なし / ブロック中</em></div></div>
+          <div class="ev"><span class="ev-n">2</span><div><strong>不具合 #1</strong>
+          <em>月次締め処理・重大・修正中</em></div></div>
+          <div class="ev"><span class="ev-n">3</span><div><strong>D12_テスト管理 p.1</strong>
+          <em>「完了判定は消化率・不具合収束・残存リスクの3点で判断する」</em></div></div>
+        </div>
+        <div class="side-box">
+          <div class="side-head">確からしさ</div>
+          <div class="conf"><div class="conf-bar"><i style="width:72%"></i></div><b>0.72</b></div>
+          <p class="side-note">関連度 中 ／ 網羅度 高 ／ 根拠3件・参照文書3件</p>
+          <p class="side-note">この内容は AI が作成しました。人が確認するまで確定情報として扱いません。</p>
+        </div>
+        <div class="side-box">
+          <div class="side-head">対象案件</div>
+          <div class="side-proj"><b>Project Atlas</b><span class="badge r">Red</span></div>
+          <div class="side-proj"><b>POS-TAX0</b><span class="badge g">Green</span></div>
+        </div>
+      </aside>
+    </div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">04</span><h2>案件ボード（カンバン）</h2></div>
+    <p class="case-desc">管理項目を状態レーンで並べ、どこに滞留しているかを列の高さで見せる。</p>
+    <p class="case-use"><b>向き:</b> 課題・変更の停滞を可視化したい場合。種別を横断して扱える。</p>
+    <div class="frame">
+      <div class="shell" id="v04">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">案件ボード</h1>
+        <p class="ps">Project Atlas の課題・不具合・リスク・変更を状態別に並べ、滞留を見ます。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">案件を切替</button><button class="btn-b">項目を追加</button></div>
+    </div>
+    <div class="kb-filter">
+      <span class="chip on">すべて</span><span class="chip">課題</span><span class="chip">リスク</span>
+      <span class="chip">不具合</span><span class="chip">変更</span><span class="chip">WBS</span>
+      <span class="kb-f-sp"></span>
+      <span class="kb-note">滞留 7日以上: <b class="c-r">2件</b></span>
+    </div>
+    <div class="kb"><div class="kb-lane"><div class="kb-head"><span class="kb-dot r"></span><strong>未対応</strong><span>2</span></div><div class="kb-card"><div class="kb-kind"><span class="badge a">課題</span></div><div class="kb-t">テストデータの不備で結合試験が着手できない</div><div class="kb-m">鈴木 美咲 ・ 期限 8/2</div></div><div class="kb-card"><div class="kb-kind"><span class="badge r">不具合</span></div><div class="kb-t">月次締め処理で金額端数が一致しない</div><div class="kb-m">重大 ・ 結合試験で検出</div></div></div><div class="kb-lane"><div class="kb-head"><span class="kb-dot a"></span><strong>対応中</strong><span>2</span></div><div class="kb-card"><div class="kb-kind"><span class="badge n">WBS</span></div><div class="kb-t">3.2 結合試験（業務シナリオ）</div><div class="kb-m">開発チームA ・ 5日遅延</div></div><div class="kb-card"><div class="kb-kind"><span class="badge a">リスク</span></div><div class="kb-t">残不具合の収束が想定より遅い</div><div class="kb-m">確率4 × 影響5 = 20</div></div></div><div class="kb-lane"><div class="kb-head"><span class="kb-dot b"></span><strong>承認待ち</strong><span>1</span></div><div class="kb-card"><div class="kb-kind"><span class="badge b">変更</span></div><div class="kb-t">帳票レイアウトの追加要望</div><div class="kb-m">12人日 ・ スケジュール +5日</div></div></div><div class="kb-lane"><div class="kb-head"><span class="kb-dot g"></span><strong>完了</strong><span>1</span></div><div class="kb-card"><div class="kb-kind"><span class="badge g">WBS</span></div><div class="kb-t">3.1 要件確定</div><div class="kb-m">7/18 完了</div></div></div></div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">05</span><h2>ステータスウォール</h2></div>
+    <p class="case-desc">大きな数字だけに絞る。離れた位置からでも異常が判別できる粒度。</p>
+    <p class="case-use"><b>向き:</b> PMOルームの常時表示や大型モニタ向け。</p>
+    <div class="frame">
+      <div class="shell" id="v05">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">ステータスウォール</h1>
+        <p class="ps">常時表示向け。離れた位置からでも異常が判別できる粒度に絞っています。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">全画面</button><button class="btn-b">30秒更新</button></div>
+    </div>
+    <div class="wall"><div class="wall-tile big g"><span class="wall-l">ヘルススコア</span><strong class="wall-v">82<small></small></strong><span class="wall-s">良好</span></div><div class="wall-tile big r"><span class="wall-l">要対応</span><strong class="wall-v">1<small>件</small></strong><span class="wall-s">重大アラート</span></div><div class="wall-tile  r"><span class="wall-l">遅延日数</span><strong class="wall-v">5<small>日</small></strong><span class="wall-s">クリティカルパス</span></div><div class="wall-tile  a"><span class="wall-l">進捗率</span><strong class="wall-v">74<small>%</small></strong><span class="wall-s">計画比 -3pt</span></div><div class="wall-tile  a"><span class="wall-l">オープン課題</span><strong class="wall-v">1<small>件</small></strong><span class="wall-s">期限内 1件</span></div><div class="wall-tile  a"><span class="wall-l">オープンリスク</span><strong class="wall-v">1<small>件</small></strong><span class="wall-s">スコア20 1件</span></div><div class="wall-tile  b"><span class="wall-l">承認待ち</span><strong class="wall-v">1<small>件</small></strong><span class="wall-s">変更要求</span></div><div class="wall-tile  g"><span class="wall-l">インデックス</span><strong class="wall-v">3<small>/3</small></strong><span class="wall-s">RAG対象</span></div><div class="wall-tile  a"><span class="wall-l">テスト消化率</span><strong class="wall-v">45<small>%</small></strong><span class="wall-s">目標 80%</span></div><div class="wall-tile  b"><span class="wall-l">変更影響</span><strong class="wall-v">+5<small>日</small></strong><span class="wall-s">承認待ち1件分</span></div></div>
+    <div class="wall-strip">
+      <div class="ws-item r"><span>Project Atlas / 業務システム更改</span>
+        <b>クリティカルパス上のタスクが5日遅延</b><em>7/28 18:57 検知 ・ 未対応</em></div>
+      <div class="ws-item g"><span>POS-TAX0 レジシステム</span>
+        <b>アラートなし</b><em>計画どおり進行中</em></div>
+    </div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">06</span><h2>リスク・マトリクス</h2></div>
+    <p class="case-desc">確率×影響のマトリクスを判断の中心に据える。優先度を位置で示す。</p>
+    <p class="case-use"><b>向き:</b> リスク会議の進行に使う場合。対応順序の合意が取りやすい。</p>
+    <div class="frame">
+      <div class="shell" id="v06">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">リスク・マトリクス</h1>
+        <p class="ps">確率と影響度でリスクを配置し、対応優先度を決めます。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">閾値設定</button><button class="btn-b">リスクを追加</button></div>
+    </div>
+    <div class="mx-wrap">
+      <div class="mx-area">
+        <div class="mx-ylabel">影響度</div>
+        <div class="mx-grid">
+          <div class="mx-yaxis"><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span></div>
+          <div class="mx"><div class="mx-cell g"></div><div class="mx-cell a"></div><div class="mx-cell a"></div><div class="mx-cell r"><span class="mx-dot r" title="残不具合の収束遅れ">1</span></div><div class="mx-cell r"></div><div class="mx-cell g"></div><div class="mx-cell g"></div><div class="mx-cell a"></div><div class="mx-cell r"></div><div class="mx-cell r"></div><div class="mx-cell g"></div><div class="mx-cell g"><span class="mx-dot n" title="外部API仕様変更">1</span></div><div class="mx-cell a"></div><div class="mx-cell a"></div><div class="mx-cell a"></div><div class="mx-cell g"></div><div class="mx-cell g"></div><div class="mx-cell g"></div><div class="mx-cell g"></div><div class="mx-cell a"></div><div class="mx-cell g"></div><div class="mx-cell g"></div><div class="mx-cell g"></div><div class="mx-cell g"></div><div class="mx-cell g"></div></div>
+          <div class="mx-xaxis"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+        </div>
+        <div class="mx-xlabel">発生確率</div>
+      </div>
+      <div class="mx-side">
+        <div class="card">
+          <div class="card-hdr"><span class="card-t">高スコアリスク</span><span class="card-act">スコア16以上</span></div>
+          <div class="risk-item">
+            <div class="risk-score r">20</div>
+            <div><strong>残不具合の収束が想定より遅く、受入試験開始が後ろ倒しになる</strong>
+            <em>確率 4 × 影響 5 ・ 監視中 ・ 期限 8/13</em>
+            <p>対応方針: 重大不具合の日次トリアージと、受入試験の範囲縮小案の準備</p></div>
+          </div>
+          <div class="risk-item">
+            <div class="risk-score n">6</div>
+            <div><strong>外部APIの仕様変更</strong>
+            <em>確率 2 × 影響 3 ・ 監視中</em>
+            <p>対応方針: 提供元のリリースノートを隔週で確認</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-t">対応方針の分布</span></div>
+          <div class="pb"><div class="pb-l"><span>監視中</span><b>2</b></div>
+          <div class="pb-tr"><div class="pb-f a" style="width:100%"></div></div></div>
+          <div class="pb"><div class="pb-l"><span>対応中</span><b>0</b></div>
+          <div class="pb-tr"><div class="pb-f g" style="width:0%"></div></div></div>
+          <div class="pb"><div class="pb-l"><span>顕在化</span><b>0</b></div>
+          <div class="pb-tr"><div class="pb-f r" style="width:0%"></div></div></div>
+        </div>
+      </div>
+    </div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">07</span><h2>ワークベンチ</h2></div>
+    <p class="case-desc">全案件の管理項目を1つの表に集約し、絞り込みと一括更新に振り切る。</p>
+    <p class="case-use"><b>向き:</b> Excel運用からの移行。既存の作業感を保ったまま置き換えられる。</p>
+    <div class="frame">
+      <div class="shell" id="v07">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">ワークベンチ</h1>
+        <p class="ps">全案件の管理項目を1つの表に集約します。絞り込み・並べ替え・一括更新ができます。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">CSV出力</button><button class="btn-b">一括更新</button></div>
+    </div>
+    <div class="wb-bar">
+      <div class="wb-filters">
+        <select><option>案件: すべて</option></select>
+        <select><option>種別: すべて</option></select>
+        <select><option>状態: 未完了のみ</option></select>
+        <select><option>ボール保持者: すべて</option></select>
+        <input type="search" placeholder="名称で絞り込む">
+      </div>
+      <div class="wb-count">6件 / 全12件</div>
+    </div>
+    <div class="wb">
+      <table class="t wb-t">
+        <thead><tr>
+          <th>案件</th><th>種別</th><th>WBS</th><th>名称</th><th>状態</th><th>優先度</th>
+          <th>担当</th><th>ボール</th><th>期限</th><th>遅延</th><th>PMOフォロー</th>
+        </tr></thead>
+        <tbody><tr><td><span class='tag-min'>Atlas</span></td><td>WBS</td><td><code>3.2</code></td><td class='wb-name'>結合試験（業務シナリオ）</td><td><span class='badge r'>ブロック</span></td><td>最優先</td><td>開発チームA</td><td>顧客業務部</td><td>7/25</td><td class='c-r'>5日</td><td>エスカ済</td></tr><tr><td><span class='tag-min'>Atlas</span></td><td>課題</td><td><code>—</code></td><td class='wb-name'>テストデータの不備で結合試験が着手できない</td><td><span class='badge r'>ブロック</span></td><td>高</td><td>鈴木 美咲</td><td>顧客業務部</td><td>8/02</td><td class=''>—</td><td>フォロー中</td></tr><tr><td><span class='tag-min'>Atlas</span></td><td>不具合</td><td><code>—</code></td><td class='wb-name'>月次締め処理で金額端数が一致しない</td><td><span class='badge a'>修正中</span></td><td>重大</td><td>開発チームA</td><td>開発チームA</td><td>—</td><td class=''>—</td><td>経過観察</td></tr><tr><td><span class='tag-min'>Atlas</span></td><td>リスク</td><td><code>—</code></td><td class='wb-name'>残不具合の収束が想定より遅い</td><td><span class='badge a'>監視中</span></td><td>スコア20</td><td>鈴木 美咲</td><td>—</td><td>8/13</td><td class=''>—</td><td>経過観察</td></tr><tr><td><span class='tag-min'>Atlas</span></td><td>変更</td><td><code>—</code></td><td class='wb-name'>帳票レイアウトの追加要望</td><td><span class='badge b'>承認待ち</span></td><td>12人日</td><td>顧客業務部</td><td>PMO</td><td>—</td><td class='c-r'>+5日</td><td>—</td></tr><tr><td><span class='tag-min'>POS</span></td><td>WBS</td><td><code>4.1</code></td><td class='wb-name'>会計インターフェース整合確認</td><td><span class='badge g'>進行中</span></td><td>中</td><td>開発チームB</td><td>開発チームB</td><td>8/05</td><td class=''>—</td><td>不要</td></tr></tbody>
+      </table>
+    </div>
+    <div class="wb-foot">
+      <span>選択中 0件</span>
+      <div><button class="btn-ghost">状態を変更</button><button class="btn-ghost">担当を変更</button>
+      <button class="btn-ghost">フォロー状態を変更</button></div>
+    </div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">08</span><h2>アクティビティ・フィード</h2></div>
+    <p class="case-desc">検知・判断・更新を時系列で追う。状態ではなく変化を主役にする。</p>
+    <p class="case-use"><b>向き:</b> 複数人で運用し、いつ誰が何を変えたかを追いたい場合。</p>
+    <div class="frame">
+      <div class="shell" id="v08">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">アクティビティ</h1>
+        <p class="ps">検知・判断・更新を時系列で追い、いつ何が変わったかを確認します。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">絞り込み</button><button class="btn-b">未読のみ</button></div>
+    </div>
+    <div class="fd-tabs">
+      <span class="chip on">すべて</span><span class="chip">AIの提案</span>
+      <span class="chip">検知</span><span class="chip">人の操作</span><span class="chip">取込</span>
+    </div>
+    <div class="fd-layout">
+      <div class="feed"><div class="fd-item"><div class="fd-time">09:12</div><div class="fd-line"><span class="fd-dot r"></span></div><div class="fd-body"><div class="fd-head"><span class="fd-who ai">AI</span><strong>受入試験の開始条件見直しを提案</strong></div><div class="fd-meta">Project Atlas ・ 根拠3件 ・ 判断待ち</div></div></div><div class="fd-item"><div class="fd-time">08:45</div><div class="fd-line"><span class="fd-dot r"></span></div><div class="fd-body"><div class="fd-head"><span class="fd-who sys">検知</span><strong>クリティカルパス上のタスクが5日遅延</strong></div><div class="fd-meta">WBS 3.2 ・ 重大</div></div></div><div class="fd-item"><div class="fd-time">08:30</div><div class="fd-line"><span class="fd-dot a"></span></div><div class="fd-body"><div class="fd-head"><span class="fd-who user">鈴木 美咲</span><strong>課題「テストデータの不備」をブロック中へ変更</strong></div><div class="fd-meta">ボール保持者を顧客業務部へ</div></div></div><div class="fd-item"><div class="fd-time">昨日 17:20</div><div class="fd-line"><span class="fd-dot g"></span></div><div class="fd-body"><div class="fd-head"><span class="fd-who sys">取込</span><strong>D12_テスト管理.pdf をインデックスへ追加</strong></div><div class="fd-meta">チャンク3件 ・ RAG対象</div></div></div><div class="fd-item"><div class="fd-time">昨日 16:02</div><div class="fd-line"><span class="fd-dot b"></span></div><div class="fd-body"><div class="fd-head"><span class="fd-who user">佐藤 健</span><strong>変更要求「帳票レイアウトの追加要望」を起票</strong></div><div class="fd-meta">12人日 ・ スケジュール +5日</div></div></div><div class="fd-item"><div class="fd-time">昨日 11:40</div><div class="fd-line"><span class="fd-dot n"></span></div><div class="fd-body"><div class="fd-head"><span class="fd-who ai">AI</span><strong>PMO相談「結合試験の遅れ」に回答</strong></div><div class="fd-meta">意図: 進捗遅延 ・ 信頼度 0.72</div></div></div></div>
+      <aside class="fd-side">
+        <div class="card">
+          <div class="card-hdr"><span class="card-t">本日の要約</span></div>
+          <div class="fd-stat"><span>AIの提案</span><b>1</b></div>
+          <div class="fd-stat"><span>新規検知</span><b class="c-r">1</b></div>
+          <div class="fd-stat"><span>人の更新</span><b>1</b></div>
+          <div class="fd-stat"><span>文書取込</span><b>1</b></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><span class="card-t">判断待ち</span><span class="card-act">1件</span></div>
+          <div class="pending">
+            <strong>受入試験の開始条件見直し</strong>
+            <em>AI提案 ・ 信頼度 0.72 ・ 09:12</em>
+            <div class="pending-act"><button class="btn-b">確認する</button></div>
+          </div>
+        </div>
+      </aside>
+    </div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">09</span><h2>階層ドリルダウン</h2></div>
+    <p class="case-desc">案件→工程→タスクを同じ画面で展開する。画面遷移せずに掘り下げる。</p>
+    <p class="case-use"><b>向き:</b> WBSが深い案件で、上位と下位を行き来しながら確認したい場合。</p>
+    <div class="frame">
+      <div class="shell" id="v09">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">階層ドリルダウン</h1>
+        <p class="ps">案件から工程・タスクまで、同じ画面で掘り下げます。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">すべて畳む</button><button class="btn-b">すべて展開</button></div>
+    </div>
+    <div class="tree">
+      <div class="tr-row lvl0 open">
+        <span class="tr-caret">▾</span>
+        <span class="tr-name">Project Atlas / 業務システム更改</span>
+        <span class="badge r">Red</span>
+        <div class="tr-metrics">
+          <span>進捗 <b>62%</b></span><span>課題 <b>1</b></span><span>リスク <b>1</b></span>
+          <span>ヘルス <b class="c-a">65</b></span>
+        </div>
+        <div class="tr-bar"><i class="a" style="width:62%"></i></div>
+      </div>
+
+      <div class="tr-row lvl1 open">
+        <span class="tr-caret">▾</span><span class="tr-name"><code>3</code> テストフェーズ</span>
+        <span class="badge a">遅延</span>
+        <div class="tr-metrics"><span>進捗 <b>45%</b></span><span>タスク <b>3</b></span></div>
+        <div class="tr-bar"><i class="a" style="width:45%"></i></div>
+      </div>
+
+      <div class="tr-row lvl2">
+        <span class="tr-caret"></span><span class="tr-name"><code>3.1</code> 要件確定</span>
+        <span class="badge g">完了</span>
+        <div class="tr-metrics"><span>7/18 完了</span></div>
+        <div class="tr-bar"><i class="g" style="width:100%"></i></div>
+      </div>
+
+      <div class="tr-row lvl2 hot open">
+        <span class="tr-caret">▾</span><span class="tr-name"><code>3.2</code> 結合試験（業務シナリオ）</span>
+        <span class="badge r">ブロック</span>
+        <div class="tr-metrics"><span>担当 開発チームA</span><span class="c-r">5日遅延</span></div>
+        <div class="tr-bar"><i class="r" style="width:45%"></i></div>
+      </div>
+      <div class="tr-detail">
+        <div class="trd-col"><span>次アクション</span><strong>テストデータ不備の是正計画を提出する</strong></div>
+        <div class="trd-col"><span>ボール保持者</span><strong>顧客業務部</strong></div>
+        <div class="trd-col"><span>PMOフォロー</span><strong>エスカレーション済み</strong></div>
+        <div class="trd-col"><span>紐づく課題</span><strong>テストデータの不備（高・ブロック中）</strong></div>
+        <div class="trd-col"><span>紐づく不具合</span><strong>月次締め処理の端数不一致（重大）</strong></div>
+      </div>
+
+      <div class="tr-row lvl2">
+        <span class="tr-caret"></span><span class="tr-name"><code>3.3</code> 受入試験</span>
+        <span class="badge n">開始待ち</span>
+        <div class="tr-metrics"><span>3.2 の完了待ち</span></div>
+        <div class="tr-bar"><i class="n" style="width:0%"></i></div>
+      </div>
+
+      <div class="tr-row lvl0">
+        <span class="tr-caret">▸</span>
+        <span class="tr-name">POS-TAX0 レジシステム 消費税0%対応</span>
+        <span class="badge g">Green</span>
+        <div class="tr-metrics"><span>進捗 <b>87%</b></span><span>課題 <b>0</b></span>
+        <span>リスク <b>0</b></span><span>ヘルス <b class="c-g">100</b></span></div>
+        <div class="tr-bar"><i class="g" style="width:87%"></i></div>
+      </div>
+    </div></main>
+      </div>
+    </div>
+  </section>
+  <section class="case">
+    <div class="case-hd"><span class="case-no">10</span><h2>案件比較ビュー</h2></div>
+    <p class="case-desc">案件を横並びのカラムにし、同じ指標で直接比較する。</p>
+    <p class="case-use"><b>向き:</b> ポートフォリオ全体を見る立場の場合。差がどこにあるかが分かる。</p>
+    <div class="frame">
+      <div class="shell" id="v10">
+        <header class="hdr">
+          <div class="hdr-brand"><span class="hdr-mark">VR</span>
+            <span class="hdr-title"><span class="hdr-name">VeriRAG PMO Agent</span>
+            <span class="hdr-sub">AI PROJECT CONTROL</span></span></div>
+          <div class="hdr-spacer"></div>
+          <div class="hdr-chips"><span class="hdr-project">体験用テナント</span>
+            <span class="hdr-user">体験ユーザー <span>PMO担当</span></span>
+            <button class="hdr-chip">ログアウト</button></div>
+        </header>
+        <nav class="sb"><p class="sb-gl">AIプロジェクト管制</p><a class="sb-item active"><span class="sb-badge">DB</span><span class="sb-label">管制ダッシュボード</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">TA</span><span class="sb-label">タスク一覧</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">PR</span><span class="sb-label">進捗予測・介入</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">QA</span><span class="sb-label">品質リアルタイム管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">RK</span><span class="sb-label">リスク予測・対策</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">CH</span><span class="sb-label">変更影響分析</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AI</span><span class="sb-label">AI介入提案</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">KP</span><span class="sb-label">KPI・効果測定</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">PMO支援</p><a class="sb-item"><span class="sb-badge">SO</span><span class="sb-label">PMO相談・状況整理</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">PL</span><span class="sb-label">計画策定</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">DL</span><span class="sb-label">成果物支援</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">AP</span><span class="sb-label">報告生成・承認</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">LB</span><span class="sb-label">プロンプトライブラリ</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">ED</span><span class="sb-label">教育支援</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">ナレッジ / RAG</p><a class="sb-item"><span class="sb-badge">DC</span><span class="sb-label">ドキュメント登録</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">TP</span><span class="sb-label">ひな型管理</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><a class="sb-item"><span class="sb-badge">SE</span><span class="sb-label">RAG検索</span><span class="sb-tags"><span class="sb-tag rag">RAG</span></span></a><a class="sb-item"><span class="sb-badge">CT</span><span class="sb-label">チャットモード</span><span class="sb-tags"><span class="sb-tag ai">AI</span><span class="sb-tag rag">RAG</span><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">監査・トレース</p><a class="sb-item"><span class="sb-badge">TR</span><span class="sb-label">Agenticトレース</span><span class="sb-tags"><span class="sb-tag ai">AI</span></span></a><a class="sb-item"><span class="sb-badge">OP</span><span class="sb-label">操作ログ</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">FB</span><span class="sb-label">フィードバック</span><span class="sb-tags"><span class="sb-tag wip">WIP</span></span></a><p class="sb-gl">管理・設定</p><a class="sb-item"><span class="sb-badge">PJ</span><span class="sb-label">案件管理</span><span class="sb-tags"></span></a><a class="sb-item"><span class="sb-badge">ST</span><span class="sb-label">設定</span><span class="sb-tags"></span></a></nav>
+        <main class="main">
+    <div class="ph">
+      <div>
+        <div class="pk">AIプロジェクト管制</div>
+        <h1 class="pt">案件比較</h1>
+        <p class="ps">同じ指標を並べ、案件間の差がどこにあるかを見ます。</p>
+      </div>
+      <div class="ph-right"><button class="btn-out">指標を選ぶ</button><button class="btn-b">案件を追加</button></div>
+    </div>
+    <div class="cmp-labels">
+      <div class="cmp-cols">
+        
+      <div class="cmp-col r">
+        <div class="cmp-head">
+          <div class="cmp-name">Project Atlas / 業務システム更改</div>
+          <span class="badge r">Red</span>
+        </div>
+        <div class="cmp-score">
+          <div class="ring a" style="--score:65%">65</div>
+          <div><span>Health score</span><strong>65</strong></div>
+        </div>
+        <div class="cmp-prog"><div class="pb-tr"><div class="pb-f r" style="width:62%"></div></div>
+        <span>進捗 62%</span></div>
+        <div class="cmp-row"><span>オープン課題</span><b class="c-a">1</b></div><div class="cmp-row"><span>オープンリスク</span><b class="c-a">1</b></div><div class="cmp-row"><span>ブロック中タスク</span><b class="c-r">1</b></div><div class="cmp-row"><span>期限超過</span><b class="c-r">1</b></div><div class="cmp-row"><span>未対応アラート</span><b class="c-r">1</b></div><div class="cmp-row"><span>承認待ち変更</span><b class="c-b">1</b></div><div class="cmp-row"><span>登録文書</span><b class="">3</b></div>
+        <div class="cmp-note r">受入試験の開始条件を満たせない見込み。判断が必要です。</div>
+      </div>
+        
+      <div class="cmp-col g">
+        <div class="cmp-head">
+          <div class="cmp-name">POS-TAX0 レジシステム 消費税0%対応</div>
+          <span class="badge g">Green</span>
+        </div>
+        <div class="cmp-score">
+          <div class="ring g" style="--score:100%">100</div>
+          <div><span>Health score</span><strong>100</strong></div>
+        </div>
+        <div class="cmp-prog"><div class="pb-tr"><div class="pb-f g" style="width:87%"></div></div>
+        <span>進捗 87%</span></div>
+        <div class="cmp-row"><span>オープン課題</span><b class="">0</b></div><div class="cmp-row"><span>オープンリスク</span><b class="">0</b></div><div class="cmp-row"><span>ブロック中タスク</span><b class="">0</b></div><div class="cmp-row"><span>期限超過</span><b class="">0</b></div><div class="cmp-row"><span>未対応アラート</span><b class="">0</b></div><div class="cmp-row"><span>承認待ち変更</span><b class="">0</b></div><div class="cmp-row"><span>登録文書</span><b class="">3</b></div>
+        <div class="cmp-note g">計画どおり。会計IF整合と店舗FAQ承認を残すのみ。</div>
+      </div>
+        <div class="cmp-col add"><div class="cmp-add">＋ 案件を追加して比較</div></div>
+      </div>
+    </div></main>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,23 @@
+{% extends "layouts/auth.html" %}
+{% block card_modifier %} auth-card--panes{% endblock %}
+
+{% block step %}
+  <div class="auth-step">
+    <span class="on">① テナント選択</span>
+    <span class="sep">―</span>
+    <span>② 案件選択</span>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <h2 class="auth-title">参照するテナントを選ぶ</h2>
+  <p class="auth-lead">左で選ぶと、右にそのテナントの概要が出ます。所属外のテナントは表示されません。</p>
+
+  <form method="post">
+    {% csrf_token %}
+    {% include "partials/tenant_picker.html" %}
+    <button type="submit" class="btn-b">この内容で進む</button>
+  </form>
+
+  {% include "partials/picker_script.html" %}
+{% endblock %}

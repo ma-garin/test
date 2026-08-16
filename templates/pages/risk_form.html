@@ -1,0 +1,51 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}AIプロジェクト管制{% endblock %}
+{% block subtitle %}{{ form_subtitle }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{% url 'dashboard:risk' %}">リスク一覧へ戻る</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">{{ form_title }}</span>
+    </div>
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="callout d">{{ form.non_field_errors|join:" " }}</div>
+      {% endif %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-b">{{ submit_label|default:"保存する" }}</button>
+    </form>
+  </div>
+
+  {% if risk %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">このリスクへの操作</span>
+      </div>
+      <div class="stack">
+        <div class="dl">
+          <div>現在の状態</div><div><span class="badge n">{{ risk.get_status_display }}</span></div>
+          <div>スコア</div><div>{{ risk.impact }} × {{ risk.probability }} = {{ risk.score }}</div>
+        </div>
+        <form method="post" action="{% url 'projects:risk_close' risk.pk %}" class="form">
+          {% csrf_token %}
+          <button type="submit" class="btn-out">クローズする</button>
+        </form>
+        <a class="btn-out" href="{% url 'projects:risk_promote' risk.pk %}">課題へ転換する</a>
+      </div>
+    </div>
+  {% endif %}
+
+{% endblock %}

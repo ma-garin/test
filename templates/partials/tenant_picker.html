@@ -1,0 +1,49 @@
+{% comment %}
+テナント選択の本体。左＝選べるテナント、右＝選択中テナントの概要。
+
+ログイン直後（onboarding_tenant）とヘッダーからの切替（select_tenant）は
+利用者にとって同じ「テナントを選ぶ」操作なので、画面もここ1つに寄せる。
+切替の JS は partials/picker_script.html（案件選択と共通）。
+{% endcomment %}
+<div class="picker" data-picker="tenant">
+  <div class="picker-list">
+    {% for tenant in tenants %}
+      <label class="auth-option">
+        <input type="radio" name="tenant" value="{{ tenant.pk }}"
+               {% if selected_tenant_id == tenant.pk|stringformat:"s" %}checked{% endif %}>
+        <div class="auth-option-t">
+          <span>{{ tenant.name }}</span>
+          {% if current_tenant_id == tenant.pk|stringformat:"s" %}<span class="auth-option-tag">参照中</span>{% endif %}
+        </div>
+        <div class="auth-option-d">コード: {{ tenant.code }}</div>
+      </label>
+    {% empty %}
+      <div class="empty">選べるテナントがありません。テナント管理者へ連絡してください。</div>
+    {% endfor %}
+  </div>
+
+  <div class="picker-detail">
+    {% for tenant in tenants %}
+      <article class="picker-card" data-picker-detail="{{ tenant.pk }}"
+               {% if selected_tenant_id != tenant.pk|stringformat:"s" %}hidden{% endif %}>
+        <div class="picker-card-h">
+          <h3 class="picker-card-t">{{ tenant.name }}</h3>
+          <span class="picker-card-meta">コード: {{ tenant.code }}</span>
+        </div>
+        <p class="picker-card-desc">{{ tenant.description|default:"このテナントの説明は登録されていません。" }}</p>
+        <dl class="picker-facts">
+          <div><dt>案件</dt><dd>案件 {{ tenant.project_count }} 件</dd></div>
+          <div><dt>利用者</dt><dd>利用者 {{ tenant.user_count }} 名</dd></div>
+          <div><dt>選んだあと</dt><dd>{{ destination_label }}</dd></div>
+        </dl>
+        <p class="picker-card-note">
+          コントロールタワー・タスク・リスク・課題・不具合・変更要求・KPI・連携は、
+          このテナントのデータだけになります。参照できる範囲は所属と権限で決まり、
+          この画面で広がることはありません。
+        </p>
+      </article>
+    {% empty %}
+      <div class="empty">概要を表示できるテナントがありません。</div>
+    {% endfor %}
+  </div>
+</div>

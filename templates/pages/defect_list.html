@@ -1,0 +1,47 @@
+{% extends "layouts/base.html" %}
+{% load integration_links %}
+{% block kicker %}品質管理{% endblock %}
+{% block subtitle %}検出した不具合の状態・重大度・検出工程を追跡します。{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">不具合一覧</span>
+      <a class="card-act" href="{% url 'projects:defect_create' %}">新規作成</a>
+    </div>
+    <div class="dashboard-risk-wrap">
+      <table class="dashboard-risk-table">
+        <thead>
+          <tr><th>案件</th><th>不具合</th><th>重大度</th><th>状態</th><th>検出工程</th><th>検出日</th><th>原文</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          {% for defect in defects %}
+            <tr>
+              <td>{{ defect.project.code }}</td>
+              <td>{{ defect.title }}</td>
+              <td class="nowrap"><span class="badge {% if defect.severity == 'critical' or defect.severity == 'high' %}r{% else %}n{% endif %}">{{ defect.get_severity_display }}</span></td>
+              <td class="nowrap"><span class="badge {% if defect.status == 'closed' %}g{% else %}a{% endif %}">{{ defect.get_status_display }}</span></td>
+              <td>{{ defect.phase|default:"—" }}</td>
+              <td class="nowrap">{{ defect.detected_on|date:"Y-m-d"|default:"—" }}</td>
+              <td class="nowrap">{% external_link defect as defect_link %}{% if defect_link %}{{ defect_link }}{% else %}—{% endif %}</td>
+              <td class="nowrap">
+                <a class="btn-ghost sm" href="{% url 'projects:defect_edit' defect.pk %}">編集</a>
+                {% if defect.status != 'closed' %}
+                  <form method="post" action="{% url 'projects:defect_close' defect.pk %}" style="display:inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-out sm">クローズ</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8"><div class="dashboard-empty">登録された不具合がありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "partials/pager.html" %}
+  </div>
+
+{% endblock %}

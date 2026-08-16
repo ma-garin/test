@@ -1,0 +1,31 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title }} | VeriRAG PMO Agent</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="auth{% block auth_modifier %}{% endblock %}">
+  {% block hero %}{% endblock %}
+  <div class="auth-panel">
+    <div class="auth-card{% block card_modifier %}{% endblock %}">
+      <div class="auth-brand">
+        <span class="hdr-mark">VR</span>
+        <span>
+          <strong>VeriRAG PMO Agent</strong>
+          <span>AI PROJECT CONTROL</span>
+        </span>
+      </div>
+      {% block step %}{% endblock %}
+      {# 選択を弾いた理由はここでしか伝えられない。認証レイアウトにも枠を置く。 #}
+      {% for message in messages %}
+        <div class="callout{% if message.tags == 'error' %} d{% elif message.tags == 'warning' %} w{% elif message.tags == 'success' %} ok{% endif %}">{{ message }}</div>
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+</body>
+</html>
