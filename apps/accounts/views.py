@@ -68,21 +68,53 @@ def _safe_next(request: HttpRequest) -> str:
     return ""
 
 
-@login_required
-def select_tenant(request: HttpRequest) -> HttpResponse:
-    """テナント切替。自分の所属テナント以外は選べない。"""
+def _selectable_tenants(user):
+    """選べるテナントを、選ぶ前に読める情報付きで返す。
 
-    if request.user.is_superuser:
+    「切り替えると何が見えるようになるのか」を選択と同じ画面に出すため、
+    件数は 1 クエリで一緒に取る（選択肢ごとに数えると N+1 になる）。
+    """
+
+    if user.is_superuser:
         tenants = Tenant.objects.filter(is_active=True)
     else:
-        tenants = Tenant.objects.filter(pk=request.user.tenant_id, is_active=True)
+        tenants = Tenant.objects.filter(pk=user.tenant_id, is_active=True)
 
-    # 「切り替えると何が見えるようになるのか」を選ぶ前に読めるようにする。
-    # 件数は 1 クエリで一緒に取る（選択肢ごとに数えると N+1 になる）。
-    tenants = tenants.annotate(
+    return tenants.annotate(
         project_count=Count("projects", distinct=True),
         user_count=Count("users", distinct=True),
     ).order_by("name")
+
+
+def _initial_tenant_id(request: HttpRequest, tenants: list) -> str:
+    """最初に概要を開いておくテナント。いま参照中のものを優先する。"""
+
+    current = _current_tenant_id(request)
+    ids = [str(tenant.pk) for tenant in tenants]
+
+    if current in ids:
+        return current
+
+    return ids[0] if ids else ""
+
+
+def _current_tenant_id(request: HttpRequest) -> str:
+    """いま参照しているテナント。未選択なら空文字。"""
+
+    tenant = getattr(request, "tenant", None)
+
+    return str(tenant.pk) if tenant else ""
+
+
+@login_required
+def select_tenant(request: HttpRequest) -> HttpResponse:
+    """テナント切替。自分の所属テナント以外は選べない。
+
+    ヘッダーのテナント名から来る画面。押した人はログイン直後と同じ選択画面を
+    期待するため、オンボーディングと同じ2ペイン（左=一覧 / 右=概要）を出す。
+    """
+
+    tenants = _selectable_tenants(request.user)
 
     if request.method == "POST":
         tenant_id = request.POST.get("tenant")
@@ -95,11 +127,16 @@ def select_tenant(request: HttpRequest) -> HttpResponse:
 
             return redirect("dashboard:control")
 
+    choices = list(tenants)
+
     return render(
         request,
         "pages/select_tenant.html",
         {
-            "tenants": tenants,
+            "tenants": choices,
+            "selected_tenant_id": _initial_tenant_id(request, choices),
+            "current_tenant_id": _current_tenant_id(request),
+            "destination_label": "コントロールタワー（案件の絞り込みなし）",
             # 切替後は必ずコントロールタワーへ行く。`next` を受け取っても使わないので、
             # 指定があることと使われないことを画面で明示する。
             "next_target": _safe_next(request),
@@ -162,10 +199,7 @@ def onboarding_tenant(request: HttpRequest) -> HttpResponse:
     その場合は自動でスキップし、案件選択へ進む。
     """
 
-    if request.user.is_superuser:
-        tenants = Tenant.objects.filter(is_active=True).order_by("name")
-    else:
-        tenants = Tenant.objects.filter(pk=request.user.tenant_id, is_active=True)
+    tenants = _selectable_tenants(request.user)
 
     if tenants.count() <= 1:
         return redirect("accounts:onboarding_project")
@@ -179,10 +213,18 @@ def onboarding_tenant(request: HttpRequest) -> HttpResponse:
 
             return redirect("accounts:onboarding_project")
 
+    choices = list(tenants)
+
     return render(
         request,
         "pages/onboarding_tenant.html",
-        {"tenants": tenants, "page_title": "テナント選択"},
+        {
+            "tenants": choices,
+            "selected_tenant_id": _initial_tenant_id(request, choices),
+            "current_tenant_id": _current_tenant_id(request),
+            "destination_label": "② 案件選択へ進みます",
+            "page_title": "テナント選択",
+        },
     )
 
 
