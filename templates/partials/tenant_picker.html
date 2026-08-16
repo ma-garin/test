@@ -1,0 +1,68 @@
+{% comment %}
+テナント選択の本体。左＝選べるテナント、右＝選択中テナントの概要。
+
+ログイン直後（onboarding_tenant）とヘッダーからの切替（select_tenant）は
+利用者にとって同じ「テナントを選ぶ」操作なので、画面もここ1つに寄せる。
+右の概要は全件を描画しておき、表示の切替だけを JS で行う。
+JS が動かない環境でも、初期選択のテナントの概要は読める。
+{% endcomment %}
+<div class="tenant-picker" data-tenant-picker>
+  <div class="tenant-picker-list">
+    {% for tenant in tenants %}
+      <label class="auth-option">
+        <input type="radio" name="tenant" value="{{ tenant.pk }}"
+               {% if selected_tenant_id == tenant.pk|stringformat:"s" %}checked{% endif %}>
+        <div class="auth-option-t">
+          <span>{{ tenant.name }}</span>
+          {% if current_tenant_id == tenant.pk|stringformat:"s" %}<span class="auth-option-tag">参照中</span>{% endif %}
+        </div>
+        <div class="auth-option-d">コード: {{ tenant.code }}</div>
+      </label>
+    {% empty %}
+      <div class="empty">選べるテナントがありません。テナント管理者へ連絡してください。</div>
+    {% endfor %}
+  </div>
+
+  <div class="tenant-picker-detail">
+    {% for tenant in tenants %}
+      <article class="tenant-detail" data-tenant-detail="{{ tenant.pk }}"
+               {% if selected_tenant_id != tenant.pk|stringformat:"s" %}hidden{% endif %}>
+        <div class="tenant-detail-h">
+          <h3 class="tenant-detail-t">{{ tenant.name }}</h3>
+          <span class="tenant-detail-code">コード: {{ tenant.code }}</span>
+        </div>
+        <p class="tenant-detail-desc">{{ tenant.description|default:"このテナントの説明は登録されていません。" }}</p>
+        <dl class="tenant-detail-facts">
+          <div><dt>案件</dt><dd>案件 {{ tenant.project_count }} 件</dd></div>
+          <div><dt>利用者</dt><dd>利用者 {{ tenant.user_count }} 名</dd></div>
+          <div><dt>選んだあと</dt><dd>{{ destination_label }}</dd></div>
+        </dl>
+        <p class="tenant-detail-note">
+          コントロールタワー・タスク・リスク・課題・不具合・変更要求・KPI・連携は、
+          このテナントのデータだけになります。参照できる範囲は所属と権限で決まり、
+          この画面で広がることはありません。
+        </p>
+      </article>
+    {% empty %}
+      <div class="empty">概要を表示できるテナントがありません。</div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+(function () {
+  var picker = document.querySelector('[data-tenant-picker]');
+
+  if (!picker) { return; }
+
+  var details = picker.querySelectorAll('[data-tenant-detail]');
+
+  picker.addEventListener('change', function (event) {
+    if (event.target.name !== 'tenant') { return; }
+
+    Array.prototype.forEach.call(details, function (panel) {
+      panel.hidden = panel.getAttribute('data-tenant-detail') !== event.target.value;
+    });
+  });
+})();
+</script>

@@ -1,18 +1,32 @@
-{% extends "layouts/base.html" %}
-{% block kicker %}ACCESS{% endblock %}
-{% block subtitle %}参照するテナントを選びます。所属外のテナントは選択できません。{% endblock %}
+{% extends "layouts/auth.html" %}
+{% block card_modifier %} auth-card--panes{% endblock %}
+
+{% comment %}
+ヘッダーの「テナント名」から来る画面。押した人はログイン直後と同じ選択画面を
+期待するため、レイアウトもオンボーディングと同じものを出す
+（部分テンプレートは partials/tenant_picker.html に共通化）。
+{% endcomment %}
 
 {% block content %}
-  <div class="card" style="max-width:520px">
-    <form method="post" class="form">
-      {% csrf_token %}
-      <div>
-        <label for="tenant">テナント</label>
-        <select name="tenant" id="tenant">
-          {% for tenant in tenants %}<option value="{{ tenant.pk }}">{{ tenant.name }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="actions"><button type="submit" class="btn-b">切り替える</button></div>
-    </form>
-  </div>
+  <h2 class="auth-title">参照するテナントを選ぶ</h2>
+  <p class="auth-lead">左で選ぶと、右にそのテナントの概要が出ます。所属外のテナントは表示されません。</p>
+
+  <form method="post">
+    {% csrf_token %}
+    {% include "partials/tenant_picker.html" %}
+
+    {% comment %}
+    UXP-36: 切替は「戻れない操作」ではないが、案件の絞り込みが外れるため数字の見え方が変わる。
+    何が変わるか・どこへ着地するかを、確定（送信）前に読める位置へ置く。
+    権限の判定は変えていない。ここで増やしているのは説明だけ。
+    {% endcomment %}
+    <p class="auth-note tenant-picker-warn">
+      切り替えると、いま選んでいる<strong>対象案件の絞り込みは解除</strong>され、全案件を横断した集計に戻ります。
+      この画面は <code>next</code> を使わず、切替後は必ずコントロールタワーへ移動します{% if next_target %}（指定されている戻り先 <code>{{ next_target }}</code> へは戻りません）{% endif %}。
+    </p>
+
+    <button type="submit" class="btn-b">このテナントに切り替える</button>
+  </form>
+
+  <a class="auth-skip" href="{% if next_target %}{{ next_target }}{% else %}{% url 'dashboard:control' %}{% endif %}">切り替えずに戻る</a>
 {% endblock %}

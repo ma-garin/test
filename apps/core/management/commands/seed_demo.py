@@ -45,7 +45,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options) -> None:
         tenant, _ = Tenant.objects.get_or_create(
             code=options["tenant"],
-            defaults={"name": "体験用テナント"},
+            defaults={
+                "name": "体験用テナント",
+                # テナント選択画面の右ペインで「どのテナントを選ぼうとしているのか」を
+                # 読めるようにする。説明が空だと、選択肢が名前とコードだけになる。
+                "description": (
+                    "製品を試すための体験用テナントです。"
+                    "案件・タスク・リスク・課題・不具合・KPI の一式が入っており、"
+                    "そのまま PMO の運用を試せます。"
+                ),
+            },
         )
 
         user, created = User.objects.get_or_create(

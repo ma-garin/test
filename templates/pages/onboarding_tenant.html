@@ -1,5 +1,5 @@
 {% extends "layouts/auth.html" %}
-{% block card_modifier %} auth-card--wide{% endblock %}
+{% block card_modifier %} auth-card--panes{% endblock %}
 
 {% block step %}
   <div class="auth-step">
@@ -10,21 +10,12 @@
 {% endblock %}
 
 {% block content %}
-  <p class="auth-note" style="margin-top:0 0 14px">参照するテナントを選んでください。所属外のテナントは表示されません。</p>
+  <h2 class="auth-title">参照するテナントを選ぶ</h2>
+  <p class="auth-lead">左で選ぶと、右にそのテナントの概要が出ます。所属外のテナントは表示されません。</p>
 
   <form method="post">
     {% csrf_token %}
-    <div class="auth-option-list">
-      {% for tenant in tenants %}
-        <label class="auth-option">
-          <input type="radio" name="tenant" value="{{ tenant.pk }}" {% if forloop.first %}checked{% endif %}>
-          <div class="auth-option-t">{{ tenant.name }}</div>
-          <div class="auth-option-d">コード: {{ tenant.code }}</div>
-        </label>
-      {% empty %}
-        <div class="empty">選べるテナントがありません。テナント管理者へ連絡してください。</div>
-      {% endfor %}
-    </div>
+    {% include "partials/tenant_picker.html" %}
     <button type="submit" class="btn-b">この内容で進む</button>
   </form>
 {% endblock %}
