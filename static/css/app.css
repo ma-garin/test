@@ -956,38 +956,38 @@ a { color: inherit; text-decoration: none; }
 .auth-skip { display: block; text-align: center; margin-top: 12px; font-size: 12px; color: var(--muted); font-weight: 700; }
 .auth-skip:hover { color: var(--blue); }
 
-/* テナント選択の2ペイン（左=選択肢 / 右=そのテナントの概要）。
-   「切り替えると何が見えるようになるのか」を、選択と同じ画面で読めるようにする。 */
+/* 選択画面の2ペイン（左=選択肢 / 右=選んだものの概要）。テナント選択と案件選択で共通。
+   「選ぶと何が見えるようになるのか」を、選択と同じ画面で読めるようにする。 */
 .auth-card--panes { max-width: 880px; }
-.tenant-picker {
+.picker {
   display: grid;
   grid-template-columns: minmax(0, 290px) minmax(0, 1fr);
   gap: 14px;
   align-items: start;
   margin: 4px 0 16px;
 }
-.tenant-picker-list { display: grid; gap: 8px; max-height: 420px; overflow-y: auto; }
-.tenant-picker-detail {
+.picker-list { display: grid; gap: 8px; max-height: 420px; overflow-y: auto; }
+.picker-detail {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 16px 18px;
   background: var(--nav-active);
   min-height: 200px;
 }
-.tenant-detail-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.tenant-detail-t { margin: 0; font-size: 16px; font-weight: 900; }
-.tenant-detail-code { font-size: 11px; font-weight: 800; color: var(--muted); }
-.tenant-detail-desc { margin: 10px 0 14px; font-size: 12.5px; line-height: 1.7; }
-.tenant-detail-facts { display: grid; gap: 8px; margin: 0; }
-.tenant-detail-facts > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: baseline; }
-.tenant-detail-facts dt { font-size: 11px; font-weight: 800; color: var(--muted); }
-.tenant-detail-facts dd { margin: 0; font-size: 12.5px; font-weight: 700; }
-.tenant-detail-note { margin: 14px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
-.tenant-picker-warn { margin: 0 0 14px; }
+.picker-card-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.picker-card-t { margin: 0; font-size: 16px; font-weight: 900; }
+.picker-card-meta { font-size: 11px; font-weight: 800; color: var(--muted); }
+.picker-card-desc { margin: 10px 0 14px; font-size: 12.5px; line-height: 1.7; }
+.picker-facts { display: grid; gap: 8px; margin: 0; }
+.picker-facts > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.picker-facts dt { font-size: 11px; font-weight: 800; color: var(--muted); }
+.picker-facts dd { margin: 0; font-size: 12.5px; font-weight: 700; }
+.picker-card-note { margin: 14px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
+.picker-warn { margin: 0 0 14px; }
 
 @media (max-width: 860px) {
-  .tenant-picker { grid-template-columns: 1fr; }
-  .tenant-picker-list { max-height: 220px; }
+  .picker { grid-template-columns: 1fr; }
+  .picker-list { max-height: 220px; }
 }
 
 /* ── 例外画面 ───────────────────────────────────────────── */

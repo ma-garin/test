@@ -19,6 +19,10 @@
         </span>
       </div>
       {% block step %}{% endblock %}
+      {# 選択を弾いた理由はここでしか伝えられない。認証レイアウトにも枠を置く。 #}
+      {% for message in messages %}
+        <div class="callout{% if message.tags == 'error' %} d{% elif message.tags == 'warning' %} w{% elif message.tags == 'success' %} ok{% endif %}">{{ message }}</div>
+      {% endfor %}
       {% block content %}{% endblock %}
     </div>
   </div>
