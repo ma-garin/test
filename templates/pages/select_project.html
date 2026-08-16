@@ -1,104 +1,29 @@
-{% extends "layouts/base.html" %}
-{% block kicker %}管理・設定{% endblock %}
-{% block subtitle %}対象案件を1件に絞るか、全案件を横断して見るかを選びます。{% endblock %}
+{% extends "layouts/auth.html" %}
+{% block card_modifier %} auth-card--panes{% endblock %}
+
+{% comment %}
+ヘッダーの案件チップから来る画面。押した人はログイン直後と同じ選択画面を
+期待するため、レイアウトもオンボーディングと同じものを出す
+（部分テンプレートは partials/project_picker.html に共通化）。
+{% endcomment %}
 
 {% block content %}
+  <h2 class="auth-title">対象案件を選ぶ</h2>
+  <p class="auth-lead">左で選ぶと、右にその対象の概要が出ます。選択は任意で、あとから画面上部でいつでも切り替えられます。</p>
 
-  <div class="callout">
-    <p><strong>選択は任意です。</strong>未選択のときは、参照できる全案件を横断して集計します。
-    1件に絞ると、ダッシュボード・タスク・リスク・課題・不具合・変更要求・KPI がその案件だけになります。</p>
-  </div>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% include "partials/project_picker.html" with destination_label="決定すると元の画面へ戻ります" %}
 
-  {% comment %}
-  UXP-37: 「全案件」と「個別案件」の差は概念説明では伝わらない。いま参照できる件数と、
-  実際に数字が変わる画面名で比較する。件数は下の一覧と同じ母集団から数えている。
-  {% endcomment %}
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">全案件と個別案件の違い</span>
-      <span class="card-act">{% if current %}いまは個別案件（{{ current.code }}）{% else %}いまは全案件{% endif %}</span>
-    </div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead>
-          <tr><th>比べる観点</th><th>全案件（絞り込みなし）</th><th>個別案件（1件に絞る）</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th class="nowrap">対象件数</th>
-            <td>{{ projects|length }} 件すべて</td>
-            <td>1 件（{% if current %}{{ current.code }} {{ current.name }}{% else %}この画面で選びます{% endif %}）</td>
-          </tr>
-          <tr>
-            <th class="nowrap">影響する画面</th>
-            <td>コントロールタワー / タスク / リスク / 課題 / 不具合 / 変更要求 / KPI が {{ projects|length }} 件の合算</td>
-            <td>同じ 7 画面が、選んだ 1 件だけの数字</td>
-          </tr>
-          <tr>
-            <th class="nowrap">数字の読み方</th>
-            <td>案件をまたいだ総量。どの案件の行かは一覧の案件列で判断する</td>
-            <td>案件単位の実数。他案件は「0 件」ではなく対象外</td>
-          </tr>
-          <tr>
-            <th class="nowrap">元に戻す方法</th>
-            <td>—</td>
-            <td>この画面で「全案件」を選び直す</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="ps">この表の件数は説明用の例ではなく、いまあなたが参照できる {{ projects|length }} 件を数えた結果です。</div>
-  </div>
+    <p class="auth-note picker-warn">
+      決定すると <code>{{ next }}</code> へ戻ります。上の 7 画面の数字が、選んだ対象で再集計されます。
+    </p>
 
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">対象案件</span>
-      <span class="card-act">{% if current %}選択中: {{ current.name }}{% else %}全案件を対象にしています{% endif %}</span>
-    </div>
+    <button type="submit" class="btn-b">この対象で表示する</button>
+  </form>
 
-    <form method="post" class="stack">
-      {% csrf_token %}
-      <input type="hidden" name="next" value="{{ next }}">
+  <a class="auth-skip" href="{{ next }}">切り替えずに戻る</a>
 
-      <div class="dashboard-risk-wrap">
-        <table class="dashboard-risk-table">
-          <thead>
-            <tr><th></th><th>案件</th><th>状態</th><th>進捗</th><th>PM</th><th>PMO</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><input type="radio" name="project" value="" id="project-all"{% if not current %} checked{% endif %}></td>
-              <td colspan="5"><label for="project-all"><strong>全案件</strong>（絞り込みなし・{{ projects|length }} 件を合算）</label></td>
-            </tr>
-            {% for project in projects %}
-              <tr>
-                <td>
-                  <input type="radio" name="project" value="{{ project.pk }}" id="project-{{ project.pk }}"
-                         {% if current and current.pk == project.pk %} checked{% endif %}>
-                </td>
-                <td><label for="project-{{ project.pk }}">{{ project.code }} {{ project.name }}</label></td>
-                <td>
-                  <span class="badge {% if project.rag_status == 'red' %}r{% elif project.rag_status == 'yellow' %}a{% elif project.rag_status == 'green' %}g{% else %}n{% endif %}">
-                    {{ project.get_rag_status_display }}
-                  </span>
-                </td>
-                <td class="nowrap">{{ project.progress_percent|floatformat:0 }}%</td>
-                <td>{{ project.project_manager|default:"—" }}</td>
-                <td>{{ project.pmo_manager|default:"—" }}</td>
-              </tr>
-            {% empty %}
-              <tr><td colspan="6"><div class="dashboard-empty">参照できる案件がありません。</div></td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="actions">
-        <button type="submit" class="btn-b">この対象で表示する</button>
-        <a class="btn-ghost" href="{{ next }}">戻る</a>
-      </div>
-      <div class="ps">決定すると <code>{{ next }}</code> へ戻ります。上の 7 画面の数字が、選んだ対象で再集計されます。</div>
-    </form>
-  </div>
-
+  {% include "partials/picker_script.html" %}
 {% endblock %}

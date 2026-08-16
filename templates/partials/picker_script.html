@@ -1,0 +1,21 @@
+{% comment %}
+選んだ候補に応じて、右の概要パネルを切り替える。テナント選択・案件選択で共通。
+概要は全件を描画しておき、表示の切替だけを行う。JS が動かない環境でも
+初期選択の概要は読める。
+{% endcomment %}
+<script>
+(function () {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-picker]'), function (picker) {
+    var field = picker.getAttribute('data-picker');
+    var details = picker.querySelectorAll('[data-picker-detail]');
+
+    picker.addEventListener('change', function (event) {
+      if (event.target.name !== field) { return; }
+
+      Array.prototype.forEach.call(details, function (panel) {
+        panel.hidden = panel.getAttribute('data-picker-detail') !== event.target.value;
+      });
+    });
+  });
+})();
+</script>

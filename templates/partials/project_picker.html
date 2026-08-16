@@ -1,0 +1,76 @@
+{% comment %}
+案件選択の本体。左＝対象の候補（全案件／個別案件）、右＝選んだ対象の概要。
+
+ログイン直後（onboarding_project）とヘッダーからの切替（select_project）は
+利用者にとって同じ「対象を選ぶ」操作なので、画面もここ1つに寄せる。
+UXP-37: 「全案件」と「個別案件」の差は概念説明では伝わらないため、
+いま参照できる件数と、実際に数字が変わる画面名で比較する。
+切替の JS は partials/picker_script.html（テナント選択と共通）。
+{% endcomment %}
+<div class="picker" data-picker="project">
+  <div class="picker-list">
+    <label class="auth-option auth-option--skip">
+      <input type="radio" name="project" value=""{% if not current %} checked{% endif %}>
+      <div class="auth-option-t">
+        <span>全案件を対象にする</span>
+        <span class="auth-option-tag">迷ったらこれ・あとで変更可</span>
+      </div>
+      <div class="auth-option-d">{{ projects|length }} 件を横断して見ます。</div>
+    </label>
+    {% for project in projects %}
+      <label class="auth-option">
+        <input type="radio" name="project" value="{{ project.pk }}"{% if current and current.pk == project.pk %} checked{% endif %}>
+        <div class="auth-option-t">
+          <span>{{ project.code }} {{ project.name }}</span>
+          <span class="badge {% if project.rag_status == 'red' %}r{% elif project.rag_status == 'yellow' %}a{% elif project.rag_status == 'green' %}g{% else %}n{% endif %}">{{ project.get_rag_status_display }}</span>
+        </div>
+        <div class="auth-option-d">進捗 {{ project.progress_percent|floatformat:0 }}%{% if project.project_manager %} ・ PM {{ project.project_manager }}{% endif %}</div>
+      </label>
+    {% empty %}
+      <div class="empty">参照できる案件がありません。</div>
+    {% endfor %}
+  </div>
+
+  <div class="picker-detail">
+    <article class="picker-card" data-picker-detail=""{% if current %} hidden{% endif %}>
+      <div class="picker-card-h">
+        <h3 class="picker-card-t">全案件を対象にする</h3>
+        <span class="picker-card-meta">絞り込みなし</span>
+      </div>
+      <p class="picker-card-desc">
+        全案件と個別案件の違いは、参照できる案件を合算して見るか、1 件だけの実数で見るかです。
+        {% if current %}いまは個別案件（{{ current.code }} {{ current.name }}）を対象にしています。{% else %}いまは全案件を対象にしています。{% endif %}
+      </p>
+      <dl class="picker-facts">
+        <div><dt>対象件数</dt><dd>{{ projects|length }} 件すべて</dd></div>
+        <div><dt>影響する画面</dt><dd>コントロールタワー / タスク / リスク / 課題 / 不具合 / 変更要求 / KPI が {{ projects|length }} 件の合算</dd></div>
+        <div><dt>選んだあと</dt><dd>{{ destination_label }}</dd></div>
+      </dl>
+      <p class="picker-card-note">
+        案件をまたいだ総量になります。どの案件の行かは、各一覧の案件列で判断してください。
+      </p>
+    </article>
+
+    {% for project in projects %}
+      <article class="picker-card" data-picker-detail="{{ project.pk }}"{% if not current or current.pk != project.pk %} hidden{% endif %}>
+        <div class="picker-card-h">
+          <h3 class="picker-card-t">{{ project.code }} {{ project.name }}</h3>
+          <span class="badge {% if project.rag_status == 'red' %}r{% elif project.rag_status == 'yellow' %}a{% elif project.rag_status == 'green' %}g{% else %}n{% endif %}">{{ project.get_rag_status_display }}</span>
+        </div>
+        <p class="picker-card-desc">
+          同じ 7 画面が、この 1 件だけの数字になります。他案件は「0 件」ではなく対象外です。
+        </p>
+        <dl class="picker-facts">
+          <div><dt>対象件数</dt><dd>1 件（{{ project.code }} {{ project.name }}）</dd></div>
+          <div><dt>進捗</dt><dd>{{ project.progress_percent|floatformat:0 }}%</dd></div>
+          <div><dt>PM / PMO</dt><dd>{{ project.project_manager|default:"—" }} / {{ project.pmo_manager|default:"—" }}</dd></div>
+          <div><dt>選んだあと</dt><dd>{{ destination_label }}</dd></div>
+        </dl>
+        <p class="picker-card-note">
+          {% if current and current.pk == project.pk %}いまは個別案件（{{ current.code }} {{ current.name }}）。{% endif %}
+          全案件に戻すには、左の「全案件を対象にする」を選び直します。
+        </p>
+      </article>
+    {% endfor %}
+  </div>
+</div>
