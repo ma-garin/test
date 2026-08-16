@@ -25,8 +25,10 @@
         <a class="hdr-project" href="{% url 'accounts:select_tenant' %}" title="テナントを切り替える">{{ current_tenant.name }}</a>
       {% endif %}
       {# 対象案件は常に見えている必要がある。絞り込み中と気づかずに数字を読むと誤解する。 #}
+      {% url 'accounts:select_project' as select_project_url %}
+      {# 案件選択画面でこれを押すと自分自身が next に入り入れ子が積み上がるため、その画面では next を付けない。 #}
       <a class="hdr-project{% if current_project %} on{% endif %}"
-         href="{% url 'accounts:select_project' %}?next={{ request.get_full_path|urlencode }}"
+         href="{{ select_project_url }}{% if request.path != select_project_url %}?next={{ request.get_full_path|urlencode }}{% endif %}"
          title="対象案件を切り替える">
         {% if current_project %}{{ current_project.code }} {{ current_project.name }}{% else %}全案件{% endif %} ▾
       </a>
