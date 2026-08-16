@@ -94,3 +94,21 @@ class SelectProjectScreenTests(TestCase):
 
         self.assertContains(response, "いまは個別案件")
         self.assertContains(response, "a1 案件アルファ")
+
+    def test_自分自身を指すnextは戻り先にしない(self):
+        # ヘッダーの案件チップを案件選択画面で押すと、自分自身が next に入る。
+        # そのまま採用すると、押すたびに入れ子と多重エンコードが積み上がる。
+        response = self.client.post(
+            self.url,
+            {
+                "project": str(self.alpha.pk),
+                "next": "/accounts/project/?next=/accounts/project/",
+            },
+        )
+
+        self.assertRedirects(response, "/", fetch_redirect_response=False)
+
+    def test_案件選択画面のヘッダーはnextを積み増さない(self):
+        response = self.client.get(self.url)
+
+        self.assertNotContains(response, 'href="/accounts/project/?next=')

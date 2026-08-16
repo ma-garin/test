@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
@@ -9,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.accounts.forms import EmailLoginForm
@@ -254,14 +257,23 @@ def onboarding_project(request: HttpRequest) -> HttpResponse:
 
 
 def _back_to(request: HttpRequest) -> str:
-    """切替後の戻り先。自ホスト宛てのときだけ採用する。"""
+    """切替後の戻り先。自ホスト宛てで、案件選択画面自身でないときだけ採用する。
+
+    ヘッダーの案件チップは現在URLを `next` に載せる。案件選択画面でそれを押すと
+    自分自身が `next` に入り、押すたびに入れ子と多重エンコードが積み上がる。
+    リンク側でも付けないようにしているが、既に出回っている URL のためここでも捨てる。
+    """
 
     target = request.POST.get("next") or request.GET.get("next") or ""
 
-    if target and url_has_allowed_host_and_scheme(
-        target,
-        allowed_hosts={request.get_host()},
-        require_https=request.is_secure(),
+    if (
+        target
+        and url_has_allowed_host_and_scheme(
+            target,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        )
+        and urlparse(target).path != reverse("accounts:select_project")
     ):
         return target
 
