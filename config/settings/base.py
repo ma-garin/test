@@ -98,6 +98,15 @@ DATABASES = {
     ),
 }
 
+# var/ は .gitignore 済みで、clone や ZIP 展開の直後には存在しない。
+# SQLite は親ディレクトリを作らないため、無いまま migrate すると
+# "unable to open database file" で落ちる。ここで先に作っておく。
+if DATABASES["default"]["ENGINE"].endswith("sqlite3"):
+    db_path = Path(DATABASES["default"]["NAME"])
+
+    if db_path.parent != Path("."):
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
 AUTH_USER_MODEL = "accounts.User"
 
 # 画面のログインはメールアドレスのみ。ModelBackend は Django admin 用に残す。
