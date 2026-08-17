@@ -88,14 +88,14 @@ apps/<name>/
 
 再構築ブリーフの「守ること」を、コードで担保している箇所です。
 
-| 約束 | 実装場所 |
-|---|---|
-| 認証情報を UI・ログへ出さない | `apps/core/services/ai_settings.py`（マスク）、`apps/audit/models.py`（保存時マスク） |
-| AI 出力に根拠・信頼度・人の判断を持たせる | `apps/agents/models.py` の `EvidenceEvaluation` / `HumanReview` |
-| 根拠不足なら断定せず承認へ進めない | `EvidenceEvaluation.blocks_approval`、`Deliverable.can_request_approval` |
-| 案件・テナントの参照範囲を分離する | `apps/projects/selectors.py`、`apps/rag/services/vector_store.py`（インデックス単位でファイル分離） |
-| 除外・削除文書を検索に出さない | `apps/rag/services/retriever.py` の `active_chunks()` |
-| AI 未設定でも画面が壊れない | `get_embedder()` の local_hash 退避、`build_plan()` の LLM 必須ツール除外 |
+| 約束                                      | 実装場所                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 認証情報を UI・ログへ出さない             | `apps/core/services/ai_settings.py`（マスク）、`apps/audit/models.py`（保存時マスク）               |
+| AI 出力に根拠・信頼度・人の判断を持たせる | `apps/agents/models.py` の `EvidenceEvaluation` / `HumanReview`                                   |
+| 根拠不足なら断定せず承認へ進めない        | `EvidenceEvaluation.blocks_approval`、`Deliverable.can_request_approval`                            |
+| 案件・テナントの参照範囲を分離する        | `apps/projects/selectors.py`、`apps/rag/services/vector_store.py`（インデックス単位でファイル分離） |
+| 除外・削除文書を検索に出さない            | `apps/rag/services/retriever.py` の `active_chunks()`                                               |
+| AI 未設定でも画面が壊れない               | `get_embedder()` の local_hash 退避、`build_plan()` の LLM 必須ツール除外                           |
 
 ## 現状と次にやること
 

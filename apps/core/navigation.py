@@ -172,6 +172,23 @@ NAVIGATION: tuple[NavSection, ...] = (
 )
 
 
+#: 機能カテゴリに属さない、利用者自身に紐づく画面。
+#: `NAVIGATION` へ入れると親レールにアイコンが増え、機能カテゴリと同列に見えるため分けて持つ。
+#: 子メニューの描画は `templates/partials/sb_section.html` が機能カテゴリと共通で行う。
+ACCOUNT_SECTION: NavSection = NavSection(
+    key="account",
+    label="アカウント",
+    short_label="アカウント",
+    is_current=True,
+    items=(
+        NavItem("account", "個人設定", "accounts:account", "AC", "ready"),
+        NavItem("user_guide", "ユーザーガイド", "core:user_guide", "UG", "ready"),
+        NavItem("feedback_create", "フィードバックを送る", "audit:feedback_create", "FB", "ready"),
+        NavItem("back_to_work", "業務へ戻る", "dashboard:control", "DB", "ready"),
+    ),
+)
+
+
 def navigation_for(user, current_url_name: str = "") -> list[NavSection]:
     """ユーザーが参照できる項目だけを残したナビゲーションを返す。"""
 
@@ -212,5 +229,15 @@ def item_by_url_name(url_name: str) -> NavItem | None:
     for item in all_items():
         if item.url_name == url_name:
             return item
+
+    return None
+
+
+def section_for(url_name: str) -> NavSection | None:
+    """その画面が属するカテゴリ。ガイドの分類など、画面から親を引くときに使う。"""
+
+    for section in NAVIGATION:
+        if any(item.url_name == url_name for item in section.items):
+            return section
 
     return None

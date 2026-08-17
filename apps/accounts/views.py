@@ -14,7 +14,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from apps.accounts.forms import EmailLoginForm
+from apps.accounts.forms import AccountForm, EmailLoginForm
 from apps.accounts.models import Tenant
 from apps.core.middleware import PROJECT_SESSION_KEY, TENANT_SESSION_KEY
 
@@ -107,6 +107,29 @@ def _current_tenant_id(request: HttpRequest) -> str:
     tenant = getattr(request, "tenant", None)
 
     return str(tenant.pk) if tenant else ""
+
+
+@login_required
+def account(request: HttpRequest) -> HttpResponse:
+    """個人設定。ヘッダー右上のアカウントメニューから来る画面。
+
+    変更できるのは表示名だけ。ロールとテナントは権限に直結するため参照に留める。
+    保存後はリダイレクトして、再読み込みで二重送信にならないようにする。
+    """
+
+    form = AccountForm(request.POST or None, instance=request.user)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "表示名を更新しました。")
+
+        return redirect("accounts:account")
+
+    return render(
+        request,
+        "pages/account.html",
+        {"form": form, "page_title": "個人設定"},
+    )
 
 
 @login_required

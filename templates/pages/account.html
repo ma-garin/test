@@ -1,0 +1,37 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}アカウント{% endblock %}
+{% block subtitle %}この画面で変えられるのは表示名だけです。{% endblock %}
+
+{% block content %}
+  {% comment %}
+  最初に見えるものが、この画面で唯一できる操作になるようにする。
+  参照だけの情報（ロール・テナント）を上に置くと、何をする画面か分からなくなる。
+  {% endcomment %}
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">表示名を変える</span><span class="card-act">この画面でできること</span></div>
+    <form class="form" method="post">
+      {% csrf_token %}
+      {{ form.display_name.errors }}
+      <label for="{{ form.display_name.id_for_label }}">表示名</label>
+      {{ form.display_name }}
+      <p class="helptext">ヘッダーのアカウントメニューと、承認・操作ログの記録者名に出ます。空にすると <code>{{ user.username }}</code> をそのまま表示します。</p>
+      <div class="actions">
+        <button class="btn-b" type="submit">保存する</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">アカウント情報</span><span class="card-act">変更はテナント管理者へ</span></div>
+    <div class="t-wrap">
+      <table class="t">
+        <tbody>
+          <tr><th scope="row">メールアドレス</th><td>{{ user.email }}</td></tr>
+          <tr><th scope="row">ロール</th><td>{{ user.get_role_display }}<span class="muted">（成果物・報告の承認は{% if user.can_approve %}できます{% else %}できません{% endif %}）</span></td></tr>
+          <tr><th scope="row">所属テナント</th><td>{% if user.tenant %}{{ user.tenant.name }}{% else %}<span class="muted">未設定</span>{% endif %}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="ps">いま扱うテナント・案件の切り替えは、ヘッダーの各ボタンから行えます。</p>
+  </div>
+{% endblock %}

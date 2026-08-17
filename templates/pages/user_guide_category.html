@@ -1,0 +1,62 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% block kicker %}ヘルプ{% endblock %}
+{% block subtitle %}{{ guide.value }}{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-out sm" href="{% url 'core:user_guide' %}">ガイドの先頭へ</a>
+{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">このカテゴリの目的</span><span class="card-act">{{ section.label }}</span></div>
+    <dl class="guide-5w">
+      <div><dt>誰が</dt><dd>{{ guide.who }}</dd></div>
+      <div><dt>何を</dt><dd>{{ guide.what }}</dd></div>
+      <div><dt>なぜ</dt><dd>{{ guide.why }}</dd></div>
+      <div><dt>いつ</dt><dd>{{ guide.when }}</dd></div>
+      <div><dt>どこから</dt><dd>{{ guide.where }}</dd></div>
+    </dl>
+    <a class="guide-cat-link" href="{% url guide.entry_url_name %}">{{ guide.entry_label }}</a>
+  </div>
+
+  {% if screens %}
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">主要画面の見方</span><span class="card-act">実画面つき {{ screens|length }}件</span></div>
+      {# 画像は tools/capture_guide_shots.py で撮り直す。手で差し替えない。 #}
+      <div class="guide-shots">
+        {% for screen in screens %}
+          {% url screen.url_name as screen_url %}
+          <section class="guide-shot">
+            <a class="guide-shot-img" href="{{ screen_url }}">
+              <img src="{% static 'img/guide/'|add:screen.image %}" alt="{{ screen.label }}の画面" loading="lazy" width="1280" height="820">
+            </a>
+            <div class="guide-shot-body">
+              <h3 class="guide-shot-t"><a href="{{ screen_url }}">{{ screen.label }}</a></h3>
+              <p><span class="guide-shot-k">何が分かるか</span>{{ screen.reads }}</p>
+              <p><span class="guide-shot-k">どう使うか</span>{{ screen.uses }}</p>
+            </div>
+          </section>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">このカテゴリの全画面</span><span class="card-act">{{ section.items|length }}件</span></div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>画面</th><th>タグ</th><th>状態</th></tr></thead>
+        <tbody>
+          {% for item in section.items %}
+            <tr>
+              <td><a href="{% url item.url_name %}">{{ item.label }}</a></td>
+              <td class="nowrap">{% for tag in item.tags %}<span class="badge b">{{ tag|upper }}</span> {% endfor %}</td>
+              <td class="nowrap">{% if item.is_ready %}<span class="badge g">使えます</span>{% else %}<span class="badge n">準備中</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

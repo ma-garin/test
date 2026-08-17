@@ -5,7 +5,7 @@ from __future__ import annotations
 from django.http import HttpRequest
 from django.utils import timezone
 
-from apps.core.navigation import navigation_for
+from apps.core.navigation import ACCOUNT_SECTION, navigation_for
 
 #: 絞り込み条件ではないクエリパラメータ。送信の有無を数えるときに除く。
 #: ページ送りは利用者が条件を指定した操作ではない。
@@ -34,8 +34,16 @@ def navigation(request: HttpRequest) -> dict:
     else:
         scope_label = "対象テナントを選択してください"
 
+    sections = navigation_for(getattr(request, "user", None), current)
+
     return {
-        "nav_sections": navigation_for(getattr(request, "user", None), current),
+        "nav_sections": sections,
+        # 現在地を含むカテゴリ。アカウントメニューから開く画面のようにメニュー外の
+        # 画面では None になる。子メニューを空欄のまま出さないための判定に使う。
+        "current_section": next((section for section in sections if section.is_current), None),
+        # 上が None のとき、子メニューの位置に出す行き先。機能カテゴリと同じ
+        # `NavSection` なので、サイドバーは同一のテンプレートで描ける。
+        "account_section": ACCOUNT_SECTION,
         "current_tenant": tenant,
         # 選択中の案件。全画面のヘッダーに出し、いま何を見ているかを常に示す。
         "current_project": project,

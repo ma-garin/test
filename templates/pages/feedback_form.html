@@ -1,56 +1,20 @@
 {% extends "layouts/base.html" %}
 {% block kicker %}監査・トレース{% endblock %}
-{% block subtitle %}事実誤認の報告は受入条件「事実誤認 0 件」の集計に直結します。気づいた時点で残してください。{% endblock %}
+{% block subtitle %}AI の回答で気づいたことを送ります。評価とコメントの2つだけで送信できます。{% endblock %}
 
 {% block header_actions %}
-  <a class="btn-out sm" href="{% url 'audit:feedback_list' %}">集計へ戻る</a>
+  <a class="btn-out sm" href="{% url 'audit:feedback_list' %}">集計を見る</a>
 {% endblock %}
 
 {% block content %}
 
   {% comment %}
-  UXP-45: 「役に立たなかった」だけの投稿は改善に使えない。何を書けば再現できるのかを
-  入力例で示し、事実誤認を選ぶ前に必須情報が読める位置へ置く。
+  UXP-45: 「役に立たなかった」だけの投稿は改善に使えない。書き方の入力例は残すが、
+  先頭に置くと「読む画面」に見えてしまい、送る人が離脱する。入力欄を先に出し、
+  例は書く直前で開けるようにする。事実誤認の注意は選択前に読める位置のまま。
   {% endcomment %}
   <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">コメントの書き方（入力例）</span>
-      <span class="card-act">4 項目そろうと再現できます</span>
-    </div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead>
-          <tr><th>項目</th><th>書くこと</th><th>入力例</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th class="nowrap">再現手順</th>
-            <td>同じ結果を出すための操作を番号で</td>
-            <td>1) 課題一覧を開く 2) 重大度「高」で絞る 3) AI に「遅延の原因は」と尋ねる</td>
-          </tr>
-          <tr>
-            <th class="nowrap">期待結果</th>
-            <td>本来どう表示されるべきだったか</td>
-            <td>回答に、根拠となった課題 ID（ISS-102）が引用される</td>
-          </tr>
-          <tr>
-            <th class="nowrap">実際の結果</th>
-            <td>実際に何が起きたか。表示された文言はそのまま写す</td>
-            <td>「該当なし」と返り、引用が 0 件だった</td>
-          </tr>
-          <tr>
-            <th class="nowrap">影響範囲</th>
-            <td>誰の・どの判断に響くか</td>
-            <td>PMO の週次報告。遅延 3 件を見落とす</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="ps">この 4 項目をそのままコメント欄へ貼り付けて構いません。</div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr"><span class="card-t">フィードバックを投稿する</span><span class="card-act">自テナントのみ</span></div>
+    <div class="card-hdr"><span class="card-t">フィードバックを送る</span><span class="card-act">自テナントのみ</span></div>
     <form method="post" class="form">
       {% csrf_token %}
       {% if form.errors %}
@@ -62,36 +26,84 @@
           {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
       {% endif %}
+
       <div>
         <label for="{{ form.rating.id_for_label }}">{{ form.rating.label }}</label>
-        {{ form.rating }}
+        <div class="radio-row">{{ form.rating }}</div>
       </div>
+
       <div>
-        <label for="{{ form.answer.id_for_label }}">{{ form.answer.label }}</label>
-        {{ form.answer }}
+        <label for="{{ form.comment.id_for_label }}">{{ form.comment.label }}</label>
+        {{ form.comment }}
+        {# 上限は forms.COMMENT_MAX_LENGTH が正。ここへ書き写すと入力制限と表示がずれる。 #}
+        <div class="counter"><span id="feedback-count">0</span> / {{ form.comment.field.widget.attrs.maxlength }}</div>
+        <div class="ps">「役に立たなかった」または事実誤認ありの場合は必須です。</div>
+        <details>
+          <summary class="ps">何を書けばいいか（そのまま貼れる入力例）</summary>
+          <div class="t-wrap">
+            <table class="t">
+              <thead>
+                <tr><th>項目</th><th>書くこと</th><th>入力例</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th class="nowrap">再現手順</th>
+                  <td>同じ結果を出すための操作を番号で</td>
+                  <td>1) 課題一覧を開く 2) 重大度「高」で絞る 3) AI に「遅延の原因は」と尋ねる</td>
+                </tr>
+                <tr>
+                  <th class="nowrap">期待結果</th>
+                  <td>本来どう表示されるべきだったか</td>
+                  <td>回答に、根拠となった課題 ID（ISS-102）が引用される</td>
+                </tr>
+                <tr>
+                  <th class="nowrap">実際の結果</th>
+                  <td>実際に何が起きたか。表示された文言はそのまま写す</td>
+                  <td>「該当なし」と返り、引用が 0 件だった</td>
+                </tr>
+                <tr>
+                  <th class="nowrap">影響範囲</th>
+                  <td>誰の・どの判断に響くか</td>
+                  <td>PMO の週次報告。遅延 3 件を見落とす</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="ps">この 4 項目をそのままコメント欄へ貼り付けて構いません。</div>
+        </details>
       </div>
-      <div>
-        <label for="{{ form.agent_run.id_for_label }}">{{ form.agent_run.label }}</label>
-        {{ form.agent_run }}
-      </div>
-      <div class="callout w">
-        <p><strong>「事実誤認があった」を選ぶ前に</strong>チェックを入れると、コメントが必須になります（未記入では送信できません）。</p>
-        <p>必要な再現情報は<strong>再現手順・期待結果・実際の結果・影響範囲</strong>の 4 点です。加えて、誤りと判断した根拠（正しい値と、その出所の画面名や資料名）を添えてください。ここが空だと「事実誤認 0 件」の判定を覆せません。</p>
-      </div>
+
+      <div class="ps"><strong>「事実誤認があった」を選ぶ前に</strong>：チェックするとコメントが必須になります。上の 4 点と、誤りと判断した根拠（正しい値とその出所）を書いてください。</div>
+
       <div>
         <label for="{{ form.has_fact_error.id_for_label }}">{{ form.has_fact_error.label }}</label>
         {{ form.has_fact_error }}
       </div>
-      <div>
-        <label for="{{ form.comment.id_for_label }}">{{ form.comment.label }}</label>
-        {{ form.comment }}
-        <div class="ps">「役に立たなかった」または事実誤認ありの場合は必須です。</div>
+
+      {# 対象は任意。ここで選ばせようとすると、送るだけの人が長い選択肢で止まる。 #}
+      <details>
+        <summary class="ps">対象の回答・実行を指定する（任意）</summary>
+        <div>
+          <label for="{{ form.answer.id_for_label }}">{{ form.answer.label }}</label>
+          {{ form.answer }}
+        </div>
+        <div>
+          <label for="{{ form.agent_run.id_for_label }}">{{ form.agent_run.label }}</label>
+          {{ form.agent_run }}
+        </div>
+      </details>
+
+      {# 誰の投稿かは自動で付く。ここで入力させない。 #}
+      <div class="form-meta">
+        <div><span class="form-meta-key">送信者</span>{{ user.display_name|default:user.username }}（{{ user.email }}）</div>
+        <div><span class="form-meta-key">テナント</span>{% if current_tenant %}{{ current_tenant.name }}{% else %}未選択{% endif %}</div>
       </div>
-      <div class="ps">送信するとフィードバック集計（一覧）へ戻ります。投稿は受入条件「事実誤認 0 件」の集計に加算されるため、戻った先の一覧で自分の投稿が反映されたことを確認できます。</div>
+
       <div class="actions">
-        <button type="submit" class="btn-b">フィードバックを送る</button>
-        <a class="btn-ghost" href="{% url 'audit:feedback_list' %}">やめる</a>
+        <button type="submit" class="btn-b">送信</button>
+        <button type="reset" class="btn-out">クリア</button>
       </div>
+      <div class="ps">送信するとフィードバック集計（一覧）へ戻ります。投稿は受入条件「事実誤認 0 件」の集計に加算されるため、戻った先の一覧で自分の投稿を確認できます。</div>
     </form>
   </div>
 

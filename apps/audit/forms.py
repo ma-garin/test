@@ -16,6 +16,9 @@ from apps.rag.models import RagAnswer
 #: 選択肢に出す上限。監査画面なので直近だけ選べれば足りる。
 TARGET_LIMIT = 50
 
+#: コメントの上限。画面側のカウンター表示と同じ値をここから配る。
+COMMENT_MAX_LENGTH = 4000
+
 
 class FeedbackForm(forms.ModelForm):
     """AI の回答に対する評価。
@@ -36,8 +39,16 @@ class FeedbackForm(forms.ModelForm):
         }
         widgets = {
             "comment": forms.Textarea(
-                attrs={"rows": 4, "placeholder": "どこが役に立った／立たなかったかを具体的に書いてください。"}
+                attrs={
+                    "rows": 8,
+                    "maxlength": COMMENT_MAX_LENGTH,
+                    # 残り文字数を出す先。上限に達してから気づくのを避ける。
+                    "data-counter": "feedback-count",
+                    "placeholder": "どこが役に立った／立たなかったかを具体的に書いてください。",
+                }
             ),
+            # 評価は 2〜3 択しかない。セレクトを開かせず、選択肢を出したままにする。
+            "rating": forms.RadioSelect,
         }
 
     def __init__(self, *args, tenant=None, **kwargs):
@@ -50,6 +61,10 @@ class FeedbackForm(forms.ModelForm):
         self.fields["answer"].empty_label = "（指定しない）"
         self.fields["agent_run"].empty_label = "（指定しない）"
         self.fields["comment"].required = False
+
+        # 空の選択肢（---------）は「未選択」を選べるように見えるので除く。
+        rating = self.fields["rating"]
+        rating.choices = [choice for choice in rating.choices if choice[0]]
 
     def clean_comment(self) -> str:
         return (self.cleaned_data.get("comment") or "").strip()

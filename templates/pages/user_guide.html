@@ -1,0 +1,79 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}ヘルプ{% endblock %}
+{% block subtitle %}この製品で何ができるかと、最初にやることだけを置いています。詳しい説明はカテゴリごとのページにあります。{% endblock %}
+
+{% block content %}
+  {% comment %}
+  トップに載せるのは「価値・最初の3手・カテゴリの入口」の3つだけ。
+  5W も画面のスクリーンショットもカテゴリのページへ移した。全部を1画面に積むと、
+  どこから読めばよいか判断できなくなる。
+  {% endcomment %}
+  <section class="lp-hero">
+    <p class="lp-eyebrow">VeriRAG PMO Agent</p>
+    <h2 class="lp-title">遅延と品質の問題を、締切より前に見つける</h2>
+    <p class="lp-lead">案件のタスク・不具合・課題・過去資料を1か所に集め、AI が状況整理と予測を下書きします。判断は人が行い、その根拠は追跡できます。</p>
+    <div class="lp-points">
+      <div class="lp-point">
+        <span class="lp-point-n">1</span>
+        <strong>先に気づく</strong>
+        <span>いまの進み方を延長した着地日と、遅延の兆候を数字で出します。</span>
+      </div>
+      <div class="lp-point">
+        <span class="lp-point-n">2</span>
+        <strong>書く時間を削る</strong>
+        <span>状況整理・計画・報告の下書きを AI が作ります。</span>
+      </div>
+      <div class="lp-point">
+        <span class="lp-point-n">3</span>
+        <strong>根拠を残す</strong>
+        <span>AI の判断過程と操作履歴が残り、報告に引用できます。</span>
+      </div>
+    </div>
+    <div class="lp-actions">
+      <a class="btn-b" href="{% url 'dashboard:control' %}">ダッシュボードを開く</a>
+    </div>
+  </section>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">はじめの3ステップ</span><span class="card-act">最初の5分</span></div>
+    <ol class="steps">
+      <li>
+        <span class="n">1</span>
+        <div>
+          <span class="tool">扱うテナントを選ぶ</span>
+          <div class="out">ヘッダー左のテナント名から切り替えます。<a href="{% url 'accounts:select_tenant' %}">テナントを選ぶ</a></div>
+        </div>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <div>
+          <span class="tool">対象の案件を選ぶ</span>
+          <div class="out">「全案件」のままでも進めます。選ぶと全画面の集計がその案件に絞られます。<a href="{% url 'accounts:select_project' %}">案件を選ぶ</a></div>
+        </div>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <div>
+          <span class="tool">「次にやること」を見る</span>
+          <div class="out">ダッシュボードの先頭に、いま最優先の1件が理由と期限つきで出ます。<a href="{% url 'dashboard:control' %}">ダッシュボードを開く</a></div>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">カテゴリから探す</span><span class="card-act">左メニューと同じ並び</span></div>
+    <div class="guide-list">
+      {% for category in categories %}
+        <a class="guide-row" href="{% url 'core:user_guide_category' category.guide.key %}">
+          <span class="guide-row-t">{{ category.section.label }}</span>
+          <span class="guide-row-v">{{ category.guide.value }}</span>
+          <span class="guide-row-n">{{ category.section.items|length }}画面</span>
+          <span class="guide-row-go" aria-hidden="true">›</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <p class="ps">AI の回答がおかしいと感じたら、<a href="{% url 'audit:feedback_create' %}">フィードバックを送る</a>と改善の材料になります。</p>
+{% endblock %}

@@ -21,6 +21,8 @@ export const SCREENS: Record<string, ScreenDef> = {
   // 認証・切替
   "ログイン": { path: "/accounts/login/" },
   "ログアウト": { actionPath: "/accounts/logout/" },
+  "個人設定": { path: "/accounts/account/", formPath: "/accounts/account/" },
+  "ユーザーガイド": { path: "/core/guide/" },
   "テナント切替": { path: "/accounts/tenant/" },
   "案件切替": { path: "/accounts/project/" },
   "初回テナント選択": { path: "/accounts/welcome/tenant/" },

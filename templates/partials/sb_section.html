@@ -1,0 +1,16 @@
+{% comment %}
+サイドバーの子メニュー 1 カテゴリ分。機能カテゴリとアカウントで同じ DOM を使う。
+片方だけ直して表示が食い違う状態を作らないため、マークアップはここだけで持つ。
+{% endcomment %}
+<section class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}" aria-label="{{ section.label }}">
+  <h2 class="sb-hd">{{ section.label }}</h2>
+  <div class="sb-sec-body">
+    {% for item in section.items %}
+      <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
+         href="{% url item.url_name %}" title="{{ item.label }}"{% if item.url_name == current_url_name %} aria-current="page"{% endif %}>
+        <span class="sb-badge" aria-hidden="true">{{ item.code }}</span>
+        <span class="sb-label">{{ item.label }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>

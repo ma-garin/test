@@ -38,10 +38,58 @@
          title="対象案件を切り替える">
         {% if current_project %}{{ current_project.code }} {{ current_project.name }}{% else %}全案件{% endif %} ▾
       </a>
-      <span class="hdr-user">{{ user.display_name|default:user.username }} <span>{{ user.get_role_display }}</span></span>
-      <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
-        <button type="submit" class="hdr-chip">ログアウト</button>
-      </form>
+      {% if user.is_authenticated %}
+        {# 氏名とログアウトだけを並べていた頃は、個人設定・ガイド・フィードバックの入口がどこにも無かった。 #}
+        {# 表示名と頭文字は開閉部の両方で使う。フィルタ列を 2 度評価せず、ここで 1 度だけ確定させる。 #}
+        {% with display_name=user.display_name|default:user.username %}
+        <div class="usermenu">
+          <button type="button" class="usermenu-trigger" id="usermenu-trigger"
+                  aria-haspopup="true" aria-expanded="false" aria-controls="usermenu-pop"
+                  title="アカウントメニュー（{{ user.email }}）">
+            <span class="usermenu-avatar" aria-hidden="true">{{ display_name|slice:":1"|upper }}</span>
+            <span class="usermenu-trigger-name">{{ display_name }}</span>
+            <svg class="usermenu-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+
+          <div class="usermenu-pop" id="usermenu-pop" role="menu" aria-labelledby="usermenu-trigger" hidden>
+            <div class="usermenu-head">
+              <span class="usermenu-avatar is-lg" aria-hidden="true">{{ display_name|slice:":1"|upper }}</span>
+              <span class="usermenu-head-text">
+                <span class="usermenu-name">{{ display_name }}</span>
+                <span class="usermenu-mail">{{ user.email }}</span>
+                <span class="usermenu-role">{{ user.get_role_display }}</span>
+              </span>
+            </div>
+
+            <div class="usermenu-sep" role="none"></div>
+
+            <a class="usermenu-item" role="menuitem" href="{% url 'accounts:account' %}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+              <span>個人設定</span>
+            </a>
+            <a class="usermenu-item" role="menuitem" href="{% url 'core:user_guide' %}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h7v16H4zM13 4h7v16h-7z"/></svg>
+              <span>ユーザーガイド</span>
+            </a>
+            {# 集計（一覧）は監査担当の画面。ここから来る人は「気づきを送る」ので投稿画面へ直行させる。 #}
+            <a class="usermenu-item" role="menuitem" href="{% url 'audit:feedback_create' %}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-5.5A8 8 0 0 1 11 4h2a8 8 0 0 1 8 8z"/></svg>
+              <span>フィードバック</span>
+            </a>
+
+            <div class="usermenu-sep" role="none"></div>
+
+            {# JS が落ちても出られるように、素の form のまま置く。 #}
+            <form method="post" action="{% url 'accounts:logout' %}" class="usermenu-logout-form">{% csrf_token %}
+              <button type="submit" class="usermenu-item is-danger" role="menuitem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 3H5v18h7"/></svg>
+                <span>ログアウト</span>
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endwith %}
+      {% endif %}
     </div>
   </header>
 
@@ -67,24 +115,21 @@
 
     <div class="sb-panel" id="nav-panel">
       <div class="sb-panel-head">
-        <span class="sb-panel-caption">機能カテゴリ</span>
-        <strong class="sb-panel-title" id="nav-section-title">{% for section in nav_sections %}{% if section.is_current %}{{ section.label }}{% endif %}{% endfor %}</strong>
+        <span class="sb-panel-caption">{% if current_section %}機能カテゴリ{% else %}アカウント{% endif %}</span>
+        <strong class="sb-panel-title" id="nav-section-title">{% if current_section %}{{ current_section.label }}{% else %}{{ page_title|default:"メニュー外の画面" }}{% endif %}</strong>
       </div>
 
       <div class="sb-scroll">
+        {% comment %}
+        どのカテゴリにも属さない画面（アカウントメニューから開く画面）では、
+        カテゴリがすべて閉じて子メニューが空欄になる。同じ位置に行き先を出し、
+        「開いたはいいが戻り方が分からない」状態を作らない。
+        {% endcomment %}
+        {% if not current_section %}
+          {% include "partials/sb_section.html" with section=account_section %}
+        {% endif %}
         {% for section in nav_sections %}
-          <section class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}" aria-label="{{ section.label }}">
-            <h2 class="sb-hd">{{ section.label }}</h2>
-            <div class="sb-sec-body">
-              {% for item in section.items %}
-                <a class="sb-item{% if item.url_name == current_url_name %} active{% endif %}{% if not item.is_ready %} dim{% endif %}"
-                   href="{% url item.url_name %}" title="{{ item.label }}"{% if item.url_name == current_url_name %} aria-current="page"{% endif %}>
-                  <span class="sb-badge" aria-hidden="true">{{ item.code }}</span>
-                  <span class="sb-label">{{ item.label }}</span>
-                </a>
-              {% endfor %}
-            </div>
-          </section>
+          {% include "partials/sb_section.html" %}
         {% endfor %}
       </div>
 
@@ -166,6 +211,62 @@ window.VeriRagUi = window.VeriRagUi || {};
   initNavigation(document);
 })();
 
+// ヘッダー右上のアカウントメニュー。
+// .shell は画面切替のたび innerHTML ごと差し替わるため、要素に直接ではなく
+// document への委譲で受ける。再バインドが要らず、切替後もそのまま効く。
+(function () {
+  function trigger() { return document.getElementById('usermenu-trigger'); }
+
+  function isOpen() {
+    var button = trigger();
+    return !!button && button.getAttribute('aria-expanded') === 'true';
+  }
+
+  function setOpen(open, returnFocus) {
+    var button = trigger();
+    var pop = document.getElementById('usermenu-pop');
+    if (!button || !pop) { return; }
+    pop.hidden = !open;
+    button.setAttribute('aria-expanded', String(open));
+    if (open) {
+      var first = pop.querySelector('.usermenu-item');
+      if (first) { first.focus(); }
+    } else if (returnFocus) {
+      button.focus();
+    }
+  }
+
+  document.addEventListener('click', function (event) {
+    if (event.target.closest && event.target.closest('#usermenu-trigger')) {
+      setOpen(!isOpen(), false);
+      return;
+    }
+    // メニュー内のクリックは項目自身の動作（画面移動・送信）に任せ、外側でだけ閉じる。
+    if (isOpen() && !(event.target.closest && event.target.closest('#usermenu-pop'))) {
+      setOpen(false, false);
+    }
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && isOpen()) { setOpen(false, true); }
+  });
+})();
+
+// ページ内アンカー。本文は .main-scroll の中だけがスクロールするため、
+// 既定の hash 移動では位置が変わらない。対象要素まで自分でスクロールさせる。
+(function () {
+  document.addEventListener('click', function (event) {
+    var anchor = event.target.closest && event.target.closest('a[href^="#"]');
+    if (!anchor || event.defaultPrevented) { return; }
+    var id = anchor.getAttribute('href').slice(1);
+    var target = id && document.getElementById(id);
+    if (!target) { return; }
+    event.preventDefault();
+    target.scrollIntoView({ block: 'start' });
+    window.history.replaceState({}, '', '#' + id);
+  });
+})();
+
 // 誤送信・離脱と入力エラーを共通で扱う。画面ごとに挙動を増やさないため、
 // 実際に保存する .form だけを対象にする。
 (function () {
@@ -206,6 +307,19 @@ window.VeriRagUi = window.VeriRagUi || {};
       error.id = errorId;
       control.setAttribute('aria-invalid', 'true');
       control.setAttribute('aria-describedby', errorId);
+    });
+
+    // 上限のある入力欄。書いている間に残量が見えないと、送信して初めて弾かれる。
+    root.querySelectorAll('textarea[data-counter]').forEach(function (field) {
+      var output = document.getElementById(field.getAttribute('data-counter'));
+      if (!output) { return; }
+      function updateCount() { output.textContent = String(field.value.length); }
+      field.addEventListener('input', updateCount);
+      // reset は input を発火させない。値が消えたのに残量だけ残ると読めなくなる。
+      if (field.form) {
+        field.form.addEventListener('reset', function () { window.setTimeout(updateCount, 0); });
+      }
+      updateCount();
     });
 
     var summary = root.querySelector('[data-form-error-summary]');

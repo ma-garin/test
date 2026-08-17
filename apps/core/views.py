@@ -5,11 +5,12 @@ from __future__ import annotations
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET
 
-from apps.core.navigation import all_items
+from apps.core.guide import CATEGORY_GUIDES, GUIDE_BY_KEY, screens_for
+from apps.core.navigation import all_items, navigation_for
 
 
 @require_GET
@@ -286,6 +287,59 @@ def screen_map(request: HttpRequest) -> HttpResponse:
         "pages/screen_map.html",
         {"items": all_items(), "page_title": "画面マップ"},
     )
+
+
+@login_required
+def user_guide(request: HttpRequest) -> HttpResponse:
+    """製品の価値・カテゴリ別の目的・主要画面の見方。
+
+    カテゴリの説明は `guide.py`、画面の並びは `navigation.py` が持つ。ロールで
+    見えないカテゴリはガイドにも出さないため、両者をここで突き合わせる。
+    """
+
+    sections = _visible_sections(request.user)
+    categories = [
+        {"guide": guide, "section": sections[guide.key]}
+        for guide in CATEGORY_GUIDES
+        if guide.key in sections
+    ]
+
+    return render(
+        request,
+        "pages/user_guide.html",
+        {"page_title": "ユーザーガイド", "categories": categories},
+    )
+
+
+@login_required
+def user_guide_category(request: HttpRequest, key: str) -> HttpResponse:
+    """カテゴリ 1 つ分のガイド。5W と、そのカテゴリの画面だけを出す。"""
+
+    sections = _visible_sections(request.user)
+    guide = GUIDE_BY_KEY.get(key)
+
+    # ロールで見えないカテゴリのガイドは、存在しない扱いにする。
+    if guide is None or key not in sections:
+        raise Http404("このカテゴリのガイドはありません。")
+
+    section = sections[key]
+
+    return render(
+        request,
+        "pages/user_guide_category.html",
+        {
+            "page_title": f"{section.label}の使い方",
+            "guide": guide,
+            "section": section,
+            "screens": screens_for(key),
+        },
+    )
+
+
+def _visible_sections(user) -> dict:
+    """その利用者に見えるカテゴリを、キー引きできる形で返す。"""
+
+    return {section.key: section for section in navigation_for(user)}
 
 
 def bad_request(request: HttpRequest, exception=None) -> HttpResponse:
