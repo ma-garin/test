@@ -20,6 +20,7 @@ from __future__ import annotations
 import importlib
 import re
 import unittest
+from collections import Counter
 from pathlib import Path
 
 from django.conf import settings
@@ -96,7 +97,7 @@ REQUIREMENT_TESTS: dict[int, tuple[str, ...]] = {
     64: ("apps.pmo.tests.test_generators",),
     65: ("apps.agents.tests.test_orchestrator",),
     66: ("apps.dashboard.tests.test_intervention_decision",),
-    67: ("apps.core.tests.test_seed_dev_project",),
+    67: ("apps.core.tests.test_seed_demo",),
     68: ("apps.rag.tests.test_evaluation",),
     69: ("apps.rag.tests.test_evaluation",),
     70: ("apps.rag.tests.test_evaluation",),
@@ -112,10 +113,16 @@ CROSS_CUTTING_TESTS = (
     "apps.core.tests.test_e2e_flows",
     "apps.core.tests.test_query_budget",
     "apps.core.tests.test_template_hygiene",
+    "apps.core.tests.test_open_question_ids",
+    # 実データ投入。要件表の行には対応しないが、充足率の写しを検査している。
+    "apps.core.tests.test_seed_dev_project",
     "apps.projects.tests.test_form_boundaries",
 )
 
 ROW = re.compile(r"^\|\s*(\d+)\s*\|.*\|\s*\*\*(済|部分|未|対象外)\*\*\s*\|")
+
+#: 「## 集計」の表。状態ごとの件数を人が書くため、行と食い違ったことがある。
+SUMMARY_ROW = re.compile(r"^\|\s*\*{0,2}(済|部分|未|実装中|対象外|合計)\*{0,2}\s*\|\s*\*{0,2}(\d+)")
 
 
 def _requirement_states() -> dict[int, str]:
@@ -130,6 +137,22 @@ def _requirement_states() -> dict[int, str]:
             states[int(match.group(1))] = match.group(2)
 
     return states
+
+
+def _summary_counts() -> dict[str, int]:
+    """「## 集計」に書かれた件数を読む。"""
+
+    text = TRACEABILITY.read_text(encoding="utf-8")
+    section = text.split("## 集計")[-1].split("## 残っているもの")[0]
+    counts: dict[str, int] = {}
+
+    for line in section.splitlines():
+        match = SUMMARY_ROW.match(line.strip())
+
+        if match:
+            counts[match.group(1)] = int(match.group(2))
+
+    return counts
 
 
 def _load_tests(module_name: str) -> int:
@@ -147,6 +170,28 @@ class RequirementTraceabilityTests(TestCase):
         """表の形式が変わって 0 件になったまま「合格」になるのを防ぐ。"""
 
         self.assertGreaterEqual(len(self.states), 70, "突合表の行を読み取れていない")
+
+    def test_集計が表の行と一致する(self) -> None:
+        """集計値を人が書いているため、行を足し引きすると実際にずれる。
+
+        以前「済63／部分5／未7／合計76」と書かれていたが、
+        表の行数は74だった。分母が違えば充足率も違う。
+        """
+
+        summary = _summary_counts()
+        counted = Counter(self.states.values())
+
+        self.assertTrue(summary, "「## 集計」の表を読み取れていない")
+
+        for label, written in summary.items():
+            with self.subTest(state=label):
+                actual = len(self.states) if label == "合計" else counted.get(label, 0)
+
+                self.assertEqual(
+                    written,
+                    actual,
+                    f"集計の「{label}」は {written} 件だが、表の行を数えると {actual} 件",
+                )
 
     def test_済の要件にはテストが割り当てられている(self) -> None:
         missing = [

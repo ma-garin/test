@@ -32,4 +32,4 @@ FAISS / pgvector へ移すときは実装クラスを追加し、`get_vector_sto
 
 - **最初から FAISS**: 性能は良いが、`faiss-cpu` のビルドで開発環境の構築が重くなる
 - **最初から pgvector**: PostgreSQL 前提になる。データストアの選定が未確定
-  （`docs/open_questions.md` 1 番）の段階では決め打ちしたくない
+  （`docs/open_questions.md` OQ-001）の段階では決め打ちしたくない

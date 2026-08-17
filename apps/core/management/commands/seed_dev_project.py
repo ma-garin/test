@@ -49,6 +49,18 @@ KICKOFF = "2026-07-30"
 #: 想定していた完了日。実際には間に合っていない。
 PLANNED_END_OFFSET = 2
 
+#: 要件の充足件数と分母。**出所は `docs/requirements/traceability.md` だけ**で、
+#: ここはその写しである。以前は同じ数字を5か所へ literal で書いており、
+#: 更新のたびに取りこぼしていた（97% と 99% が同じ画面に並んでいた）。
+#: 写しがずれていないことは `apps/core/tests/test_seed_dev_project.py` が検査する。
+FULFILLED_REQUIREMENTS = 73
+TOTAL_REQUIREMENTS = 74
+FULFILLMENT_PERCENT = round(FULFILLED_REQUIREMENTS / TOTAL_REQUIREMENTS * 100)
+
+#: 自動テストの件数。`make test-all`（ブラウザ検証を含む）の実測値で、
+#: 測った時点の値である。**要件の充足を示す数ではない。**
+AUTOMATED_TESTS = 1346
+
 
 class Command(BaseCommand):
     help = "この再構築プロジェクト自体を、実績データとして案件へ投入します。"
@@ -104,7 +116,7 @@ class Command(BaseCommand):
     def _create_project(self, tenant: Tenant) -> Project:
         """再構築プロジェクト本体。
 
-        進捗率は要件トレーサビリティの充足率（83%）をそのまま使う。
+        進捗率は要件トレーサビリティの充足率をそのまま使う。
         「画面が動く数」ではなく「要件を満たした数」を進捗とする方針は
         INCIDENT-001 の再発防止でもある。
         """
@@ -120,11 +132,13 @@ class Command(BaseCommand):
                     "directory_extra_features.csv（20項目）の計74項目。\n"
                     "要件突合を行わずに「完了」と報告したインシデント（INCIDENT-001）が発生し、"
                     "実際の充足率が32%だったことが判明。以降はトレーサビリティ表を分母としている。\n"
-                    "現在の充足率は97%。残る1件は回答生成（ADR-0004 の判断待ち）。"
+                    f"現在の充足率は{FULFILLMENT_PERCENT}%"
+                    f"（済{FULFILLED_REQUIREMENTS}／{TOTAL_REQUIREMENTS}）。"
+                    "残る1件は「対象外」の自動書き戻しのみで、「未」「部分」の要件は無い。"
                 ),
                 "status": ProjectStatus.DELAYED,
                 "rag_status": RagStatus.YELLOW,
-                "progress_percent": 97,
+                "progress_percent": FULFILLMENT_PERCENT,
                 "project_manager": "利用者（発注者）",
                 "pmo_manager": "Claude（実装担当）",
                 "is_demo": False,
@@ -178,11 +192,10 @@ class Command(BaseCommand):
              Priority.MEDIUM, 0, 0, 100, "", False),
             ("6.1", "実データセットの作成", "Claude", WbsTask.Status.DONE,
              Priority.URGENT, 0, 0, 100, "", True),
-            # 遅延の震源。設計の決定待ちで着手できず、後続が全部止まっている。
-            # 計画では初日に終える予定だったが、5日経っても着手できていない。
-            ("6.2", "回答生成", "Claude", WbsTask.Status.BLOCKED,
-             Priority.URGENT, -5, -4, 0,
-             "ADR-0004（2層構成）を提案済み。利用者の承認待ち", True),
+            # 計画（-5〜-4日）と実績のずれは、EVM の材料として残している。
+            ("6.2", "回答生成", "Claude", WbsTask.Status.DONE,
+             Priority.URGENT, -5, -4, 100,
+             "第1層（根拠アセンブラ）を実装済み。第2層はLLMプロバイダの決定後", True),
             ("6.3", "事実誤認の自動チェック", "Claude", WbsTask.Status.DONE,
              Priority.HIGH, -3, 0, 100,
              "6.2 を待たずルールベースで実装（本文の数値をDBと突合）", True),
@@ -196,7 +209,7 @@ class Command(BaseCommand):
              Priority.MEDIUM, 0, 0, 100, "", False),
             ("8.1", "受入確認・残課題の整理", "利用者", WbsTask.Status.NOT_STARTED,
              Priority.URGENT, 1, PLANNED_END_OFFSET, 0,
-             "充足率100%が前提。現在97%（残り1件は6.2）", True),
+             "要件表の「未」「部分」は0件。残るは「対象外」1件のみ", True),
         )
 
         created = 0
@@ -216,12 +229,9 @@ class Command(BaseCommand):
                     "progress_percent": progress,
                     "next_action": action,
                     "is_critical_path": cp,
-                    "ball_holder": "利用者" if code == "6.2" else owner,
-                    "follow_up_state": (
-                        WbsTask.FollowUpState.ESCALATED
-                        if status == WbsTask.Status.BLOCKED
-                        else WbsTask.FollowUpState.NONE
-                    ),
+                    "ball_holder": owner,
+                    # ブロック中の作業は無くなったので、エスカレーションも無い。
+                    "follow_up_state": WbsTask.FollowUpState.NONE,
                 },
             )
             tasks[code] = task
@@ -261,9 +271,10 @@ class Command(BaseCommand):
              "mvp_scope_directory_mapping.csv 54項目を読まずに「実装完了」と報告。"
              "実際の充足率は32%だった。トレーサビリティ表を作成し再発防止。"),
             ("回答生成の設計が未決定で着手できない",
-             Issue.Status.BLOCKED, Severity.CRITICAL, "利用者", 1,
-             "ADR-0004 として2層構成（根拠アセンブラ＋文体整形）を提案済み。"
-             "承認されれば第1層から実装できる。6.3 は先行してルールベースで実装した。"),
+             Issue.Status.RESOLVED, Severity.CRITICAL, "利用者", 1,
+             "ADR-0004（根拠アセンブラ＋文体整形の2層構成）を2026-08-01に承認。"
+             "第1層 apps/rag/services/answer.py を実装し、要件 #23 は「済」になった。"
+             "第2層（文体整形）はLLMプロバイダの決定後で、第1層だけで回答は成立する。"),
             ("venv に requests が未導入で実API連携を検証できない",
              Issue.Status.RESOLVED, Severity.HIGH, "Claude", 0,
              "requirements/base.txt へ追加済み。実APIでの疎通確認は"
@@ -282,9 +293,12 @@ class Command(BaseCommand):
              "索引の失敗で取込を失敗にはせず、履歴へ理由を残す。"),
             ("サイドメニューの項目が28件に増え、折りたたみ時に収まらない",
              Issue.Status.RESOLVED, Severity.LOW, "Claude", 5,
-             "使用頻度の低い11画面を各区分の「その他」へ畳んだ。"
-             "現在開いている画面は畳まず常時表示側へ引き上げる。"),
+             "一度は使用頻度の低い11画面を各区分の「その他」へ畳んだが、"
+             "目的の画面に辿り着けないという指摘を受けて「その他」は廃止し、"
+             "全項目を並べる形へ戻した。"),
         )
+
+        resolved_states = {Issue.Status.RESOLVED, Issue.Status.CLOSED}
 
         for title, status, severity, owner, due, description in specs:
             Issue.objects.update_or_create(
@@ -296,6 +310,9 @@ class Command(BaseCommand):
                     "owner": owner,
                     "due_date": today + timedelta(days=due),
                     "description": description,
+                    # 解決日時を入れないと「今期間の動き」（generators/facts.py）と
+                    # KPI が解決済みの課題を数えられない。不具合の closed_on と同じ扱い。
+                    "resolved_at": timezone.now() if status in resolved_states else None,
                 },
             )
 
@@ -357,26 +374,29 @@ class Command(BaseCommand):
         today = timezone.localdate()
         specs = (
             ("回答生成の設計が決まらず、AI支援の中核が未完のまま終わる",
-             5, 4, "open_questions.md 3番の決定を依頼済み。"
-             "決まらない場合はルールベースの要約で代替する案を用意", 1),
+             5, 4, "open_questions.md OQ-005 を2026-08-01に承認（ADR-0004）。"
+             "第1層（根拠アセンブラ）を実装済みでクローズ", 1, Risk.Status.CLOSED),
             ("生成文の品質がPoC目標（赤字率20%未満）に届かない",
-             4, 4, "テンプレートの文体調整と、章立ての固定で赤字を減らす", 3),
+             4, 4, "テンプレートの文体調整と、章立ての固定で赤字を減らす", 3,
+             Risk.Status.MONITORING),
             ("実APIでの疎通が未検証のまま本番移行する",
-             4, 3, "requests導入後、各コネクタの疎通確認を実施する", 5),
+             4, 3, "requests導入後、各コネクタの疎通確認を実施する", 5,
+             Risk.Status.MONITORING),
             ("機能追加に伴う画面数の増加で、利用者が目的の画面に辿り着けない",
-             3, 3, "", 7),
+             3, 3, "", 7, Risk.Status.MONITORING),
             ("並列実装による設計の不統一が、保守時に問題になる",
-             3, 3, "共通基盤（pagination / connectors / detection）を先に作る方針で対応中", 7),
+             3, 3, "共通基盤（pagination / connectors / detection）を先に作る方針で対応中", 7,
+             Risk.Status.MONITORING),
             ("テスト501件の実行は速いが、実データ規模での性能が未検証",
-             3, 2, "", 10),
+             3, 2, "", 10, Risk.Status.MONITORING),
         )
 
-        for title, probability, impact, mitigation, due in specs:
+        for title, probability, impact, mitigation, due, status in specs:
             Risk.objects.update_or_create(
                 project=project,
                 title=title,
                 defaults={
-                    "status": Risk.Status.MONITORING,
+                    "status": status,
                     "probability": probability,
                     "impact": impact,
                     "mitigation": mitigation,
@@ -469,14 +489,26 @@ class Command(BaseCommand):
         return len(specs)
 
     def _create_metrics(self, project: Project) -> int:
-        """実測値。テスト件数とコード規模は実際の値。"""
+        """実測値。
+
+        課題・不具合の件数は**投入した行から数える**。同じ数を literal で
+        持つと、行を1つ直すたびに指標だけが古い値のまま残る。
+        """
 
         today = timezone.localdate()
+        unresolved_critical = (
+            Issue.objects.filter(project=project, severity=Severity.CRITICAL)
+            .exclude(status__in=(Issue.Status.RESOLVED, Issue.Status.CLOSED))
+            .count()
+        )
+        open_defects = (
+            Defect.objects.filter(project=project).exclude(status=Defect.Status.CLOSED).count()
+        )
         specs = (
-            ("自動テスト件数", 591, 400, "件"),
-            ("要件充足率", 97, 100, "%"),
-            ("未解決の重大課題", 1, 0, "件"),
-            ("未クローズ不具合", 0, 0, "件"),
+            ("自動テスト件数", AUTOMATED_TESTS, 400, "件"),
+            ("要件充足率", FULFILLMENT_PERCENT, 100, "%"),
+            ("未解決の重大課題", unresolved_critical, 0, "件"),
+            ("未クローズ不具合", open_defects, 0, "件"),
         )
 
         for key, value, target, unit in specs:
@@ -519,15 +551,16 @@ class Command(BaseCommand):
     def _create_alerts(self, project: Project) -> int:
         now = timezone.now()
         specs = (
-            ("回答生成の設計待ちでクリティカルパスが停止している",
+            ("受入確認（WBS 8.1）が未着手のまま完了予定日に近づいている",
              Alert.Category.SCHEDULE, Alert.Severity.CRITICAL, 0,
-             "WBS 6.2 がブロック中。後続の 8.1（受入確認）が着手できない。"
-             "決定の主体は利用者側にあり、実装側では解消できない。",
-             {"wbs_code": "6.2", "blocked_successors": 1}),
-            ("要件充足率が目標に達していない（97% / 目標100%）",
+             "前提だった 6.2（回答生成）は完了済み。8.1 の担当は利用者側にあり、"
+             "実装側では着手できない。",
+             {"wbs_code": "8.1", "owner": "利用者"}),
+            (f"要件充足率が目標に達していない（{FULFILLMENT_PERCENT}% / 目標100%）",
              Alert.Category.QUALITY, Alert.Severity.WARNING, 0,
-             "残り1項目（#23 根本原因分析の指示応答）。回答生成の設計判断が前提。",
-             {"achieved": 72, "total": 74}),
+             "残る1項目（#38 自動書き戻し）は参考データで「対象外」と明記されている。"
+             "「未」「部分」の要件は無い。",
+             {"achieved": FULFILLED_REQUIREMENTS, "total": TOTAL_REQUIREMENTS}),
         )
 
         for title, category, severity, hours_ago, detail, evidence in specs:
