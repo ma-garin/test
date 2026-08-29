@@ -1,0 +1,96 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}計数・目標管理{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{% url 'performance:kpi_list' %}">KPI管理へ戻る</a>
+{% endblock %}
+
+{% block content %}
+
+  {% if not fiscal_year %}
+    <div class="callout w">
+      <p><strong>年度が未登録です。</strong><a href="{% url 'performance:year_create' %}">年度を登録</a>してください。</p>
+    </div>
+  {% else %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">入力対象</span>
+      <span class="card-act">{{ fiscal_year.name }}{% if version %} ／ {{ version }}{% endif %}</span>
+    </div>
+    <form method="get" class="form perf-target">
+      <input type="hidden" name="year" value="{{ fiscal_year.code }}">
+      <div>
+        <label for="kpi-def">KPI</label>
+        <select id="kpi-def" name="kpi">
+          <option value="">選択してください</option>
+          {% for item in definitions %}
+            <option value="{{ item.pk }}"{% if definition and item.pk == definition.pk %} selected{% endif %}>{{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="kpi-org">組織</label>
+        <select id="kpi-org" name="org">
+          <option value="">選択してください</option>
+          {% for item in units %}
+            <option value="{{ item.pk }}"{% if unit and item.pk == unit.pk %} selected{% endif %}>{{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="kpi-member">メンバー（個人別）</label>
+        <select id="kpi-member" name="member">
+          <option value="">組織レベルで入力</option>
+          {% for item in members %}
+            <option value="{{ item.pk }}"{% if member and item.pk == member.pk %} selected{% endif %}>{{ item.employee_code }} {{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn-out">この条件で開く</button>
+    </form>
+  </div>
+
+  {% if form %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">{{ definition.name }} ／ {{ unit.name }}{% if member %} ／ {{ member.name }}{% endif %}</span>
+        <span class="card-act">{{ definition.get_direction_display }}・年度集計は{{ definition.get_aggregation_display }}</span>
+      </div>
+      <form method="post" class="form">
+        {% csrf_token %}
+        <input type="hidden" name="org" value="{{ unit.pk }}">
+        <input type="hidden" name="kpi" value="{{ definition.pk }}">
+        {% if member %}<input type="hidden" name="member" value="{{ member.pk }}">{% endif %}
+
+        <div>
+          <label for="{{ form.target_value.id_for_label }}">目標値（{{ version }}）</label>
+          {{ form.target_value }}
+          {% if form.target_value.errors %}<div class="callout d">{{ form.target_value.errors|join:" " }}</div>{% endif %}
+          <div class="ps">空欄で保存すると、この計画版の目標を削除します。</div>
+        </div>
+
+        <div class="t-wrap">
+          <table class="t perf-grid">
+            <thead><tr><th>月</th><th>実績値{% if definition.unit %}（{{ definition.unit }}）{% endif %}</th></tr></thead>
+            <tbody>
+              {% for row in form.rows %}
+                <tr>
+                  <td class="nowrap">{{ row.month|date:"Y/m" }}</td>
+                  <td>{{ row.field }}{% if row.field.errors %}<div class="ps err">{{ row.field.errors|join:" " }}</div>{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <button type="submit" class="btn-b">保存する</button>
+      </form>
+    </div>
+  {% else %}
+    <div class="callout"><p>KPI と組織を選ぶと、目標値と月次実績の入力表が開きます。</p></div>
+  {% endif %}
+
+  {% endif %}
+
+{% endblock %}

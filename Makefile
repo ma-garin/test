@@ -1,4 +1,4 @@
-.PHONY: help setup migrate seed run test lint fmt check index clean
+.PHONY: help setup migrate seed seed-perf run test lint fmt check index clean
 
 VENV ?= .venv
 PY := $(VENV)/bin/python
@@ -18,6 +18,9 @@ migrate:  ## マイグレーションを適用する
 
 seed:  ## 体験用デモデータを投入する
 	$(PY) manage.py seed_demo
+
+seed-perf:  ## 計数・目標管理の体験用データを投入する
+	$(PY) manage.py seed_performance
 
 run:  ## 開発サーバーを起動する
 	$(PY) manage.py runserver

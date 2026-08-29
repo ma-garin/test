@@ -83,6 +83,18 @@ NAVIGATION: tuple[NavSection, ...] = (
         ),
     ),
     NavSection(
+        key="performance",
+        label="計数・目標管理",
+        items=(
+            NavItem("perf_dashboard", "計数ダッシュボード", "performance:dashboard", "FD", "ready"),
+            NavItem("perf_plans", "計数計画", "performance:plan_list", "FP", "ready"),
+            NavItem("perf_entry", "計数入力", "performance:figure_entry", "FE", "ready"),
+            NavItem("perf_kpi", "KPI管理", "performance:kpi_list", "FK", "ready"),
+            NavItem("perf_import", "CSV取込", "performance:import", "FI", "ready"),
+            NavItem("perf_orgs", "組織・マスタ管理", "performance:org_list", "FO", "ready"),
+        ),
+    ),
+    NavSection(
         key="knowledge",
         label="ナレッジ / RAG",
         items=(

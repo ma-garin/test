@@ -1,0 +1,27 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}計数・目標管理{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{% url back_url %}">{{ back_label }}</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">{{ page_title }}</span></div>
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="callout d">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-b">保存する</button>
+    </form>
+  </div>
+
+{% endblock %}

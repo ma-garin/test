@@ -1,0 +1,34 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}計数・目標管理{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{% url 'performance:plan_list' %}">計数計画へ戻る</a>
+{% endblock %}
+
+{% block content %}
+
+  {% if has_initial and not version %}
+    <div class="callout w">
+      <p><strong>この年度には期初計画が登録済みです。</strong>
+      期初計画は書き換えず、見直しは期中変更計画として積みます。適用開始月より前の実績は、これまでの計画で評価されたままになります。</p>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">{{ fiscal_year.name }}の計画版</span></div>
+    <form method="post" class="form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="callout d">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      {% for field in form %}
+        <div>
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-b">保存する</button>
+    </form>
+  </div>
+
+{% endblock %}

@@ -23,6 +23,7 @@ urlpatterns = [
     path("pmo/", include("apps.pmo.urls")),
     path("audit/", include("apps.audit.urls")),
     path("integrations/", include("apps.integrations.urls")),
+    path("performance/", include("apps.performance.urls")),
     path("django-admin/", admin.site.urls),
 ]
 

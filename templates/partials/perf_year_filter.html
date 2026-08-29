@@ -1,0 +1,24 @@
+{% comment %}
+  年度と対象月の切り替え。累計をどこまでで見るかは全画面で共通なので、
+  ここに1つだけ置いて各画面から include する。
+{% endcomment %}
+<form method="get" class="perf-filter">
+  <label for="perf-year">年度</label>
+  <select id="perf-year" name="year" onchange="this.form.submit()">
+    {% for year in fiscal_years %}
+      <option value="{{ year.code }}"{% if year.pk == fiscal_year.pk %} selected{% endif %}>{{ year.name }}</option>
+    {% endfor %}
+  </select>
+
+  {% if all_months %}
+    <label for="perf-upto">累計</label>
+    <select id="perf-upto" name="upto" onchange="this.form.submit()">
+      {% for month in all_months %}
+        <option value="{{ month|date:'Y-m' }}"{% if month == upto %} selected{% endif %}>{{ month|date:'Y/m' }} まで</option>
+      {% endfor %}
+    </select>
+  {% endif %}
+
+  {% for key, value in extra_query.items %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+  <noscript><button type="submit" class="btn-out sm">表示</button></noscript>
+</form>

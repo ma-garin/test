@@ -33,6 +33,8 @@ DJANGO_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # 金額の桁区切り（intcomma）に使う。計数画面は桁が読めないと意味がない。
+    "django.contrib.humanize",
 ]
 
 THIRD_PARTY_APPS = [
@@ -50,6 +52,7 @@ LOCAL_APPS = [
     "apps.dashboard",
     "apps.audit",
     "apps.integrations",
+    "apps.performance",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

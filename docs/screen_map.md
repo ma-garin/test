@@ -32,6 +32,19 @@ UI の正は `docs/screens/VeriRAG_PMO_Agent_MVP.html`（モック）。
 | プロンプトライブラリ | `pmo:prompt_library` | 済 | PMO タスク別テンプレートを選び、相談へ適用できる |
 | 教育支援 | `pmo:education` | 済 | 新任向けの操作導線と用語解説を提供する |
 
+## 計数・目標管理
+
+設計と CSV 仕様は `docs/performance.md`。
+
+| 画面 | URL 名 | 状況 | 受入条件 |
+|---|---|---|---|
+| 計数ダッシュボード | `performance:dashboard` | 済 | 担当組織の年度累計（売上・粗利・利益・利益率）と計画比、KPI 達成状況を表示する |
+| 計数計画 | `performance:plan_list` | 済 | 期初計画と期中変更計画を版として並べ、月ごとにどの版が効くかを示す |
+| 計数入力 | `performance:figure_entry` | 済 | 組織／個人 × 12か月をグリッドで保存する。空欄は値の削除として扱う |
+| KPI管理 | `performance:kpi_list` | 済 | KPI 定義と、担当組織の目標・実績・達成判定を表示する |
+| CSV取込 | `performance:import` | 済 | 組織・メンバー・計数・KPI を取り込み、行番号つきのエラーと履歴を残す |
+| 組織・マスタ管理 | `performance:org_list` | 済 | 部・課・プロジェクトの階層、メンバー、年度を管理する |
+
 ## ナレッジ / RAG
 
 | 画面 | URL 名 | 状況 | 受入条件 |

@@ -1,0 +1,466 @@
+"""計数の集計。組織ツリーの積み上げと、計画対比の計算。
+
+**二重計上を避けるための約束**
+
+組織の計数は次の2本立てで登録できる。
+
+- 組織レベル … その組織に直接ぶら下がる計数（`member` が空の行）
+- 個人レベル … 組織に所属するメンバーごとの計数（`member` を持つ行）
+
+集計では **組織値 = 自組織の直接入力 + 配下組織の合計** とし、個人の値は足さない。
+個人値は「組織値の内訳」とみなす。両方を足すと、個人別に配分を入れた組織だけ
+金額が2倍になり、部の合計が課の合計と合わなくなる。
+
+そのかわり、個人合計と組織値のずれ（`member_gap`）を算出して画面へ出す。
+配分の入れ忘れ・入れ過ぎは、この差でしか気づけない。
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import date
+from decimal import Decimal
+
+from apps.performance.constants import ACHIEVED_RATIO, WARNING_RATIO
+from apps.performance.models import ActualFigure, FiscalYear, OrgMember, OrgUnit, PlanVersion
+from apps.performance.services import plans
+
+ZERO = Decimal("0")
+
+
+@dataclass(frozen=True)
+class Amounts:
+    """売上・粗利・利益の3点セット。率は保存せず、ここで導出する。"""
+
+    revenue: Decimal = ZERO
+    gross_profit: Decimal = ZERO
+    operating_profit: Decimal = ZERO
+
+    def __add__(self, other: Amounts) -> Amounts:
+        return Amounts(
+            revenue=self.revenue + other.revenue,
+            gross_profit=self.gross_profit + other.gross_profit,
+            operating_profit=self.operating_profit + other.operating_profit,
+        )
+
+    def __sub__(self, other: Amounts) -> Amounts:
+        return Amounts(
+            revenue=self.revenue - other.revenue,
+            gross_profit=self.gross_profit - other.gross_profit,
+            operating_profit=self.operating_profit - other.operating_profit,
+        )
+
+    @classmethod
+    def of(cls, figure) -> Amounts:
+        return cls(
+            revenue=figure.revenue,
+            gross_profit=figure.gross_profit,
+            operating_profit=figure.operating_profit,
+        )
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.revenue or self.gross_profit or self.operating_profit)
+
+    @property
+    def gross_margin_rate(self) -> Decimal | None:
+        return rate(self.gross_profit, self.revenue)
+
+    @property
+    def profit_rate(self) -> Decimal | None:
+        return rate(self.operating_profit, self.revenue)
+
+
+EMPTY = Amounts()
+
+
+def rate(numerator: Decimal, denominator: Decimal) -> Decimal | None:
+    """百分率。分母が0なら率は定義できないので None（0% と区別する）。"""
+
+    if not denominator:
+        return None
+
+    return (Decimal(numerator) / Decimal(denominator) * 100).quantize(Decimal("0.01"))
+
+
+def tone_for(ratio: Decimal | None) -> str:
+    """達成率から表示トーンを決める。画面ごとに閾値を書かないための1本化。"""
+
+    if ratio is None:
+        return "n"
+
+    if ratio >= ACHIEVED_RATIO:
+        return "g"
+
+    if ratio >= WARNING_RATIO:
+        return "a"
+
+    return "r"
+
+
+@dataclass(frozen=True)
+class Comparison:
+    """計画と実績の対比。差異と達成率をまとめて持つ。"""
+
+    plan: Amounts
+    actual: Amounts
+
+    @property
+    def variance(self) -> Amounts:
+        """実績 − 計画。マイナスが未達。"""
+
+        return self.actual - self.plan
+
+    @property
+    def revenue_achievement(self) -> Decimal | None:
+        return rate(self.actual.revenue, self.plan.revenue)
+
+    @property
+    def gross_profit_achievement(self) -> Decimal | None:
+        return rate(self.actual.gross_profit, self.plan.gross_profit)
+
+    @property
+    def profit_achievement(self) -> Decimal | None:
+        return rate(self.actual.operating_profit, self.plan.operating_profit)
+
+    @property
+    def profit_rate_gap(self) -> Decimal | None:
+        """利益率の差（ポイント）。率どうしは引き算しないと意味が出ない。"""
+
+        planned, actual = self.plan.profit_rate, self.actual.profit_rate
+
+        if planned is None or actual is None:
+            return None
+
+        return actual - planned
+
+    @property
+    def tone(self) -> str:
+        return tone_for(self.revenue_achievement)
+
+    @property
+    def profit_tone(self) -> str:
+        return tone_for(self.profit_achievement)
+
+
+@dataclass
+class AmountIndex:
+    """`(組織, 月)` と `(メンバー, 月)` で引ける金額の索引。
+
+    集計のたびに SQL を撃つと、部→課→PJ の3階層で N+1 が3乗になる。
+    年度分を1回読んでメモリ上で畳む。
+    """
+
+    org: dict[tuple, Amounts] = field(default_factory=dict)
+    member: dict[tuple, Amounts] = field(default_factory=dict)
+
+    def add(self, org_id, member_id, month: date, amounts: Amounts) -> None:
+        bucket = self.member if member_id else self.org
+        key = (member_id, month) if member_id else (org_id, month)
+        bucket[key] = bucket.get(key, EMPTY) + amounts
+
+    def org_amount(self, org_id, months: list[date]) -> Amounts:
+        total = EMPTY
+
+        for month in months:
+            total = total + self.org.get((org_id, month), EMPTY)
+
+        return total
+
+    def member_amount(self, member_id, months: list[date]) -> Amounts:
+        total = EMPTY
+
+        for month in months:
+            total = total + self.member.get((member_id, month), EMPTY)
+
+        return total
+
+
+def plan_index(fiscal_year: FiscalYear, org_ids=None) -> AmountIndex:
+    """期中変更を反映した「現行計画」の索引。"""
+
+    index = AmountIndex()
+
+    for (org_id, member_id, month), effective in plans.effective_figures(
+        fiscal_year, org_ids
+    ).items():
+        index.add(org_id, member_id, month, Amounts.of(effective.figure))
+
+    return index
+
+
+def version_index(version: PlanVersion, org_ids=None) -> AmountIndex:
+    """特定の版だけを見た索引。期初計画との比較に使う。"""
+
+    index = AmountIndex()
+
+    for (org_id, member_id, month), figure in plans.version_figures(version, org_ids).items():
+        index.add(org_id, member_id, month, Amounts.of(figure))
+
+    return index
+
+
+def actual_index(fiscal_year: FiscalYear, org_ids=None) -> AmountIndex:
+    index = AmountIndex()
+    queryset = ActualFigure.objects.filter(fiscal_year=fiscal_year)
+
+    if org_ids is not None:
+        queryset = queryset.filter(org_unit_id__in=list(org_ids))
+
+    for figure in queryset:
+        index.add(figure.org_unit_id, figure.member_id, figure.month, Amounts.of(figure))
+
+    return index
+
+
+def descendants_map(units: list[OrgUnit]) -> dict:
+    """組織ID → 自分と配下すべてのID。
+
+    渡された集合の中だけで木を閉じる。参照権限で切られた組織が集合から外れて
+    いれば、その配下も自動的に集計へ入らない（見えない組織の数字が親の合計に
+    混ざることを防ぐ）。
+    """
+
+    children: dict = {}
+
+    for unit in units:
+        children.setdefault(unit.parent_id, []).append(unit)
+
+    known = {unit.pk for unit in units}
+    result: dict = {}
+
+    def collect(unit: OrgUnit) -> list:
+        if unit.pk in result:
+            return result[unit.pk]
+
+        ids = [unit.pk]
+
+        for child in children.get(unit.pk, []):
+            ids.extend(collect(child))
+
+        result[unit.pk] = ids
+
+        return ids
+
+    for unit in units:
+        collect(unit)
+
+    # 親が集合外の組織は、その組織自身が根として扱われる。
+    return {unit_id: ids for unit_id, ids in result.items() if unit_id in known}
+
+
+@dataclass(frozen=True)
+class OrgSummary:
+    """1組織ぶんの集計結果。"""
+
+    unit: OrgUnit
+    own_plan: Amounts
+    own_actual: Amounts
+    total_plan: Amounts
+    total_actual: Amounts
+    total_initial: Amounts
+    member_plan: Amounts
+    member_actual: Amounts
+
+    @property
+    def comparison(self) -> Comparison:
+        return Comparison(plan=self.total_plan, actual=self.total_actual)
+
+    @property
+    def initial_comparison(self) -> Comparison:
+        """期初計画に対する実績。期中で計画を下げた場合はここで露見する。"""
+
+        return Comparison(plan=self.total_initial, actual=self.total_actual)
+
+    @property
+    def plan_revision(self) -> Amounts:
+        """現行計画 − 期初計画。期中変更でどれだけ動かしたか。"""
+
+        return self.total_plan - self.total_initial
+
+    @property
+    def member_gap(self) -> Amounts:
+        """個人配分の合計 − 組織の直接入力値。0 でなければ配分漏れの疑い。"""
+
+        return self.member_actual - self.own_actual
+
+    @property
+    def has_member_breakdown(self) -> bool:
+        return not (self.member_plan.is_empty and self.member_actual.is_empty)
+
+
+@dataclass(frozen=True)
+class Report:
+    """画面が使う集計結果一式。"""
+
+    fiscal_year: FiscalYear
+    months: list[date]
+    summaries: dict
+    plan: AmountIndex
+    actual: AmountIndex
+    initial: AmountIndex
+    descendants: dict
+
+    def for_unit(self, unit: OrgUnit) -> OrgSummary | None:
+        return self.summaries.get(unit.pk if hasattr(unit, "pk") else unit)
+
+    def totals(self, units: list[OrgUnit]) -> Comparison:
+        """複数組織の合計。親子が混ざっても二重に数えないよう、根だけを足す。"""
+
+        ids = {unit.pk for unit in units}
+        roots = [unit for unit in units if unit.parent_id not in ids]
+
+        plan, actual = EMPTY, EMPTY
+
+        for unit in roots:
+            summary = self.summaries.get(unit.pk)
+
+            if summary is None:
+                continue
+
+            plan = plan + summary.total_plan
+            actual = actual + summary.total_actual
+
+        return Comparison(plan=plan, actual=actual)
+
+    def monthly_rows(self, unit: OrgUnit) -> list[MonthlyRow]:
+        ids = self.descendants.get(unit.pk, [unit.pk])
+        rows: list[MonthlyRow] = []
+        cumulative_plan, cumulative_actual = EMPTY, EMPTY
+
+        for month in self.months:
+            plan, actual, initial = EMPTY, EMPTY, EMPTY
+
+            for org_id in ids:
+                plan = plan + self.plan.org_amount(org_id, [month])
+                actual = actual + self.actual.org_amount(org_id, [month])
+                initial = initial + self.initial.org_amount(org_id, [month])
+
+            cumulative_plan = cumulative_plan + plan
+            cumulative_actual = cumulative_actual + actual
+
+            rows.append(
+                MonthlyRow(
+                    month=month,
+                    plan=plan,
+                    actual=actual,
+                    initial=initial,
+                    cumulative_plan=cumulative_plan,
+                    cumulative_actual=cumulative_actual,
+                )
+            )
+
+        return rows
+
+
+@dataclass(frozen=True)
+class MonthlyRow:
+    month: date
+    plan: Amounts
+    actual: Amounts
+    initial: Amounts
+    cumulative_plan: Amounts
+    cumulative_actual: Amounts
+
+    @property
+    def comparison(self) -> Comparison:
+        return Comparison(plan=self.plan, actual=self.actual)
+
+    @property
+    def cumulative(self) -> Comparison:
+        return Comparison(plan=self.cumulative_plan, actual=self.cumulative_actual)
+
+    @property
+    def has_data(self) -> bool:
+        return not (self.plan.is_empty and self.actual.is_empty)
+
+
+@dataclass(frozen=True)
+class MemberSummary:
+    member: OrgMember
+    plan: Amounts
+    actual: Amounts
+
+    @property
+    def comparison(self) -> Comparison:
+        return Comparison(plan=self.plan, actual=self.actual)
+
+
+def build_report(
+    fiscal_year: FiscalYear,
+    units: list[OrgUnit],
+    months: list[date] | None = None,
+    members: list[OrgMember] | None = None,
+) -> Report:
+    """組織集合に対する年度集計。`months` を絞れば期首からの累計になる。"""
+
+    months = months if months is not None else fiscal_year.months
+    org_ids = [unit.pk for unit in units]
+
+    plan = plan_index(fiscal_year, org_ids)
+    actual = actual_index(fiscal_year, org_ids)
+
+    initial_version = plans.initial_version(fiscal_year)
+    initial = version_index(initial_version, org_ids) if initial_version else AmountIndex()
+
+    descendants = descendants_map(units)
+
+    members_by_org: dict = {}
+
+    if members is not None:
+        for member in members:
+            members_by_org.setdefault(member.org_unit_id, []).append(member)
+
+    summaries: dict = {}
+
+    for unit in units:
+        ids = descendants.get(unit.pk, [unit.pk])
+
+        total_plan, total_actual, total_initial = EMPTY, EMPTY, EMPTY
+
+        for org_id in ids:
+            total_plan = total_plan + plan.org_amount(org_id, months)
+            total_actual = total_actual + actual.org_amount(org_id, months)
+            total_initial = total_initial + initial.org_amount(org_id, months)
+
+        member_plan, member_actual = EMPTY, EMPTY
+
+        for member in members_by_org.get(unit.pk, []):
+            member_plan = member_plan + plan.member_amount(member.pk, months)
+            member_actual = member_actual + actual.member_amount(member.pk, months)
+
+        summaries[unit.pk] = OrgSummary(
+            unit=unit,
+            own_plan=plan.org_amount(unit.pk, months),
+            own_actual=actual.org_amount(unit.pk, months),
+            total_plan=total_plan,
+            total_actual=total_actual,
+            total_initial=total_initial,
+            member_plan=member_plan,
+            member_actual=member_actual,
+        )
+
+    return Report(
+        fiscal_year=fiscal_year,
+        months=months,
+        summaries=summaries,
+        plan=plan,
+        actual=actual,
+        initial=initial,
+        descendants=descendants,
+    )
+
+
+def member_summaries(
+    report: Report, members: list[OrgMember], months: list[date] | None = None
+) -> list[MemberSummary]:
+    months = months if months is not None else report.months
+
+    return [
+        MemberSummary(
+            member=member,
+            plan=report.plan.member_amount(member.pk, months),
+            actual=report.actual.member_amount(member.pk, months),
+        )
+        for member in members
+    ]

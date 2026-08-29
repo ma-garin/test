@@ -1,0 +1,109 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}計数・目標管理{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{% url 'performance:dashboard' %}">ダッシュボードへ</a>
+  <a class="btn-out sm" href="{% url 'performance:import' %}">CSVで取り込む</a>
+{% endblock %}
+
+{% block content %}
+
+  {% if not fiscal_year %}
+    <div class="callout w">
+      <p><strong>年度が未登録です。</strong>計数は年度と月で持つため、まず年度を作ってください。</p>
+      <p><a href="{% url 'performance:year_create' %}">年度を登録する</a></p>
+    </div>
+  {% else %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">入力対象</span>
+      <span class="card-act">{{ fiscal_year.name }}</span>
+    </div>
+    <form method="get" class="form perf-target">
+      <input type="hidden" name="year" value="{{ fiscal_year.code }}">
+      <div>
+        <label for="entry-mode">種別</label>
+        <select id="entry-mode" name="mode">
+          <option value="actual"{% if mode == 'actual' %} selected{% endif %}>実績</option>
+          <option value="plan"{% if mode == 'plan' %} selected{% endif %}>計画</option>
+        </select>
+      </div>
+      <div>
+        <label for="entry-org">組織</label>
+        <select id="entry-org" name="org">
+          <option value="">選択してください</option>
+          {% for item in units %}
+            <option value="{{ item.pk }}"{% if unit and item.pk == unit.pk %} selected{% endif %}>{{ item.name }}（{{ item.get_level_display }}）</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="entry-member">メンバー（個人別に入力する場合）</label>
+        <select id="entry-member" name="member">
+          <option value="">組織レベルで入力</option>
+          {% for item in members %}
+            <option value="{{ item.pk }}"{% if member and item.pk == member.pk %} selected{% endif %}>{{ item.employee_code }} {{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="entry-plan">計画版（計画のとき）</label>
+        <select id="entry-plan" name="plan">
+          {% for item in versions %}
+            <option value="{{ item.pk }}"{% if version and item.pk == version.pk %} selected{% endif %}>{{ item }}（{{ item.get_status_display }}）</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn-out">この条件で開く</button>
+    </form>
+  </div>
+
+  {% if unit and form %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">
+          {{ unit.name }}{% if member %} ／ {{ member.name }}{% endif %} の
+          {% if mode == 'plan' %}計画（{{ version }}）{% else %}実績{% endif %}
+        </span>
+        <span class="card-act">空欄で保存すると、その月の値は削除されます</span>
+      </div>
+
+      {% if form.non_field_errors %}<div class="callout d">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+      <form method="post" class="form">
+        {% csrf_token %}
+        <input type="hidden" name="mode" value="{{ mode }}">
+        <input type="hidden" name="org" value="{{ unit.pk }}">
+        {% if member %}<input type="hidden" name="member" value="{{ member.pk }}">{% endif %}
+        {% if version %}<input type="hidden" name="plan" value="{{ version.pk }}">{% endif %}
+
+        <div class="t-wrap">
+          <table class="t perf-grid">
+            <thead><tr><th>月</th><th>売上</th><th>粗利</th><th>利益</th></tr></thead>
+            <tbody>
+              {% for row in form.rows %}
+                <tr>
+                  <td class="nowrap">{{ row.month|date:"Y/m" }}</td>
+                  <td>{{ row.revenue }}{% if row.revenue.errors %}<div class="ps err">{{ row.revenue.errors|join:" " }}</div>{% endif %}</td>
+                  <td>{{ row.gross_profit }}{% if row.gross_profit.errors %}<div class="ps err">{{ row.gross_profit.errors|join:" " }}</div>{% endif %}</td>
+                  <td>{{ row.operating_profit }}{% if row.operating_profit.errors %}<div class="ps err">{{ row.operating_profit.errors|join:" " }}</div>{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <button type="submit" class="btn-b">保存する</button>
+      </form>
+    </div>
+  {% elif not unit %}
+    <div class="callout">
+      <p>組織を選ぶと、年度12か月分の入力表が開きます。CSV で一括登録する場合は
+      <a href="{% url 'performance:import' %}">CSV取込</a>を使ってください。</p>
+    </div>
+  {% endif %}
+
+  {% endif %}
+
+{% endblock %}

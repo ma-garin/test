@@ -1,0 +1,80 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}計数・目標管理{% endblock %}
+
+{% block header_actions %}
+  <a class="btn-ghost sm" href="{% url 'performance:import' %}">CSV取込へ戻る</a>
+{% endblock %}
+
+{% block content %}
+
+  <div class="kpi-g">
+    <div class="kpi">
+      <div class="kpi-l">データ行数</div>
+      <div class="kpi-v">{{ batch.row_count }}</div>
+      <div class="kpi-s">ヘッダーを除く</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">新規</div>
+      <div class="kpi-v" style="color:var(--green)">{{ batch.created_count }}</div>
+      <div class="kpi-s">追加された行</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">更新</div>
+      <div class="kpi-v" style="color:var(--blue)">{{ batch.updated_count }}</div>
+      <div class="kpi-s">上書きされた行</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-l">エラー</div>
+      <div class="kpi-v" style="color:var(--red)">{{ batch.error_count }}</div>
+      <div class="kpi-s">{{ batch.get_status_display }}</div>
+    </div>
+  </div>
+
+  {% if batch.status == 'rejected' and batch.error_count %}
+    <div class="callout d">
+      <p><strong>エラーがあったため、1行も取り込んでいません。</strong>
+      下の行番号は CSV の行（1行目はヘッダー）です。修正して取り込み直すか、
+      「エラー行を除いて取り込む」を選んでください。</p>
+    </div>
+  {% endif %}
+
+  {% if batch.context.protected %}
+    <div class="callout w">
+      <p><strong>手入力の値 {{ batch.context.protected }} 件は上書きしていません。</strong>
+      CSV で上書きしたい場合は「手入力の値も上書きする」を選んでください。</p>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">エラー明細</span></div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th class="num">行</th><th>内容</th><th>値</th></tr></thead>
+        <tbody>
+          {% for error in batch.errors %}
+            <tr>
+              <td class="num">{{ error.line }}</td>
+              <td>{{ error.message }}</td>
+              <td>{{ error.value|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3"><div class="dashboard-empty">エラーはありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><span class="card-t">取込条件</span></div>
+    <table class="t">
+      <tbody>
+        <tr><td>実行者</td><td>{{ batch.uploaded_by|default:"—" }}</td></tr>
+        <tr><td>対象年度</td><td>{{ batch.context.fiscal_year|default:"—" }}</td></tr>
+        <tr><td>エラー行を除いて取り込む</td><td>{% if batch.context.skip_errors %}はい{% else %}いいえ{% endif %}</td></tr>
+        <tr><td>手入力の上書き</td><td>{% if batch.context.overwrite_manual %}する{% else %}しない{% endif %}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+{% endblock %}

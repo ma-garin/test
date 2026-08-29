@@ -1,0 +1,95 @@
+{% extends "layouts/base.html" %}
+{% block kicker %}計数・目標管理{% endblock %}
+
+{% block header_actions %}
+  {% if can_manage %}
+    <a class="btn-out sm" href="{% url 'performance:year_create' %}">年度を登録</a>
+    <a class="btn-out sm" href="{% url 'performance:member_create' %}">メンバーを登録</a>
+    <a class="btn-b sm" href="{% url 'performance:org_create' %}">組織を登録</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">年度</span>
+      <span class="card-act">計数は年度と月で持ちます</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>コード</th><th>年度名</th><th>期首</th><th>期末</th><th>今期</th><th></th></tr></thead>
+        <tbody>
+          {% for year in fiscal_years %}
+            <tr>
+              <td class="nowrap">{{ year.code }}</td>
+              <td>{{ year.name }}</td>
+              <td class="nowrap">{{ year.start_on|date:"Y/m/d" }}</td>
+              <td class="nowrap">{{ year.end_on|date:"Y/m/d" }}</td>
+              <td>{% if year.is_current %}<span class="badge g">今期</span>{% endif %}</td>
+              <td class="nowrap">{% if can_manage %}<a href="{% url 'performance:year_edit' year.pk %}">編集</a>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="dashboard-empty">年度が登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">組織（部 → 課 → プロジェクト）</span>
+      <span class="card-act">編集できるのは自分が管理する組織とその配下だけです</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>コード</th><th>組織名</th><th>階層</th><th>上位組織</th><th>ラインマネージャー</th><th>対応案件</th><th></th></tr></thead>
+        <tbody>
+          {% for unit in units %}
+            <tr>
+              <td class="nowrap">{{ unit.code }}</td>
+              <td><a href="{% url 'performance:org_detail' unit.pk %}">{{ unit.name }}</a></td>
+              <td>{{ unit.get_level_display }}</td>
+              <td>{{ unit.parent.name|default:"—" }}</td>
+              <td>{{ unit.manager|default:"—" }}</td>
+              <td>{{ unit.project.code|default:"—" }}</td>
+              <td class="nowrap">
+                {% if can_manage and unit.pk in managed_ids %}<a href="{% url 'performance:org_edit' unit.pk %}">編集</a>{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7"><div class="dashboard-empty">参照できる組織がありません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-t">メンバー</span>
+      <span class="card-act">個人別の計数を持つ単位</span>
+    </div>
+    <div class="t-wrap">
+      <table class="t">
+        <thead><tr><th>社員番号</th><th>氏名</th><th>所属</th><th>役割</th><th>利用者</th><th></th></tr></thead>
+        <tbody>
+          {% for member in members %}
+            <tr>
+              <td class="nowrap">{{ member.employee_code }}</td>
+              <td><a href="{% url 'performance:member_detail' member.pk %}">{{ member.name }}</a></td>
+              <td>{{ member.org_unit.name }}</td>
+              <td>{{ member.title|default:"—" }}</td>
+              <td>{{ member.user.email|default:"—" }}</td>
+              <td class="nowrap">{% if can_manage %}<a href="{% url 'performance:member_edit' member.pk %}">編集</a>{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="dashboard-empty">メンバーが登録されていません。</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+{% endblock %}

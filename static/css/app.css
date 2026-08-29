@@ -1012,3 +1012,22 @@ a { color: inherit; text-decoration: none; }
   .dashboard-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-alert-layout, .sg, .sg-r { grid-template-columns: 1fr; }
 }
+
+/* ── 計数・目標管理 ─────────────────────────────────────── */
+
+/* 金額列は右寄せ・等幅にする。桁が揃っていない数字は比較に使えない。 */
+.t th.num, .t td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.perf-filter { display: flex; align-items: center; gap: 6px; }
+.perf-filter label { font-size: 10px; font-weight: 900; color: var(--muted); text-transform: uppercase; }
+.perf-filter select { padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; font-size: 12px; background: var(--surface); color: var(--ink); }
+
+/* 入力対象の選択。1行に収め、スクロールせずに条件を変えられるようにする。 */
+.perf-target { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
+.perf-target button { align-self: end; }
+
+.perf-grid input { text-align: right; font-variant-numeric: tabular-nums; }
+.perf-grid td { padding: 4px 8px; }
+
+.ps.err { color: var(--red); font-weight: 800; }
+.inline-form { display: inline-block; margin-left: 6px; }

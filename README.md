@@ -14,6 +14,8 @@ Python/Streamlit の単一アプリだった現行システムを、Django の�
 - **PMO 相談** — 相談内容を意図分類し、確認観点・根拠・根拠の十分性評価を返す
 - **Agentic トレース** — AI の意図分類・実行計画・使用ツール・根拠評価を後から追跡する
 - **監査** — 操作ログとフィードバックを、秘密値をマスクしたうえで保存する
+- **計数・目標管理** — 部・課・プロジェクトの売上／粗利／利益と KPI 達成状況を、
+  期初計画・期中変更計画に対して組織別・個人別に管理する（CSV 取込と手入力）
 
 ## クイックスタート
 
@@ -21,6 +23,7 @@ Python/Streamlit の単一アプリだった現行システムを、Django の�
 make setup      # 仮想環境 + 依存 + .env
 make migrate
 make seed       # 体験用データ（利用者 pmo / パスワード demo-password）
+make seed-perf  # 計数・目標管理の体験用データ（組織・計画・実績・KPI）
 make run        # http://127.0.0.1:8000/
 ```
 
@@ -29,7 +32,7 @@ API キーは不要です。既定の `AI_PROVIDER=local_hash` は、外部 API 
 `.env` を編集してから `make index TENANT=demo` でインデックスを作り直してください。
 
 ```bash
-make test       # テスト（62 件、外部 API 呼び出しなし）
+make test       # テスト（640 件、外部 API 呼び出しなし）
 make lint       # ruff
 make check      # システムチェック + マイグレーション漏れ検出
 ```
@@ -52,6 +55,7 @@ make check      # システムチェック + マイグレーション漏れ検�
 │   ├── agents/              Agentic RAG（意図分類・計画・根拠評価・トレース）
 │   ├── pmo/                 相談、計画策定、成果物、承認（HITL）
 │   ├── dashboard/           ヘルススコア、アラート、介入提案、KPI
+│   ├── performance/         組織別・個人別の計数計画／実績、目標・KPI 達成状況
 │   └── audit/               操作ログ、フィードバック、秘密値マスク
 ├── templates/               画面テンプレート
 ├── static/                  CSS
@@ -60,6 +64,7 @@ make check      # システムチェック + マイグレーション漏れ検�
 │   ├── domain_model.md      概念データモデルと実装テーブルの対応
 │   ├── rag_flow.md          文書登録から回答までの流れ
 │   ├── screen_map.md        画面一覧と移植状況
+│   ├── performance.md       計数・目標管理の設計と CSV 仕様
 │   ├── api_contract.md      HTTP エンドポイント一覧
 │   ├── requirements/        P0/P1 スコープと受入条件
 │   ├── migration/           Streamlit 版からの移行方針
