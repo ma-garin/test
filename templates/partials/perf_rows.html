@@ -1,0 +1,39 @@
+{% comment %}
+  計画・実績・差・達成率だけの表。組織別・月別・個人別で同じ形にして、
+  画面ごとに列の意味を読み直さなくて済むようにする。
+  row_label に見出し（「組織」「月」など）を入れて include する。
+{% endcomment %}
+{% load humanize %}
+<div class="t-wrap">
+  <table class="t">
+    <thead>
+      <tr>
+        <th>{{ row_label }}</th>
+        <th class="num">計画</th>
+        <th class="num">実績</th>
+        <th class="num">計画との差</th>
+        <th class="num">達成率</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>
+            {% if row.url %}<a href="{{ row.url }}?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}&amp;metric={{ metric }}">{{ row.label }}</a>
+            {% else %}{{ row.label }}{% endif %}
+            {% if row.note %}<span class="row-note">{{ row.note }}</span>{% endif %}
+          </td>
+          <td class="num">{{ row.plan|floatformat:0|intcomma }}</td>
+          <td class="num">{{ row.actual|floatformat:0|intcomma }}</td>
+          <td class="num {% if row.diff < 0 %}minus{% endif %}">{{ row.diff|floatformat:0|intcomma }}</td>
+          <td class="num">
+            {% if row.achievement is None %}—
+            {% else %}<span class="badge {{ row.tone }}">{{ row.achievement|floatformat:0 }}%</span>{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5"><div class="dashboard-empty">{{ empty_message|default:"データがありません。" }}</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

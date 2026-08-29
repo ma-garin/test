@@ -1,0 +1,11 @@
+{% comment %}
+  指標の切り替え。表に3系列すべてを並べると列が10を超えて読めなくなるので、
+  画面には常に1指標だけを出し、ここで切り替える。
+{% endcomment %}
+<div class="metric-tabs" role="tablist" aria-label="表示する指標">
+  {% for tab in metric_tabs %}
+    <a class="metric-tab{% if tab.is_current %} on{% endif %}"
+       role="tab" aria-selected="{% if tab.is_current %}true{% else %}false{% endif %}"
+       href="?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}&amp;metric={{ tab.key }}">{{ tab.label }}</a>
+  {% endfor %}
+</div>

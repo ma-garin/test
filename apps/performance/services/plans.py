@@ -88,6 +88,28 @@ def ruling_versions(
     return ruling
 
 
+def ruling_ranges(fiscal_year: FiscalYear) -> list[dict]:
+    """「どの版がいつからいつまで効くか」を期間のまとまりで返す。
+
+    月を12列並べた表は、読む側に「どこが変わったのか」を探させる。
+    版が切り替わる境目だけを出す。
+    """
+
+    ruling = ruling_versions(fiscal_year)
+    ranges: list[dict] = []
+
+    for month in fiscal_year.months:
+        version = ruling.get(month)
+
+        if ranges and ranges[-1]["version"] == version:
+            ranges[-1]["end"] = month
+            continue
+
+        ranges.append({"version": version, "start": month, "end": month})
+
+    return ranges
+
+
 @dataclass(frozen=True)
 class EffectiveFigure:
     """ある月に効いている計画値と、その由来。

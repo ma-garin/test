@@ -37,11 +37,8 @@
   </div>
   {% endif %}
 
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">CSVの列</span>
-      <span class="card-act">対象年度・計画版はファイルではなく画面で選びます</span>
-    </div>
+  <details class="fold">
+    <summary>CSVの書き方とテンプレート</summary>
     <div class="t-wrap">
       <table class="t">
         <thead><tr><th>種別</th><th>列</th><th>テンプレート</th></tr></thead>
@@ -56,11 +53,11 @@
         </tbody>
       </table>
     </div>
-    <div class="ps">
-      社員番号（employee_code）を空にすると組織レベルの値、入れるとその個人の値として登録します。
-      月（month）は <code>2026-04</code> の形式で、月初日に丸めて保存します。
-    </div>
-  </div>
+    <p class="ps">
+      社員番号を空にすると組織の金額、入れるとその人の金額になります。
+      月は <code>2026-04</code> の形で書いてください。対象年度と計画版は、ファイルではなく上の画面で選びます。
+    </p>
+  </details>
 
   <div class="card">
     <div class="card-hdr"><span class="card-t">取込履歴</span></div>

@@ -1031,3 +1031,85 @@ a { color: inherit; text-decoration: none; }
 
 .ps.err { color: var(--red); font-weight: 800; }
 .inline-form { display: inline-block; margin-left: 6px; }
+
+/* ── 計数・目標管理：結論を先に出す見出し ─────────────────
+   ラインマネージャーが最初に知りたいのは「計画に対してどうか」の1点。
+   数字を並べる前に、それを文章と大きな数字で1つだけ出す。 */
+
+.lede {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+
+.lede-label { font-size: 11px; font-weight: 900; color: var(--muted); letter-spacing: 0.4px; }
+.lede-value { font-size: 40px; font-weight: 900; line-height: 1.1; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.lede-value.sm { font-size: 24px; }
+.lede-value small { font-size: 15px; font-weight: 700; color: var(--muted); }
+.lede-say { font-size: 14px; color: var(--ink); margin: 8px 0 0; max-width: 62ch; }
+.lede-side { display: grid; gap: 10px; justify-items: end; }
+.lede-facts { display: grid; gap: 4px; margin: 0; font-size: 12px; }
+.lede-facts div { display: flex; gap: 10px; justify-content: space-between; }
+.lede-facts dt { color: var(--muted); }
+.lede-facts dd { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.badge.lg { font-size: 12px; padding: 5px 14px; }
+
+/* 指標の切り替え。表の列を増やさず、見る系列を選ばせる。 */
+.metric-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.metric-tab {
+  padding: 7px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.metric-tab:hover { color: var(--ink); }
+.metric-tab.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+/* 手当が要るものだけを並べる箇条書き。 */
+.watch { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.watch li { font-size: 13px; line-height: 1.7; }
+.watch li .badge { margin-right: 6px; }
+.watch-ok { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* 件数の数え上げ。カードを4枚並べるより、1行で読めるほうが速い。 */
+.tally { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+.tally b { font-size: 18px; font-weight: 900; color: var(--ink); margin: 0 2px; }
+.tally b.ok { color: var(--green); }
+.tally b.warn { color: var(--yellow); }
+.tally b.bad { color: var(--red); }
+.tally-note { font-size: 12px; }
+
+.row-note { display: block; font-size: 11px; color: var(--muted); }
+.num.minus { color: var(--red); }
+
+/* 普段は畳んでおく補足。既定で見せると本題が埋もれる。 */
+.fold {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+.fold > summary { font-size: 13px; font-weight: 800; cursor: pointer; color: var(--ink); }
+.fold > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.fold[open] > summary { margin-bottom: 10px; }
+.fold-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.fold-list b { margin-right: 8px; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .lede { grid-template-columns: 1fr; }
+  .lede-side { justify-items: start; }
+}

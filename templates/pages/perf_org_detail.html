@@ -4,158 +4,85 @@
 
 {% block header_actions %}
   {% include "partials/perf_year_filter.html" %}
-  <a class="btn-ghost sm" href="{% url 'performance:dashboard' %}">ダッシュボードへ戻る</a>
+  <a class="btn-ghost sm" href="{% url 'performance:dashboard' %}">戻る</a>
   {% if can_edit %}
-    <a class="btn-out sm" href="{% url 'performance:figure_entry' %}?org={{ unit.pk }}&mode=plan&year={{ fiscal_year.code }}">計画を入力</a>
-    <a class="btn-b sm" href="{% url 'performance:figure_entry' %}?org={{ unit.pk }}&mode=actual&year={{ fiscal_year.code }}">実績を入力</a>
+    <a class="btn-b sm" href="{% url 'performance:figure_entry' %}?org={{ unit.pk }}&mode=actual&year={{ fiscal_year.code }}">数字を入力する</a>
   {% endif %}
 {% endblock %}
 
 {% block content %}
 
-  <div class="kpi-g">
-    <div class="kpi">
-      <div class="kpi-l">売上（累計）</div>
-      <div class="kpi-v">{{ summary.total_actual.revenue|floatformat:0|intcomma }}</div>
-      <div class="kpi-s">計画 {{ summary.total_plan.revenue|floatformat:0|intcomma }}</div>
-      <div class="kpi-bar"><div class="kpi-fill {{ summary.comparison.tone }}" style="width:100%"></div></div>
+  {% include "partials/perf_metric_tabs.html" %}
+
+  <div class="lede">
+    <div class="lede-main">
+      <div class="lede-label">{{ headline.metric_label }}（実績）</div>
+      <div class="lede-value">{{ headline.actual|floatformat:0|intcomma }}<small> 円</small></div>
+      <p class="lede-say">{{ headline.sentence }}</p>
     </div>
-    <div class="kpi">
-      <div class="kpi-l">粗利（累計）</div>
-      <div class="kpi-v">{{ summary.total_actual.gross_profit|floatformat:0|intcomma }}</div>
-      <div class="kpi-s">粗利率 {% if summary.total_actual.gross_margin_rate is None %}—{% else %}{{ summary.total_actual.gross_margin_rate }}%{% endif %}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">利益（累計）</div>
-      <div class="kpi-v">{{ summary.total_actual.operating_profit|floatformat:0|intcomma }}</div>
-      <div class="kpi-s">差異 {{ summary.comparison.variance.operating_profit|floatformat:0|intcomma }}</div>
-      <div class="kpi-bar"><div class="kpi-fill {{ summary.comparison.profit_tone }}" style="width:100%"></div></div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">期初計画との差</div>
-      <div class="kpi-v">{{ summary.plan_revision.revenue|floatformat:0|intcomma }}</div>
-      <div class="kpi-s">期中変更で動かした売上計画</div>
+    <div class="lede-side">
+      <div class="lede-badge"><span class="badge {{ headline.tone }} lg">{{ headline.status_label }}</span></div>
+      <dl class="lede-facts">
+        <div><dt>計画</dt><dd>{{ headline.plan|floatformat:0|intcomma }} 円</dd></div>
+        <div><dt>計画との差</dt><dd class="{% if headline.diff < 0 %}minus{% endif %}">{{ headline.diff|floatformat:0|intcomma }} 円</dd></div>
+        <div><dt>利益率</dt><dd>{% if headline.profit_rate is None %}—{% else %}{{ headline.profit_rate|floatformat:1 }}%{% endif %}</dd></div>
+      </dl>
     </div>
   </div>
 
-  {% if summary.has_member_breakdown and summary.member_gap.revenue %}
+  {% if summary.member_over_allocated %}
     <div class="callout w">
-      <p><strong>個人配分の合計が、組織の直接入力値と {{ summary.member_gap.revenue|floatformat:0|intcomma }} 円ずれています。</strong>
-      集計では組織値を採用しています（個人値は内訳とみなし、二重計上しません）。配分の入れ漏れがないか確認してください。</p>
+      <p>個人ごとに入れた金額の合計が、組織の金額を {{ summary.member_gap.revenue|floatformat:0|intcomma }} 円 上回っています。
+      二重に入れていないかご確認ください（集計には組織の金額を使っています）。</p>
     </div>
   {% endif %}
 
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">月次推移（計画は期中変更を反映した現行計画）</span>
-      <span class="card-act">{{ unit.code }} ／ {{ unit.get_level_display }}</span>
+      <span class="card-t">月ごとの{{ headline.metric_label }}</span>
+      <span class="card-act">計画は期中の見直しを反映した最新版</span>
     </div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead>
-          <tr>
-            <th>月</th>
-            <th class="num">売上計画</th><th class="num">売上実績</th><th class="num">達成率</th>
-            <th class="num">粗利実績</th><th class="num">利益計画</th><th class="num">利益実績</th>
-            <th class="num">利益差異</th><th class="num">利益率</th><th class="num">売上累計</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in monthly_rows %}
-            <tr{% if not row.has_data %} class="muted"{% endif %}>
-              <td class="nowrap">{{ row.month|date:"Y/m" }}</td>
-              <td class="num">{{ row.plan.revenue|floatformat:0|intcomma }}</td>
-              <td class="num">{{ row.actual.revenue|floatformat:0|intcomma }}</td>
-              <td class="num">{% if row.comparison.revenue_achievement is None %}—{% else %}<span class="badge {{ row.comparison.tone }}">{{ row.comparison.revenue_achievement }}%</span>{% endif %}</td>
-              <td class="num">{{ row.actual.gross_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{{ row.plan.operating_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{{ row.actual.operating_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{{ row.comparison.variance.operating_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{% if row.actual.profit_rate is None %}—{% else %}{{ row.actual.profit_rate }}%{% endif %}</td>
-              <td class="num">{{ row.cumulative_actual.revenue|floatformat:0|intcomma }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
   </div>
 
-  <div class="card">
-    <div class="card-hdr"><span class="card-t">配下組織</span></div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead><tr><th>組織</th><th>階層</th><th class="num">売上計画</th><th class="num">売上実績</th><th class="num">達成率</th><th class="num">利益実績</th><th class="num">利益率</th></tr></thead>
-        <tbody>
-          {% for child in child_summaries %}
-            <tr>
-              <td><a href="{% url 'performance:org_detail' child.unit.pk %}">{{ child.unit.name }}</a></td>
-              <td>{{ child.unit.get_level_display }}</td>
-              <td class="num">{{ child.total_plan.revenue|floatformat:0|intcomma }}</td>
-              <td class="num">{{ child.total_actual.revenue|floatformat:0|intcomma }}</td>
-              <td class="num">{% if child.comparison.revenue_achievement is None %}—{% else %}<span class="badge {{ child.comparison.tone }}">{{ child.comparison.revenue_achievement }}%</span>{% endif %}</td>
-              <td class="num">{{ child.total_actual.operating_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{% if child.total_actual.profit_rate is None %}—{% else %}{{ child.total_actual.profit_rate }}%{% endif %}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="7"><div class="dashboard-empty">配下の組織はありません。</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  {% if child_rows %}
+    <div class="card">
+      <div class="card-hdr"><span class="card-t">配下の組織</span></div>
+      {% include "partials/perf_rows.html" with rows=child_rows row_label="組織" %}
     </div>
-  </div>
+  {% endif %}
+
+  {% if member_rows %}
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">個人ごと</span>
+        <span class="card-act">組織の金額の内訳です</span>
+      </div>
+      {% include "partials/perf_rows.html" with rows=member_rows row_label="氏名" %}
+    </div>
+  {% endif %}
 
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">個人別（組織値の内訳）</span>
-      <span class="card-act">組織合計には加算していません</span>
+      <span class="card-t">KPI</span>
+      {% if can_edit %}<a class="btn-out sm" href="{% url 'performance:kpi_entry' %}?org={{ unit.pk }}&year={{ fiscal_year.code }}">KPIを入力する</a>{% endif %}
     </div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead><tr><th>社員番号</th><th>氏名</th><th class="num">売上計画</th><th class="num">売上実績</th><th class="num">達成率</th><th class="num">粗利実績</th><th class="num">利益実績</th><th class="num">利益率</th></tr></thead>
-        <tbody>
-          {% for row in member_summaries %}
-            <tr>
-              <td class="nowrap">{{ row.member.employee_code }}</td>
-              <td><a href="{% url 'performance:member_detail' row.member.pk %}">{{ row.member.name }}</a></td>
-              <td class="num">{{ row.plan.revenue|floatformat:0|intcomma }}</td>
-              <td class="num">{{ row.actual.revenue|floatformat:0|intcomma }}</td>
-              <td class="num">{% if row.comparison.revenue_achievement is None %}—{% else %}<span class="badge {{ row.comparison.tone }}">{{ row.comparison.revenue_achievement }}%</span>{% endif %}</td>
-              <td class="num">{{ row.actual.gross_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{{ row.actual.operating_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{% if row.actual.profit_rate is None %}—{% else %}{{ row.actual.profit_rate }}%{% endif %}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="8"><div class="dashboard-empty">この組織に登録されたメンバーはいません。</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">KPI達成状況</span>
-      {% if can_edit %}<a class="btn-out sm" href="{% url 'performance:kpi_entry' %}?org={{ unit.pk }}&year={{ fiscal_year.code }}">KPIを入力</a>{% endif %}
-    </div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead><tr><th>KPI</th><th>組織</th><th class="num">目標</th><th class="num">実績</th><th class="num">達成率</th><th>判定</th></tr></thead>
-        <tbody>
-          {% for status in kpi_statuses %}
-            <tr>
-              <td>{{ status.kpi.name }}</td>
-              <td>{{ status.org_unit.name }}</td>
-              <td class="num">{% if status.target is None %}—{% else %}{{ status.target|floatformat:"-2"|intcomma }} {{ status.kpi.unit }}{% endif %}</td>
-              <td class="num">{% if status.actual is None %}—{% else %}{{ status.actual|floatformat:"-2"|intcomma }} {{ status.kpi.unit }}{% endif %}</td>
-              <td class="num">{% if status.achievement_ratio is None %}—{% else %}{{ status.achievement_ratio }}%{% endif %}</td>
-              <td><span class="badge {{ status.tone }}">{{ status.label }}</span></td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="6"><div class="dashboard-empty">KPI が登録されていません。</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    {% if kpi_alerts %}
+      <ul class="watch">
+        {% for status in kpi_alerts %}
+          <li>
+            <span class="badge {{ status.tone }}">{{ status.label }}</span>
+            {{ status.org_unit.name }}の{{ status.kpi.name }}が
+            目標 {{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }} に対して
+            {{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }} です。
+          </li>
+        {% endfor %}
+      </ul>
+    {% elif kpi_summary.total %}
+      <p class="watch-ok">この組織の KPI はすべて目標に届いています（{{ kpi_summary.total }} 件）。</p>
+    {% else %}
+      <p class="watch-ok">この組織に登録された KPI はありません。</p>
+    {% endif %}
   </div>
 
 {% endblock %}

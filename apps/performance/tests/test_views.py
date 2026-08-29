@@ -300,3 +300,78 @@ class ImportPermissionTests(TestCase):
         self.assertFalse(
             self.units["div"].__class__.objects.filter(code="hijack").exists()
         )
+
+
+class GridDisplayTests(TestCase):
+    """入力欄の初期表示。円単位の金額に `.00` を出さない。"""
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.manager = factories.make_user(self.tenant, "manager@example.com")
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant, manager=self.manager)
+        self.client.force_login(self.manager)
+
+    def test_integer_amounts_render_without_decimals(self) -> None:
+        factories.add_actual(self.year, self.units["sec"], date(2026, 4, 1), 11040000)
+
+        response = self.client.get(
+            reverse("performance:figure_entry"),
+            {"year": self.year.code, "org": str(self.units["sec"].pk), "mode": "actual"},
+        )
+
+        self.assertEqual(
+            response.context["form"]["m202604_revenue"].initial, Decimal("11040000")
+        )
+        self.assertContains(response, 'value="11040000"')
+
+
+class DashboardSimplificationTests(TestCase):
+    """1画面1指標で、手当が要るものだけが前に出ること。"""
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.manager = factories.make_user(self.tenant, "manager@example.com")
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant, manager=self.manager)
+        self.version = factories.make_version(self.tenant, self.year)
+        self.month = date(2026, 4, 1)
+        self.client.force_login(self.manager)
+
+    def _get(self, **params):
+        params.setdefault("year", self.year.code)
+        params.setdefault("upto", "2026-04")
+
+        return self.client.get(reverse("performance:dashboard"), params)
+
+    def test_metric_switches_the_numbers_on_screen(self) -> None:
+        factories.add_plan(self.version, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 800)
+
+        revenue = self._get().context["headline"]
+        profit = self._get(metric="operating_profit").context["headline"]
+
+        self.assertEqual(revenue.actual, Decimal("800"))
+        self.assertEqual(profit.metric_label, "利益")
+        self.assertEqual(profit.actual, Decimal("80"))
+
+    def test_unknown_metric_falls_back_to_revenue(self) -> None:
+        self.assertEqual(self._get(metric="bogus").context["metric"], "revenue")
+
+    def test_attention_list_holds_behind_and_near_miss_rows(self) -> None:
+        factories.add_plan(self.version, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 910)
+
+        rows = self._get().context["behind_rows"]
+
+        self.assertEqual([row.label for row in rows], ["sec"])
+        self.assertEqual(rows[0].status_label, "あと少し")
+
+    def test_nothing_to_watch_when_every_org_meets_plan(self) -> None:
+        factories.add_plan(self.version, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 1100)
+
+        response = self._get()
+
+        self.assertEqual(response.context["behind_rows"], [])
+        self.assertContains(response, "すべて計画どおりです")

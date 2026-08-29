@@ -88,3 +88,40 @@ class RollupTests(TestCase):
 
         self.assertEqual(rows[0].cumulative_actual.revenue, 100)
         self.assertEqual(rows[1].cumulative_actual.revenue, 250)
+
+
+class MemberAllocationTests(TestCase):
+    """個人配分の警告は「入れすぎ」だけに出す。
+
+    一部のメンバーだけ個人別に管理する運用が普通なので、不足で毎回警告すると
+    本当に見るべき行が埋もれる。
+    """
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant)
+        self.member = factories.make_member(self.tenant, self.units["sec"])
+        self.month = date(2026, 4, 1)
+
+    def _summary(self):
+        report = aggregation.build_report(
+            self.year, list(self.units.values()), [self.month], [self.member]
+        )
+
+        return report.for_unit(self.units["sec"])
+
+    def test_partial_allocation_is_not_flagged(self) -> None:
+        factories.add_actual(self.year, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 400, member=self.member)
+
+        self.assertFalse(self._summary().member_over_allocated)
+
+    def test_over_allocation_is_flagged(self) -> None:
+        factories.add_actual(self.year, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 1200, member=self.member)
+
+        summary = self._summary()
+
+        self.assertTrue(summary.member_over_allocated)
+        self.assertEqual(summary.member_gap.revenue, 200)

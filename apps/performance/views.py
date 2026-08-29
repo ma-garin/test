@@ -17,6 +17,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -44,7 +45,7 @@ from apps.performance.models import (
     OrgUnit,
     PlanVersion,
 )
-from apps.performance.services import aggregation, csv_io, entry, plans
+from apps.performance.services import aggregation, csv_io, entry, plans, presentation
 from apps.performance.services import kpi as kpi_service
 from apps.performance.services.calendar import format_month, parse_month
 
@@ -125,9 +126,25 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     months, upto = _months_upto(fiscal_year, request)
     members = list(selectors.members_for(request.user, request.tenant))
     report = aggregation.build_report(fiscal_year, units, months, members)
+    metric = presentation.metric_from(request)
 
     roots = _roots(units)
-    root_children = [unit for unit in units if unit.parent_id in {root.pk for root in roots}]
+    root_ids = {root.pk for root in roots}
+    children = [unit for unit in units if unit.parent_id in root_ids]
+    breakdown = children or roots
+
+    total = report.totals(roots)
+    rows = [
+        presentation.row_from(
+            summary.unit.name,
+            summary.comparison,
+            metric,
+            url=reverse("performance:org_detail", args=[summary.unit.pk]),
+            note=summary.unit.get_level_display(),
+        )
+        for summary in (report.for_unit(unit) for unit in breakdown)
+        if summary is not None
+    ]
 
     statuses = kpi_service.kpi_statuses(
         fiscal_year,
@@ -136,30 +153,32 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         plans.current_version(fiscal_year, upto),
     )
 
-    breakdown = root_children or roots
-
     return render(
         request,
         "pages/perf_dashboard.html",
         {
             "page_title": "計数ダッシュボード",
-            "page_subtitle": f"{fiscal_year.name}／{format_month(fiscal_year.start_on)}〜"
-            f"{format_month(upto)} 累計",
+            "page_subtitle": f"{fiscal_year.name}　{format_month(fiscal_year.start_on)}〜"
+            f"{format_month(upto)} の累計",
             "units": units,
-            "roots": roots,
+            "headline": presentation.headline_from(total, metric),
+            "metric": metric,
+            "metric_tabs": presentation.metric_tabs(metric),
+            "rows": rows,
+            # 「見るべきところ」だけを先に出す。全部を並べると探す作業が要る。
+            # 金額を先、KPI を後にする。手当の順序がそのまま並び順になる。
+            "behind_rows": sorted(
+                (row for row in rows if row.needs_attention),
+                key=lambda row: row.achievement if row.achievement is not None else 0,
+            ),
+            "kpi_summary": kpi_service.KpiSummary(statuses=statuses),
+            "kpi_alerts": [item for item in statuses if item.status in ("behind", "warning")][:5],
+            "total": total,
             "summaries": [report.for_unit(unit) for unit in breakdown],
-            "root_summaries": [report.for_unit(unit) for unit in roots],
-            "total": report.totals(roots),
             "months": months,
             "upto": upto,
             "all_months": fiscal_year.months,
-            "kpi_summary": kpi_service.KpiSummary(statuses=statuses),
-            "kpi_statuses": statuses[:8],
-            "attention": [
-                summary
-                for summary in (report.for_unit(unit) for unit in breakdown)
-                if summary is not None and summary.comparison.tone == "r"
-            ],
+            "extra_query": {"metric": metric},
             **_year_context(request, fiscal_year),
         },
     )
@@ -194,23 +213,58 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
         plans.current_version(fiscal_year, upto),
     )
 
+    metric = presentation.metric_from(request)
+    monthly_rows = report.monthly_rows(unit)
+    member_rows = aggregation.member_summaries(report, members, months)
+
     return render(
         request,
         "pages/perf_org_detail.html",
         {
             "page_title": f"{unit.name}",
-            "page_subtitle": f"{unit.get_level_display()}／{fiscal_year.name}",
+            "page_subtitle": f"{unit.get_level_display()}　{fiscal_year.name}　"
+            f"{format_month(fiscal_year.start_on)}〜{format_month(upto)} の累計",
             "unit": unit,
             "summary": summary,
-            "monthly_rows": report.monthly_rows(unit),
+            "headline": presentation.headline_from(summary.comparison, metric),
+            "metric": metric,
+            "metric_tabs": presentation.metric_tabs(metric),
+            "month_rows": [
+                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric)
+                for row in monthly_rows
+            ],
+            "child_rows": [
+                presentation.row_from(
+                    child.unit.name,
+                    child.comparison,
+                    metric,
+                    url=reverse("performance:org_detail", args=[child.unit.pk]),
+                    note=child.unit.get_level_display(),
+                )
+                for child in (report.for_unit(child) for child in children)
+                if child is not None
+            ],
+            "member_rows": [
+                presentation.row_from(
+                    row.member.name,
+                    row.comparison,
+                    metric,
+                    url=reverse("performance:member_detail", args=[row.member.pk]),
+                    note=row.member.employee_code,
+                )
+                for row in member_rows
+            ],
+            "monthly_rows": monthly_rows,
             "child_summaries": [report.for_unit(child) for child in children],
-            "member_summaries": aggregation.member_summaries(report, members, months),
+            "member_summaries": member_rows,
             "kpi_statuses": statuses,
+            "kpi_alerts": [item for item in statuses if item.status in ("behind", "warning")],
             "kpi_summary": kpi_service.KpiSummary(statuses=statuses),
             "can_edit": selectors.can_edit_org(request.user, unit),
             "months": months,
             "upto": upto,
             "all_months": fiscal_year.months,
+            "extra_query": {"metric": metric},
             **_year_context(request, fiscal_year),
         },
     )
@@ -232,6 +286,7 @@ def member_detail(request: HttpRequest, pk) -> HttpResponse:
     units = _visible_units(request)
     report = aggregation.build_report(fiscal_year, units, months, [member])
 
+    metric = presentation.metric_from(request)
     rows = []
 
     for month in months:
@@ -246,15 +301,24 @@ def member_detail(request: HttpRequest, pk) -> HttpResponse:
         "pages/perf_member_detail.html",
         {
             "page_title": member.name,
-            "page_subtitle": f"{member.org_unit.name}／{fiscal_year.name}",
+            "page_subtitle": f"{member.org_unit.name}　{fiscal_year.name}　"
+            f"{format_month(fiscal_year.start_on)}〜{format_month(upto)} の累計",
             "member": member,
             "summary": summary,
+            "headline": presentation.headline_from(summary.comparison, metric),
+            "metric": metric,
+            "metric_tabs": presentation.metric_tabs(metric),
+            "month_rows": [
+                presentation.row_from(f"{row['month']:%Y/%m}", row["comparison"], metric)
+                for row in rows
+            ],
             "org_summary": report.for_unit(member.org_unit),
             "rows": rows,
             "can_edit": selectors.can_edit_org(request.user, member.org_unit),
             "months": months,
             "upto": upto,
             "all_months": fiscal_year.months,
+            "extra_query": {"metric": metric},
             **_year_context(request, fiscal_year),
         },
     )
@@ -275,7 +339,6 @@ def plan_list(request: HttpRequest) -> HttpResponse:
 
     units = _visible_units(request)
     versions = plans.all_versions(fiscal_year)
-    ruling = plans.ruling_versions(fiscal_year)
 
     report = aggregation.build_report(fiscal_year, units)
     roots = _roots(units)
@@ -296,11 +359,9 @@ def plan_list(request: HttpRequest) -> HttpResponse:
         "pages/perf_plan_list.html",
         {
             "page_title": "計数計画",
-            "page_subtitle": "期初計画は上書きせず、見直しは期中変更計画として積みます。",
+            "page_subtitle": "期初計画は書き換えず、見直しは新しい版として追加します。",
             "versions": version_totals,
-            "ruling": [
-                {"month": month, "version": ruling.get(month)} for month in fiscal_year.months
-            ],
+            "ruling_ranges": plans.ruling_ranges(fiscal_year),
             "current_total": report.totals(roots),
             "can_manage": permissions.can(request.user, Action.EDIT),
             **_year_context(request, fiscal_year),
@@ -566,13 +627,15 @@ def kpi_list(request: HttpRequest) -> HttpResponse:
         )
 
     page = paginate(KpiDefinition.objects.filter(tenant=request.tenant), request)
+    order = {"behind": 0, "warning": 1, "no_result": 2, "no_target": 3, "achieved": 4}
+    statuses = sorted(statuses, key=lambda item: (order[item.status], item.kpi.code))
 
     return render(
         request,
         "pages/perf_kpi_list.html",
         {
             "page_title": "KPI管理",
-            "page_subtitle": "目標は計画版に紐づきます。期中変更で目標を置き直せます。",
+            "page_subtitle": "目標は計画の版ごとに持ちます。期中の見直しで置き直せます。",
             "definitions": page.object_list,
             "page": page,
             "page_window": page_window(page),

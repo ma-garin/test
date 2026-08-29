@@ -27,6 +27,19 @@ from apps.performance.services.calendar import format_month
 MONEY_WIDGET = forms.NumberInput(attrs={"step": "1", "inputmode": "numeric"})
 
 
+def display_value(value):
+    """入力欄の初期値。円単位の金額に `.00` を出さない。
+
+    小数を持たない値まで `11040000.00` と表示されると、桁を目で追うのが
+    途端に難しくなる。小数がある値はそのまま出す（切り捨てない）。
+    """
+
+    if value is None:
+        return None
+
+    return value.quantize(Decimal("1")) if value == value.to_integral_value() else value
+
+
 class FiscalYearForm(forms.ModelForm):
     class Meta:
         model = FiscalYear
@@ -182,7 +195,9 @@ class MonthlyFigureForm(forms.Form):
                     decimal_places=2,
                     widget=MONEY_WIDGET,
                 )
-                field.initial = getattr(amounts, name) if amounts is not None else None
+                field.initial = (
+                    display_value(getattr(amounts, name)) if amounts is not None else None
+                )
                 self.fields[self._key(month, name)] = field
 
     @staticmethod
@@ -260,7 +275,7 @@ class KpiEntryForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         self.months = months
-        self.fields["target_value"].initial = initial_target
+        self.fields["target_value"].initial = display_value(initial_target)
         initial_results = initial_results or {}
 
         for month in months:
@@ -271,7 +286,7 @@ class KpiEntryForm(forms.Form):
                 decimal_places=2,
                 widget=MONEY_WIDGET,
             )
-            field.initial = initial_results.get(month)
+            field.initial = display_value(initial_results.get(month))
             self.fields[self._key(month)] = field
 
     @staticmethod

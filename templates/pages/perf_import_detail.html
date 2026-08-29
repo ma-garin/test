@@ -7,33 +7,18 @@
 
 {% block content %}
 
-  <div class="kpi-g">
-    <div class="kpi">
-      <div class="kpi-l">データ行数</div>
-      <div class="kpi-v">{{ batch.row_count }}</div>
-      <div class="kpi-s">ヘッダーを除く</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">新規</div>
-      <div class="kpi-v" style="color:var(--green)">{{ batch.created_count }}</div>
-      <div class="kpi-s">追加された行</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">更新</div>
-      <div class="kpi-v" style="color:var(--blue)">{{ batch.updated_count }}</div>
-      <div class="kpi-s">上書きされた行</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">エラー</div>
-      <div class="kpi-v" style="color:var(--red)">{{ batch.error_count }}</div>
-      <div class="kpi-s">{{ batch.get_status_display }}</div>
-    </div>
-  </div>
+  <p class="tally">
+    データ {{ batch.row_count }} 行　
+    新しく登録 <b class="ok">{{ batch.created_count }}</b>　
+    上書き <b>{{ batch.updated_count }}</b>　
+    エラー <b class="bad">{{ batch.error_count }}</b>
+    <span class="tally-note">（{{ batch.get_status_display }}）</span>
+  </p>
 
   {% if batch.status == 'rejected' and batch.error_count %}
     <div class="callout d">
       <p><strong>エラーがあったため、1行も取り込んでいません。</strong>
-      下の行番号は CSV の行（1行目はヘッダー）です。修正して取り込み直すか、
+      下の行番号は CSV の行番号です（1行目は見出し）。直して入れ直すか、
       「エラー行を除いて取り込む」を選んでください。</p>
     </div>
   {% endif %}
@@ -65,8 +50,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-hdr"><span class="card-t">取込条件</span></div>
+  <details class="fold">
+    <summary>このときの取込条件</summary>
     <table class="t">
       <tbody>
         <tr><td>実行者</td><td>{{ batch.uploaded_by|default:"—" }}</td></tr>
@@ -75,6 +60,6 @@
         <tr><td>手入力の上書き</td><td>{% if batch.context.overwrite_manual %}する{% else %}しない{% endif %}</td></tr>
       </tbody>
     </table>
-  </div>
+  </details>
 
 {% endblock %}

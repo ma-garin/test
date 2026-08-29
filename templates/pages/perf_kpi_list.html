@@ -4,86 +4,67 @@
 
 {% block header_actions %}
   {% include "partials/perf_year_filter.html" %}
-  <a class="btn-out sm" href="{% url 'performance:kpi_entry' %}">KPIを入力</a>
-  {% if can_manage %}<a class="btn-b sm" href="{% url 'performance:kpi_create' %}">KPIを登録</a>{% endif %}
+  <a class="btn-b sm" href="{% url 'performance:kpi_entry' %}">KPIを入力する</a>
 {% endblock %}
 
 {% block content %}
 
-  <div class="kpi-g">
-    <div class="kpi">
-      <div class="kpi-l">達成</div>
-      <div class="kpi-v" style="color:var(--green)">{{ kpi_summary.achieved }}</div>
-      <div class="kpi-s">全 {{ kpi_summary.total }} 件中</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">要注意</div>
-      <div class="kpi-v" style="color:var(--yellow)">{{ kpi_summary.warning }}</div>
-      <div class="kpi-s">目標の9割以上</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">未達</div>
-      <div class="kpi-v" style="color:var(--red)">{{ kpi_summary.behind }}</div>
-      <div class="kpi-s">対策が要るもの</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">達成率</div>
-      <div class="kpi-v">{% if kpi_summary.achieved_ratio is None %}—{% else %}{{ kpi_summary.achieved_ratio }}<small>%</small>{% endif %}</div>
-      <div class="kpi-s">計測できた指標のうち</div>
-    </div>
-  </div>
+  <p class="tally">
+    達成 <b class="ok">{{ kpi_summary.achieved }}</b>　
+    あと少し <b class="warn">{{ kpi_summary.warning }}</b>　
+    未達 <b class="bad">{{ kpi_summary.behind }}</b>　
+    未計測 <b>{{ kpi_summary.unmeasured }}</b>
+    <span class="tally-note">（全 {{ kpi_summary.total }} 件・手当が要るものから並べています）</span>
+  </p>
 
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">達成状況（担当組織）</span>
-      <span class="card-act">目標は適用中の計画版に紐づきます</span>
+      <span class="card-t">目標と実績</span>
+      <span class="card-act">目標は適用中の計画に紐づきます</span>
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>KPI</th><th>組織</th><th class="num">目標</th><th class="num">実績</th><th class="num">達成率</th><th class="num">差</th><th>判定</th><th></th></tr></thead>
+        <thead><tr><th>KPI</th><th>組織</th><th class="num">目標</th><th class="num">実績</th><th>判定</th><th></th></tr></thead>
         <tbody>
           {% for status in statuses %}
             <tr>
               <td>{{ status.kpi.name }}</td>
-              <td><a href="{% url 'performance:org_detail' status.org_unit.pk %}">{{ status.org_unit.name }}</a></td>
+              <td>{{ status.org_unit.name }}</td>
               <td class="num">{% if status.target is None %}—{% else %}{{ status.target|floatformat:"-2"|intcomma }} {{ status.kpi.unit }}{% endif %}</td>
               <td class="num">{% if status.actual is None %}—{% else %}{{ status.actual|floatformat:"-2"|intcomma }} {{ status.kpi.unit }}{% endif %}</td>
-              <td class="num">{% if status.achievement_ratio is None %}—{% else %}{{ status.achievement_ratio }}%{% endif %}</td>
-              <td class="num">{% if status.gap is None %}—{% else %}{{ status.gap|floatformat:"-2"|intcomma }}{% endif %}</td>
               <td><span class="badge {{ status.tone }}">{{ status.label }}</span></td>
               <td class="nowrap"><a href="{% url 'performance:kpi_entry' %}?org={{ status.org_unit.pk }}&kpi={{ status.kpi.pk }}&year={{ fiscal_year.code }}">入力</a></td>
             </tr>
           {% empty %}
-            <tr><td colspan="8"><div class="dashboard-empty">KPI の目標・実績が登録されていません。</div></td></tr>
+            <tr><td colspan="6"><div class="dashboard-empty">KPI の目標・実績が登録されていません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-hdr"><span class="card-t">KPI定義</span></div>
+  <details class="fold">
+    <summary>KPIの定義（{{ page.paginator.count }} 件）</summary>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>コード</th><th>KPI名</th><th>単位</th><th>評価方向</th><th>年度集計</th><th>状態</th><th></th></tr></thead>
+        <thead><tr><th>KPI名</th><th>単位</th><th>良い方向</th><th>年度の出し方</th><th></th></tr></thead>
         <tbody>
           {% for definition in definitions %}
             <tr>
-              <td class="nowrap">{{ definition.code }}</td>
-              <td>{{ definition.name }}<div class="ps">{{ definition.description|truncatechars:60 }}</div></td>
+              <td>{{ definition.name }}<span class="row-note">{{ definition.code }}</span></td>
               <td>{{ definition.unit|default:"—" }}</td>
               <td>{{ definition.get_direction_display }}</td>
               <td>{{ definition.get_aggregation_display }}</td>
-              <td>{% if definition.is_active %}<span class="badge g">有効</span>{% else %}<span class="badge n">停止</span>{% endif %}</td>
               <td class="nowrap">{% if can_manage %}<a href="{% url 'performance:kpi_edit' definition.pk %}">編集</a>{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="7"><div class="dashboard-empty">KPI が登録されていません。</div></td></tr>
+            <tr><td colspan="5"><div class="dashboard-empty">KPI が登録されていません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     {% include "partials/pager.html" %}
-  </div>
+    {% if can_manage %}<p class="ps"><a href="{% url 'performance:kpi_create' %}">KPIを登録する</a></p>{% endif %}
+  </details>
 
 {% endblock %}

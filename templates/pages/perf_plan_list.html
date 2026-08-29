@@ -4,9 +4,8 @@
 
 {% block header_actions %}
   {% include "partials/perf_year_filter.html" %}
-  {% if fiscal_year %}
-    <a class="btn-out sm" href="{% url 'performance:csv_export' 'plan_figure' %}?year={{ fiscal_year.code }}">現行計画をCSV出力</a>
-    {% if can_manage %}<a class="btn-b sm" href="{% url 'performance:plan_create' %}?year={{ fiscal_year.code }}">計画版を作成</a>{% endif %}
+  {% if fiscal_year and can_manage %}
+    <a class="btn-b sm" href="{% url 'performance:plan_create' %}?year={{ fiscal_year.code }}">計画を追加する</a>
   {% endif %}
 {% endblock %}
 
@@ -16,93 +15,78 @@
     <div class="callout w"><p>年度が未登録です。<a href="{% url 'performance:year_create' %}">年度を登録</a>してください。</p></div>
   {% else %}
 
+    <div class="lede">
+      <div class="lede-main">
+        <div class="lede-label">いま効いている計画</div>
+        <div class="lede-value sm">{% if current_version %}{{ current_version }}{% else %}未登録{% endif %}</div>
+        <p class="lede-say">
+          {% if current_version %}
+            {{ current_version.effective_from|date:"Y年n月" }}以降はこの版の数字で達成率を出しています。
+            期初計画は書き換えずに残しています。
+          {% else %}
+            適用中の計画がないため、達成率を出せません。計画を追加して「適用する」を押してください。
+          {% endif %}
+        </p>
+      </div>
+      <div class="lede-side">
+        <dl class="lede-facts">
+          <div><dt>売上計画（年度）</dt><dd>{{ current_total.plan.revenue|floatformat:0|intcomma }} 円</dd></div>
+          <div><dt>利益計画（年度）</dt><dd>{{ current_total.plan.operating_profit|floatformat:0|intcomma }} 円</dd></div>
+        </dl>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-hdr">
-        <span class="card-t">計画版</span>
-        <span class="card-act">金額は「その版に登録されている行の合計」です</span>
+        <span class="card-t">計画の版</span>
+        <span class="card-act">見直すたびに1行増えます</span>
       </div>
       <div class="t-wrap">
         <table class="t">
-          <thead><tr><th>版</th><th>種別</th><th>適用開始</th><th>状態</th><th class="num">売上</th><th class="num">粗利</th><th class="num">利益</th><th>変更理由</th><th></th></tr></thead>
+          <thead><tr><th>計画</th><th>いつから</th><th>状態</th><th class="num">売上計画</th><th>入力</th></tr></thead>
           <tbody>
             {% for row in versions %}
               <tr>
-                <td>{{ row.version }}</td>
-                <td>{{ row.version.get_kind_display }}</td>
-                <td class="nowrap">{{ row.version.effective_from|date:"Y/m" }}</td>
+                <td>{{ row.version }}<span class="row-note">{{ row.version.note|default:"" }}</span></td>
+                <td class="nowrap">{{ row.version.effective_from|date:"Y年n月" }}</td>
                 <td>
                   {% if row.version.status == 'active' %}<span class="badge g">適用中</span>
                   {% elif row.version.status == 'draft' %}<span class="badge n">作成中</span>
                   {% else %}<span class="badge r">取り下げ</span>{% endif %}
+                  {% if can_manage and row.version.status != 'active' %}
+                    <form method="post" action="{% url 'performance:plan_activate' row.version.pk %}" class="inline-form">
+                      {% csrf_token %}<button type="submit" class="btn-out sm">適用する</button>
+                    </form>
+                  {% endif %}
                 </td>
                 <td class="num">{{ row.total.revenue|floatformat:0|intcomma }}</td>
-                <td class="num">{{ row.total.gross_profit|floatformat:0|intcomma }}</td>
-                <td class="num">{{ row.total.operating_profit|floatformat:0|intcomma }}</td>
-                <td>{{ row.version.note|default:"—" }}</td>
                 <td class="nowrap">
-                  <a href="{% url 'performance:figure_entry' %}?mode=plan&plan={{ row.version.pk }}&year={{ fiscal_year.code }}">入力</a>
-                  {% if can_manage %}
-                    ／ <a href="{% url 'performance:plan_edit' row.version.pk %}">編集</a>
-                    {% if row.version.status != 'active' %}
-                      <form method="post" action="{% url 'performance:plan_activate' row.version.pk %}" class="inline-form">
-                        {% csrf_token %}<button type="submit" class="btn-out sm">適用する</button>
-                      </form>
-                    {% endif %}
-                  {% endif %}
+                  <a href="{% url 'performance:figure_entry' %}?mode=plan&plan={{ row.version.pk }}&year={{ fiscal_year.code }}">数字を入れる</a>
+                  {% if can_manage %} ／ <a href="{% url 'performance:plan_edit' row.version.pk %}">編集</a>{% endif %}
                 </td>
               </tr>
             {% empty %}
-              <tr><td colspan="9"><div class="dashboard-empty">計画版がありません。まず期初計画を作成してください。</div></td></tr>
+              <tr><td colspan="5"><div class="dashboard-empty">計画がありません。まず期初計画を作ってください。</div></td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-t">月ごとに効いている計画版</span>
-        <span class="card-act">期中変更で触られていない組織は前の版を引き継ぎます</span>
-      </div>
-      <div class="t-wrap">
-        <table class="t">
-          <thead><tr>{% for row in ruling %}<th>{{ row.month|date:"Y/m" }}</th>{% endfor %}</tr></thead>
-          <tbody>
-            <tr>
-              {% for row in ruling %}
-                <td class="nowrap">{% if row.version %}{{ row.version }}{% else %}<span class="badge n">計画なし</span>{% endif %}</td>
-              {% endfor %}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hdr"><span class="card-t">現行計画の年度合計（参照できる組織のみ）</span></div>
-      <div class="kpi-g">
-        <div class="kpi">
-          <div class="kpi-l">売上計画</div>
-          <div class="kpi-v">{{ current_total.plan.revenue|floatformat:0|intcomma }}</div>
-          <div class="kpi-s">実績 {{ current_total.actual.revenue|floatformat:0|intcomma }}</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-l">粗利計画</div>
-          <div class="kpi-v">{{ current_total.plan.gross_profit|floatformat:0|intcomma }}</div>
-          <div class="kpi-s">実績 {{ current_total.actual.gross_profit|floatformat:0|intcomma }}</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-l">利益計画</div>
-          <div class="kpi-v">{{ current_total.plan.operating_profit|floatformat:0|intcomma }}</div>
-          <div class="kpi-s">実績 {{ current_total.actual.operating_profit|floatformat:0|intcomma }}</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-l">計画利益率</div>
-          <div class="kpi-v">{% if current_total.plan.profit_rate is None %}—{% else %}{{ current_total.plan.profit_rate }}<small>%</small>{% endif %}</div>
-          <div class="kpi-s">実績 {% if current_total.actual.profit_rate is None %}—{% else %}{{ current_total.actual.profit_rate }}%{% endif %}</div>
-        </div>
-      </div>
-    </div>
+    {% if ruling_ranges %}
+      <details class="fold">
+        <summary>どの計画がいつ効くか</summary>
+        <ul class="fold-list">
+          {% for range in ruling_ranges %}
+            <li>
+              <b>{{ range.start|date:"Y年n月" }}〜{{ range.end|date:"Y年n月" }}</b>
+              {% if range.version %}{{ range.version }}{% else %}計画なし{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        <p class="ps">新しい版で数字を入れなかった組織は、その前の版の金額をそのまま使います。</p>
+      </details>
+    {% endif %}
 
   {% endif %}
 

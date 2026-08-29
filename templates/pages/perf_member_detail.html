@@ -6,59 +6,36 @@
   {% include "partials/perf_year_filter.html" %}
   <a class="btn-ghost sm" href="{% url 'performance:org_detail' member.org_unit.pk %}">所属組織へ</a>
   {% if can_edit %}
-    <a class="btn-b sm" href="{% url 'performance:figure_entry' %}?org={{ member.org_unit.pk }}&member={{ member.pk }}&mode=actual&year={{ fiscal_year.code }}">実績を入力</a>
+    <a class="btn-b sm" href="{% url 'performance:figure_entry' %}?org={{ member.org_unit.pk }}&member={{ member.pk }}&mode=actual&year={{ fiscal_year.code }}">数字を入力する</a>
   {% endif %}
 {% endblock %}
 
 {% block content %}
 
-  <div class="kpi-g">
-    <div class="kpi">
-      <div class="kpi-l">売上（累計）</div>
-      <div class="kpi-v">{{ summary.actual.revenue|floatformat:0|intcomma }}</div>
-      <div class="kpi-s">計画 {{ summary.plan.revenue|floatformat:0|intcomma }}</div>
-      <div class="kpi-bar"><div class="kpi-fill {{ summary.comparison.tone }}" style="width:100%"></div></div>
+  {% include "partials/perf_metric_tabs.html" %}
+
+  <div class="lede">
+    <div class="lede-main">
+      <div class="lede-label">{{ headline.metric_label }}（実績）</div>
+      <div class="lede-value">{{ headline.actual|floatformat:0|intcomma }}<small> 円</small></div>
+      <p class="lede-say">{{ headline.sentence }}</p>
     </div>
-    <div class="kpi">
-      <div class="kpi-l">粗利（累計）</div>
-      <div class="kpi-v">{{ summary.actual.gross_profit|floatformat:0|intcomma }}</div>
-      <div class="kpi-s">粗利率 {% if summary.actual.gross_margin_rate is None %}—{% else %}{{ summary.actual.gross_margin_rate }}%{% endif %}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">利益（累計）</div>
-      <div class="kpi-v">{{ summary.actual.operating_profit|floatformat:0|intcomma }}</div>
-      <div class="kpi-s">差異 {{ summary.comparison.variance.operating_profit|floatformat:0|intcomma }}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-l">所属組織の実績</div>
-      <div class="kpi-v">{{ org_summary.total_actual.revenue|floatformat:0|intcomma }}</div>
-      <div class="kpi-s">{{ member.org_unit.name }}（売上）</div>
+    <div class="lede-side">
+      <div class="lede-badge"><span class="badge {{ headline.tone }} lg">{{ headline.status_label }}</span></div>
+      <dl class="lede-facts">
+        <div><dt>計画</dt><dd>{{ headline.plan|floatformat:0|intcomma }} 円</dd></div>
+        <div><dt>計画との差</dt><dd class="{% if headline.diff < 0 %}minus{% endif %}">{{ headline.diff|floatformat:0|intcomma }} 円</dd></div>
+        <div><dt>社員番号</dt><dd>{{ member.employee_code }}</dd></div>
+      </dl>
     </div>
   </div>
 
   <div class="card">
     <div class="card-hdr">
-      <span class="card-t">月次推移</span>
-      <span class="card-act">{{ member.employee_code }}{% if member.title %} ／ {{ member.title }}{% endif %}</span>
+      <span class="card-t">月ごとの{{ headline.metric_label }}</span>
+      <span class="card-act">{{ member.org_unit.name }}{% if member.title %}／{{ member.title }}{% endif %}</span>
     </div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead><tr><th>月</th><th class="num">売上計画</th><th class="num">売上実績</th><th class="num">達成率</th><th class="num">粗利実績</th><th class="num">利益実績</th><th class="num">利益率</th></tr></thead>
-        <tbody>
-          {% for row in rows %}
-            <tr>
-              <td class="nowrap">{{ row.month|date:"Y/m" }}</td>
-              <td class="num">{{ row.comparison.plan.revenue|floatformat:0|intcomma }}</td>
-              <td class="num">{{ row.comparison.actual.revenue|floatformat:0|intcomma }}</td>
-              <td class="num">{% if row.comparison.revenue_achievement is None %}—{% else %}<span class="badge {{ row.comparison.tone }}">{{ row.comparison.revenue_achievement }}%</span>{% endif %}</td>
-              <td class="num">{{ row.comparison.actual.gross_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{{ row.comparison.actual.operating_profit|floatformat:0|intcomma }}</td>
-              <td class="num">{% if row.comparison.actual.profit_rate is None %}—{% else %}{{ row.comparison.actual.profit_rate }}%{% endif %}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
   </div>
 
 {% endblock %}

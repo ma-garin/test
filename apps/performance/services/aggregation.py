@@ -280,9 +280,20 @@ class OrgSummary:
 
     @property
     def member_gap(self) -> Amounts:
-        """個人配分の合計 − 組織の直接入力値。0 でなければ配分漏れの疑い。"""
+        """個人配分の合計 − 組織の直接入力値。"""
 
         return self.member_actual - self.own_actual
+
+    @property
+    def member_over_allocated(self) -> bool:
+        """個人の合計が組織の金額を超えているか。
+
+        *不足* は警告しない。個人別に管理するのは一部のメンバーだけ、という
+        運用が普通で、毎回警告を出すと本当に見るべき行が埋もれる。
+        超過は入力ミスか二重計上のどちらかなので、こちらだけ知らせる。
+        """
+
+        return self.member_actual.revenue > self.own_actual.revenue
 
     @property
     def has_member_breakdown(self) -> bool:
