@@ -15,6 +15,8 @@ from django.urls import reverse
 from apps.accounts.constants import Role
 from apps.performance.constants import FigureSource, PlanKind, PlanStatus
 from apps.performance.models import ActualFigure, PlanFigure, PlanVersion
+from apps.performance.services import aggregation
+from apps.performance.services import chart as chart_service
 from apps.performance.tests import factories
 
 
@@ -344,16 +346,56 @@ class DashboardSimplificationTests(TestCase):
 
         return self.client.get(reverse("performance:dashboard"), params)
 
-    def test_metric_switches_the_numbers_on_screen(self) -> None:
+    def test_summary_carries_every_figure_and_its_plan(self) -> None:
+        """サマリ表に売上・粗利・利益と率が、計画・実績・差・対計画比つきで並ぶ。"""
+
         factories.add_plan(self.version, self.units["sec"], self.month, 1000)
         factories.add_actual(self.year, self.units["sec"], self.month, 800)
 
-        revenue = self._get().context["headline"]
-        profit = self._get(metric="operating_profit").context["headline"]
+        rows = {row.label: row for row in self._get().context["summary_rows"]}
 
-        self.assertEqual(revenue.actual, Decimal("800"))
-        self.assertEqual(profit.metric_label, "利益")
-        self.assertEqual(profit.actual, Decimal("80"))
+        self.assertEqual(
+            list(rows), ["売上", "粗利", "粗利率", "利益", "利益率"]
+        )
+        self.assertEqual(rows["売上"].plan, Decimal("1000"))
+        self.assertEqual(rows["売上"].actual, Decimal("800"))
+        self.assertEqual(rows["売上"].diff, Decimal("-200"))
+        self.assertEqual(rows["売上"].achievement, Decimal("80.00"))
+        self.assertEqual(rows["利益"].actual, Decimal("80"))
+
+    def test_rate_rows_report_point_difference_not_achievement(self) -> None:
+        """率は差（ポイント）で見る。率どうしの比は意味を持たない。"""
+
+        factories.add_plan(self.version, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 800)
+
+        rows = {row.label: row for row in self._get().context["summary_rows"]}
+
+        self.assertIsNone(rows["利益率"].achievement)
+        self.assertEqual(rows["利益率"].actual, Decimal("10.00"))
+
+    def test_org_line_shows_all_three_metrics(self) -> None:
+        factories.add_plan(self.version, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 800)
+
+        line = self._get().context["lines"][0]
+
+        self.assertEqual(line.revenue.actual, Decimal("800"))
+        self.assertEqual(line.gross_profit.actual, Decimal("200"))
+        self.assertEqual(line.operating_profit.actual, Decimal("80"))
+        self.assertEqual(line.revenue.achievement, Decimal("80.00"))
+
+    def test_metric_switches_the_chart_series(self) -> None:
+        factories.add_plan(self.version, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 800)
+
+        revenue = self._get().context["chart"]
+        profit = self._get(metric="operating_profit").context["chart"]
+
+        self.assertEqual(revenue.bars[0].actual, Decimal("800"))
+        self.assertEqual(profit.bars[0].actual, Decimal("80"))
+        # グラフは年度12か月ぶんを描く。累計期間だけだと落ちた月が見えない。
+        self.assertEqual(len(revenue.bars), 12)
 
     def test_unknown_metric_falls_back_to_revenue(self) -> None:
         self.assertEqual(self._get(metric="bogus").context["metric"], "revenue")
@@ -362,10 +404,10 @@ class DashboardSimplificationTests(TestCase):
         factories.add_plan(self.version, self.units["sec"], self.month, 1000)
         factories.add_actual(self.year, self.units["sec"], self.month, 910)
 
-        rows = self._get().context["behind_rows"]
+        lines = self._get().context["attention_lines"]
 
-        self.assertEqual([row.label for row in rows], ["sec"])
-        self.assertEqual(rows[0].status_label, "あと少し")
+        self.assertEqual([line.label for line in lines], ["sec"])
+        self.assertEqual(lines[0].status_label, "あと少し")
 
     def test_nothing_to_watch_when_every_org_meets_plan(self) -> None:
         factories.add_plan(self.version, self.units["sec"], self.month, 1000)
@@ -373,5 +415,64 @@ class DashboardSimplificationTests(TestCase):
 
         response = self._get()
 
-        self.assertEqual(response.context["behind_rows"], [])
-        self.assertContains(response, "すべて計画どおりです")
+        self.assertEqual(response.context["attention_lines"], [])
+        self.assertContains(response, "未達の組織・KPI はありません")
+
+
+class ChartScaleTests(TestCase):
+    """グラフの目盛りが、実測値のすぐ上で止まること。
+
+    刻みが粗すぎると棒が図の下半分にへばりつき、月ごとの差が読めなくなる。
+    """
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant)
+        self.version = factories.make_version(self.tenant, self.year)
+
+    def _chart(self, revenue):
+        factories.add_actual(self.year, self.units["sec"], date(2026, 4, 1), revenue)
+        report = aggregation.build_report(
+            self.year, list(self.units.values()), self.year.months
+        )
+
+        return chart_service.monthly_chart(report.monthly_rows(self.units["sec"]), "revenue")
+
+    def test_axis_top_sits_just_above_the_data(self) -> None:
+        chart = self._chart(32_000_000)
+
+        # 上限は 4,000万。5,000万まで取ると棒が図の6割で止まる。
+        self.assertEqual(chart.ticks[-1]["label"], "40")
+
+    def test_bar_reaches_most_of_the_plot(self) -> None:
+        chart = self._chart(32_000_000)
+        tallest = max(bar.height for bar in chart.bars)
+        plot_height = chart.baseline - 16
+
+        self.assertGreater(tallest / plot_height, 0.7)
+
+    def test_empty_year_is_reported_as_no_data(self) -> None:
+        report = aggregation.build_report(
+            self.year, list(self.units.values()), self.year.months
+        )
+        chart = chart_service.monthly_chart(report.monthly_rows(self.units["sec"]), "revenue")
+
+        self.assertFalse(chart.has_data)
+
+
+class ChartTickTests(TestCase):
+    """目盛りの数字が、実際の目盛り位置と食い違わないこと。"""
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant)
+
+    def test_half_tick_keeps_its_fraction(self) -> None:
+        factories.add_actual(self.year, self.units["sec"], date(2026, 4, 1), 21_000_000)
+        report = aggregation.build_report(self.year, list(self.units.values()), self.year.months)
+        chart = chart_service.monthly_chart(report.monthly_rows(self.units["sec"]), "revenue")
+
+        # 上限 2,500万 → 中間の目盛りは 1,250万。「12」と丸めない。
+        self.assertEqual([tick["label"] for tick in chart.ticks], ["0", "12.5", "25"])

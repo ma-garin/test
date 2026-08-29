@@ -12,23 +12,10 @@
 
 {% block content %}
 
-  {% include "partials/perf_metric_tabs.html" %}
+  {% include "partials/perf_summary.html" with summary_title=unit.name|add:"　計数サマリ（累計）" %}
 
-  <div class="lede">
-    <div class="lede-main">
-      <div class="lede-label">{{ headline.metric_label }}（実績）</div>
-      <div class="lede-value">{{ headline.actual|floatformat:0|intcomma }}<small> 円</small></div>
-      <p class="lede-say">{{ headline.sentence }}</p>
-    </div>
-    <div class="lede-side">
-      <div class="lede-badge"><span class="badge {{ headline.tone }} lg">{{ headline.status_label }}</span></div>
-      <dl class="lede-facts">
-        <div><dt>計画</dt><dd>{{ headline.plan|floatformat:0|intcomma }} 円</dd></div>
-        <div><dt>計画との差</dt><dd class="{% if headline.diff < 0 %}minus{% endif %}">{{ headline.diff|floatformat:0|intcomma }} 円</dd></div>
-        <div><dt>利益率</dt><dd>{% if headline.profit_rate is None %}—{% else %}{{ headline.profit_rate|floatformat:1 }}%{% endif %}</dd></div>
-      </dl>
-    </div>
-  </div>
+  {% include "partials/perf_metric_tabs.html" %}
+  {% include "partials/perf_chart.html" %}
 
   {% if summary.member_over_allocated %}
     <div class="callout w">
@@ -45,20 +32,20 @@
     {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
   </div>
 
-  {% if child_rows %}
+  {% if child_lines %}
     <div class="card">
       <div class="card-hdr"><span class="card-t">配下の組織</span></div>
-      {% include "partials/perf_rows.html" with rows=child_rows row_label="組織" %}
+      {% include "partials/perf_org_table.html" with lines=child_lines row_label="組織" %}
     </div>
   {% endif %}
 
-  {% if member_rows %}
+  {% if member_lines %}
     <div class="card">
       <div class="card-hdr">
         <span class="card-t">個人ごと</span>
-        <span class="card-act">組織の金額の内訳です</span>
+        <span class="card-act">組織の金額の内訳です（組織計には足し込みません）</span>
       </div>
-      {% include "partials/perf_rows.html" with rows=member_rows row_label="氏名" %}
+      {% include "partials/perf_org_table.html" with lines=member_lines row_label="氏名" %}
     </div>
   {% endif %}
 

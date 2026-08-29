@@ -45,7 +45,16 @@ from apps.performance.models import (
     OrgUnit,
     PlanVersion,
 )
-from apps.performance.services import aggregation, csv_io, entry, plans, presentation
+from apps.performance.services import (
+    aggregation,
+    csv_io,
+    entry,
+    plans,
+    presentation,
+)
+from apps.performance.services import (
+    chart as chart_service,
+)
 from apps.performance.services import kpi as kpi_service
 from apps.performance.services.calendar import format_month, parse_month
 
@@ -134,11 +143,11 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     breakdown = children or roots
 
     total = report.totals(roots)
-    rows = [
-        presentation.row_from(
+
+    lines = [
+        presentation.org_line(
             summary.unit.name,
             summary.comparison,
-            metric,
             url=reverse("performance:org_detail", args=[summary.unit.pk]),
             note=summary.unit.get_level_display(),
         )
@@ -153,6 +162,11 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         plans.current_version(fiscal_year, upto),
     )
 
+    # グラフと月次表は年度全体で描く。累計だけだと「どの月で落ちたか」が見えない。
+    full_report = aggregation.build_report(fiscal_year, units, fiscal_year.months, members)
+    monthly = _combined_monthly_rows(full_report, roots)
+    metric = presentation.metric_from(request)
+
     return render(
         request,
         "pages/perf_dashboard.html",
@@ -161,19 +175,25 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "page_subtitle": f"{fiscal_year.name}　{format_month(fiscal_year.start_on)}〜"
             f"{format_month(upto)} の累計",
             "units": units,
-            "headline": presentation.headline_from(total, metric),
+            "scope_label": "／".join(unit.name for unit in roots),
+            "summary_rows": presentation.summary_rows(total),
+            "total": total,
+            "lines": lines,
+            # 手当が要る行を先に出す。全部を読ませてから探させない。
+            "attention_lines": sorted(
+                (line for line in lines if line.needs_attention),
+                key=lambda line: line.worst_achievement,
+            ),
             "metric": metric,
             "metric_tabs": presentation.metric_tabs(metric),
-            "rows": rows,
-            # 「見るべきところ」だけを先に出す。全部を並べると探す作業が要る。
-            # 金額を先、KPI を後にする。手当の順序がそのまま並び順になる。
-            "behind_rows": sorted(
-                (row for row in rows if row.needs_attention),
-                key=lambda row: row.achievement if row.achievement is not None else 0,
-            ),
+            "chart": chart_service.monthly_chart(monthly, metric),
+            "monthly_rows": monthly,
+            "month_rows": [
+                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric)
+                for row in monthly
+            ],
             "kpi_summary": kpi_service.KpiSummary(statuses=statuses),
             "kpi_alerts": [item for item in statuses if item.status in ("behind", "warning")][:5],
-            "total": total,
             "summaries": [report.for_unit(unit) for unit in breakdown],
             "months": months,
             "upto": upto,
@@ -182,6 +202,39 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             **_year_context(request, fiscal_year),
         },
     )
+
+
+def _combined_monthly_rows(report, units):
+    """複数の根組織をまとめた月次行。親子が混ざっても二重に数えない。"""
+
+    if not units:
+        return []
+
+    if len(units) == 1:
+        return report.monthly_rows(units[0])
+
+    combined = None
+
+    for unit in units:
+        rows = report.monthly_rows(unit)
+
+        if combined is None:
+            combined = rows
+            continue
+
+        combined = [
+            aggregation.MonthlyRow(
+                month=left.month,
+                plan=left.plan + right.plan,
+                actual=left.actual + right.actual,
+                initial=left.initial + right.initial,
+                cumulative_plan=left.cumulative_plan + right.cumulative_plan,
+                cumulative_actual=left.cumulative_actual + right.cumulative_actual,
+            )
+            for left, right in zip(combined, rows, strict=True)
+        ]
+
+    return combined or []
 
 
 @login_required
@@ -217,6 +270,10 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
     monthly_rows = report.monthly_rows(unit)
     member_rows = aggregation.member_summaries(report, members, months)
 
+    # グラフは年度全体。累計期間だけだと、どの月で崩れたのかが読めない。
+    full_report = aggregation.build_report(fiscal_year, units, fiscal_year.months, members)
+    full_monthly = full_report.monthly_rows(unit)
+
     return render(
         request,
         "pages/perf_org_detail.html",
@@ -227,22 +284,32 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
             "unit": unit,
             "summary": summary,
             "headline": presentation.headline_from(summary.comparison, metric),
+            "summary_rows": presentation.summary_rows(summary.comparison),
+            "chart": chart_service.monthly_chart(full_monthly, metric),
             "metric": metric,
             "metric_tabs": presentation.metric_tabs(metric),
             "month_rows": [
                 presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric)
                 for row in monthly_rows
             ],
-            "child_rows": [
-                presentation.row_from(
+            "child_lines": [
+                presentation.org_line(
                     child.unit.name,
                     child.comparison,
-                    metric,
                     url=reverse("performance:org_detail", args=[child.unit.pk]),
                     note=child.unit.get_level_display(),
                 )
                 for child in (report.for_unit(child) for child in children)
                 if child is not None
+            ],
+            "member_lines": [
+                presentation.org_line(
+                    row.member.name,
+                    row.comparison,
+                    url=reverse("performance:member_detail", args=[row.member.pk]),
+                    note=row.member.employee_code,
+                )
+                for row in member_rows
             ],
             "member_rows": [
                 presentation.row_from(
@@ -270,6 +337,32 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
     )
 
 
+def _member_monthly_rows(report, member, months) -> list:
+    """個人の月次行。組織と同じ形にして、表・グラフの描画を共通化する。"""
+
+    rows: list = []
+    cumulative_plan, cumulative_actual = aggregation.EMPTY, aggregation.EMPTY
+
+    for month in months:
+        plan = report.plan.member_amount(member.pk, [month])
+        actual = report.actual.member_amount(member.pk, [month])
+        cumulative_plan = cumulative_plan + plan
+        cumulative_actual = cumulative_actual + actual
+
+        rows.append(
+            aggregation.MonthlyRow(
+                month=month,
+                plan=plan,
+                actual=actual,
+                initial=aggregation.EMPTY,
+                cumulative_plan=cumulative_plan,
+                cumulative_actual=cumulative_actual,
+            )
+        )
+
+    return rows
+
+
 @login_required
 def member_detail(request: HttpRequest, pk) -> HttpResponse:
     """個人の計数。組織の内訳としての位置づけを併記する。"""
@@ -287,14 +380,12 @@ def member_detail(request: HttpRequest, pk) -> HttpResponse:
     report = aggregation.build_report(fiscal_year, units, months, [member])
 
     metric = presentation.metric_from(request)
-    rows = []
-
-    for month in months:
-        plan = report.plan.member_amount(member.pk, [month])
-        actual = report.actual.member_amount(member.pk, [month])
-        rows.append({"month": month, "comparison": aggregation.Comparison(plan=plan, actual=actual)})
-
+    rows = _member_monthly_rows(report, member, months)
     summary = aggregation.member_summaries(report, [member], months)[0]
+
+    # グラフは年度全体。累計期間だけだと、どの月で崩れたのかが読めない。
+    full_report = aggregation.build_report(fiscal_year, units, fiscal_year.months, [member])
+    full_rows = _member_monthly_rows(full_report, member, fiscal_year.months)
 
     return render(
         request,
@@ -306,10 +397,12 @@ def member_detail(request: HttpRequest, pk) -> HttpResponse:
             "member": member,
             "summary": summary,
             "headline": presentation.headline_from(summary.comparison, metric),
+            "summary_rows": presentation.summary_rows(summary.comparison),
+            "chart": chart_service.monthly_chart(full_rows, metric),
             "metric": metric,
             "metric_tabs": presentation.metric_tabs(metric),
             "month_rows": [
-                presentation.row_from(f"{row['month']:%Y/%m}", row["comparison"], metric)
+                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric)
                 for row in rows
             ],
             "org_summary": report.for_unit(member.org_unit),

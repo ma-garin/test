@@ -12,23 +12,10 @@
 
 {% block content %}
 
-  {% include "partials/perf_metric_tabs.html" %}
+  {% include "partials/perf_summary.html" with summary_title=member.name|add:"　計数サマリ（累計）" summary_note="組織の金額の内訳です" %}
 
-  <div class="lede">
-    <div class="lede-main">
-      <div class="lede-label">{{ headline.metric_label }}（実績）</div>
-      <div class="lede-value">{{ headline.actual|floatformat:0|intcomma }}<small> 円</small></div>
-      <p class="lede-say">{{ headline.sentence }}</p>
-    </div>
-    <div class="lede-side">
-      <div class="lede-badge"><span class="badge {{ headline.tone }} lg">{{ headline.status_label }}</span></div>
-      <dl class="lede-facts">
-        <div><dt>計画</dt><dd>{{ headline.plan|floatformat:0|intcomma }} 円</dd></div>
-        <div><dt>計画との差</dt><dd class="{% if headline.diff < 0 %}minus{% endif %}">{{ headline.diff|floatformat:0|intcomma }} 円</dd></div>
-        <div><dt>社員番号</dt><dd>{{ member.employee_code }}</dd></div>
-      </dl>
-    </div>
-  </div>
+  {% include "partials/perf_metric_tabs.html" %}
+  {% include "partials/perf_chart.html" %}
 
   <div class="card">
     <div class="card-hdr">

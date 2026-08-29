@@ -1,0 +1,42 @@
+{% comment %}
+  月次の計画対比。棒＝実績、線＝計画。色（青・橙）に加えて形（棒・線）でも
+  区別しているので、色が読めなくても意味は落ちない。同じ数字は下の表にもある。
+{% endcomment %}
+{% load humanize %}
+<div class="card">
+  <div class="card-hdr">
+    <span class="card-t">月ごとの{{ chart_title|default:"推移" }}</span>
+    <span class="chart-legend">
+      <span class="lg-key"><i class="lg-bar"></i>実績</span>
+      <span class="lg-key"><i class="lg-line"></i>計画</span>
+    </span>
+  </div>
+
+  {% if chart.has_data %}
+    <svg class="chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img"
+         aria-label="月ごとの実績と計画の推移。数値は下の表にもあります。">
+      {% for tick in chart.ticks %}
+        <line class="chart-grid" x1="64" x2="{{ chart.width|add:'-12' }}" y1="{{ tick.y }}" y2="{{ tick.y }}"></line>
+        <text class="chart-tick" x="56" y="{{ tick.y|add:'4' }}" text-anchor="end">{{ tick.label }}</text>
+      {% endfor %}
+
+      {% for bar in chart.bars %}
+        <rect class="chart-bar" x="{{ bar.x }}" y="{{ bar.y }}" width="{{ bar.width }}"
+              height="{{ bar.height }}" rx="3">
+          <title>{{ bar.label }}　実績 {{ bar.actual|floatformat:0|intcomma }} 円／計画 {{ bar.plan|floatformat:0|intcomma }} 円</title>
+        </rect>
+        <text class="chart-xlabel" x="{{ bar.plan_x }}" y="{{ chart.height|add:'-8' }}" text-anchor="middle">{{ bar.label }}</text>
+      {% endfor %}
+
+      <polyline class="chart-plan" points="{{ chart.plan_path }}"></polyline>
+      {% for bar in chart.bars %}
+        <circle class="chart-plan-dot" cx="{{ bar.plan_x }}" cy="{{ bar.plan_y }}" r="3.5"></circle>
+      {% endfor %}
+
+      <line class="chart-axis" x1="64" x2="{{ chart.width|add:'-12' }}" y1="{{ chart.baseline }}" y2="{{ chart.baseline }}"></line>
+    </svg>
+    <p class="unit-note">縦軸の単位は百万円。棒にカーソルを合わせると実額が出ます。</p>
+  {% else %}
+    <div class="dashboard-empty">この年度の計画・実績がまだ登録されていません。</div>
+  {% endif %}
+</div>

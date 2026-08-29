@@ -1,0 +1,52 @@
+{% comment %}
+  計数サマリ。行＝売上・粗利・粗利率・利益・利益率、列＝計画・実績・差異・対計画比。
+  経営会議で最初に確認する形をそのまま表にしている。率の行は達成率を出さない
+  （率どうしの比に意味はなく、見るべきはポイント差）。
+{% endcomment %}
+{% load humanize %}
+<div class="card">
+  <div class="card-hdr">
+    <span class="card-t">{{ summary_title|default:"計数サマリ" }}</span>
+    <span class="card-act">{{ summary_note|default:"計画は期中の見直しを反映した最新版" }}</span>
+  </div>
+  <div class="t-wrap">
+    <table class="t figures">
+      <thead>
+        <tr>
+          <th>指標</th>
+          <th class="num">計画</th>
+          <th class="num">実績</th>
+          <th class="num">差異</th>
+          <th class="num">対計画比</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary_rows %}
+          <tr{% if row.is_rate %} class="rate-row"{% endif %}>
+            <th scope="row">{{ row.label }}</th>
+            <td class="num">
+              {% if row.plan is None %}—
+              {% elif row.is_rate %}{{ row.plan|floatformat:1 }}%
+              {% else %}{{ row.plan|floatformat:0|intcomma }}{% endif %}
+            </td>
+            <td class="num strong">
+              {% if row.actual is None %}—
+              {% elif row.is_rate %}{{ row.actual|floatformat:1 }}%
+              {% else %}{{ row.actual|floatformat:0|intcomma }}{% endif %}
+            </td>
+            <td class="num {% if row.diff < 0 %}minus{% endif %}">
+              {% if row.diff is None %}—
+              {% elif row.is_rate %}{{ row.diff|floatformat:1 }}pt
+              {% else %}{{ row.diff|floatformat:0|intcomma }}{% endif %}
+            </td>
+            <td class="num">
+              {% if row.achievement is None %}—
+              {% else %}<span class="badge {{ row.tone }}">{{ row.achievement|floatformat:1 }}%</span>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="unit-note">金額の単位は円。差異は「実績 − 計画」。</p>
+</div>

@@ -1,0 +1,46 @@
+{% comment %}
+  組織別の計数一覧。売上・粗利・利益それぞれの実績と対計画比を並べる。
+  1指標だけに絞ると「売上は届いたが利益が出ていない」組織を見落とす。
+{% endcomment %}
+{% load humanize %}
+<div class="t-wrap">
+  <table class="t figures">
+    <thead>
+      <tr class="group-head">
+        <th rowspan="2">{{ row_label|default:"組織" }}</th>
+        <th colspan="3" class="grp">売上</th>
+        <th colspan="2" class="grp">粗利</th>
+        <th colspan="2" class="grp">利益</th>
+        <th rowspan="2" class="num">利益率</th>
+        <th rowspan="2">判定</th>
+      </tr>
+      <tr>
+        <th class="num">計画</th><th class="num">実績</th><th class="num">対計画比</th>
+        <th class="num">実績</th><th class="num">対計画比</th>
+        <th class="num">実績</th><th class="num">対計画比</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+        <tr>
+          <td>
+            {% if line.url %}<a href="{{ line.url }}?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}">{{ line.label }}</a>
+            {% else %}{{ line.label }}{% endif %}
+            {% if line.note %}<span class="row-note">{{ line.note }}</span>{% endif %}
+          </td>
+          <td class="num">{{ line.revenue.plan|floatformat:0|intcomma }}</td>
+          <td class="num strong">{{ line.revenue.actual|floatformat:0|intcomma }}</td>
+          <td class="num">{% if line.revenue.achievement is None %}—{% else %}<span class="badge {{ line.revenue.tone }}">{{ line.revenue.achievement|floatformat:1 }}%</span>{% endif %}</td>
+          <td class="num">{{ line.gross_profit.actual|floatformat:0|intcomma }}</td>
+          <td class="num">{% if line.gross_profit.achievement is None %}—{% else %}<span class="badge {{ line.gross_profit.tone }}">{{ line.gross_profit.achievement|floatformat:1 }}%</span>{% endif %}</td>
+          <td class="num">{{ line.operating_profit.actual|floatformat:0|intcomma }}</td>
+          <td class="num">{% if line.operating_profit.achievement is None %}—{% else %}<span class="badge {{ line.operating_profit.tone }}">{{ line.operating_profit.achievement|floatformat:1 }}%</span>{% endif %}</td>
+          <td class="num">{% if line.profit_rate is None %}—{% else %}{{ line.profit_rate|floatformat:1 }}%{% endif %}</td>
+          <td><span class="badge {{ line.tone }}">{{ line.status_label }}</span></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10"><div class="dashboard-empty">{{ empty_message|default:"データがありません。" }}</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

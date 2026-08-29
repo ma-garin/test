@@ -143,3 +143,117 @@ def headline_from(comparison: Comparison, metric: str) -> Headline:
         profit_rate=comparison.actual.profit_rate,
         gross_margin_rate=comparison.actual.gross_margin_rate,
     )
+
+
+@dataclass(frozen=True)
+class SummaryRow:
+    """計数サマリ表の1行。金額の行と率の行を同じ形で扱う。
+
+    率の行は「達成率」を出さない。率どうしの比（13.05 ÷ 13.12）は意味を持たず、
+    見るべきは差（ポイント）だから。金額と率で列の意味を変えず、率のときだけ
+    達成率欄を空けることで、読み違いを防ぐ。
+    """
+
+    label: str
+    plan: Decimal | None
+    actual: Decimal | None
+    is_rate: bool = False
+
+    @property
+    def diff(self) -> Decimal | None:
+        if self.plan is None or self.actual is None:
+            return None
+
+        return self.actual - self.plan
+
+    @property
+    def achievement(self) -> Decimal | None:
+        if self.is_rate or self.plan is None or self.actual is None:
+            return None
+
+        return rate(self.actual, self.plan)
+
+    @property
+    def tone(self) -> str:
+        if self.is_rate:
+            if self.diff is None:
+                return "n"
+
+            return "g" if self.diff >= 0 else "r"
+
+        return tone_for(self.achievement)
+
+
+def summary_rows(comparison: Comparison) -> list[SummaryRow]:
+    """売上・粗利・利益と、粗利率・利益率。経営会議で最初に見る並び。"""
+
+    plan, actual = comparison.plan, comparison.actual
+
+    return [
+        SummaryRow("売上", plan.revenue, actual.revenue),
+        SummaryRow("粗利", plan.gross_profit, actual.gross_profit),
+        SummaryRow("粗利率", plan.gross_margin_rate, actual.gross_margin_rate, is_rate=True),
+        SummaryRow("利益", plan.operating_profit, actual.operating_profit),
+        SummaryRow("利益率", plan.profit_rate, actual.profit_rate, is_rate=True),
+    ]
+
+
+@dataclass(frozen=True)
+class OrgLine:
+    """組織別一覧の1行。3指標すべての実績と対計画比を持つ。
+
+    指標を1つに絞ると「売上は届いたが利益が出ていない」組織を見落とす。
+    一覧では3指標を並べ、掘るときに詳細画面へ移る。
+    """
+
+    label: str
+    url: str
+    note: str
+    revenue: Row
+    gross_profit: Row
+    operating_profit: Row
+    profit_rate: Decimal | None
+
+    @property
+    def tone(self) -> str:
+        """行の判定は利益を基準にする。売上だけ達成した行を「達成」にしない。"""
+
+        tones = (self.revenue.tone, self.operating_profit.tone)
+
+        for level in ("r", "a", "n"):
+            if level in tones:
+                return level
+
+        return "g"
+
+    @property
+    def status_label(self) -> str:
+        return {"g": "達成", "a": "あと少し", "r": "未達", "n": "計画なし"}[self.tone]
+
+    @property
+    def needs_attention(self) -> bool:
+        return self.tone in ("r", "a")
+
+    @property
+    def worst_achievement(self) -> Decimal:
+        """並べ替え用。低いほうを行の代表値にする。"""
+
+        values = [
+            value
+            for value in (self.revenue.achievement, self.operating_profit.achievement)
+            if value is not None
+        ]
+
+        return min(values) if values else Decimal("0")
+
+
+def org_line(label: str, comparison: Comparison, url: str = "", note: str = "") -> OrgLine:
+    return OrgLine(
+        label=label,
+        url=url,
+        note=note,
+        revenue=row_from(label, comparison, "revenue"),
+        gross_profit=row_from(label, comparison, "gross_profit"),
+        operating_profit=row_from(label, comparison, "operating_profit"),
+        profit_rate=comparison.actual.profit_rate,
+    )
