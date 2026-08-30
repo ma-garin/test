@@ -304,7 +304,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     org_rows = attention_all if focus == "attention" else lines
     # 全件表示では手当カードが件数だけになるぶん、表を長く取れる。
     # 全件表示ではグラフと手当カードを出さないぶん、表を長く取れる。
-    org_page = paginate(org_rows, request, per_page=6 if focus == "attention" else 4)
+    org_page = paginate(org_rows, request, per_page=5 if focus == "attention" else 4)
 
     statuses = kpi_service.kpi_statuses(
         fiscal_year,
@@ -1344,7 +1344,7 @@ def org_list(request: HttpRequest) -> HttpResponse:
             | Q(org_unit__name__icontains=keyword)
         )
 
-    page = paginate(org_rows if tab == "orgs" else members, request, per_page=16)
+    page = paginate(org_rows if tab == "orgs" else members, request, per_page=14)
 
     return render(
         request,

@@ -96,8 +96,10 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options) -> None:
-        rng = random.Random(SEED)
+        # 種にテナントコードを混ぜる。全テナントが同じ数字だと、
+        # 他社の数字が混ざっていても画面から気づけない。
         tenant = self._tenant(options["tenant"])
+        rng = random.Random(f"{SEED}-{tenant.code}")
         manager = self._manager(tenant)
 
         fiscal_year = self._year(tenant, 2026, is_current=True)
@@ -159,13 +161,17 @@ class Command(BaseCommand):
         return tenant
 
     def _manager(self, tenant: Tenant) -> User:
+        # 利用者はテナントごとに作る。固定のアドレスにすると、2つめの
+        # テナントを入れたときに見る人がいない状態になり、
+        # テナント間で数字が混ざらないことを画面で確かめられない。
+        email = f"{tenant.code}-manager@example.com"
         user, created = User.objects.get_or_create(
-            email="scale-manager@example.com",
+            email=email,
             defaults={
-                "username": "scale-manager",
+                "username": f"{tenant.code}-manager",
                 "tenant": tenant,
                 "role": Role.PROJECT_MANAGER,
-                "display_name": "全社ラインマネージャー",
+                "display_name": f"{tenant.name} ラインマネージャー",
             },
         )
 

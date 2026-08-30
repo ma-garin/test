@@ -824,3 +824,54 @@ class ScaleTests(TestCase):
 
         self.assertTrue(codes)
         self.assertTrue(all(code.startswith("prj1") for code in codes))
+
+
+class TenantIsolationTests(TestCase):
+    """他社のデータが画面へ混ざらないこと。
+
+    1テナントだけで測っている限り、混ざっていても気づけない。
+    金額を別にした2社を置き、画面の合計が自社ぶんと一致することを見る。
+    """
+
+    def setUp(self) -> None:
+        self.month = date(2026, 4, 1)
+        self.ours = self._make_tenant("t-ours", 1000)
+        self.theirs = self._make_tenant("t-theirs", 7777)
+
+    def _make_tenant(self, code: str, revenue: int) -> dict:
+        tenant = factories.make_tenant(code=code, name=code)
+        manager = factories.make_user(tenant, f"{code}@example.com")
+        year = factories.make_year(tenant)
+        units = factories.make_tree(tenant, manager=manager)
+        version = factories.make_version(tenant, year)
+
+        factories.add_plan(version, units["sec"], self.month, revenue)
+        factories.add_actual(year, units["sec"], self.month, revenue)
+
+        return {"tenant": tenant, "manager": manager, "year": year, "units": units}
+
+    def test_dashboard_shows_only_own_figures(self) -> None:
+        self.client.force_login(self.ours["manager"])
+        response = self.client.get(
+            reverse("performance:dashboard"),
+            {"year": self.ours["year"].code, "upto": "2026-04"},
+        )
+
+        self.assertEqual(response.context["total"].actual.revenue, 1000)
+
+    def test_org_master_lists_only_own_orgs(self) -> None:
+        self.client.force_login(self.ours["manager"])
+        response = self.client.get(reverse("performance:org_list"))
+        # 名前はテナントをまたいで重なるので、実体で確かめる。
+        ids = {unit.pk for unit, _ in response.context["units"]}
+
+        self.assertIn(self.ours["units"]["sec"].pk, ids)
+        self.assertNotIn(self.theirs["units"]["sec"].pk, ids)
+
+    def test_other_tenants_org_detail_is_not_reachable(self) -> None:
+        self.client.force_login(self.ours["manager"])
+        response = self.client.get(
+            reverse("performance:org_detail", args=[self.theirs["units"]["sec"].pk])
+        )
+
+        self.assertIn(response.status_code, (403, 404))

@@ -1095,7 +1095,7 @@ a { color: inherit; text-decoration: none; }
   text-align: right;
   font-variant-numeric: tabular-nums;
   width: 150px;
-  padding: 4px 9px;
+  padding: 3px 9px;
 }
 /* 4列を画面いっぱいに広げると、見出しと入力欄が離れて対応が読めなくなる。 */
 .perf-grid { max-width: 660px; }
@@ -1103,7 +1103,7 @@ a { color: inherit; text-decoration: none; }
 .perf-grid.kpi-grid { max-width: 400px; }
 /* 表が660pxなのにカードだけ全幅だと、右半分が理由もなく空く。 */
 .entry-card { max-width: 720px; }
-.perf-grid td { padding: 2px 8px; }
+.perf-grid td { padding: 1px 8px; }
 .perf-grid td:first-child { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .perf-grid th:not(:first-child), .perf-grid td:not(:first-child) { text-align: right; }
 .perf-grid input:focus { border-color: var(--blue); background: var(--surface); }
