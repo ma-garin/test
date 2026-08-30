@@ -14,9 +14,6 @@
 
   {% include "partials/perf_summary.html" with summary_title=unit.name|add:"　計数サマリ（累計）" %}
 
-  {% include "partials/perf_metric_tabs.html" %}
-  {% include "partials/perf_chart.html" %}
-
   {% if summary.member_over_allocated %}
     <div class="callout w">
       <p>個人ごとに入れた金額の合計が、組織の金額を {{ summary.member_gap.revenue|floatformat:0|intcomma }} 円 上回っています。
@@ -24,52 +21,67 @@
     </div>
   {% endif %}
 
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">月ごとの{{ headline.metric_label }}</span>
-      <span class="card-act">計画は期中の見直しを反映した最新版</span>
+  {% comment %}
+    縦に積むと6画面ぶんになる。グラフとKPIを横へ並べ、
+    グラフで読める「月ごとの数値」は畳んで置く。
+  {% endcomment %}
+  <div class="band band-a">
+
+    <div class="stack-tight">
+      {% include "partials/perf_metric_tabs.html" %}
+      {% include "partials/perf_chart.html" %}
     </div>
-    {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
+
+    <div class="stack-tight">
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">KPI</span>
+          {% if can_edit %}<a class="btn-out sm" href="{% url 'performance:kpi_entry' %}?org={{ unit.pk }}&year={{ fiscal_year.code }}">KPIを入力する</a>{% endif %}
+        </div>
+        {% if kpi_alerts %}
+          <ul class="watch">
+            {% for status in kpi_alerts %}
+              <li>
+                <span class="badge {{ status.tone }}">{{ status.label }}</span>
+                <span class="watch-part">{{ status.org_unit.name }}／{{ status.kpi.name }}</span>
+                <span class="watch-part">目標 <b>{{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</b></span>
+                <span class="watch-part">実績 <b>{{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</b></span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% elif kpi_summary.total %}
+          <p class="watch-ok">この組織の KPI はすべて目標に届いています（{{ kpi_summary.total }} 件）。</p>
+        {% else %}
+          <p class="watch-ok">この組織に登録された KPI はありません。</p>
+        {% endif %}
+      </div>
+
+      {% if member_lines %}
+        <details class="fold">
+          <summary>個人ごとの内訳（{{ member_lines|length }} 名）</summary>
+          <p class="ps">組織の金額の内訳です。組織計には足し込みません。</p>
+          {% include "partials/perf_org_table.html" with lines=member_lines row_label="氏名" %}
+        </details>
+      {% endif %}
+
+      <details class="fold">
+        <summary>月ごとの{{ headline.metric_label }}（数値）</summary>
+        <p class="ps">計画は期中の見直しを反映した最新版です。</p>
+        {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
+      </details>
+    </div>
+
   </div>
 
+  {% comment %}
+    配下の組織は10列ある。狭いカラムへ入れると右端の対計画比が切れる。
+    横幅は削らず、全幅のまま置く。
+  {% endcomment %}
   {% if child_lines %}
     <div class="card">
       <div class="card-hdr"><span class="card-t">配下の組織</span></div>
       {% include "partials/perf_org_table.html" with lines=child_lines row_label="組織" %}
     </div>
   {% endif %}
-
-  {% if member_lines %}
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-t">個人ごと</span>
-        <span class="card-act">組織の金額の内訳です（組織計には足し込みません）</span>
-      </div>
-      {% include "partials/perf_org_table.html" with lines=member_lines row_label="氏名" %}
-    </div>
-  {% endif %}
-
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">KPI</span>
-      {% if can_edit %}<a class="btn-out sm" href="{% url 'performance:kpi_entry' %}?org={{ unit.pk }}&year={{ fiscal_year.code }}">KPIを入力する</a>{% endif %}
-    </div>
-    {% if kpi_alerts %}
-      <ul class="watch">
-        {% for status in kpi_alerts %}
-          <li>
-            <span class="badge {{ status.tone }}">{{ status.label }}</span>
-            {{ status.org_unit.name }}の{{ status.kpi.name }}が
-            目標 {{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }} に対して
-            {{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }} です。
-          </li>
-        {% endfor %}
-      </ul>
-    {% elif kpi_summary.total %}
-      <p class="watch-ok">この組織の KPI はすべて目標に届いています（{{ kpi_summary.total }} 件）。</p>
-    {% else %}
-      <p class="watch-ok">この組織に登録された KPI はありません。</p>
-    {% endif %}
-  </div>
 
 {% endblock %}

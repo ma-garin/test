@@ -60,26 +60,33 @@
 
     <div class="auth-hero-overlay">
       <div class="auth-hero-top">
-        <svg class="hero-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M2 3 L12 21 L22 3 L16.5 3 L12 12 L7.5 3 Z"/>
-        </svg>
+        <span class="hero-mark hero-mark--text" aria-hidden="true">計</span>
         <span>
-          <strong>VeriRAG</strong>
-          <span>PMO Agent</span>
+          <strong>計数</strong>
+          <span>ダッシュボード</span>
         </span>
       </div>
       <div class="auth-hero-main">
-        <h1>正確な情報とプロセスで、<br>プロジェクトを確実に。</h1>
-        <p>複数案件の遅延・リスク・品質劣化を横断で検知し、<br>根拠つきで提示する PMO エージェント。</p>
+        <h1>計画と実績を、<br>いつでも一目で。</h1>
+        <p>部・課・プロジェクトの計数と目標を横断で確認し、<br>対計画比・前年比つきで提示するダッシュボード。</p>
       </div>
       <div class="auth-hero-points">
-        <div><span class="material-symbols-outlined">history</span>兆候をリアルタイムに検知</div>
-        <div><span class="material-symbols-outlined">support_agent</span>根拠のない断定はしない</div>
-        <div><span class="material-symbols-outlined">dashboard</span>テナント・案件をまたいで俯瞰</div>
+        <div>
+          <svg class="pt-ico" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5a6.5 6.5 0 1 0 6.5 6.5h-1.6A4.9 4.9 0 1 1 8 3.1V8l4 2.3.8-1.4L9.2 7V1.5H8z"/></svg>
+          計画対比をいつでも確認
+        </div>
+        <div>
+          <svg class="pt-ico" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.8 12.6 6 8.4l2.6 2.6 5.6-6.3-1.2-1-4.4 5-2.6-2.6-5 5z"/></svg>
+          前年同期比で傾向を追う
+        </div>
+        <div>
+          <svg class="pt-ico" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 8.6h3v5.4H2V8.6zm4.5-5.2h3v10.6h-3V3.4zM11 6h3v8h-3V6z"/></svg>
+          組織・個人をまたいで俯瞰
+        </div>
       </div>
     </div>
 
-    <div class="auth-hero-foot">&copy; VeriRAG</div>
+    <div class="auth-hero-foot">&copy; 計数ダッシュボード</div>
   </div>
 {% endblock %}
 
@@ -99,6 +106,6 @@
   </form>
   <p class="auth-note">
     パスワードは使いません。初めてのメールアドレスは、その場で利用者を作成します。<br>
-    体験用データは <code>pmo@example.com</code> に紐づいています。
+    体験用データは <code>line-manager@example.com</code> に紐づいています。
   </p>
 {% endblock %}

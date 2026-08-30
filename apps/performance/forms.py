@@ -53,7 +53,7 @@ class FiscalYearForm(forms.ModelForm):
 class OrgUnitForm(forms.ModelForm):
     class Meta:
         model = OrgUnit
-        fields = ["code", "name", "level", "parent", "manager", "project", "sort_order", "is_active"]
+        fields = ["code", "name", "level", "parent", "manager", "sort_order", "is_active"]
 
     def __init__(self, *args, tenant=None, units=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -65,12 +65,9 @@ class OrgUnitForm(forms.ModelForm):
 
         if tenant is not None:
             from apps.accounts.models import User
-            from apps.projects.models import Project
 
             self.fields["manager"].queryset = User.objects.filter(tenant=tenant, is_active=True)
-            self.fields["project"].queryset = Project.objects.alive().filter(tenant=tenant)
 
-        self.fields["project"].empty_label = "（案件と対応づけない）"
         self.fields["manager"].empty_label = "（未設定）"
 
     def clean(self):

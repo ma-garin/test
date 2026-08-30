@@ -23,60 +23,71 @@
 
     {% include "partials/perf_summary.html" with summary_title=scope_label|add:"　計数サマリ（累計）" %}
 
-    {% if attention_lines or kpi_alerts %}
-      <div class="card">
-        <div class="card-hdr"><span class="card-t">手当が要るところ</span></div>
-        <ul class="watch">
-          {% for line in attention_lines %}
-            <li>
-              <span class="badge {{ line.tone }}">{{ line.status_label }}</span>
-              <a href="{{ line.url }}?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}">{{ line.label }}</a>：
-              売上 対計画比 {{ line.revenue.achievement|floatformat:1 }}%（{{ line.revenue.diff|floatformat:0|intcomma }} 円）、
-              利益 対計画比 {% if line.operating_profit.achievement is None %}—{% else %}{{ line.operating_profit.achievement|floatformat:1 }}%{% endif %}（{{ line.operating_profit.diff|floatformat:0|intcomma }} 円）。
-            </li>
-          {% endfor %}
-          {% for status in kpi_alerts %}
-            <li>
-              <span class="badge {{ status.tone }}">{{ status.label }}</span>
-              {{ status.org_unit.name }}／{{ status.kpi.name }}：目標 {{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }} に対して
-              実績 {{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}。
-            </li>
-          {% endfor %}
-        </ul>
+    {# 縦に積むと2画面になる。グラフと注意点、組織別とKPIを横へ並べて1画面へ収める。 #}
+    <div class="band band-a">
+      <div class="stack-tight">
+        {% include "partials/perf_metric_tabs.html" %}
+        {% include "partials/perf_chart.html" %}
       </div>
-    {% else %}
-      <div class="callout ok"><p>計画に対して未達の組織・KPI はありません。</p></div>
-    {% endif %}
 
-    {% include "partials/perf_metric_tabs.html" %}
-    {% include "partials/perf_chart.html" %}
+      <div class="stack-tight">
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-t">手当が要るところ</span>
+          <span class="card-act">対計画比の低い順</span>
+        </div>
+        {% if attention_lines or kpi_alerts %}
+          <ul class="watch">
+            {% for line in attention_lines %}
+              {% comment %}
+                数値・単位・述語を1塊にする。途中で折れると
+                「-11.9百万円 / 届いて」のように意味の切れ目でない位置で改行される。
+              {% endcomment %}
+              <li>
+                <span class="badge {{ line.tone }}">{{ line.status_label }}</span>
+                <span class="watch-body">
+                  <a href="{{ line.url }}?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}">{{ line.label }}</a>
+                  <span class="watch-part">売上 <span class="fig">{{ line.revenue.achievement|floatformat:1 }}%</span></span>
+                  <span class="watch-part">利益 {% if line.operating_profit.achievement is None %}—{% else %}<span class="fig">{{ line.operating_profit.achievement|floatformat:1 }}%</span>{% endif %}</span>
+                  <span class="watch-part">計画差 <span class="fig">{{ line.revenue.diff_display|floatformat:unit_decimals|intcomma }}</span>{{ unit_label }}</span>
+                </span>
+              </li>
+            {% endfor %}
+            {% for status in kpi_alerts %}
+              <li>
+                <span class="badge {{ status.tone }}">{{ status.label }}</span>
+                <span class="watch-body">
+                  <span class="watch-name">{{ status.org_unit.name }}／{{ status.kpi.name }}</span>
+                  <span class="watch-part">目標 <span class="fig">{{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</span></span>
+                  <span class="watch-part">実績 <span class="fig">{{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</span></span>
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="watch-ok">計画に対して未達の組織・KPI はありません。</p>
+        {% endif %}
 
-    <details class="fold">
-      <summary>月ごとの数字を表で見る</summary>
-      {% include "partials/perf_rows.html" with rows=month_rows row_label="月" %}
-    </details>
+        {# KPI は件数だけをここへ畳む。独立カードにすると枠の分だけ縦を取る。 #}
+        <p class="tally">
+          KPI　達成 <b class="ok">{{ kpi_summary.achieved }}</b>　
+          あと少し <b class="warn">{{ kpi_summary.warning }}</b>　
+          未達 <b class="bad">{{ kpi_summary.behind }}</b>　
+          未計測 <b>{{ kpi_summary.unmeasured }}</b>
+          <a class="link" href="{% url 'performance:kpi_list' %}">すべて見る</a>
+        </p>
+      </div>
 
+      </div>
+    </div>
+
+    {# 組織別は10列ある。狭いカラムへ入れると組織名が縦に折れるので全幅で置く。 #}
     <div class="card">
       <div class="card-hdr">
         <span class="card-t">組織別の計数（{{ fiscal_year.start_on|date:"Y/m" }}〜{{ upto|date:"Y/m" }} 累計）</span>
-        <span class="card-act">組織名を押すと明細が開きます</span>
+        <span class="card-act">組織名を押すと明細が開きます　判定は売上と利益の低いほう</span>
       </div>
       {% include "partials/perf_org_table.html" with row_label="組織" empty_message="配下の組織がありません。" %}
-      <p class="unit-note">金額の単位は円。判定は売上と利益の低いほうで付けています。</p>
-    </div>
-
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-t">KPI</span>
-        <a class="btn-out sm" href="{% url 'performance:kpi_list' %}">KPIを見る</a>
-      </div>
-      <p class="tally">
-        達成 <b class="ok">{{ kpi_summary.achieved }}</b>　
-        あと少し <b class="warn">{{ kpi_summary.warning }}</b>　
-        未達 <b class="bad">{{ kpi_summary.behind }}</b>　
-        未計測 <b>{{ kpi_summary.unmeasured }}</b>
-        <span class="tally-note">（全 {{ kpi_summary.total }} 件）</span>
-      </p>
     </div>
 
   {% endif %}

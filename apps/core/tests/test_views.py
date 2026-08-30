@@ -1,7 +1,6 @@
 """画面の疎通テスト。
 
-ナビゲーションに載っている画面がすべて 200 を返すことを確認する。未移植画面も
-「未実装」表示の 200 を返す設計なので、ここで落ちたら URL 設定かテンプレートの不備。
+ナビゲーションに載っている画面がすべて 200 を返すことを確認する。
 """
 
 from __future__ import annotations
@@ -12,23 +11,11 @@ from django.urls import reverse
 from apps.accounts.constants import Role
 from apps.accounts.models import Tenant, User
 from apps.core.navigation import all_items
-from apps.core.services.ai_settings import mask_secret
 
 
 class HealthzTests(TestCase):
     def test_認証なしで200を返す(self):
         self.assertEqual(self.client.get(reverse("healthz")).status_code, 200)
-
-
-class MaskSecretTests(TestCase):
-    def test_未設定は未設定と表示する(self):
-        self.assertEqual(mask_secret(""), "未設定")
-
-    def test_先頭数文字だけ残す(self):
-        self.assertEqual(mask_secret("sk-abcdefgh"), "sk-a*******")
-
-    def test_短い値は全部伏せる(self):
-        self.assertEqual(mask_secret("abc"), "***")
 
 
 class NavigationViewTests(TestCase):
@@ -52,51 +39,7 @@ class NavigationViewTests(TestCase):
 
     def test_未ログインならログイン画面へ誘導する(self):
         self.client.logout()
-        response = self.client.get(reverse("dashboard:control"))
+        response = self.client.get(reverse("performance:dashboard"))
 
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("accounts:login"), response["Location"])
-
-    def test_設定画面に生のAPIキーを出さない(self):
-        with self.settings(OPENAI={**self._openai_settings(), "API_KEY": "sk-super-secret-value"}):
-            response = self.client.get(reverse("core:settings"))
-
-            self.assertEqual(response.status_code, 200)
-            self.assertNotContains(response, "sk-super-secret-value")
-            self.assertContains(response, "sk-s")
-
-    def _openai_settings(self) -> dict:
-        from django.conf import settings
-
-        return dict(settings.OPENAI)
-
-
-class RoleVisibilityTests(TestCase):
-    def setUp(self) -> None:
-        self.tenant = Tenant.objects.create(code="acme", name="ACME")
-
-    def test_参照のみのロールには設定画面を出さない(self):
-        viewer = User.objects.create_user(
-            username="viewer",
-            email="viewer@example.com",
-            password="test-password",
-            tenant=self.tenant,
-            role=Role.VIEWER,
-        )
-        self.client.force_login(viewer)
-        response = self.client.get(reverse("dashboard:control"))
-
-        self.assertNotContains(response, reverse("core:settings"))
-
-    def test_テナント管理者には設定画面を出す(self):
-        admin_user = User.objects.create_user(
-            username="tenant-admin",
-            email="tenant-admin@example.com",
-            password="test-password",
-            tenant=self.tenant,
-            role=Role.TENANT_ADMIN,
-        )
-        self.client.force_login(admin_user)
-        response = self.client.get(reverse("dashboard:control"))
-
-        self.assertContains(response, reverse("core:settings"))

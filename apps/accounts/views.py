@@ -2,21 +2,17 @@
 
 from __future__ import annotations
 
-from urllib.parse import urlparse
-
 from django.conf import settings
-from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.accounts.forms import EmailLoginForm
 from apps.accounts.models import Tenant
-from apps.core.middleware import PROJECT_SESSION_KEY, TENANT_SESSION_KEY
+from apps.core.middleware import TENANT_SESSION_KEY
 
 
 def login_view(request: HttpRequest) -> HttpResponse:
@@ -83,10 +79,7 @@ def _selectable_tenants(user):
     else:
         tenants = Tenant.objects.filter(pk=user.tenant_id, is_active=True)
 
-    return tenants.annotate(
-        project_count=Count("projects", distinct=True),
-        user_count=Count("users", distinct=True),
-    ).order_by("name")
+    return tenants.annotate(user_count=Count("users", distinct=True)).order_by("name")
 
 
 def _initial_tenant_id(request: HttpRequest, tenants: list) -> str:
@@ -124,11 +117,8 @@ def select_tenant(request: HttpRequest) -> HttpResponse:
 
         if tenants.filter(pk=tenant_id).exists():
             request.session[TENANT_SESSION_KEY] = str(tenant_id)
-            # テナントを変えたら案件の選択は無効。他テナントの案件で
-            # 絞り込んだまま画面を見せると、空の一覧の理由が分からなくなる。
-            request.session.pop(PROJECT_SESSION_KEY, None)
 
-            return redirect("dashboard:control")
+            return redirect(settings.LOGIN_REDIRECT_URL)
 
     choices = list(tenants)
 
@@ -139,57 +129,11 @@ def select_tenant(request: HttpRequest) -> HttpResponse:
             "tenants": choices,
             "selected_tenant_id": _initial_tenant_id(request, choices),
             "current_tenant_id": _current_tenant_id(request),
-            "destination_label": "コントロールタワー（案件の絞り込みなし）",
-            # 切替後は必ずコントロールタワーへ行く。`next` を受け取っても使わないので、
+            "destination_label": "計数ダッシュボード",
+            # 切替後は必ずダッシュボードへ行く。`next` を受け取っても使わないので、
             # 指定があることと使われないことを画面で明示する。
             "next_target": _safe_next(request),
             "page_title": "テナント選択",
-        },
-    )
-
-
-@login_required
-def select_project(request: HttpRequest) -> HttpResponse:
-    """案件切替。
-
-    PMO は複数案件を担当するため、対象を1件へ絞れないと数字が混ざる。
-    選択は任意で、未選択なら参照できる全案件を横断して見る。
-
-    旧実装の `project_store.py` に相当する。Django 版で欠落していた
-    （`docs/INCIDENT-001-scope-omission.md` 参照）。
-    """
-
-    from apps.projects.selectors import projects_for
-
-    projects = projects_for(request.user, request.tenant)
-
-    if request.method == "POST":
-        raw = request.POST.get("project", "")
-
-        if not raw:
-            # 「全案件」を選び直したとき。絞り込みを外す。
-            request.session.pop(PROJECT_SESSION_KEY, None)
-            messages.success(request, "全案件を対象にしました。")
-
-            return redirect(_back_to(request))
-
-        if projects.filter(pk=raw).exists():
-            request.session[PROJECT_SESSION_KEY] = str(raw)
-            messages.success(request, f"対象案件を切り替えました。")
-
-            return redirect(_back_to(request))
-
-        # 参照できない案件を指定された。存在の有無は伝えない。
-        messages.error(request, "指定された案件は選択できません。")
-
-    return render(
-        request,
-        "pages/select_project.html",
-        {
-            "projects": projects.order_by("code"),
-            "current": getattr(request, "project", None),
-            "next": _back_to(request),
-            "page_title": "案件の切替",
         },
     )
 
@@ -199,22 +143,21 @@ def onboarding_tenant(request: HttpRequest) -> HttpResponse:
     """ログイン直後、参照するテナントを選ぶ（複数テナントを横断できる利用者だけ）。
 
     通常の利用者は所属テナントが1つに定まるため選ぶまでもない。
-    その場合は自動でスキップし、案件選択へ進む。
+    その場合は自動でスキップし、ダッシュボードへ進む。
     """
 
     tenants = _selectable_tenants(request.user)
 
     if tenants.count() <= 1:
-        return redirect("accounts:onboarding_project")
+        return redirect(settings.LOGIN_REDIRECT_URL)
 
     if request.method == "POST":
         tenant_id = request.POST.get("tenant")
 
         if tenants.filter(pk=tenant_id).exists():
             request.session[TENANT_SESSION_KEY] = str(tenant_id)
-            request.session.pop(PROJECT_SESSION_KEY, None)
 
-            return redirect("accounts:onboarding_project")
+            return redirect(settings.LOGIN_REDIRECT_URL)
 
     choices = list(tenants)
 
@@ -225,56 +168,7 @@ def onboarding_tenant(request: HttpRequest) -> HttpResponse:
             "tenants": choices,
             "selected_tenant_id": _initial_tenant_id(request, choices),
             "current_tenant_id": _current_tenant_id(request),
-            "destination_label": "② 案件選択へ進みます",
+            "destination_label": "計数ダッシュボードへ進みます",
             "page_title": "テナント選択",
         },
     )
-
-
-@login_required
-def onboarding_project(request: HttpRequest) -> HttpResponse:
-    """ログイン直後、対象案件を選ぶ。選択は任意で、スキップすると全案件を横断する。"""
-
-    from apps.projects.selectors import projects_for
-
-    projects = projects_for(request.user, request.tenant).order_by("code")
-
-    if request.method == "POST":
-        raw = request.POST.get("project", "")
-
-        if raw and projects.filter(pk=raw).exists():
-            request.session[PROJECT_SESSION_KEY] = str(raw)
-        else:
-            request.session.pop(PROJECT_SESSION_KEY, None)
-
-        return redirect(settings.LOGIN_REDIRECT_URL)
-
-    return render(
-        request,
-        "pages/onboarding_project.html",
-        {"projects": projects, "tenant": request.tenant, "page_title": "案件選択"},
-    )
-
-
-def _back_to(request: HttpRequest) -> str:
-    """切替後の戻り先。自ホスト宛てで、案件選択画面自身でないときだけ採用する。
-
-    ヘッダーの案件チップは現在URLを `next` に載せる。案件選択画面でそれを押すと
-    自分自身が `next` に入り、押すたびに入れ子と多重エンコードが積み上がる。
-    リンク側でも付けないようにしているが、既に出回っている URL のためここでも捨てる。
-    """
-
-    target = request.POST.get("next") or request.GET.get("next") or ""
-
-    if (
-        target
-        and url_has_allowed_host_and_scheme(
-            target,
-            allowed_hosts={request.get_host()},
-            require_https=request.is_secure(),
-        )
-        and urlparse(target).path != reverse("accounts:select_project")
-    ):
-        return target
-
-    return "/"

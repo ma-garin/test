@@ -1,7 +1,7 @@
 [project]
-name = "verirag-pmo-agent"
+name = "performance-dashboard"
 version = "0.1.0"
-description = "根拠追跡可能な PMO 支援システム（Django 再構築版）"
+description = "部・課・プロジェクト別の計数計画・実績・KPI 達成状況を管理するダッシュボード"
 requires-python = ">=3.11"
 
 [tool.ruff]

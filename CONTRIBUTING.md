@@ -39,40 +39,29 @@ make test     # テスト
 
 ## 守ること
 
-コードレビューで見る観点。再構築ブリーフの「守ること」に対応する。
-
-1. **認証情報を出さない** — 秘密値をテンプレート・ログ・テストデータへ渡さない。
-   監査ログへ入る可能性のある文字列は `mask_secrets()` を通す
-2. **AI 出力に根拠を付ける** — 根拠なしの主張を画面へ出さない。
-   AI 生成物には `AgentRun` を紐づけ、人の判断を `HumanReview` / `Approval` へ残す
-3. **AI 生成と人の編集を区別する** — 同じカラムへ上書きしない
-4. **アクセス範囲を分離する** — 案件・テナントをまたいだ参照を作らない
-5. **AI 未設定でも壊れない** — 外部 API が呼べない状態でも画面が 500 にならないこと
+1. **テナントの参照範囲を分離する** — テナントをまたいだ参照を作らない。
+   参照できない対象は「見えない」ではなく「存在しない」（404）として扱い、
+   ID の総当たりで有無が漏れないようにする
+2. **金額・率の扱いを崩さない** — 金額は月単位でのみ保存し、年度計は導出する。
+   利益率は保存せず売上・粗利・利益から導出する。詳細は `docs/performance.md`
+3. **組織値と個人値を足さない** — 個人は組織値の内訳。二重計上しない
 
 ## テストの書き方
 
-- 外部 API を呼ばない。テスト設定は `AI_PROVIDER=local_hash` に固定してある
 - テスト名は日本語でよい（何を保証しているかが読めることを優先する）
-- 移植したロジック（トークン化、語彙スコア、意図分類）を変えるときは、
-  旧実装との差分を意識する。挙動を固定しているテストが落ちたら、
-  「直す」前に「変えてよいか」を確認する
 
 ```bash
 make test
-.venv/bin/python manage.py test apps.rag --settings=config.settings.test   # アプリ単位
+.venv/bin/python manage.py test apps.performance --settings=config.settings.test   # アプリ単位
 ```
 
 ## 画面を追加したとき
 
 1. `apps/core/navigation.py` の `NAVIGATION` へ追加する（`status="ready"`）
-2. `docs/screen_map.md` の移植状況を更新する
-3. `apps/core/tests/test_views.py` の疎通テストが自動的に対象へ含める
+2. `apps/core/tests/test_views.py` の疎通テストが自動的に対象へ含める
 
-未実装のまま導線だけ通すときは `status="planned"` にし、
-ビューは `_placeholder()` を使う。404 にはしない。
+未実装のまま導線だけ通すときは `status="planned"` にする。
 
 ## ドキュメント
 
-`docs/reference/` と `docs/screens/` は元の参照資料。編集しない。
-設計を変えたら `docs/architecture.md` や該当ドキュメントを更新し、
-判断の経緯が必要なものは `docs/adr/` へ ADR を追加する。
+設計を変えたら `docs/performance.md` を更新する。

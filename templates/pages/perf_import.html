@@ -8,85 +8,108 @@
 
 {% block content %}
 
-  {% if not can_import %}
-    <div class="callout w">
-      <p><strong>取り込みの権限がありません。</strong>過去の取込結果は下の履歴から確認できます。</p>
-    </div>
-  {% else %}
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">CSVを取り込む</span>
-      <span class="card-act">既定ではエラーが1行でもあれば取り込みません</span>
-    </div>
-    <form method="post" enctype="multipart/form-data" class="form">
-      {% csrf_token %}
-      {% if form.non_field_errors %}<div class="callout d">{{ form.non_field_errors|join:" " }}</div>{% endif %}
-      {% for field in form %}
-        <div>
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-          {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
-          {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+  {% comment %}
+    取込フォームと履歴を横に並べる。縦に積むと1画面へ収まらず、
+    「取り込んだ結果がどうなったか」を見るのにスクロールが要る。
+  {% endcomment %}
+  <div class="band band-import">
+
+    <div class="stack-tight">
+      {% if not can_import %}
+        <div class="callout w">
+          <p><strong>取り込みの権限がありません。</strong>過去の取込結果は右の履歴から確認できます。</p>
         </div>
-      {% endfor %}
-      {% if not can_import_master %}
-        <div class="ps">組織・メンバーのマスタ取込にはテナント管理者権限が要ります。</div>
+      {% else %}
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-t">CSVを取り込む</span>
+            <span class="card-act">エラーが1行でもあれば取り込みません</span>
+          </div>
+          <form method="post" enctype="multipart/form-data" class="form form-tight">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="callout d">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+            {% for field in form %}
+              {% if field.field.widget.input_type == "checkbox" %}
+                {# チェックは縦積みにすると、四角と説明が離れて読めなくなる。 #}
+                <label class="check">
+                  {{ field }}
+                  <span>
+                    <b>{{ field.label }}</b>
+                    {% if field.help_text %}<i>{{ field.help_text }}</i>{% endif %}
+                  </span>
+                </label>
+              {% else %}
+                <div>
+                  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
+                </div>
+              {% endif %}
+              {% if field.errors %}<div class="callout d">{{ field.errors|join:" " }}</div>{% endif %}
+            {% endfor %}
+            {% if not can_import_master %}
+              <div class="ps">組織・メンバーのマスタ取込にはテナント管理者権限が要ります。</div>
+            {% endif %}
+            <div class="actions"><button type="submit" class="btn-b">取り込む</button></div>
+          </form>
+        </div>
       {% endif %}
-      <button type="submit" class="btn-b">取り込む</button>
-    </form>
-  </div>
-  {% endif %}
 
-  <details class="fold">
-    <summary>CSVの書き方とテンプレート</summary>
-    <div class="t-wrap">
-      <table class="t">
-        <thead><tr><th>種別</th><th>列</th><th>テンプレート</th></tr></thead>
-        <tbody>
-          {% for kind in kinds %}
-            <tr>
-              <td class="nowrap">{{ kind.label }}</td>
-              <td><code>{{ kind.columns|join:", " }}</code></td>
-              <td class="nowrap"><a href="{% url 'performance:csv_template' kind.value %}">ダウンロード</a></td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
     </div>
-    <p class="ps">
-      社員番号を空にすると組織の金額、入れるとその人の金額になります。
-      月は <code>2026-04</code> の形で書いてください。対象年度と計画版は、ファイルではなく上の画面で選びます。
-    </p>
-  </details>
 
-  <div class="card">
-    <div class="card-hdr"><span class="card-t">取込履歴</span></div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead><tr><th>日時</th><th>種別</th><th>ファイル</th><th class="num">行数</th><th class="num">新規</th><th class="num">更新</th><th class="num">エラー</th><th>結果</th></tr></thead>
-        <tbody>
-          {% for batch in batches %}
-            <tr>
-              <td class="nowrap"><a href="{% url 'performance:import_detail' batch.pk %}">{{ batch.created_at|date:"Y-m-d H:i" }}</a></td>
-              <td>{{ batch.get_kind_display }}</td>
-              <td>{{ batch.filename|default:"—" }}</td>
-              <td class="num">{{ batch.row_count }}</td>
-              <td class="num">{{ batch.created_count }}</td>
-              <td class="num">{{ batch.updated_count }}</td>
-              <td class="num">{{ batch.error_count }}</td>
-              <td>
-                {% if batch.status == 'applied' %}<span class="badge g">取込完了</span>
-                {% elif batch.status == 'partial' %}<span class="badge a">一部取込</span>
-                {% else %}<span class="badge r">取込なし</span>{% endif %}
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="8"><div class="dashboard-empty">取込履歴はまだありません。</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="stack-tight">
+      <div class="card">
+        <div class="card-hdr"><span class="card-t">取込履歴</span></div>
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>日時</th><th>種別</th><th class="num">行数</th><th class="num">新規</th><th class="num">更新</th><th>結果</th></tr></thead>
+          <tbody>
+            {% for batch in batches %}
+              <tr>
+                <td class="nowrap"><a href="{% url 'performance:import_detail' batch.pk %}">{{ batch.created_at|date:"m-d H:i" }}</a></td>
+                <td class="nowrap">{{ batch.get_kind_display }}</td>
+                <td class="num">{{ batch.row_count }}</td>
+                <td class="num">{{ batch.created_count }}</td>
+                <td class="num">{{ batch.updated_count }}</td>
+                <td class="nowrap">
+                  {% if batch.status == 'applied' %}<span class="badge g">取込完了</span>
+                  {% elif batch.status == 'partial' %}<span class="badge a">一部取込</span>
+                  {% else %}<span class="badge r">取込なし</span>{% endif %}
+                  {% if batch.error_count %}<span class="qty err">エラー {{ batch.error_count }}</span>{% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6"><div class="dashboard-empty">取込履歴はまだありません。</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% include "partials/pager.html" %}
     </div>
-    {% include "partials/pager.html" %}
+
+    <details class="fold" open>
+      <summary>CSVの書き方とテンプレート</summary>
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>種別</th><th>列</th><th>テンプレート</th></tr></thead>
+          <tbody>
+            {% for kind in kinds %}
+              <tr>
+                <td class="nowrap">{{ kind.label }}</td>
+                <td><code>{{ kind.columns|join:", " }}</code></td>
+                <td class="nowrap"><a href="{% url 'performance:csv_template' kind.value %}">ダウンロード</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="ps">
+        社員番号を空にすると組織の金額、入れるとその人の金額になります。
+        月は <code>2026-04</code> の形で書いてください。対象年度と計画版は、ファイルではなく左の画面で選びます。
+      </p>
+    </details>
+    </div>
+
   </div>
 
 {% endblock %}

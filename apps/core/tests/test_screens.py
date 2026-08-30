@@ -49,22 +49,17 @@ class TenantlessUserScreenTests(TestCase):
 
                 self.assertEqual(response.status_code, 200)
 
-    def test_テナント未選択なら監査データを何も見せない(self):
-        response = self.client.get(reverse("audit:feedback_list"))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["stats"].total, 0)
-
 
 class CrossTenantIsolationTests(TestCase):
     """他テナントのデータが画面へ混ざらないこと。"""
 
     #: 混入したら一目で分かるよう、他テナント側だけに現れる語を使う。
-    OTHER_PROJECT_NAME = "GLOBEX機密統合案件"
-    OWN_PROJECT_NAME = "ACME基幹刷新案件"
+    OTHER_ORG_NAME = "Globex機密事業部"
+    OWN_ORG_NAME = "ACME基幹事業部"
 
     def setUp(self) -> None:
-        from apps.projects.models import Project
+        from apps.performance.constants import OrgLevel
+        from apps.performance.models import OrgUnit
 
         self.tenant = Tenant.objects.create(code="acme", name="ACME")
         self.other_tenant = Tenant.objects.create(code="globex", name="Globex")
@@ -75,27 +70,23 @@ class CrossTenantIsolationTests(TestCase):
             tenant=self.tenant,
             role=Role.TENANT_ADMIN,
         )
-        Project.objects.create(tenant=self.tenant, code="acme-core", name=self.OWN_PROJECT_NAME)
-        Project.objects.create(tenant=self.other_tenant, code="gx-secret", name=self.OTHER_PROJECT_NAME)
+        OrgUnit.objects.create(
+            tenant=self.tenant, code="acme-div", name=self.OWN_ORG_NAME, level=OrgLevel.DIVISION
+        )
+        OrgUnit.objects.create(
+            tenant=self.other_tenant, code="gx-div", name=self.OTHER_ORG_NAME, level=OrgLevel.DIVISION
+        )
         self.client.force_login(self.user)
 
-    def test_全画面に他テナントの案件名が出ない(self):
+    def test_全画面に他テナントの組織名が出ない(self):
         for key, url in _screen_urls():
             with self.subTest(screen=key):
                 response = self.client.get(url)
 
                 self.assertEqual(response.status_code, 200)
-                self.assertNotContains(response, self.OTHER_PROJECT_NAME)
+                self.assertNotContains(response, self.OTHER_ORG_NAME)
 
-    def test_自テナントの案件は見える(self):
-        response = self.client.get(reverse("projects:list"))
+    def test_自テナントの組織は見える(self):
+        response = self.client.get(reverse("performance:org_list"))
 
-        self.assertContains(response, self.OWN_PROJECT_NAME)
-
-    def test_他テナントの案件詳細は参照できない(self):
-        from apps.projects.models import Project
-
-        foreign = Project.objects.get(code="gx-secret")
-        response = self.client.get(reverse("projects:detail", args=[foreign.pk]))
-
-        self.assertIn(response.status_code, (403, 404))
+        self.assertContains(response, self.OWN_ORG_NAME)

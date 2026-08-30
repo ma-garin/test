@@ -16,7 +16,7 @@ from apps.core.models import TimeStampedModel
 
 
 class Tenant(TimeStampedModel):
-    """利用組織。RAG インデックスと案件の分離境界になる。"""
+    """利用組織。データ参照範囲の分離境界になる。"""
 
     code = models.SlugField("テナントコード", max_length=64, unique=True)
     name = models.CharField("テナント名", max_length=200)
@@ -66,7 +66,7 @@ class User(AbstractUser):
 
     @property
     def can_approve(self) -> bool:
-        """成果物・報告の承認（HITL）を実行できるか。"""
+        """承認操作（`Action.APPROVE`）を実行できるか。"""
 
         return self.is_superuser or self.role in APPROVER_ROLES
 

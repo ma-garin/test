@@ -56,7 +56,7 @@ from apps.performance.services import (
     chart as chart_service,
 )
 from apps.performance.services import kpi as kpi_service
-from apps.performance.services.calendar import format_month, parse_month
+from apps.performance.services.calendar import format_month, parse_month, shift_year
 
 DASHBOARD_URL = "performance:dashboard"
 
@@ -96,6 +96,33 @@ def _visible_units(request) -> list[OrgUnit]:
     return list(selectors.org_units_for(request.user, request.tenant))
 
 
+def _tree_order(units: list[OrgUnit]) -> list[tuple[OrgUnit, int]]:
+    """親のすぐ下に子が並ぶ順で、深さを添えて返す。
+
+    階層でまとめて並べると、部・課・プロジェクトが3つの塊になり、
+    どのプロジェクトがどの課の下かを上位組織の列から目で辿ることになる。
+    """
+
+    children: dict = {}
+
+    for unit in units:
+        children.setdefault(unit.parent_id, []).append(unit)
+
+    ids = {unit.pk for unit in units}
+    ordered: list[tuple[OrgUnit, int]] = []
+
+    def walk(parent_id, depth: int) -> None:
+        for unit in children.get(parent_id, []):
+            ordered.append((unit, depth))
+            walk(unit.pk, depth + 1)
+
+    # 可視集合の外に親を持つ組織も、この画面では起点として扱う。
+    for parent_id in [None, *[key for key in children if key is not None and key not in ids]]:
+        walk(parent_id, 0)
+
+    return ordered
+
+
 def _roots(units: list[OrgUnit]) -> list[OrgUnit]:
     """可視集合の中で親を持たない組織。ここが画面の起点になる。"""
 
@@ -111,6 +138,29 @@ def _year_context(request, fiscal_year) -> dict:
         "current_version": plans.current_version(fiscal_year) if fiscal_year else None,
         "initial_version": plans.initial_version(fiscal_year) if fiscal_year else None,
     }
+
+
+def _prior_year_report(fiscal_year, units, months, members=None):
+    """前年同期のレポート。
+
+    対象期間（`months`）をそのまま1年ずらして前年度に当てはめる。前年度が
+    登録されていない、または対応する月が前年度の範囲外（決算期を変更した年度
+    など）なら None を返す。「前年比較ができない」と「前年比0%」を区別するため、
+    呼び出し側は None を必ず「未確認」として扱う。
+    """
+
+    prior_year = fiscal_year.previous
+
+    if prior_year is None:
+        return None
+
+    prior_months = [shift_year(month, -1) for month in months]
+    prior_months = [month for month in prior_months if prior_year.contains(month)]
+
+    if not prior_months:
+        return None
+
+    return aggregation.build_report(prior_year, units, prior_months, members or [])
 
 
 @login_required
@@ -144,12 +194,17 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
     total = report.totals(roots)
 
+    prior_report = _prior_year_report(fiscal_year, units, months, members)
+    prior_total = prior_report.totals(roots).actual if prior_report is not None else None
+    unit = presentation.unit_from(request)
+
     lines = [
         presentation.org_line(
             summary.unit.name,
             summary.comparison,
             url=reverse("performance:org_detail", args=[summary.unit.pk]),
             note=summary.unit.get_level_display(),
+            unit=unit,
         )
         for summary in (report.for_unit(unit) for unit in breakdown)
         if summary is not None
@@ -176,24 +231,33 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             f"{format_month(upto)} の累計",
             "units": units,
             "scope_label": "／".join(unit.name for unit in roots),
-            "summary_rows": presentation.summary_rows(total),
+            "summary_rows": presentation.summary_rows(total, prior_total, unit),
             "total": total,
+            "has_prior_year": prior_report is not None,
+            "unit": unit,
+            "unit_label": presentation.UNIT_LABELS[unit],
+            "unit_decimals": presentation.unit_decimals(unit),
+            "unit_tabs": presentation.unit_tabs(unit),
             "lines": lines,
             # 手当が要る行を先に出す。全部を読ませてから探させない。
+            # 組織とKPIを合わせて3件まで。並びは手当の要る順なので、
+            # 落ちるのは相対的に軽い項目になる。全件は各画面で見る。
             "attention_lines": sorted(
                 (line for line in lines if line.needs_attention),
                 key=lambda line: line.worst_achievement,
-            ),
+            )[:2],
             "metric": metric,
             "metric_tabs": presentation.metric_tabs(metric),
             "chart": chart_service.monthly_chart(monthly, metric),
             "monthly_rows": monthly,
             "month_rows": [
-                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric)
+                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric, unit=unit)
                 for row in monthly
             ],
             "kpi_summary": kpi_service.KpiSummary(statuses=statuses),
-            "kpi_alerts": [item for item in statuses if item.status in ("behind", "warning")][:5],
+            # 1画面へ収めるため件数を絞る。並びは手当の要る順なので、
+            # 落ちるのは相対的に軽い項目になる。全件は KPI 管理で見る。
+            "kpi_alerts": [item for item in statuses if item.status in ("behind", "warning")][:2],
             "summaries": [report.for_unit(unit) for unit in breakdown],
             "months": months,
             "upto": upto,
@@ -267,12 +331,17 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
     )
 
     metric = presentation.metric_from(request)
+    display_unit = presentation.unit_from(request)
     monthly_rows = report.monthly_rows(unit)
     member_rows = aggregation.member_summaries(report, members, months)
 
     # グラフは年度全体。累計期間だけだと、どの月で崩れたのかが読めない。
     full_report = aggregation.build_report(fiscal_year, units, fiscal_year.months, members)
     full_monthly = full_report.monthly_rows(unit)
+
+    prior_report = _prior_year_report(fiscal_year, units, months, members)
+    prior_summary = prior_report.for_unit(unit) if prior_report is not None else None
+    prior_actual = prior_summary.total_actual if prior_summary is not None else None
 
     return render(
         request,
@@ -284,12 +353,17 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
             "unit": unit,
             "summary": summary,
             "headline": presentation.headline_from(summary.comparison, metric),
-            "summary_rows": presentation.summary_rows(summary.comparison),
+            "summary_rows": presentation.summary_rows(summary.comparison, prior_actual, display_unit),
+            "has_prior_year": prior_report is not None,
+            "display_unit": display_unit,
+            "unit_label": presentation.UNIT_LABELS[display_unit],
+            "unit_decimals": presentation.unit_decimals(display_unit),
+            "unit_tabs": presentation.unit_tabs(display_unit),
             "chart": chart_service.monthly_chart(full_monthly, metric),
             "metric": metric,
             "metric_tabs": presentation.metric_tabs(metric),
             "month_rows": [
-                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric)
+                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric, unit=display_unit)
                 for row in monthly_rows
             ],
             "child_lines": [
@@ -298,6 +372,7 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
                     child.comparison,
                     url=reverse("performance:org_detail", args=[child.unit.pk]),
                     note=child.unit.get_level_display(),
+                    unit=display_unit,
                 )
                 for child in (report.for_unit(child) for child in children)
                 if child is not None
@@ -308,6 +383,7 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
                     row.comparison,
                     url=reverse("performance:member_detail", args=[row.member.pk]),
                     note=row.member.employee_code,
+                    unit=display_unit,
                 )
                 for row in member_rows
             ],
@@ -318,6 +394,7 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
                     metric,
                     url=reverse("performance:member_detail", args=[row.member.pk]),
                     note=row.member.employee_code,
+                    unit=display_unit,
                 )
                 for row in member_rows
             ],
@@ -380,12 +457,20 @@ def member_detail(request: HttpRequest, pk) -> HttpResponse:
     report = aggregation.build_report(fiscal_year, units, months, [member])
 
     metric = presentation.metric_from(request)
+    display_unit = presentation.unit_from(request)
     rows = _member_monthly_rows(report, member, months)
     summary = aggregation.member_summaries(report, [member], months)[0]
 
     # グラフは年度全体。累計期間だけだと、どの月で崩れたのかが読めない。
     full_report = aggregation.build_report(fiscal_year, units, fiscal_year.months, [member])
     full_rows = _member_monthly_rows(full_report, member, fiscal_year.months)
+
+    prior_report = _prior_year_report(fiscal_year, units, months, [member])
+    prior_actual = (
+        prior_report.actual.member_amount(member.pk, prior_report.months)
+        if prior_report is not None
+        else None
+    )
 
     return render(
         request,
@@ -397,12 +482,17 @@ def member_detail(request: HttpRequest, pk) -> HttpResponse:
             "member": member,
             "summary": summary,
             "headline": presentation.headline_from(summary.comparison, metric),
-            "summary_rows": presentation.summary_rows(summary.comparison),
+            "summary_rows": presentation.summary_rows(summary.comparison, prior_actual, display_unit),
+            "has_prior_year": prior_report is not None,
+            "display_unit": display_unit,
+            "unit_label": presentation.UNIT_LABELS[display_unit],
+            "unit_decimals": presentation.unit_decimals(display_unit),
+            "unit_tabs": presentation.unit_tabs(display_unit),
             "chart": chart_service.monthly_chart(full_rows, metric),
             "metric": metric,
             "metric_tabs": presentation.metric_tabs(metric),
             "month_rows": [
-                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric)
+                presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric, unit=display_unit)
                 for row in rows
             ],
             "org_summary": report.for_unit(member.org_unit),
@@ -436,6 +526,25 @@ def plan_list(request: HttpRequest) -> HttpResponse:
     report = aggregation.build_report(fiscal_year, units)
     roots = _roots(units)
 
+    ranges = plans.ruling_ranges(fiscal_year)
+
+    # 版が2つとも「適用中」に見えると、どちらの数字で達成率が出ているか分からない。
+    # 実際に効いている月の範囲を版ごとに畳んで、行に添える。
+    spans: dict = {}
+
+    for item in ranges:
+        version = item["version"]
+
+        if version is None:
+            continue
+
+        span = spans.get(version.pk)
+        spans[version.pk] = (
+            {"start": item["start"], "end": item["end"]}
+            if span is None
+            else {"start": span["start"], "end": item["end"]}
+        )
+
     version_totals = []
 
     for version in versions:
@@ -445,7 +554,7 @@ def plan_list(request: HttpRequest) -> HttpResponse:
         for unit in units:
             total = total + index.org_amount(unit.pk, fiscal_year.months)
 
-        version_totals.append({"version": version, "total": total})
+        version_totals.append({"version": version, "total": total, "span": spans.get(version.pk)})
 
     return render(
         request,
@@ -454,7 +563,7 @@ def plan_list(request: HttpRequest) -> HttpResponse:
             "page_title": "計数計画",
             "page_subtitle": "期初計画は書き換えず、見直しは新しい版として追加します。",
             "versions": version_totals,
-            "ruling_ranges": plans.ruling_ranges(fiscal_year),
+            "ruling_ranges": ranges,
             "current_total": report.totals(roots),
             "can_manage": permissions.can(request.user, Action.EDIT),
             **_year_context(request, fiscal_year),
@@ -563,7 +672,9 @@ def _entry_target(request, units: list[OrgUnit]):
     org_id = request.GET.get("org") or request.POST.get("org")
 
     if not org_id:
-        return None, None
+        # 指定が無ければ、編集できる組織の先頭を開く。ラインマネージャーが
+        # 入力する組織はほぼ固定で、毎回選ばせると入力の前に一手増えるだけになる。
+        return next((item for item in units if selectors.can_edit_org(request.user, item)), None), None
 
     unit = next((item for item in units if str(item.pk) == str(org_id)), None)
 
@@ -1036,7 +1147,7 @@ def org_list(request: HttpRequest) -> HttpResponse:
         {
             "page_title": "組織・マスタ管理",
             "page_subtitle": "部・課・プロジェクトの階層と、所属メンバーを管理します。",
-            "units": units,
+            "units": _tree_order(units),
             "members": selectors.members_for(request.user, request.tenant),
             "can_manage": permissions.can(request.user, Action.MANAGE),
             "managed_ids": selectors.managed_org_ids(request.user, request.tenant),

@@ -90,3 +90,36 @@ class PlanVersionTests(TestCase):
         self.assertEqual(summary.total_plan.revenue, 2800)
         self.assertEqual(summary.total_initial.revenue, 3000)
         self.assertEqual(summary.plan_revision.revenue, -200)
+
+
+class PriorFiscalYearTests(TestCase):
+    """前年同期比較の起点となる `FiscalYear.previous`。"""
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+
+    def test_finds_year_starting_exactly_one_year_before(self) -> None:
+        current = factories.make_year(self.tenant, start_year=2026, code="FY2026")
+        previous = factories.make_year(self.tenant, start_year=2025, code="FY2025")
+
+        self.assertEqual(current.previous, previous)
+
+    def test_none_when_no_prior_year_registered(self) -> None:
+        current = factories.make_year(self.tenant, start_year=2026, code="FY2026")
+
+        self.assertIsNone(current.previous)
+
+    def test_does_not_cross_tenants(self) -> None:
+        other = factories.make_tenant("t2")
+        current = factories.make_year(self.tenant, start_year=2026, code="FY2026")
+        factories.make_year(other, start_year=2025, code="FY2025")
+
+        self.assertIsNone(current.previous)
+
+    def test_irregular_code_naming_does_not_break_lookup(self) -> None:
+        """年度コードの命名規則に依存しない。開始日だけで前年度を特定する。"""
+
+        current = factories.make_year(self.tenant, start_year=2026, code="second-year")
+        previous = factories.make_year(self.tenant, start_year=2025, code="first-year")
+
+        self.assertEqual(current.previous, previous)

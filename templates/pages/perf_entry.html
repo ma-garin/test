@@ -60,7 +60,7 @@
   </div>
 
   {% if unit and form %}
-    <div class="card">
+    <div class="card entry-card">
       <div class="card-hdr">
         <span class="card-t">
           {{ unit.name }}{% if member %} ／ {{ member.name }}{% endif %} の
@@ -80,7 +80,7 @@
 
         <div class="t-wrap">
           <table class="t perf-grid">
-            <thead><tr><th>月</th><th>売上</th><th>粗利</th><th>利益</th></tr></thead>
+            <thead><tr><th>月</th><th>売上（円）</th><th>粗利（円）</th><th>利益（円）</th></tr></thead>
             <tbody>
               {% for row in form.rows %}
                 <tr>
@@ -94,7 +94,7 @@
           </table>
         </div>
 
-        <button type="submit" class="btn-b">保存する</button>
+        <div class="actions"><button type="submit" class="btn-b">保存する</button></div>
       </form>
     </div>
   {% elif not unit %}

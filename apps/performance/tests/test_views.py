@@ -44,6 +44,34 @@ class DashboardTests(TestCase):
         self.assertEqual(response.context["total"].plan.revenue, 1000)
         self.assertEqual(response.context["total"].revenue_achievement, Decimal("80.00"))
 
+    def test_dashboard_has_no_prior_year_by_default(self) -> None:
+        """前年度が無いとき、前年比は「0%」ではなく未確認として扱う。"""
+
+        response = self.client.get(
+            reverse("performance:dashboard"), {"year": self.year.code, "upto": "2026-04"}
+        )
+
+        self.assertFalse(response.context["has_prior_year"])
+
+        for row in response.context["summary_rows"]:
+            self.assertIsNone(row.prior_actual)
+
+    def test_dashboard_reports_prior_year_actual_and_yoy(self) -> None:
+        prior_year = factories.make_year(self.tenant, start_year=2025, code="FY2025")
+        factories.add_actual(prior_year, self.units["sec"], date(2025, 4, 1), 500)
+
+        response = self.client.get(
+            reverse("performance:dashboard"), {"year": self.year.code, "upto": "2026-04"}
+        )
+
+        self.assertTrue(response.context["has_prior_year"])
+        rows = {row.label: row for row in response.context["summary_rows"]}
+        revenue = rows["売上"]
+
+        self.assertEqual(revenue.prior_actual, Decimal("500"))
+        # 今年度実績 800 ／ 前年同期実績 500 = 160%
+        self.assertEqual(revenue.yoy_rate, Decimal("160.00"))
+
     def test_org_detail_of_other_tenant_is_denied(self) -> None:
         other = factories.make_tenant("t2")
         other_units = factories.make_tree(other)
@@ -68,6 +96,39 @@ class DashboardTests(TestCase):
         self.assertEqual(response.context["member_summaries"][0].actual.revenue, 300)
         # 個人値は組織合計に足さない。
         self.assertEqual(response.context["summary"].total_actual.revenue, 800)
+
+    def test_org_detail_reports_prior_year_actual(self) -> None:
+        prior_year = factories.make_year(self.tenant, start_year=2025, code="FY2025")
+        factories.add_actual(prior_year, self.units["sec"], date(2025, 4, 1), 400)
+
+        response = self.client.get(
+            reverse("performance:org_detail", args=[self.units["sec"].pk]),
+            {"year": self.year.code, "upto": "2026-04"},
+        )
+
+        self.assertTrue(response.context["has_prior_year"])
+        rows = {row.label: row for row in response.context["summary_rows"]}
+
+        self.assertEqual(rows["売上"].prior_actual, Decimal("400"))
+        self.assertEqual(rows["売上"].yoy_rate, Decimal("200.00"))
+
+    def test_member_detail_reports_prior_year_actual(self) -> None:
+        member = factories.make_member(self.tenant, self.units["sec"])
+        factories.add_actual(self.year, self.units["sec"], self.month, 300, member=member)
+
+        prior_year = factories.make_year(self.tenant, start_year=2025, code="FY2025")
+        factories.add_actual(prior_year, self.units["sec"], date(2025, 4, 1), 200, member=member)
+
+        response = self.client.get(
+            reverse("performance:member_detail", args=[member.pk]),
+            {"year": self.year.code, "upto": "2026-04"},
+        )
+
+        self.assertTrue(response.context["has_prior_year"])
+        rows = {row.label: row for row in response.context["summary_rows"]}
+
+        self.assertEqual(rows["売上"].prior_actual, Decimal("200"))
+        self.assertEqual(rows["売上"].yoy_rate, Decimal("150.00"))
 
 
 class FigureEntryTests(TestCase):
@@ -476,3 +537,66 @@ class ChartTickTests(TestCase):
 
         # 上限 2,500万 → 中間の目盛りは 1,250万。「12」と丸めない。
         self.assertEqual([tick["label"] for tick in chart.ticks], ["0", "12.5", "25"])
+
+
+class DisplayUnitViewTests(TestCase):
+    """画面から金額の表示単位を切り替えられること。"""
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.manager = factories.make_user(self.tenant, "manager@example.com")
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant, manager=self.manager)
+        self.version = factories.make_version(self.tenant, self.year)
+        factories.add_actual(self.year, self.units["sec"], date(2026, 4, 1), 180_360_000)
+        self.client.force_login(self.manager)
+
+    def _get(self, **params):
+        params.setdefault("year", self.year.code)
+        params.setdefault("upto", "2026-04")
+
+        return self.client.get(reverse("performance:dashboard"), params)
+
+    def test_default_unit_is_yen(self) -> None:
+        response = self._get()
+
+        self.assertEqual(response.context["unit"], "yen")
+        self.assertEqual(response.context["unit_label"], "円")
+
+    def test_million_scales_the_summary(self) -> None:
+        response = self._get(unit="million")
+        rows = {row.label: row for row in response.context["summary_rows"]}
+
+        self.assertEqual(response.context["unit_label"], "百万円")
+        self.assertEqual(rows["売上"].actual_display, Decimal("180.36"))
+
+    def test_unknown_unit_falls_back_to_yen(self) -> None:
+        self.assertEqual(self._get(unit="bogus").context["unit"], "yen")
+
+
+class ChartAxisUnitTests(TestCase):
+    """グラフの軸単位は値の大きさから決まること。
+
+    画面の表示単位とは別に持つ。円を選んでいても軸へ9桁を並べると読めない。
+    """
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant)
+
+    def _axis(self, revenue):
+        factories.add_actual(self.year, self.units["sec"], date(2026, 4, 1), revenue)
+        report = aggregation.build_report(self.year, list(self.units.values()), self.year.months)
+        chart = chart_service.monthly_chart(report.monthly_rows(self.units["sec"]), "revenue")
+
+        return chart.axis_unit
+
+    def test_large_amounts_use_millions(self) -> None:
+        self.assertEqual(self._axis(180_000_000), "百万円")
+
+    def test_medium_amounts_use_thousands(self) -> None:
+        self.assertEqual(self._axis(50_000), "千円")
+
+    def test_small_amounts_stay_in_yen(self) -> None:
+        self.assertEqual(self._axis(400), "円")

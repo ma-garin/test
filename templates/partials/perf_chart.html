@@ -35,7 +35,7 @@
 
       <line class="chart-axis" x1="64" x2="{{ chart.width|add:'-12' }}" y1="{{ chart.baseline }}" y2="{{ chart.baseline }}"></line>
     </svg>
-    <p class="unit-note">縦軸の単位は百万円。棒にカーソルを合わせると実額が出ます。</p>
+    <p class="unit-note">縦軸の単位は{{ chart.axis_unit }}。棒にカーソルを合わせると実額が出ます。</p>
   {% else %}
     <div class="dashboard-empty">この年度の計画・実績がまだ登録されていません。</div>
   {% endif %}

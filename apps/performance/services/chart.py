@@ -20,13 +20,31 @@ from decimal import Decimal
 
 #: 図の内部座標。実寸はテンプレート側の CSS（width:100%）で決める。
 WIDTH = 760
-HEIGHT = 230
-PAD_LEFT = 64
-PAD_RIGHT = 12
-PAD_TOP = 16
-PAD_BOTTOM = 28
+# 1画面へ収めるため、縦は必要最小限に留める。棒の高さの差が読めれば足りる。
+HEIGHT = 150
+PAD_LEFT = 58
+PAD_RIGHT = 10
+PAD_TOP = 12
+PAD_BOTTOM = 24
 
 MILLION = Decimal("1000000")
+THOUSAND = Decimal("1000")
+
+
+def _axis_unit(top: Decimal) -> tuple[Decimal, str]:
+    """軸の目盛りに使う単位。値の大きさから決める。
+
+    表示単位（円・千円・百万円）とは別に持つ。円を選んでいても
+    軸へ9桁を並べると目盛りが読めないため、軸は常に読める桁へ落とす。
+    """
+
+    if top >= MILLION:
+        return MILLION, "百万円"
+
+    if top >= THOUSAND:
+        return THOUSAND, "千円"
+
+    return Decimal(1), "円"
 
 
 @dataclass(frozen=True)
@@ -48,6 +66,8 @@ class Chart:
     ticks: list[dict]
     plan_path: str
     baseline: float
+    #: 目盛りの単位名。注記へ出す。
+    axis_unit: str = "円"
     width: int = WIDTH
     height: int = HEIGHT
 
@@ -139,13 +159,14 @@ def monthly_chart(rows, metric: str) -> Chart:
         )
         points.append(f"{center:.1f},{plan_y:.1f}")
 
+    divisor, axis_unit = _axis_unit(top)
     ticks = []
 
     for step in range(3):
         value = top / 2 * step
-        millions = value / MILLION
+        scaled = value / divisor
         # 端数を切り捨てて「12」と出すと、実際の目盛り（12.5）と食い違う。
-        label = f"{millions:,.0f}" if millions == millions.to_integral_value() else f"{millions:,.1f}"
+        label = f"{scaled:,.0f}" if scaled == scaled.to_integral_value() else f"{scaled:,.1f}"
         ticks.append({"y": round(y_of(value), 1), "label": label})
 
     return Chart(
@@ -153,4 +174,5 @@ def monthly_chart(rows, metric: str) -> Chart:
         ticks=ticks,
         plan_path=" ".join(points),
         baseline=round(baseline, 1),
+        axis_unit=axis_unit,
     )

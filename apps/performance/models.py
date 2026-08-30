@@ -2,9 +2,8 @@
 
 **このアプリが引き受ける範囲**
 
-ラインマネージャーが自部門の計数を見る単位は「部 → 課 → プロジェクト」で、
-これは案件（`projects.Project`）の単位とは一致しない。案件は PMO が進捗と
-品質を見る器で、計数は組織が売上と利益を見る器なので、階層を別に持つ。
+ラインマネージャーが自部門の計数を見る単位は「部 → 課 → プロジェクト」の
+組織階層で、組織マスタ（`OrgUnit`）として独立に持つ。
 
 **設計上の約束**
 
@@ -87,15 +86,6 @@ class OrgUnit(SoftDeleteModel):
         null=True,
         blank=True,
         help_text="この組織と配下の計数を編集できる利用者。",
-    )
-    project = models.ForeignKey(
-        "projects.Project",
-        verbose_name="対応する案件",
-        on_delete=models.SET_NULL,
-        related_name="org_units",
-        null=True,
-        blank=True,
-        help_text="PMO 側の案件と対応づける場合に指定する。任意。",
     )
     sort_order = models.PositiveSmallIntegerField("表示順", default=100)
     is_active = models.BooleanField("有効", default=True)
@@ -225,6 +215,25 @@ class FiscalYear(TimeStampedModel):
         from apps.performance.services.calendar import months_between
 
         return months_between(self.start_on, self.end_on)
+
+    @property
+    def previous(self) -> FiscalYear | None:
+        """前年同期比較に使う、1年前の年度。
+
+        年度コード（FY2026 → FY2025）の命名規則には依存しない。コードが
+        規則的でない運用でも前年比較が壊れないよう、期首日を1年ずらして
+        一致する年度を探す。見つからなければ None（前年比は「未確認」扱い）。
+        """
+
+        from apps.performance.services.calendar import shift_year
+
+        target = shift_year(self.start_on, -1)
+
+        return (
+            FiscalYear.objects.filter(tenant_id=self.tenant_id, start_on=target)
+            .exclude(pk=self.pk)
+            .first()
+        )
 
     def contains(self, month) -> bool:
         return bool(month and self.start_on <= month <= self.end_on)

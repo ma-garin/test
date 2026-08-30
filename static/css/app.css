@@ -1,48 +1,64 @@
-/* VeriRAG PMO Agent
+/* 計数ダッシュボード
  *
- * デザインの正は docs/screens/VeriRAG_PMO_Agent_MVP.html。
- * トークン（色・角丸・影・サイズ）とコンポーネント名はモックからそのまま移している。
- * モック側を変更したときは、このファイルも合わせて更新すること。
+ * 日本の経営管理SaaS（Loglass / DIGGLE）の型に合わせたトークン。
+ * これらはライトモード専用なので、この画面もライト1テーマに決め打ちし、
+ * 背景・文字色はすべてトークンから明示的に塗る。
+ *
+ * 色を持つ場所を絞る:
+ * - クローム（左レール）… 濃紺。ブランド色はここだけ
+ * - データ … 実績=青 / 計画=橙（CVD分離を検証済み。protan/tritan とも ΔE>29）
+ * - 判定 … 緑・橙・赤。系列色とは別に予約し、必ずラベルと併記する
  */
 
 :root {
-  --bg: #f7f8fb;
+  /* 面と文字。無彩色ではなく、わずかに紺へ寄せたグレーを使う。 */
+  --bg: #f4f6f9;
   --surface: #ffffff;
-  --ink: #172033;
-  --muted: #5f6e84;
-  --line: #d9e1ec;
+  --surface-2: #fafbfd;
+  --ink: #101a2b;
+  --ink-2: #35435a;
+  --muted: #5c6b81;
+  --line: #dfe4ec;
+  --line-soft: #edf0f5;
 
-  /* サイドバーとヘッダー。面を白で通し、区切りは細い線だけに任せる。
-     色を持つのは「現在地」と「データ」だけにして、目線をそこへ集める。 */
-  --nav: #ffffff;
-  --nav-deep: #ffffff;
-  --nav-text: #374151;
-  --nav-muted: #9ca3af;
-  --nav-hover: #f3f4f6;
-  --nav-active: #eef4ff;
+  /* 左レール。ここだけ濃紺で塗り、現在地を白で反転させる。 */
+  --nav: #14306e;
+  --nav-deep: #1c3f88;
+  --nav-text: #e6ecf9;
+  --nav-muted: #c9d6f2;
+  --nav-hover: #1c3f88;
+  --nav-active: #ffffff;
   --nav-line: #e5e7eb;
-  /* ログイン画面など、濃い面が要る場所だけで使う。 */
   --nav-dark: #111827;
 
+  /* データ系列 */
   --blue: #2563eb;
   --blue-soft: #eaf2ff;
-  --red: #dc2626;
-  --red-soft: #fef2f2;
-  --green: #15803d;
-  --green-soft: #ecfdf3;
+  --red: #c62828;
+  --red-soft: #fdeceb;
+  --green: #157347;
+  --green-soft: #e8f5ee;
   --orange: #d97706;
-  --orange-soft: #fff7ed;
-  --yellow: #ca8a04;
-  --yellow-soft: #fefce8;
+  --orange-soft: #fdf3e3;
+  --yellow: #b45309;
+  --yellow-soft: #fdf3e3;
   --purple: #7c3aed;
   --purple-soft: #f3e8ff;
 
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --sidebar-w: 252px;
-  --header-h: 52px;
-  --r-sm: 8px;
-  --r-md: 10px;
-  --r-lg: 12px;
+  /* 契約形態などの構成比。色相を増やさず濃淡で分け、直接ラベルを添える。 */
+  --mix-1: #1e40af;
+  --mix-2: #3b82f6;
+  --mix-3: #93c5fd;
+
+  --shadow: 0 1px 2px rgba(16, 26, 43, .06), 0 1px 3px rgba(16, 26, 43, .04);
+  /* ログイン画面の図版などで参照される。未定義だと色が落ちて図が消える。 */
+  --hdr-bg: #14306e;
+
+  --sidebar-w: 196px;
+  --header-h: 46px;
+  --r-sm: 6px;
+  --r-md: 7px;
+  --r-lg: 9px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -50,67 +66,74 @@
 html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); }
 
 body {
-  font-family: "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
+  font-family: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
   color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
+
+/* 金額の比較が主題の画面なので、数字は必ず等幅・桁揃えにする。 */
+.num, .fig, table td, table th { font-variant-numeric: tabular-nums; }
+.num, .fig { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace; }
 
 button { font-family: inherit; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 
 /* ── レイアウト ─────────────────────────────────────────── */
 
+/* 左レールが全高を占め、その右にヘッダーと本文が積む。
+   ヘッダーを全幅にすると、ブランドと現在地が離れて視線が飛ぶ。 */
 .shell {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
-  grid-template-rows: var(--header-h) 1fr;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  grid-template-rows: 100vh;
   height: 100vh;
   overflow: hidden;
 }
 
 .shell--bare { grid-template-columns: 1fr; }
 
+/* 右側（ヘッダー＋本文）をまとめる器。 */
+.shell > .col {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
 /* ── ヘッダー ───────────────────────────────────────────── */
 
 .hdr {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-right: 16px;
-  background: var(--nav);
-  border-bottom: 1px solid var(--nav-line);
+  padding: 8px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
   z-index: 10;
 }
 
-.hdr-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: var(--sidebar-w);
-  padding: 0 14px;
-  flex-shrink: 0;
-}
+/* ブランドは左レールへ移したので、ヘッダー側は非表示にする。 */
+.hdr-brand { display: none; }
 
 .hdr-mark {
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: var(--blue);
-  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--nav);
   font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.5px;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
 /* ブランド名は 2 行固定。折り返すと "AI" が 1 行目へ回り込んで読めなくなる。 */
 .hdr-title { display: block; min-width: 0; }
-.hdr-name { display: block; color: var(--ink); font-size: 13px; font-weight: 800; line-height: 1.25; white-space: nowrap; }
-.hdr-sub { display: block; color: var(--nav-muted); font-size: 10px; font-weight: 600; white-space: nowrap; }
+.hdr-name { display: block; color: #fff; font-size: 13px; font-weight: 600; line-height: 1.25; white-space: nowrap; }
+.hdr-sub { display: block; color: var(--nav-muted); font-size: 9.5px; font-weight: 500; letter-spacing: .1em; white-space: nowrap; }
 .hdr-spacer { flex: 1; }
 .hdr-chips { display: flex; gap: 6px; align-items: center; }
 
@@ -119,34 +142,32 @@ a { color: inherit; text-decoration: none; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 4px 11px;
-  border: 1px solid var(--nav-line);
-  border-radius: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   background: var(--surface);
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: 900;
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 500;
 }
 
-.hdr-project:hover { background: var(--nav-hover); }
-/* 案件で絞り込んでいる状態。数字が全案件のものでないことを、色で気づかせる。 */
-.hdr-project.on { background: var(--blue-soft); border-color: #bfdbfe; color: var(--blue); }
+.hdr-project:hover { border-color: #c7d0de; }
+.hdr-project.on { background: var(--blue-soft); border-color: #bfdbfe; color: var(--blue); font-weight: 600; }
 
 .hdr-chip {
-  padding: 4px 11px;
-  border: 1px solid var(--nav-line);
-  border-radius: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
   background: var(--surface);
-  color: var(--nav-text);
-  font-size: 11px;
-  font-weight: 800;
-  transition: background 0.15s;
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 500;
 }
 
-.hdr-chip:hover { background: var(--nav-hover); }
+.hdr-chip:hover { border-color: #c7d0de; }
 
-.hdr-user { color: var(--nav-text); font-size: 11px; font-weight: 800; }
-.hdr-user span { color: var(--nav-muted); font-weight: 600; }
+.hdr-user { color: var(--ink-2); font-size: 11.5px; font-weight: 500; }
+.hdr-user span { color: var(--muted); font-weight: 400; }
 
 .hdr-badge { padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 900; }
 .hdr-badge.g { background: var(--green-soft); color: var(--green); }
@@ -160,11 +181,14 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--nav-deep);
-  border-right: 1px solid var(--nav-line);
+  background: var(--nav);
+  border-right: 0;
 }
 
-.sb-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 8px 12px; }
+.sb-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 10px 12px; }
+
+/* 左レール上部のブランド。ヘッダーから移設した。 */
+.sb-brand { display: flex; align-items: center; gap: 9px; padding: 2px 6px 14px; }
 
 /* 折りたたみボタンは最下部に固定する。スクロールで見失うと戻せなくなる。 */
 .sb-collapse {
@@ -172,17 +196,17 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  padding: 11px 14px;
+  padding: 10px 14px;
   border: 0;
-  border-top: 1px solid var(--nav-line);
+  border-top: 1px solid rgba(255, 255, 255, .16);
   background: transparent;
   color: var(--nav-muted);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10.5px;
+  font-weight: 500;
   text-align: left;
 }
 
-.sb-collapse:hover { background: var(--nav-hover); color: var(--nav-text); }
+.sb-collapse:hover { background: var(--nav-hover); color: #fff; }
 .sb-collapse-ico { font-size: 14px; line-height: 1; transition: transform 0.15s; }
 
 /* 通常時、2 文字コードは出さない。畳んだときだけラベルの代わりに使う。 */
@@ -190,12 +214,11 @@ a { color: inherit; text-decoration: none; }
 
 .sb-gl {
   color: var(--nav-muted);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.7px;
-  text-transform: uppercase;
-  padding: 0 8px;
-  margin: 14px 0 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  padding: 0 6px;
+  margin: 12px 0 5px;
 }
 
 .sb-gl:first-child { margin-top: 2px; }
@@ -203,22 +226,22 @@ a { color: inherit; text-decoration: none; }
 .sb-item {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
   padding: 7px 9px;
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
   color: var(--nav-text);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 500;
   text-align: left;
   transition: background 0.12s;
 }
 
-.sb-item:hover { background: var(--nav-hover); }
-/* 現在地はこの画面で唯一の彩色。ここだけ青にして、他は無彩色で抑える。 */
-.sb-item.active { background: var(--nav-active); color: var(--blue); font-weight: 900; }
+.sb-item:hover { background: var(--nav-hover); color: #fff; }
+/* 現在地は白で反転させる。濃紺の面で最も強い対比になる。 */
+.sb-item.active { background: var(--nav-active); color: var(--nav); font-weight: 600; }
 
 .sb-badge {
   display: inline-grid;
@@ -257,41 +280,26 @@ a { color: inherit; text-decoration: none; }
 
 .sb-sec { margin-bottom: 1px; }
 
+/* セクションは常に開く。項目が6つしかないのに開閉させると、
+   目的の画面へ行くのに1手増えるだけになる。見出しは区分の表示に徹する。 */
 .sb-hd {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   width: 100%;
-  padding: 9px 10px;
+  padding: 12px 6px 5px;
   border: 0;
-  border-radius: var(--r-sm);
   background: transparent;
-  color: var(--nav-text);
-  font-size: 12px;
-  font-weight: 900;
-  text-align: left;
-  transition: background 0.12s;
-}
-
-.sb-hd:hover { background: var(--nav-hover); }
-
-.sb-caret {
-  margin-left: auto;
-  font-size: 9px;
   color: var(--nav-muted);
-  transition: transform 0.15s;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-align: left;
+  cursor: default;
 }
 
-.sb-sec.open .sb-caret { transform: rotate(90deg); }
+.sb-hd:hover { background: transparent; }
+.sb-caret { display: none; }
 
-.sb-sec-body {
-  display: none;
-  padding: 2px 0 6px 8px;
-  margin-left: 5px;
-  border-left: 1px solid var(--nav-line);
-}
-
-.sb-sec.open .sb-sec-body { display: block; }
+.sb-sec-body { display: block; padding: 0; margin: 0; border-left: 0; }
 
 /* ── サイドバーを畳んだ状態 ─────────────────────────────
    幅を詰めてラベルを隠し、2 文字コードだけ残す。
@@ -345,12 +353,27 @@ a { color: inherit; text-decoration: none; }
 
 /* ── メイン ─────────────────────────────────────────────── */
 
-.main { overflow-y: auto; background: var(--bg); padding: 20px 24px 40px; }
+/* 本文は縦に詰める。1画面へ収めるため、カード間の余白も切り詰める。 */
+.main {
+  overflow-y: auto;
+  background: var(--bg);
+  padding: 7px 18px 4px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
 
-.ph { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-.pk { font-size: 10px; font-weight: 900; color: var(--blue); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
-.pt { font-size: 18px; font-weight: 900; color: var(--ink); margin: 0 0 3px; }
-.ps { color: var(--muted); font-size: 12px; margin: 0; }
+/* ヘッダーのパンくず。いまどの画面にいるかを1行で示す。 */
+.crumb { font-size: 11.5px; color: var(--muted); margin: 0; }
+.crumb b { color: var(--ink); font-weight: 600; }
+
+/* ページ見出し。タイトルと補足を1行に並べ、縦を使わない。 */
+.ph { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; min-height: 26px; }
+.ph-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.ph-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pk { display: none; }
+.pt { font-size: 16px; font-weight: 700; color: var(--ink); margin: 0; }
+.ps { color: var(--muted); font-size: 11.5px; margin: 0; }
 .ph-right { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
 
 .project-strip {
@@ -408,14 +431,15 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 14px 16px;
+  padding: 11px 14px;
   box-shadow: var(--shadow);
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
-.card-hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-.card-t { font-size: 13px; font-weight: 900; color: var(--ink); }
-.card-act { font-size: 11px; font-weight: 800; color: var(--blue); padding: 3px 8px; border-radius: 5px; background: var(--blue-soft); }
+.card-hdr { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }
+.card-t { font-size: 12px; font-weight: 600; color: var(--ink); }
+/* 補足は主張させない。青の面で塗ると見出しと競合する。 */
+.card-act { font-size: 10.5px; font-weight: 400; color: var(--muted); padding: 0; border-radius: 0; background: transparent; }
 
 .sg { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
 .sg-r { display: grid; grid-template-columns: 1fr 320px; gap: 14px; margin-bottom: 16px; }
@@ -543,8 +567,9 @@ a { color: inherit; text-decoration: none; }
 /* ── テーブル ───────────────────────────────────────────── */
 
 .t { width: 100%; border-collapse: collapse; font-size: 12px; }
-.t th { font-size: 10px; font-weight: 900; color: var(--muted); text-transform: uppercase; padding: 0 8px 8px; text-align: left; border-bottom: 1px solid var(--line); }
-.t td { padding: 8px; border-bottom: 1px solid var(--line); color: var(--ink); vertical-align: middle; }
+.t th { font-size: 9.5px; font-weight: 600; color: var(--muted); letter-spacing: .07em; padding: 0 12px 7px; text-align: left; border-bottom: 1px solid var(--line); }
+.t td { padding: 6px 12px; border-bottom: 1px solid var(--line-soft); color: var(--ink); vertical-align: middle; }
+.t tbody tr:last-child td { border-bottom: 0; }
 .t tr:last-child td { border-bottom: 0; }
 .t tbody tr:hover td { background: #f8fbff; }
 .t a { color: var(--blue); font-weight: 800; }
@@ -619,6 +644,33 @@ a { color: inherit; text-decoration: none; }
 .form .actions { display: flex; gap: 8px; }
 .form .helptext, .form .errorlist { font-size: 11px; color: var(--muted); }
 .form .errorlist { color: var(--red); list-style: none; padding: 0; margin: 0; font-weight: 800; }
+
+/* チェックの四角・見出し・説明を1つの塊にする。
+   縦積みにすると四角が独立して浮き、どの設問のものか分からなくなる。 */
+.check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 9px; align-items: start; cursor: pointer; }
+.check input[type="checkbox"] { width: 15px; height: 15px; margin: 1px 0 0; accent-color: var(--blue); }
+.check > span { display: grid; gap: 1px; min-width: 0; }
+.check b { font-size: 12px; font-weight: 700; color: var(--ink); text-transform: none; letter-spacing: 0; }
+.check i { font-size: 11px; font-style: normal; color: var(--muted); }
+
+/* 入力欄を横いっぱいに伸ばすと、選ぶだけの項目が異様に広くなる。
+   ラベルを左の固定列へ寄せ、入力欄の左端を1本の線に揃える。
+   揃っていないと、項目がいくつあるのか目で数えられない。 */
+.form-tight { gap: 8px; --label-w: 104px; --label-gap: 12px; }
+.form-tight > div:not(.ps):not(.callout):not(.actions) {
+  display: grid;
+  grid-template-columns: var(--label-w) minmax(0, 1fr);
+  gap: 3px var(--label-gap);
+  align-items: center;
+}
+.form-tight > div:not(.ps):not(.callout):not(.actions) > label { grid-column: 1; text-align: right; }
+.form-tight > div:not(.ps):not(.callout):not(.actions) > :not(label) { grid-column: 2; }
+.form-tight select, .form-tight input[type="file"], .form-tight input[type="text"] { max-width: 380px; }
+.form-tight > .check, .form-tight > .actions, .form-tight > .ps {
+  margin-left: calc(var(--label-w) + var(--label-gap));
+}
+.form-tight .actions { margin-top: 2px; }
+.form-tight .btn-b { width: auto; padding-inline: 22px; }
 
 .search-row { display: flex; gap: 8px; align-items: center; }
 .search-row input { flex: 1; }
@@ -827,12 +879,19 @@ a { color: inherit; text-decoration: none; }
 }
 
 .auth-hero-top { display: flex; align-items: center; gap: 10px; }
+/* SVG時代の名残で color を濃紺にしていた。文字マークだと背景と同色になり
+   字が消えるため、文字色は白で上書きする。 */
 .auth-hero-top .hero-mark {
-  display: inline-flex;
-  width: 26px;
-  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
-  color: var(--hdr-bg);
+  border-radius: 7px;
+  background: var(--nav);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
 }
 .auth-hero-top strong { display: block; font-size: 17px; font-weight: 900; letter-spacing: -0.01em; line-height: 1.2; }
 .auth-hero-top span span { display: block; font-size: 10.5px; font-weight: 700; color: var(--muted); letter-spacing: 0.04em; }
@@ -1026,8 +1085,31 @@ a { color: inherit; text-decoration: none; }
 .perf-target { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
 .perf-target button { align-self: end; }
 
-.perf-grid input { text-align: right; font-variant-numeric: tabular-nums; }
-.perf-grid td { padding: 4px 8px; }
+/* 12か月ぶんの行を1画面へ収める。入力欄を列幅いっぱいに伸ばすと
+   1行が高くなり、下の「保存する」まで届かなくなる。 */
+.perf-grid input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  width: 150px;
+  padding: 4px 9px;
+}
+/* 4列を画面いっぱいに広げると、見出しと入力欄が離れて対応が読めなくなる。 */
+.perf-grid { max-width: 660px; }
+/* 表が660pxなのにカードだけ全幅だと、右半分が理由もなく空く。 */
+.entry-card { max-width: 720px; }
+.perf-grid td { padding: 2px 8px; }
+.perf-grid td:first-child { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.perf-grid th:not(:first-child), .perf-grid td:not(:first-child) { text-align: right; }
+.perf-grid input:focus { border-color: var(--blue); background: var(--surface); }
+
+/* 親子はインデントで示す。上位組織の列を目で照合させない。 */
+.org-cell.d1 { padding-left: 30px; }
+.org-cell.d2 { padding-left: 52px; }
+.org-cell.d1 > a::before, .org-cell.d2 > a::before {
+  content: "└ ";
+  color: var(--muted);
+  font-weight: 400;
+}
 
 .ps.err { color: var(--red); font-weight: 800; }
 .inline-form { display: inline-block; margin-left: 6px; }
@@ -1054,6 +1136,8 @@ a { color: inherit; text-decoration: none; }
 .lede-value.sm { font-size: 24px; }
 .lede-value small { font-size: 15px; font-weight: 700; color: var(--muted); }
 .lede-say { font-size: 14px; color: var(--ink); margin: 8px 0 0; max-width: 62ch; }
+/* 文を1つの塊として扱い、折り返しを文の切れ目だけに起こす。 */
+.say-part { display: inline-block; }
 .lede-side { display: grid; gap: 10px; justify-items: end; }
 .lede-facts { display: grid; gap: 4px; margin: 0; font-size: 12px; }
 .lede-facts div { display: flex; gap: 10px; justify-content: space-between; }
@@ -1090,6 +1174,11 @@ a { color: inherit; text-decoration: none; }
 .tally b.warn { color: var(--yellow); }
 .tally b.bad { color: var(--red); }
 .tally-note { font-size: 12px; }
+
+/* 判定と同じ色を数字にも載せる。バッジと同じ記号（r/a/g）で揃える。 */
+.tone-r { color: var(--red); font-weight: 700; }
+.tone-a { color: var(--yellow); font-weight: 700; }
+.tone-g { color: var(--green); font-weight: 700; }
 
 .row-note { display: block; font-size: 11px; color: var(--muted); }
 .num.minus { color: var(--red); }
@@ -1129,7 +1218,7 @@ a { color: inherit; text-decoration: none; }
 
 /* 実績＝青の棒、計画＝橙の線。色に加えて形でも区別する。 */
 /* 横に伸ばしすぎない。全幅にすると縦も比例して伸び、1画面から溢れる。 */
-.chart { width: 100%; max-width: 880px; height: auto; display: block; margin-top: 4px; }
+.chart { width: 100%; max-width: 100%; height: auto; display: block; margin-top: 2px; }
 .chart-bar { fill: #2563eb; }
 .chart-plan { fill: none; stroke: #d97706; stroke-width: 2; stroke-linejoin: round; }
 .chart-plan-dot { fill: #d97706; stroke: var(--surface); stroke-width: 2; }
@@ -1141,3 +1230,99 @@ a { color: inherit; text-decoration: none; }
 .lg-key { display: inline-flex; align-items: center; gap: 5px; }
 .lg-bar { width: 10px; height: 10px; border-radius: 2px; background: #2563eb; display: inline-block; }
 .lg-line { width: 14px; height: 2px; background: #d97706; display: inline-block; }
+
+/* ── 1画面へ収めるための横並び ───────────────────────────
+   縦に積むと2画面になる。関連するものを横へ並べ、
+   スクロールせずに全体を読めるようにする。 */
+
+.band { display: grid; gap: 8px; align-items: start; }
+.band-a { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+.band-b { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+/* 取込は「入力は短く、確認するものは長い」。列の広さをそれに合わせる。 */
+.band-import { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+.stack-tight { display: grid; gap: 8px; align-content: start; }
+
+/* サイドバーの2文字コードは畳んだときだけ出す。
+   常時出すと、ラベルと二重に読ませることになる。 */
+.sb-badge { display: none; }
+.nav-collapsed .sb-badge { display: inline-grid; }
+
+@media (max-width: 1180px) {
+  .band-a, .band-b, .band-import { grid-template-columns: 1fr; }
+}
+
+/* 計数サマリは1画面の上部を占める。行高を最小限にして、
+   下のグラフ・組織別まで同じ画面へ収める。 */
+.t.figures td, .t.figures th[scope="row"] { padding-top: 5px; padding-bottom: 5px; }
+.t.figures thead th { padding-bottom: 5px; }
+
+/* 組織別は10列ある。列ごとの余白を詰め、名前が縦に折れないようにする。 */
+.t.figures td, .t.figures th { padding-left: 9px; padding-right: 9px; }
+.t.figures td:first-child { white-space: nowrap; }
+.t.figures .row-note { display: block; font-size: 10.5px; color: var(--muted); font-weight: 400; }
+
+/* 最後の詰め。1画面に収めるための微調整。 */
+.main > .card:last-child .t.figures td { padding-top: 3px; padding-bottom: 3px; }
+
+/* ログイン画面の特徴アイコン。外部アイコンフォントを増やさずSVGで描く。 */
+.auth-hero-points .pt-ico { width: 15px; height: 15px; flex: none; color: var(--blue); }
+.auth-hero-points div { display: flex; align-items: center; gap: 8px; }
+.hero-mark--text {
+  display: inline-grid; place-items: center;
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--nav); color: #fff; font-size: 13px; font-weight: 700;
+}
+
+/* ── 改行の制御 ─────────────────────────────────────────
+   日本語は任意の位置で折れるため、放置すると「-11,880,000 / 円」のように
+   数字と単位が分かれる。数値と単位・記号は必ず1つの塊として扱う。 */
+
+/* 数値そのものは絶対に途中で折らない。 */
+.num, .fig { white-space: nowrap; }
+
+/* 数値＋単位のまとまり。金額や率を文章へ埋め込むときに使う。 */
+.qty { white-space: nowrap; }
+
+/* 本文は文節での改行を優先し、単語の途中では折らない。 */
+.watch li, .lede-say, .card-note, .unit-note, .ps, .auth-lead, .auth-note {
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-break: strict;
+}
+
+/* 見出しは字面のバランスを取る。 */
+.pt, .card-t, .auth-title { text-wrap: balance; }
+
+/* 金額の表示単位切替。指標タブより弱く見せる（副次的な操作なので）。 */
+.unit-tabs { display: inline-flex; align-items: center; gap: 3px; }
+.unit-tabs-l { font-size: 10.5px; font-weight: 600; color: var(--muted); margin-right: 3px; }
+.unit-tab {
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+.unit-tab:hover { border-color: #c7d0de; color: var(--ink-2); }
+.unit-tab.on { background: var(--ink-2); border-color: var(--ink-2); color: #fff; font-weight: 600; }
+.unit-tab:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+/* 列見出しの単位。数字と同じ列にあるが、値ではないので小さく弱く。 */
+.th-unit { display: block; font-size: 9px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+
+/* 「手当が要るところ」の1行。文章で書くと数値の直後で折れるため、
+   ラベル＋数値の塊を並べる形にする。塊の内部では改行しない。 */
+.watch-body { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.watch-part { white-space: nowrap; color: var(--ink-2); font-size: 12px; }
+.watch-part .fig { color: var(--ink); font-weight: 600; }
+.watch-name { font-weight: 500; }
+
+/* 手当カードの下部に置くKPI件数。カード内の区切りとして上に細い線を引く。 */
+.watch + .tally, .watch-ok + .tally {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-soft);
+}
+.tally .link { margin-left: 8px; font-size: 11px; }

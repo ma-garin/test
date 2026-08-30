@@ -17,10 +17,11 @@
 
 from __future__ import annotations
 
-from django.db.models import QuerySet
+from django.db.models import Case, IntegerField, QuerySet, Value, When
 
 from apps.accounts.constants import Action
 from apps.accounts.services import permissions
+from apps.performance.constants import ORG_LEVEL_DEPTH
 from apps.performance.models import FiscalYear, OrgMember, OrgUnit
 
 
@@ -100,15 +101,30 @@ def visible_org_ids(user, tenant) -> set:
     return visible
 
 
+#: 階層を「部→課→プロジェクト」の順に並べるための式。
+#: `level` は文字列なので、そのまま order_by すると division→project→section の
+#: 辞書順になり、課より先にプロジェクトが並ぶ。深さで並べ替える。
+_LEVEL_DEPTH_ORDER = Case(
+    *[When(level=level, then=Value(depth)) for level, depth in ORG_LEVEL_DEPTH.items()],
+    default=Value(99),
+    output_field=IntegerField(),
+)
+
+
 def org_units_for(user, tenant) -> QuerySet[OrgUnit]:
-    """参照できる組織。並びは階層 → 表示順。"""
+    """参照できる組織。並びは階層の深さ → 表示順。"""
 
     ids = visible_org_ids(user, tenant)
 
     if not ids:
         return OrgUnit.objects.none()
 
-    return _tenant_units(tenant).filter(pk__in=ids).order_by("level", "sort_order", "code")
+    return (
+        _tenant_units(tenant)
+        .filter(pk__in=ids)
+        .annotate(level_depth=_LEVEL_DEPTH_ORDER)
+        .order_by("level_depth", "sort_order", "code")
+    )
 
 
 def can_edit_org(user, org_unit) -> bool:

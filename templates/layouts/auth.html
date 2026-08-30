@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ page_title }} | VeriRAG PMO Agent</title>
+  <title>{{ page_title }} | 計数ダッシュボード</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
@@ -12,10 +15,10 @@
   <div class="auth-panel">
     <div class="auth-card{% block card_modifier %}{% endblock %}">
       <div class="auth-brand">
-        <span class="hdr-mark">VR</span>
+        <span class="hdr-mark">KD</span>
         <span>
-          <strong>VeriRAG PMO Agent</strong>
-          <span>AI PROJECT CONTROL</span>
+          <strong>計数ダッシュボード</strong>
+          <span>LINE MANAGER DASHBOARD</span>
         </span>
       </div>
       {% block step %}{% endblock %}

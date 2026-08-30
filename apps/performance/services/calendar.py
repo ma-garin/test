@@ -18,6 +18,20 @@ def month_start(value: date) -> date:
     return value.replace(day=1)
 
 
+def shift_year(value: date, years: int) -> date:
+    """年だけずらす。前年同期比較で使う。
+
+    2/29 は、ずらした先の年がうるう年でなければ存在しない。月末に丸める
+    （3/1 へ繰り上げない）。月次の計数しか扱わないため、実務上は月初日
+    （常に存在する日）しか渡らないが、日付境界の関数として安全側に倒す。
+    """
+
+    try:
+        return value.replace(year=value.year + years)
+    except ValueError:
+        return value.replace(year=value.year + years, day=28)
+
+
 def next_month(value: date) -> date:
     if value.month == 12:
         return date(value.year + 1, 1, 1)

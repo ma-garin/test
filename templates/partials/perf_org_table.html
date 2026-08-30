@@ -8,9 +8,9 @@
     <thead>
       <tr class="group-head">
         <th rowspan="2">{{ row_label|default:"組織" }}</th>
-        <th colspan="3" class="grp">売上</th>
-        <th colspan="2" class="grp">粗利</th>
-        <th colspan="2" class="grp">利益</th>
+        <th colspan="3" class="grp">売上<span class="th-unit">{{ unit_label }}</span></th>
+        <th colspan="2" class="grp">粗利<span class="th-unit">{{ unit_label }}</span></th>
+        <th colspan="2" class="grp">利益<span class="th-unit">{{ unit_label }}</span></th>
         <th rowspan="2" class="num">利益率</th>
         <th rowspan="2">判定</th>
       </tr>
@@ -28,12 +28,12 @@
             {% else %}{{ line.label }}{% endif %}
             {% if line.note %}<span class="row-note">{{ line.note }}</span>{% endif %}
           </td>
-          <td class="num">{{ line.revenue.plan|floatformat:0|intcomma }}</td>
-          <td class="num strong">{{ line.revenue.actual|floatformat:0|intcomma }}</td>
+          <td class="num">{{ line.revenue.plan_display|floatformat:unit_decimals|intcomma }}</td>
+          <td class="num strong">{{ line.revenue.actual_display|floatformat:unit_decimals|intcomma }}</td>
           <td class="num">{% if line.revenue.achievement is None %}—{% else %}<span class="badge {{ line.revenue.tone }}">{{ line.revenue.achievement|floatformat:1 }}%</span>{% endif %}</td>
-          <td class="num">{{ line.gross_profit.actual|floatformat:0|intcomma }}</td>
+          <td class="num">{{ line.gross_profit.actual_display|floatformat:unit_decimals|intcomma }}</td>
           <td class="num">{% if line.gross_profit.achievement is None %}—{% else %}<span class="badge {{ line.gross_profit.tone }}">{{ line.gross_profit.achievement|floatformat:1 }}%</span>{% endif %}</td>
-          <td class="num">{{ line.operating_profit.actual|floatformat:0|intcomma }}</td>
+          <td class="num">{{ line.operating_profit.actual_display|floatformat:unit_decimals|intcomma }}</td>
           <td class="num">{% if line.operating_profit.achievement is None %}—{% else %}<span class="badge {{ line.operating_profit.tone }}">{{ line.operating_profit.achievement|floatformat:1 }}%</span>{% endif %}</td>
           <td class="num">{% if line.profit_rate is None %}—{% else %}{{ line.profit_rate|floatformat:1 }}%{% endif %}</td>
           <td><span class="badge {{ line.tone }}">{{ line.status_label }}</span></td>

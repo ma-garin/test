@@ -18,7 +18,7 @@ class UserAdmin(DjangoUserAdmin):
     search_fields = ("email", "username", "display_name")
     ordering = ("email",)
     fieldsets = DjangoUserAdmin.fieldsets + (
-        ("PMO Agent", {"fields": ("tenant", "display_name", "role")}),
+        ("計数ダッシュボード", {"fields": ("tenant", "display_name", "role")}),
     )
     add_fieldsets = (
         (None, {"classes": ("wide",), "fields": ("email", "username", "password1", "password2")}),

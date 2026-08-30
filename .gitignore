@@ -32,3 +32,15 @@ Thumbs.db
 
 # Playwright MCP の作業ディレクトリ
 .playwright-mcp/
+
+# Node（Playwright の実行に使うだけで、成果物ではない）
+node_modules/
+.playwright-mcp/
+
+# 画面確認に撮った作業用スクリーンショット（リポジトリの資産ではない）
+/*.png
+
+# Playwright の実行結果と保存済み認証状態（認証情報を含む）
+e2e/artifacts/
+e2e/results/
+e2e/.auth/

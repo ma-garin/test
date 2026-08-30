@@ -9,8 +9,8 @@
     <thead>
       <tr>
         <th>{{ row_label }}</th>
-        <th class="num">計画</th>
-        <th class="num">実績</th>
+        <th class="num">計画<span class="th-unit">{{ unit_label }}</span></th>
+        <th class="num">実績<span class="th-unit">{{ unit_label }}</span></th>
         <th class="num">計画との差</th>
         <th class="num">達成率</th>
       </tr>
@@ -23,9 +23,9 @@
             {% else %}{{ row.label }}{% endif %}
             {% if row.note %}<span class="row-note">{{ row.note }}</span>{% endif %}
           </td>
-          <td class="num">{{ row.plan|floatformat:0|intcomma }}</td>
-          <td class="num">{{ row.actual|floatformat:0|intcomma }}</td>
-          <td class="num {% if row.diff < 0 %}minus{% endif %}">{{ row.diff|floatformat:0|intcomma }}</td>
+          <td class="num">{{ row.plan_display|floatformat:unit_decimals|intcomma }}</td>
+          <td class="num">{{ row.actual_display|floatformat:unit_decimals|intcomma }}</td>
+          <td class="num {% if row.diff < 0 %}minus{% endif %}">{{ row.diff_display|floatformat:unit_decimals|intcomma }}</td>
           <td class="num">
             {% if row.achievement is None %}—
             {% else %}<span class="badge {{ row.tone }}">{{ row.achievement|floatformat:0 }}%</span>{% endif %}

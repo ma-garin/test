@@ -38,30 +38,3 @@ class Action(models.TextChoices):
     EDIT = "edit", "編集"
     APPROVE = "approve", "承認"
     MANAGE = "manage", "管理"
-
-
-class ProjectRole(models.TextChoices):
-    """案件内の役割。
-
-    `ProjectMember.role_label` は自由文字列で、表記ゆれ（「PMO」「PMO担当」）を
-    権限判定に使えない。判定に使う識別子はここで閉じた集合にする。
-    """
-
-    PROJECT_MANAGER = "pm", "PM"
-    PMO = "pmo", "PMO"
-    MEMBER = "member", "メンバー"
-    VIEWER = "viewer", "参照"
-
-
-#: `role_label`（自由文字列）から `ProjectRole` を推定する対応。
-#: 既存データを役割へ移行するときだけ使う。判定には使わない。
-ROLE_LABEL_HINTS: tuple[tuple[str, str], ...] = (
-    ("PMO", ProjectRole.PMO),
-    ("pmo", ProjectRole.PMO),
-    ("PM", ProjectRole.PROJECT_MANAGER),
-    ("PL", ProjectRole.PROJECT_MANAGER),
-    ("プロジェクトマネージャ", ProjectRole.PROJECT_MANAGER),
-    ("参照", ProjectRole.VIEWER),
-    ("閲覧", ProjectRole.VIEWER),
-    ("オブザーバ", ProjectRole.VIEWER),
-)

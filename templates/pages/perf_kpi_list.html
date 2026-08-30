@@ -24,7 +24,7 @@
     </div>
     <div class="t-wrap">
       <table class="t">
-        <thead><tr><th>KPI</th><th>組織</th><th class="num">目標</th><th class="num">実績</th><th>判定</th><th></th></tr></thead>
+        <thead><tr><th>KPI</th><th>組織</th><th class="num">目標</th><th class="num">実績</th><th class="num">差</th><th class="num">達成率</th><th>判定</th><th></th></tr></thead>
         <tbody>
           {% for status in statuses %}
             <tr>
@@ -32,18 +32,26 @@
               <td>{{ status.org_unit.name }}</td>
               <td class="num">{% if status.target is None %}—{% else %}{{ status.target|floatformat:"-2"|intcomma }} {{ status.kpi.unit }}{% endif %}</td>
               <td class="num">{% if status.actual is None %}—{% else %}{{ status.actual|floatformat:"-2"|intcomma }} {{ status.kpi.unit }}{% endif %}</td>
-              <td><span class="badge {{ status.tone }}">{{ status.label }}</span></td>
+              {% comment %}
+                判定だけでは「どれくらい足りないか」が分からない。
+                差と達成率を並べて、手当の大きさを比べられるようにする。
+              {% endcomment %}
+              <td class="num">
+                {% if status.gap is None %}—{% else %}<span class="tone-{{ status.tone }}">{{ status.gap|floatformat:"-2"|intcomma }} {{ status.kpi.unit }}</span>{% endif %}
+              </td>
+              <td class="num">{% if status.achievement_ratio is None %}—{% else %}{{ status.achievement_ratio|floatformat:1 }}%{% endif %}</td>
+              <td class="nowrap"><span class="badge {{ status.tone }}">{{ status.label }}</span></td>
               <td class="nowrap"><a href="{% url 'performance:kpi_entry' %}?org={{ status.org_unit.pk }}&kpi={{ status.kpi.pk }}&year={{ fiscal_year.code }}">入力</a></td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="dashboard-empty">KPI の目標・実績が登録されていません。</div></td></tr>
+            <tr><td colspan="8"><div class="dashboard-empty">KPI の目標・実績が登録されていません。</div></td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
 
-  <details class="fold">
+  <details class="fold" open>
     <summary>KPIの定義（{{ page.paginator.count }} 件）</summary>
     <div class="t-wrap">
       <table class="t">

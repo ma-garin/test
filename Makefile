@@ -1,4 +1,4 @@
-.PHONY: help setup migrate seed seed-perf run test lint fmt check index clean
+.PHONY: help setup migrate seed run test lint fmt check clean
 
 VENV ?= .venv
 PY := $(VENV)/bin/python
@@ -16,10 +16,7 @@ setup:  ## 仮想環境を作り、開発用依存をインストールする
 migrate:  ## マイグレーションを適用する
 	$(PY) manage.py migrate
 
-seed:  ## 体験用デモデータを投入する
-	$(PY) manage.py seed_demo
-
-seed-perf:  ## 計数・目標管理の体験用データを投入する
+seed:  ## 計数・目標管理の体験用データを投入する
 	$(PY) manage.py seed_performance
 
 run:  ## 開発サーバーを起動する
@@ -38,9 +35,6 @@ fmt:  ## 自動整形
 check:  ## Django のシステムチェック（本番設定含む）
 	$(PY) manage.py check
 	$(PY) manage.py makemigrations --check --dry-run
-
-index:  ## 検索インデックスを再構築する（例: make index TENANT=demo）
-	$(PY) manage.py rebuild_index --tenant $(TENANT)
 
 clean:  ## 生成物を削除する
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +

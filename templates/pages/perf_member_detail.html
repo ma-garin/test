@@ -14,15 +14,24 @@
 
   {% include "partials/perf_summary.html" with summary_title=member.name|add:"　計数サマリ（累計）" summary_note="組織の金額の内訳です" %}
 
-  {% include "partials/perf_metric_tabs.html" %}
-  {% include "partials/perf_chart.html" %}
+  {% comment %}
+    グラフと月次表を縦に積むと1画面へ入らない。横へ並べる。
+  {% endcomment %}
+  <div class="band band-a">
 
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">月ごとの{{ headline.metric_label }}</span>
-      <span class="card-act">{{ member.org_unit.name }}{% if member.title %}／{{ member.title }}{% endif %}</span>
+    <div class="stack-tight">
+      {% include "partials/perf_metric_tabs.html" %}
+      {% include "partials/perf_chart.html" %}
     </div>
-    {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
+
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-t">月ごとの{{ headline.metric_label }}</span>
+        <span class="card-act">{{ member.org_unit.name }}{% if member.title %}／{{ member.title }}{% endif %}</span>
+      </div>
+      {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
+    </div>
+
   </div>
 
 {% endblock %}

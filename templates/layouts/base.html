@@ -3,44 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}{{ page_title|default:"VeriRAG PMO Agent" }}{% endblock %} | VeriRAG PMO Agent</title>
+  <title>{% block title %}{{ page_title|default:"計数ダッシュボード" }}{% endblock %}{% if page_title and page_title != "計数ダッシュボード" %} | 計数ダッシュボード{% endif %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
 <div class="shell">
 
-  <header class="hdr">
-    <a class="hdr-brand" href="{% url 'dashboard:control' %}">
-      <span class="hdr-mark">VR</span>
-      <span class="hdr-title">
-        <span class="hdr-name">VeriRAG PMO Agent</span>
-        <span class="hdr-sub">AI PROJECT CONTROL</span>
-      </span>
-    </a>
-
-    <div class="hdr-spacer"></div>
-
-    <div class="hdr-chips">
-      {% if current_tenant %}
-        <a class="hdr-project" href="{% url 'accounts:select_tenant' %}" title="テナントを切り替える">{{ current_tenant.name }}</a>
-      {% endif %}
-      {# 対象案件は常に見えている必要がある。絞り込み中と気づかずに数字を読むと誤解する。 #}
-      {% url 'accounts:select_project' as select_project_url %}
-      {# 案件選択画面でこれを押すと自分自身が next に入り入れ子が積み上がるため、その画面では next を付けない。 #}
-      <a class="hdr-project{% if current_project %} on{% endif %}"
-         href="{{ select_project_url }}{% if request.path != select_project_url %}?next={{ request.get_full_path|urlencode }}{% endif %}"
-         title="対象案件を切り替える">
-        {% if current_project %}{{ current_project.code }} {{ current_project.name }}{% else %}全案件{% endif %} ▾
-      </a>
-      <span class="hdr-user">{{ user.display_name|default:user.username }} <span>{{ user.get_role_display }}</span></span>
-      <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
-        <button type="submit" class="hdr-chip">ログアウト</button>
-      </form>
-    </div>
-  </header>
-
   <nav class="sb" id="sidebar">
     <div class="sb-scroll">
+      {# ブランドはレール上部へ。現在地と同じ面に置くと視線が飛ばない。 #}
+      <a class="sb-brand" href="{% url 'performance:dashboard' %}">
+        <span class="hdr-mark">計</span>
+        <span class="hdr-title">
+          <span class="hdr-name">計数ダッシュボード</span>
+          <span class="hdr-sub">FY2026</span>
+        </span>
+      </a>
       {% for section in nav_sections %}
         <div class="sb-sec{% if section.is_current %} open current{% endif %}" data-sec="{{ section.key }}">
           <button class="sb-hd" type="button">
@@ -68,10 +49,27 @@
     </button>
   </nav>
 
+  <div class="col">
+
+  <header class="hdr">
+    <p class="crumb">{% block kicker %}計数管理{% endblock %} ／ <b>{{ page_title }}</b></p>
+
+    <div class="hdr-spacer"></div>
+
+    <div class="hdr-chips">
+      {% if current_tenant %}
+        <a class="hdr-project" href="{% url 'accounts:select_tenant' %}" title="テナントを切り替える">{{ current_tenant.name }}</a>
+      {% endif %}
+      <span class="hdr-user">{{ user.display_name|default:user.username }} <span>{{ user.get_role_display }}</span></span>
+      <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+        <button type="submit" class="hdr-chip">ログアウト</button>
+      </form>
+    </div>
+  </header>
+
   <main class="main">
     <div class="ph">
-      <div>
-        <div class="pk">{% block kicker %}{{ page_kicker|default:"VERIRAG" }}{% endblock %}</div>
+      <div class="ph-title">
         <h1 class="pt">{% block heading %}{{ page_title }}{% endblock %}</h1>
         <p class="ps">{% block subtitle %}{{ page_subtitle }}{% endblock %}</p>
       </div>
@@ -84,6 +82,8 @@
 
     {% block content %}{% endblock %}
   </main>
+
+  </div>
 
 </div>
 
