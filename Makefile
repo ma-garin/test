@@ -1,4 +1,4 @@
-.PHONY: help setup migrate seed run test lint fmt check clean
+.PHONY: help setup migrate seed seed-scale run test lint fmt check clean
 
 VENV ?= .venv
 PY := $(VENV)/bin/python
@@ -18,6 +18,9 @@ migrate:  ## マイグレーションを適用する
 
 seed:  ## 計数・目標管理の体験用データを投入する
 	$(PY) manage.py seed_performance
+
+seed-scale:  ## 実運用規模（組織186・要員650）のデータを投入する
+	$(PY) manage.py seed_scale --tenant scale
 
 run:  ## 開発サーバーを起動する
 	$(PY) manage.py runserver
