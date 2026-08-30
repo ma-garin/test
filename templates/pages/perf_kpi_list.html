@@ -22,6 +22,30 @@
       <span class="card-t">目標と実績</span>
       <span class="card-act">目標は適用中の計画に紐づきます</span>
     </div>
+
+    {% comment %}
+      3指標 × 課の数だけ行が出る。指標と判定で絞れないと、
+      直したい行を探すのに全ページをめくることになる。
+    {% endcomment %}
+    <form method="get" class="mst-filter kpi-filter">
+      <input type="hidden" name="year" value="{{ fiscal_year.code }}">
+      <select name="kpi">
+        <option value="">指標すべて</option>
+        {% for definition in definitions %}
+          <option value="{{ definition.code }}"{% if kpi_filter == definition.code %} selected{% endif %}>{{ definition.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="status">
+        <option value="">判定すべて</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}"{% if status_filter == value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn-out sm">絞り込む</button>
+      {% if kpi_filter or status_filter %}
+        <a class="btn-ghost sm" href="?year={{ fiscal_year.code }}">解除</a>
+      {% endif %}
+    </form>
     <div class="t-wrap">
       <table class="t">
         <thead><tr><th>KPI</th><th>組織</th><th class="num">目標</th><th class="num">実績</th><th class="num">差</th><th class="num">達成率</th><th>判定</th><th></th></tr></thead>
@@ -49,9 +73,10 @@
         </tbody>
       </table>
     </div>
+    {% include "partials/pager.html" %}
   </div>
 
-  <details class="fold" open>
+  <details class="fold">
     <summary>KPIの定義（{{ page.paginator.count }} 件）</summary>
     <div class="t-wrap">
       <table class="t">

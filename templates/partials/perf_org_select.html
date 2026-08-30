@@ -1,0 +1,17 @@
+{% comment %}
+  組織を選ぶドロップダウン。実運用では 186 件になるため、
+  上位組織ごとに optgroup で束ねる。平らに並べると、名前の似た課が
+  延々と続いて目的の組織を追えない。
+
+  使い方: {% include "partials/perf_org_select.html" with select_id="entry-org" %}
+{% endcomment %}
+<select id="{{ select_id }}" name="org">
+  <option value="">選択してください</option>
+  {% for group in org_groups %}
+    <optgroup label="{{ group.label }}">
+      {% for item in group.items %}
+        <option value="{{ item.pk }}"{% if unit and item.pk == unit.pk %} selected{% endif %}>{{ item.name }}（{{ item.get_level_display }}）</option>
+      {% endfor %}
+    </optgroup>
+  {% endfor %}
+</select>

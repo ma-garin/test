@@ -15,6 +15,7 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -25,7 +26,7 @@ from apps.accounts.constants import Action
 from apps.accounts.services import permissions
 from apps.core.pagination import page_window, paginate, query_without_page
 from apps.performance import selectors
-from apps.performance.constants import ImportKind, PlanKind, PlanStatus
+from apps.performance.constants import ImportKind, OrgLevel, PlanKind, PlanStatus
 from apps.performance.forms import (
     CsvImportForm,
     FiscalYearForm,
@@ -61,6 +62,14 @@ from apps.performance.services.calendar import format_month, parse_month, shift_
 DASHBOARD_URL = "performance:dashboard"
 
 #: マスタ系の取込。値の入力より強い権限（管理）を要求する。
+#: ダッシュボードの手当カードに出す件数。ここを超えた分は
+#: 「手当が要る組織だけ」表示へ送る（件数と行き先を必ず添える）。
+ATTENTION_ON_DASHBOARD = 4
+
+#: 組織詳細の KPI カードに出す件数。部の下の課すべての KPI が集まるため、
+#: 上限を置かないと 1 画面を KPI だけで埋める。
+KPI_ALERTS_ON_DETAIL = 2
+
 MASTER_IMPORT_KINDS = (ImportKind.ORG_UNIT, ImportKind.MEMBER)
 
 
@@ -123,6 +132,47 @@ def _tree_order(units: list[OrgUnit]) -> list[tuple[OrgUnit, int]]:
     return ordered
 
 
+def _org_groups(units: list[OrgUnit]) -> list[dict]:
+    """組織セレクト用に、上位組織ごとの塊へまとめる。
+
+    実運用では 186 件が1本のドロップダウンに並ぶ。名前が似ている課が
+    続くため、平らな並びだと目的の組織を目で追えない。
+    optgroup にすると、部・課の見出しが手がかりになる。
+    """
+
+    by_id = {unit.pk: unit for unit in units}
+    groups: dict = {}
+
+    for unit in units:
+        parent = by_id.get(unit.parent_id)
+        key = parent.pk if parent is not None else None
+        label = parent.name if parent is not None else "上位組織"
+        groups.setdefault(key, {"label": label, "items": []})["items"].append(unit)
+
+    # 上位組織そのものの塊を先に出す。掘る前に部・課を選べる。
+    ordered = sorted(
+        groups.values(),
+        key=lambda group: (group["label"] != "上位組織", group["label"]),
+    )
+
+    return ordered
+
+
+def _scope_label(roots: list[OrgUnit]) -> str:
+    """見出しに出す対象範囲。
+
+    全社を見る立場だと 6 部が連結され、見出しが1行を超える。
+    3 つを超えたら先頭と件数で表す。
+    """
+
+    names = [unit.name for unit in roots]
+
+    if len(names) <= 3:
+        return "／".join(names) or "対象組織なし"
+
+    return f"{names[0]} ほか {len(names) - 1} 部門"
+
+
 def _roots(units: list[OrgUnit]) -> list[OrgUnit]:
     """可視集合の中で親を持たない組織。ここが画面の起点になる。"""
 
@@ -183,8 +233,9 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         )
 
     months, upto = _months_upto(fiscal_year, request)
-    members = list(selectors.members_for(request.user, request.tenant))
-    report = aggregation.build_report(fiscal_year, units, months, members)
+    # ダッシュボードは組織単位でしか数字を出さない。個人 650 名ぶんの
+    # 月次を集計に含めても画面には出ず、待ち時間だけが増える。
+    report = aggregation.build_report(fiscal_year, units, months)
     metric = presentation.metric_from(request)
 
     roots = _roots(units)
@@ -194,7 +245,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
     total = report.totals(roots)
 
-    prior_report = _prior_year_report(fiscal_year, units, months, members)
+    prior_report = _prior_year_report(fiscal_year, units, months)
     prior_total = prior_report.totals(roots).actual if prior_report is not None else None
     unit = presentation.unit_from(request)
 
@@ -212,6 +263,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         for summary in (report.for_unit(unit) for unit in breakdown)
         if summary is not None
     ]
+    focus = request.GET.get("focus") or ""
 
     # 手当の対象は、1階層下ではなく見えている組織すべてから選ぶ。
     # 課で平均すると配下の落ち込みが消える（課90.6%の中に78%のプロジェクトが
@@ -237,15 +289,22 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         if summary is not None
     ]
 
+    # 実運用では手当が要る組織が 100 件を超える。全部並べても上から
+    # 読む人はいないので、額の大きい順に上位だけをここへ出し、
+    # 残りは同じ画面の「手当が要る組織だけ」表示へ送る。
+    # 隠して終わりにしない（件数と行き先を必ず添える）ことが条件。
     attention_all = sorted(
         (line for line in deep_lines if line.needs_attention),
-        key=lambda line: line.worst_achievement,
+        key=lambda line: (-line.shortfall, line.worst_achievement),
     )
-    # 件数で切らない。手当が要る組織はここに全部出す。金額のインパクトがある
-    # 未達を「あと1件あります」で片付けると、その1件が一番大きいことがある
-    # （実際、隠れていた第1検証課の計画差 -9,900,000 円が最大だった）。
-    # 組織が増えて入りきらない場合は、カードの中だけをスクロールさせる。
-    attention_lines = attention_all
+    attention_lines = attention_all[:ATTENTION_ON_DASHBOARD]
+
+    # 組織別の表は既定で1階層下。focus=attention のときは手当が要る
+    # 組織を階層に関係なく並べ、ページ送りで全件たどれるようにする。
+    org_rows = attention_all if focus == "attention" else lines
+    # 全件表示では手当カードが件数だけになるぶん、表を長く取れる。
+    # 全件表示ではグラフと手当カードを出さないぶん、表を長く取れる。
+    org_page = paginate(org_rows, request, per_page=6 if focus == "attention" else 4)
 
     statuses = kpi_service.kpi_statuses(
         fiscal_year,
@@ -255,7 +314,8 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     )
 
     # グラフと月次表は年度全体で描く。累計だけだと「どの月で落ちたか」が見えない。
-    full_report = aggregation.build_report(fiscal_year, units, fiscal_year.months, members)
+    # 索引は累計用と同じものを使い回す（作り直すと1万行を二度読むことになる）。
+    full_report = report.for_months(fiscal_year.months)
     monthly = _combined_monthly_rows(full_report, roots)
     metric = presentation.metric_from(request)
 
@@ -267,7 +327,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "page_subtitle": f"{fiscal_year.name}　{format_month(fiscal_year.start_on)}〜"
             f"{format_month(upto)} の累計",
             "units": units,
-            "scope_label": "／".join(unit.name for unit in roots),
+            "scope_label": _scope_label(roots),
             "summary_rows": presentation.summary_rows(total, prior_total, unit),
             "total": total,
             "has_prior_year": prior_report is not None,
@@ -275,7 +335,13 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "unit_label": presentation.UNIT_LABELS[unit],
             "unit_decimals": presentation.unit_decimals(unit),
             "unit_tabs": presentation.unit_tabs(unit),
-            "lines": lines,
+            "lines": org_page.object_list,
+            "focus": focus,
+            "attention_total": len(attention_all),
+            "attention_hidden": max(len(attention_all) - len(attention_lines), 0),
+            "org_page": org_page,
+            "org_page_window": page_window(org_page),
+            "org_page_query": query_without_page(request),
             # 手当が要る行を先に出す。全部を読ませてから探させない。
             # 組織とKPIを合わせて3件まで。並びは手当の要る順なので、
             # 落ちるのは相対的に軽い項目になる。全件は各画面で見る。
@@ -370,12 +436,32 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
     member_rows = aggregation.member_summaries(report, members, months)
 
     # グラフは年度全体。累計期間だけだと、どの月で崩れたのかが読めない。
-    full_report = aggregation.build_report(fiscal_year, units, fiscal_year.months, members)
-    full_monthly = full_report.monthly_rows(unit)
+    # 索引は累計用を使い回す（作り直すと同じ行をもう一度読むことになる）。
+    full_monthly = report.for_months(fiscal_year.months).monthly_rows(unit)
 
-    prior_report = _prior_year_report(fiscal_year, units, months, members)
+    prior_report = _prior_year_report(fiscal_year, units, months)
     prior_summary = prior_report.for_unit(unit) if prior_report is not None else None
     prior_actual = prior_summary.total_actual if prior_summary is not None else None
+
+    # 課の下にはプロジェクトが 5 件前後、部の下には課が 5 件前後つく。
+    # 実運用では配下が二桁になる組織もあるため、ページ送りで扱う。
+    # 並びは手当が要るものが先（対計画比の低い順）。
+    child_lines = sorted(
+        (
+            presentation.org_line(
+                child.unit.name,
+                child.comparison,
+                url=reverse("performance:org_detail", args=[child.unit.pk]),
+                note=child.unit.get_level_display(),
+                unit=display_unit,
+            )
+            for child in (report.for_unit(item) for item in children)
+            if child is not None
+        ),
+        key=lambda line: line.worst_achievement,
+    )
+    child_page = paginate(child_lines, request, per_page=3)
+    kpi_alerts = [item for item in statuses if item.status in ("behind", "warning")]
 
     return render(
         request,
@@ -400,17 +486,11 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
                 presentation.row_from(f"{row.month:%Y/%m}", row.comparison, metric, unit=display_unit)
                 for row in monthly_rows
             ],
-            "child_lines": [
-                presentation.org_line(
-                    child.unit.name,
-                    child.comparison,
-                    url=reverse("performance:org_detail", args=[child.unit.pk]),
-                    note=child.unit.get_level_display(),
-                    unit=display_unit,
-                )
-                for child in (report.for_unit(child) for child in children)
-                if child is not None
-            ],
+            "child_lines": child_page.object_list,
+            "child_total": len(child_lines),
+            "child_page": child_page,
+            "child_page_window": page_window(child_page),
+            "child_page_query": query_without_page(request),
             "member_lines": [
                 presentation.org_line(
                     row.member.name,
@@ -436,7 +516,10 @@ def org_detail(request: HttpRequest, pk) -> HttpResponse:
             "child_summaries": [report.for_unit(child) for child in children],
             "member_summaries": member_rows,
             "kpi_statuses": statuses,
-            "kpi_alerts": [item for item in statuses if item.status in ("behind", "warning")],
+            # 部の下には課が並び、その全KPIがここへ集まる。件数を出したうえで
+            # 上位だけを見せ、残りは KPI 管理で追えるようにする。
+            "kpi_alerts": kpi_alerts[:KPI_ALERTS_ON_DETAIL],
+            "kpi_alert_total": len(kpi_alerts),
             "kpi_summary": kpi_service.KpiSummary(statuses=statuses),
             "can_edit": selectors.can_edit_org(request.user, unit),
             "months": months,
@@ -496,7 +579,7 @@ def member_detail(request: HttpRequest, pk) -> HttpResponse:
     summary = aggregation.member_summaries(report, [member], months)[0]
 
     # グラフは年度全体。累計期間だけだと、どの月で崩れたのかが読めない。
-    full_report = aggregation.build_report(fiscal_year, units, fiscal_year.months, [member])
+    full_report = report.for_months(fiscal_year.months)
     full_rows = _member_monthly_rows(full_report, member, fiscal_year.months)
 
     prior_report = _prior_year_report(fiscal_year, units, months, [member])
@@ -711,7 +794,10 @@ def _entry_target(request, units: list[OrgUnit]):
         # 直接は持たない）。利用者からは「データが無い」のか
         # 「入れる場所が違う」のか区別がつかない。
         parents = {item.parent_id for item in units}
-        editable = [item for item in units if selectors.can_edit_org(request.user, item)]
+        # 組織ごとに can_edit_org を呼ぶと、1件ずつ権限とテナントを引きにいき、
+        # 186 組織で 380 本近いクエリになる。編集できる ID は一度だけ引く。
+        managed = selectors.managed_org_ids(request.user, request.tenant)
+        editable = [item for item in units if item.pk in managed]
 
         return (
             next((item for item in editable if item.pk not in parents), None)
@@ -765,6 +851,7 @@ def figure_entry(request: HttpRequest) -> HttpResponse:
         "has_children": has_children,
         "page_subtitle": "CSV 取込と同じ保存処理を通ります。空欄は「値なし」として既存値を削除します。",
         "units": units,
+        "org_groups": _org_groups(units),
         "unit": unit,
         "member": member,
         "mode": mode,
@@ -876,9 +963,24 @@ def kpi_list(request: HttpRequest) -> HttpResponse:
             plans.current_version(fiscal_year, upto),
         )
 
-    page = paginate(KpiDefinition.objects.filter(tenant=request.tenant), request)
     order = {"behind": 0, "warning": 1, "no_result": 2, "no_target": 3, "achieved": 4}
     statuses = sorted(statuses, key=lambda item: (order[item.status], item.kpi.code))
+    definitions = KpiDefinition.objects.filter(tenant=request.tenant)
+
+    # 実運用では 3指標 × 30課 で 90 行を超える。全部を1ページに並べると
+    # 1.5 画面ぶんになり、手当が要る行を探すのにスクロールが要る。
+    # 集計は絞り込み前の全件で出す（絞ると全体像が読めなくなる）。
+    summary = kpi_service.KpiSummary(statuses=statuses)
+    kpi_filter = request.GET.get("kpi") or ""
+    status_filter = request.GET.get("status") or ""
+
+    if kpi_filter:
+        statuses = [item for item in statuses if item.kpi.code == kpi_filter]
+
+    if status_filter:
+        statuses = [item for item in statuses if item.status == status_filter]
+
+    page = paginate(statuses, request, per_page=8)
 
     return render(
         request,
@@ -886,12 +988,21 @@ def kpi_list(request: HttpRequest) -> HttpResponse:
         {
             "page_title": "KPI管理",
             "page_subtitle": "目標は計画の版ごとに持ちます。期中の見直しで置き直せます。",
-            "definitions": page.object_list,
+            "definitions": definitions,
             "page": page,
             "page_window": page_window(page),
             "page_query": query_without_page(request),
-            "statuses": statuses,
-            "kpi_summary": kpi_service.KpiSummary(statuses=statuses),
+            "statuses": page.object_list,
+            "status_count": len(statuses),
+            "kpi_filter": kpi_filter,
+            "status_filter": status_filter,
+            "status_choices": (
+                ("behind", "未達"),
+                ("warning", "あと少し"),
+                ("achieved", "達成"),
+                ("no_result", "未計測"),
+            ),
+            "kpi_summary": summary,
             "units": units,
             "can_manage": permissions.can(request.user, Action.MANAGE),
             **_year_context(request, fiscal_year),
@@ -971,6 +1082,7 @@ def kpi_entry(request: HttpRequest) -> HttpResponse:
         "page_title": "KPI入力",
         "page_subtitle": "目標値は選択中の計画版に保存されます。",
         "units": units,
+        "org_groups": _org_groups(units),
         "unit": unit,
         "member": member,
         "definition": definition,
@@ -1196,10 +1308,43 @@ def _csv_response(body: str, filename: str) -> HttpResponse:
 
 @login_required
 def org_list(request: HttpRequest) -> HttpResponse:
-    """組織・メンバー・年度のマスタ管理。"""
+    """組織・メンバー・年度のマスタ管理。
+
+    実運用では組織 186・要員 650 になる。全件を1ページに並べると
+    32画面ぶんの縦になり、目的の行にたどり着けない。
+    組織と要員はタブで分け、絞り込みとページ送りで扱う。
+    """
 
     units = _visible_units(request)
     fiscal_year = selectors.resolve_fiscal_year(request)
+    tab = request.GET.get("tab") or "orgs"
+    tab = tab if tab in ("orgs", "members") else "orgs"
+    keyword = (request.GET.get("q") or "").strip()
+    level = request.GET.get("level") or ""
+
+    org_rows = _tree_order(units)
+
+    if level:
+        org_rows = [(unit, depth) for unit, depth in org_rows if unit.level == level]
+
+    if keyword:
+        needle = keyword.lower()
+        org_rows = [
+            (unit, depth)
+            for unit, depth in org_rows
+            if needle in unit.name.lower() or needle in unit.code.lower()
+        ]
+
+    members = selectors.members_for(request.user, request.tenant)
+
+    if keyword:
+        members = members.filter(
+            Q(name__icontains=keyword)
+            | Q(employee_code__icontains=keyword)
+            | Q(org_unit__name__icontains=keyword)
+        )
+
+    page = paginate(org_rows if tab == "orgs" else members, request, per_page=16)
 
     return render(
         request,
@@ -1207,8 +1352,17 @@ def org_list(request: HttpRequest) -> HttpResponse:
         {
             "page_title": "組織・マスタ管理",
             "page_subtitle": "部・課・プロジェクトの階層と、所属メンバーを管理します。",
-            "units": _tree_order(units),
-            "members": selectors.members_for(request.user, request.tenant),
+            "tab": tab,
+            "keyword": keyword,
+            "level": level,
+            "levels": OrgLevel.choices,
+            "org_count": len(org_rows),
+            "member_count": members.count(),
+            "units": page.object_list if tab == "orgs" else [],
+            "members": page.object_list if tab == "members" else [],
+            "page": page,
+            "page_window": page_window(page),
+            "page_query": query_without_page(request),
             "can_manage": permissions.can(request.user, Action.MANAGE),
             "managed_ids": selectors.managed_org_ids(request.user, request.tenant),
             **_year_context(request, fiscal_year),

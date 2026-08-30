@@ -22,66 +22,74 @@
   {% endif %}
 
   {% comment %}
-    縦に積むと6画面ぶんになる。グラフとKPIを横へ並べ、
-    グラフで読める「月ごとの数値」は畳んで置く。
-  {% endcomment %}
-  <div class="band band-a">
-
-    <div class="stack-tight">
-      {% include "partials/perf_metric_tabs.html" %}
-      {% include "partials/perf_chart.html" %}
-    </div>
-
-    <div class="stack-tight">
-      <div class="card">
-        <div class="card-hdr">
-          <span class="card-t">KPI</span>
-          {% if can_edit %}<a class="btn-out sm" href="{% url 'performance:kpi_entry' %}?org={{ unit.pk }}&year={{ fiscal_year.code }}">KPIを入力する</a>{% endif %}
-        </div>
-        {% if kpi_alerts %}
-          <ul class="watch">
-            {% for status in kpi_alerts %}
-              <li>
-                <span class="badge {{ status.tone }}">{{ status.label }}</span>
-                <span class="watch-part">{{ status.org_unit.name }}／{{ status.kpi.name }}</span>
-                <span class="watch-part">目標 <b>{{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</b></span>
-                <span class="watch-part">実績 <b>{{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</b></span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% elif kpi_summary.total %}
-          <p class="watch-ok">この組織の KPI はすべて目標に届いています（{{ kpi_summary.total }} 件）。</p>
-        {% else %}
-          <p class="watch-ok">この組織に登録された KPI はありません。</p>
-        {% endif %}
-      </div>
-
-      {% if member_lines %}
-        <details class="fold">
-          <summary>個人ごとの内訳（{{ member_lines|length }} 名）</summary>
-          <p class="ps">組織の金額の内訳です。組織計には足し込みません。</p>
-          {% include "partials/perf_org_table.html" with lines=member_lines row_label="氏名" %}
-        </details>
-      {% endif %}
-
-      <details class="fold">
-        <summary>月ごとの{{ headline.metric_label }}（数値）</summary>
-        <p class="ps">計画は期中の見直しを反映した最新版です。</p>
-        {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
-      </details>
-    </div>
-
-  </div>
-
-  {% comment %}
-    配下の組織は10列ある。狭いカラムへ入れると右端の対計画比が切れる。
-    横幅は削らず、全幅のまま置く。
+    この画面で先に見るのは「配下のどこが落ちているか」。
+    計数の表はどれも10列前後あり、狭いカラムへ入れると横へ溢れる。
+    横に割らず、全幅で縦に並べ、補助的なものは畳んで置く。
   {% endcomment %}
   {% if child_lines %}
     <div class="card">
-      <div class="card-hdr"><span class="card-t">配下の組織</span></div>
+      <div class="card-hdr">
+        <span class="card-t">配下の組織（全 {{ child_total }} 件）</span>
+        <span class="card-act">対計画比の低い順　組織名を押すと明細が開きます</span>
+      </div>
       {% include "partials/perf_org_table.html" with lines=child_lines row_label="組織" %}
+      {% include "partials/pager.html" with page=child_page page_window=child_page_window page_query=child_page_query %}
     </div>
+  {% endif %}
+
+  {% comment %}
+    KPI は配下の組織より後に見る。開かなくても件数が分かるよう、
+    見出しに手当の数を出したうえで畳んでおく。
+  {% endcomment %}
+  <details class="fold">
+    <summary>
+      KPI
+      {% if kpi_alert_total %}（手当が要る {{ kpi_alert_total }} 件 / 全 {{ kpi_summary.total }} 件）
+      {% elif kpi_summary.total %}（全 {{ kpi_summary.total }} 件・すべて目標に届いています）
+      {% else %}（登録なし）{% endif %}
+    </summary>
+    {% if kpi_alerts %}
+      <ul class="watch">
+        {% for status in kpi_alerts %}
+          <li>
+            <span class="badge {{ status.tone }}">{{ status.label }}</span>
+            <span class="watch-part">{{ status.org_unit.name }}／{{ status.kpi.name }}</span>
+            <span class="watch-part">目標 <b>{{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</b></span>
+            <span class="watch-part">実績 <b>{{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</b></span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="watch-more">
+        {% if kpi_alert_total > kpi_alerts|length %}手当が要る KPI は全 {{ kpi_alert_total }} 件。{% endif %}
+        <a class="link" href="{% url 'performance:kpi_list' %}?year={{ fiscal_year.code }}&amp;status=behind">KPI管理で見る</a>
+        {% if can_edit %}／<a class="link" href="{% url 'performance:kpi_entry' %}?org={{ unit.pk }}&amp;year={{ fiscal_year.code }}">KPIを入力する</a>{% endif %}
+      </p>
+    {% else %}
+      <p class="watch-ok">
+        この組織で手当が要る KPI はありません。
+        {% if can_edit %}<a class="link" href="{% url 'performance:kpi_entry' %}?org={{ unit.pk }}&amp;year={{ fiscal_year.code }}">KPIを入力する</a>{% endif %}
+      </p>
+    {% endif %}
+  </details>
+
+  <details class="fold">
+    <summary>月ごとの推移をグラフで見る</summary>
+    {% include "partials/perf_metric_tabs.html" %}
+    {% include "partials/perf_chart.html" %}
+  </details>
+
+  <details class="fold">
+    <summary>月ごとの{{ headline.metric_label }}（数値）</summary>
+    <p class="ps">計画は期中の見直しを反映した最新版です。</p>
+    {% include "partials/perf_rows.html" with rows=month_rows row_label="月" empty_message="この年度のデータがありません。" %}
+  </details>
+
+  {% if member_lines %}
+    <details class="fold">
+      <summary>個人ごとの内訳（{{ member_lines|length }} 名）</summary>
+      <p class="ps">組織の金額の内訳です。組織計には足し込みません。</p>
+      {% include "partials/perf_org_table.html" with lines=member_lines row_label="氏名" %}
+    </details>
   {% endif %}
 
 {% endblock %}

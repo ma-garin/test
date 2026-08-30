@@ -23,78 +23,114 @@
 
     {% include "partials/perf_summary.html" with summary_title=scope_label|add:"　計数サマリ（累計）" %}
 
-    {% comment %}
-      手当が要るところを広く取る。ここが「次に何をするか」を決める場所で、
-      1件が2行に折れると読む手が止まる。グラフは推移の形が読めればよいので
-      狭めてよい。
-    {% endcomment %}
-    <div class="band band-watch">
-      <div class="stack-tight">
-        {% include "partials/perf_metric_tabs.html" %}
-        {% include "partials/perf_chart.html" %}
-      </div>
-
-      <div class="stack-tight">
-      <div class="card">
-        <div class="card-hdr">
-          <span class="card-t">手当が要るところ</span>
-          <span class="card-act">対計画比の低い順</span>
+    {% if focus != "attention" %}
+      {# 全件表示は表に画面を明け渡す。件数と推移はそちらの見出しから辿れる。 #}
+      {% comment %}
+        手当が要るところを広く取る。ここが「次に何をするか」を決める場所で、
+        1件が2行に折れると読む手が止まる。グラフは推移の形が読めればよいので
+        狭めてよい。
+      {% endcomment %}
+      <div class="band band-watch">
+        <div class="stack-tight">
+          {% if focus == "attention" %}
+            {# 全件表示は「どこに手を打つか」を並べる画面。推移は畳んでおく。 #}
+            <details class="fold">
+              <summary>月ごとの推移をグラフで見る</summary>
+              {% include "partials/perf_metric_tabs.html" %}
+              {% include "partials/perf_chart.html" %}
+            </details>
+          {% else %}
+            {% include "partials/perf_metric_tabs.html" %}
+            {% include "partials/perf_chart.html" %}
+          {% endif %}
         </div>
-        {% if attention_lines or kpi_alerts %}
-          <ul class="watch watch-scroll">
-            {% for line in attention_lines %}
-              {% comment %}
-                数値・単位・述語を1塊にする。途中で折れると
-                「-11.9百万円 / 届いて」のように意味の切れ目でない位置で改行される。
-              {% endcomment %}
-              <li>
-                <span class="badge {{ line.tone }}">{{ line.status_label }}</span>
-                <span class="watch-body">
-                  <a href="{{ line.url }}?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}">{{ line.label }}</a>
-                  <span class="watch-where">{{ line.note }}</span>
-                  <span class="watch-part">売上 <span class="fig">{{ line.revenue.achievement|floatformat:1 }}%</span></span>
-                  <span class="watch-part">利益 {% if line.operating_profit.achievement is None %}—{% else %}<span class="fig">{{ line.operating_profit.achievement|floatformat:1 }}%</span>{% endif %}</span>
-                  <span class="watch-part">計画差 <span class="fig">{{ line.revenue.diff_display|floatformat:unit_decimals|intcomma }}</span>{{ unit_label }}</span>
-                </span>
-              </li>
-            {% endfor %}
-            {% for status in kpi_alerts %}
-              <li>
-                <span class="badge {{ status.tone }}">{{ status.label }}</span>
-                <span class="watch-body">
-                  <span class="watch-name">{{ status.org_unit.name }}／{{ status.kpi.name }}</span>
-                  <span class="watch-part">目標 <span class="fig">{{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</span></span>
-                  <span class="watch-part">実績 <span class="fig">{{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</span></span>
-                </span>
-              </li>
-            {% endfor %}
-          </ul>
+
+        <div class="stack-tight">
+        <div class="card">
+          <div class="card-hdr">
+            <span class="card-t">手当が要るところ</span>
+            <span class="card-act">計画に足りない額の大きい順</span>
+          </div>
+          {% if focus == "attention" %}
+            <p class="watch-ok">手当が要る組織 {{ attention_total }} 件を下の表に出しています。</p>
+          {% elif attention_lines or kpi_alerts %}
+            <ul class="watch watch-scroll">
+              {% for line in attention_lines %}
+                {% comment %}
+                  数値・単位・述語を1塊にする。途中で折れると
+                  「-11.9百万円 / 届いて」のように意味の切れ目でない位置で改行される。
+                {% endcomment %}
+                <li>
+                  <span class="badge {{ line.tone }}">{{ line.status_label }}</span>
+                  <span class="watch-body">
+                    <a href="{{ line.url }}?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}">{{ line.label }}</a>
+                    <span class="watch-where">{{ line.note }}</span>
+                    <span class="watch-part">売上 <span class="fig">{{ line.revenue.achievement|floatformat:1 }}%</span></span>
+                    <span class="watch-part">利益 {% if line.operating_profit.achievement is None %}—{% else %}<span class="fig">{{ line.operating_profit.achievement|floatformat:1 }}%</span>{% endif %}</span>
+                    <span class="watch-part">計画差 <span class="fig">{{ line.revenue.diff_display|floatformat:unit_decimals|intcomma }}</span>{{ unit_label }}</span>
+                  </span>
+                </li>
+              {% endfor %}
+              {% for status in kpi_alerts %}
+                <li>
+                  <span class="badge {{ status.tone }}">{{ status.label }}</span>
+                  <span class="watch-body">
+                    <span class="watch-name">{{ status.org_unit.name }}／{{ status.kpi.name }}</span>
+                    <span class="watch-part">目標 <span class="fig">{{ status.target|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</span></span>
+                    <span class="watch-part">実績 <span class="fig">{{ status.actual|floatformat:"-2"|intcomma }}{{ status.kpi.unit }}</span></span>
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="watch-ok">計画に対して未達の組織・KPI はありません。</p>
+          {% endif %}
+
+          {% if attention_hidden %}
+            {# 隠した件数と行き先を必ず添える。数だけ減らすと全体像を見失う。 #}
+            <p class="watch-more">
+              手当が要る組織は全 {{ attention_total }} 件。額の大きい {{ attention_lines|length }} 件を出しています。
+              <a class="link" href="?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}&amp;metric={{ metric }}&amp;unit={{ unit }}&amp;focus=attention">全件を下の表で見る</a>
+            </p>
+          {% endif %}
+
+
+          {# KPI は件数だけをここへ畳む。独立カードにすると枠の分だけ縦を取る。 #}
+          <p class="tally">
+            KPI　達成 <b class="ok">{{ kpi_summary.achieved }}</b>　
+            あと少し <b class="warn">{{ kpi_summary.warning }}</b>　
+            未達 <b class="bad">{{ kpi_summary.behind }}</b>　
+            未計測 <b>{{ kpi_summary.unmeasured }}</b>
+            <a class="link" href="{% url 'performance:kpi_list' %}">すべて見る</a>
+          </p>
+        </div>
+
+        </div>
+      </div>
+    {% endif %}
+
+    {% comment %}
+      組織別の表は「手当が要るところ」と役割が重なる。まず見るのは
+      手を打つ先で、配下の一覧はそのあと。既定は畳んでおき、
+      手当の全件表示（focus=attention）のときだけ開いた状態にする。
+      組織別は10列あるため、幅は詰めず全幅で置く。
+    {% endcomment %}
+    <details class="fold org-fold"{% if focus == "attention" %} open{% endif %}>
+      <summary>
+        {% if focus == "attention" %}
+          手当が要る組織（全 {{ attention_total }} 件・額の大きい順）
         {% else %}
-          <p class="watch-ok">計画に対して未達の組織・KPI はありません。</p>
+          配下の組織を一覧する（{{ fiscal_year.start_on|date:"Y/m" }}〜{{ upto|date:"Y/m" }} 累計）
         {% endif %}
-
-
-        {# KPI は件数だけをここへ畳む。独立カードにすると枠の分だけ縦を取る。 #}
-        <p class="tally">
-          KPI　達成 <b class="ok">{{ kpi_summary.achieved }}</b>　
-          あと少し <b class="warn">{{ kpi_summary.warning }}</b>　
-          未達 <b class="bad">{{ kpi_summary.behind }}</b>　
-          未計測 <b>{{ kpi_summary.unmeasured }}</b>
-          <a class="link" href="{% url 'performance:kpi_list' %}">すべて見る</a>
-        </p>
-      </div>
-
-      </div>
-    </div>
-
-    {# 組織別は10列ある。狭いカラムへ入れると組織名が縦に折れるので全幅で置く。 #}
-    <div class="card">
-      <div class="card-hdr">
-        <span class="card-t">組織別の計数（{{ fiscal_year.start_on|date:"Y/m" }}〜{{ upto|date:"Y/m" }} 累計）</span>
-        <span class="card-act">組織名を押すと明細が開きます　判定は売上と利益の低いほう</span>
-      </div>
+      </summary>
+      {% if focus == "attention" %}
+        <p class="ps"><a class="link" href="?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}&amp;metric={{ metric }}&amp;unit={{ unit }}">配下の組織に戻す</a></p>
+      {% else %}
+        <p class="ps">組織名を押すと明細が開きます。判定は売上と利益の低いほうです。</p>
+      {% endif %}
       {% include "partials/perf_org_table.html" with row_label="組織" empty_message="配下の組織がありません。" %}
-    </div>
+      {% include "partials/pager.html" with page=org_page page_window=org_page_window page_query=org_page_query %}
+    </details>
 
   {% endif %}
 

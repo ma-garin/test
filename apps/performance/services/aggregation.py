@@ -181,10 +181,10 @@ def plan_index(fiscal_year: FiscalYear, org_ids=None) -> AmountIndex:
 
     index = AmountIndex()
 
-    for (org_id, member_id, month), effective in plans.effective_figures(
+    for (org_id, member_id, month), values in plans.effective_amounts(
         fiscal_year, org_ids
     ).items():
-        index.add(org_id, member_id, month, Amounts.of(effective.figure))
+        index.add(org_id, member_id, month, Amounts(*values))
 
     return index
 
@@ -194,8 +194,8 @@ def version_index(version: PlanVersion, org_ids=None) -> AmountIndex:
 
     index = AmountIndex()
 
-    for (org_id, member_id, month), figure in plans.version_figures(version, org_ids).items():
-        index.add(org_id, member_id, month, Amounts.of(figure))
+    for (org_id, member_id, month), values in plans.version_amounts(version, org_ids).items():
+        index.add(org_id, member_id, month, Amounts(*values))
 
     return index
 
@@ -207,8 +207,11 @@ def actual_index(fiscal_year: FiscalYear, org_ids=None) -> AmountIndex:
     if org_ids is not None:
         queryset = queryset.filter(org_unit_id__in=list(org_ids))
 
-    for figure in queryset:
-        index.add(figure.org_unit_id, figure.member_id, figure.month, Amounts.of(figure))
+    # 実績も値だけで足りる。1万行規模ではモデルインスタンス生成が効いてくる。
+    for org_id, member_id, month, revenue, gross, profit in queryset.values_list(
+        "org_unit_id", "member_id", "month", "revenue", "gross_profit", "operating_profit"
+    ):
+        index.add(org_id, member_id, month, Amounts(revenue, gross, profit))
 
     return index
 
@@ -314,6 +317,26 @@ class Report:
 
     def for_unit(self, unit: OrgUnit) -> OrgSummary | None:
         return self.summaries.get(unit.pk if hasattr(unit, "pk") else unit)
+
+    def for_months(self, months: list[date]) -> Report:
+        """同じ索引のまま、対象期間だけを差し替えた版を返す。
+
+        サマリは累計、グラフは年度全体と、同じデータを違う期間で見るだけ。
+        `build_report` を呼び直すと 1 万行の読み込みと集計をもう一度やることになる。
+
+        期間が変われば組織別の合計も変わるので `summaries` は引き継がない
+        （`for_unit` は None を返す）。月次行を出す用途にだけ使う。
+        """
+
+        return Report(
+            fiscal_year=self.fiscal_year,
+            months=months,
+            summaries={},
+            plan=self.plan,
+            actual=self.actual,
+            initial=self.initial,
+            descendants=self.descendants,
+        )
 
     def totals(self, units: list[OrgUnit]) -> Comparison:
         """複数組織の合計。親子が混ざっても二重に数えないよう、根だけを足す。"""
@@ -422,17 +445,53 @@ def build_report(
         for member in members:
             members_by_org.setdefault(member.org_unit_id, []).append(member)
 
+    # 自分ぶんの金額は組織ごとに一度だけ出す。
+    own: dict = {
+        unit.pk: (
+            plan.org_amount(unit.pk, months),
+            actual.org_amount(unit.pk, months),
+            initial.org_amount(unit.pk, months),
+        )
+        for unit in units
+    }
+
+    # 配下を含む合計は、子の合計を足し上げて作る。
+    # 親ごとに配下すべてを走査し直すと、同じ組織を何度も足すことになる
+    # （部6・課30・プロジェクト150 で 516 回 → 186 回）。
+    children: dict = {}
+
+    for unit in units:
+        children.setdefault(unit.parent_id, []).append(unit)
+
+    totals: dict = {}
+
+    def total_of(unit: OrgUnit) -> tuple:
+        cached = totals.get(unit.pk)
+
+        if cached is not None:
+            return cached
+
+        own_plan, own_actual, own_initial = own[unit.pk]
+        sum_plan, sum_actual, sum_initial = own_plan, own_actual, own_initial
+
+        for child in children.get(unit.pk, []):
+            child_plan, child_actual, child_initial = total_of(child)
+            sum_plan = sum_plan + child_plan
+            sum_actual = sum_actual + child_actual
+            sum_initial = sum_initial + child_initial
+
+        totals[unit.pk] = (sum_plan, sum_actual, sum_initial)
+
+        return totals[unit.pk]
+
+    for unit in units:
+        total_of(unit)
+
     summaries: dict = {}
 
     for unit in units:
-        ids = descendants.get(unit.pk, [unit.pk])
-
-        total_plan, total_actual, total_initial = EMPTY, EMPTY, EMPTY
-
-        for org_id in ids:
-            total_plan = total_plan + plan.org_amount(org_id, months)
-            total_actual = total_actual + actual.org_amount(org_id, months)
-            total_initial = total_initial + initial.org_amount(org_id, months)
+        own_plan, own_actual, _ = own[unit.pk]
+        total_plan, total_actual, total_initial = totals[unit.pk]
 
         member_plan, member_actual = EMPTY, EMPTY
 
@@ -442,8 +501,8 @@ def build_report(
 
         summaries[unit.pk] = OrgSummary(
             unit=unit,
-            own_plan=plan.org_amount(unit.pk, months),
-            own_actual=actual.org_amount(unit.pk, months),
+            own_plan=own_plan,
+            own_actual=own_actual,
             total_plan=total_plan,
             total_actual=total_actual,
             total_initial=total_initial,

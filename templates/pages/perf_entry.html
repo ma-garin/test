@@ -31,12 +31,7 @@
       </div>
       <div>
         <label for="entry-org">組織</label>
-        <select id="entry-org" name="org">
-          <option value="">選択してください</option>
-          {% for item in units %}
-            <option value="{{ item.pk }}"{% if unit and item.pk == unit.pk %} selected{% endif %}>{{ item.name }}（{{ item.get_level_display }}）</option>
-          {% endfor %}
-        </select>
+        {% include "partials/perf_org_select.html" with select_id="entry-org" %}
       </div>
       <div>
         <label for="entry-member">メンバー（個人別に入力する場合）</label>

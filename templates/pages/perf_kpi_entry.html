@@ -31,12 +31,7 @@
       </div>
       <div>
         <label for="kpi-org">組織</label>
-        <select id="kpi-org" name="org">
-          <option value="">選択してください</option>
-          {% for item in units %}
-            <option value="{{ item.pk }}"{% if unit and item.pk == unit.pk %} selected{% endif %}>{{ item.name }}</option>
-          {% endfor %}
-        </select>
+        {% include "partials/perf_org_select.html" with select_id="kpi-org" %}
       </div>
       <div>
         <label for="kpi-member">メンバー（個人別）</label>

@@ -9,11 +9,19 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from apps.accounts.constants import Role
-from apps.performance.constants import FigureSource, ImportKind, PlanKind, PlanStatus
+from apps.performance.constants import (
+    FigureSource,
+    ImportKind,
+    OrgLevel,
+    PlanKind,
+    PlanStatus,
+)
 from apps.performance.models import ActualFigure, KpiDefinition, PlanFigure, PlanVersion
 from apps.performance.services import aggregation
 from apps.performance.services import chart as chart_service
@@ -723,3 +731,96 @@ class DefaultChoiceTests(TestCase):
         response = self.client.get(reverse("performance:kpi_entry"), {"year": self.year.code})
 
         self.assertEqual(response.context["definition"], definition)
+
+
+class ScaleTests(TestCase):
+    """実運用の規模で壊れないこと。
+
+    体験用データ（組織6・要員4）では、1画面に収まるかも、待ち時間も分からない。
+    ここでは規模を作って「1画面に載る件数へ絞れているか」「組織の数だけ
+    クエリが増えていないか」を押さえる。
+    """
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.manager = factories.make_user(self.tenant, "manager@example.com")
+        self.year = factories.make_year(self.tenant)
+        self.version = factories.make_version(self.tenant, self.year)
+        self.month = date(2026, 4, 1)
+
+        division = factories.make_org(self.tenant, "div", OrgLevel.DIVISION, manager=self.manager)
+        self.sections = [
+            factories.make_org(self.tenant, f"sec{i}", OrgLevel.SECTION, parent=division)
+            for i in range(6)
+        ]
+        self.projects = [
+            factories.make_org(
+                self.tenant, f"prj{i}", OrgLevel.PROJECT, parent=self.sections[i % 6]
+            )
+            for i in range(30)
+        ]
+
+        for index, project in enumerate(self.projects):
+            factories.add_plan(self.version, project, self.month, 1000)
+            # 半分を未達にして、手当の対象が1画面ぶんを超える状況を作る。
+            factories.add_actual(self.year, project, self.month, 500 if index % 2 else 1000)
+
+        self.client.force_login(self.manager)
+
+    def test_dashboard_limits_what_it_shows(self) -> None:
+        response = self.client.get(
+            reverse("performance:dashboard"), {"year": self.year.code, "upto": "2026-04"}
+        )
+
+        self.assertLessEqual(len(response.context["attention_lines"]), 4)
+        self.assertGreater(response.context["attention_total"], 4)
+        self.assertGreater(response.context["attention_hidden"], 0)
+
+    def test_dashboard_can_show_every_shortfall(self) -> None:
+        """絞った分は同じ画面で全件たどれること。隠して終わりにしない。"""
+
+        response = self.client.get(
+            reverse("performance:dashboard"),
+            {"year": self.year.code, "upto": "2026-04", "focus": "attention"},
+        )
+
+        self.assertEqual(
+            response.context["org_page"].paginator.count, response.context["attention_total"]
+        )
+
+    def _query_count(self, url, params=None) -> int:
+        with CaptureQueriesContext(connection) as ctx:
+            self.client.get(url, params or {})
+
+        return len(ctx.captured_queries)
+
+    def test_dashboard_query_count_does_not_grow_with_orgs(self) -> None:
+        """組織ごとに権限やテナントを引きにいっていないこと。
+
+        件数を固定で縛ると実装を変えるたびに落ちるので、上限だけを見る。
+        組織の数だけ引いていれば 37 組織で 100 本を超える。
+        """
+
+        count = self._query_count(
+            reverse("performance:dashboard"), {"year": self.year.code, "upto": "2026-04"}
+        )
+
+        self.assertLess(count, 30, f"ダッシュボードのクエリが {count} 本")
+
+    def test_entry_query_count_does_not_grow_with_orgs(self) -> None:
+        count = self._query_count(reverse("performance:figure_entry"), {"year": self.year.code})
+
+        self.assertLess(count, 25, f"計数入力のクエリが {count} 本")
+
+    def test_org_master_pages_instead_of_listing_everything(self) -> None:
+        response = self.client.get(reverse("performance:org_list"))
+
+        self.assertLessEqual(len(response.context["units"]), 16)
+        self.assertEqual(response.context["org_count"], 37)
+
+    def test_org_master_filters_by_keyword(self) -> None:
+        response = self.client.get(reverse("performance:org_list"), {"q": "prj1"})
+        codes = [unit.code for unit, _ in response.context["units"]]
+
+        self.assertTrue(codes)
+        self.assertTrue(all(code.startswith("prj1") for code in codes))

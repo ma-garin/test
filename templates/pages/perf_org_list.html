@@ -11,11 +11,92 @@
 
 {% block content %}
 
+  {% comment %}
+    実運用では組織 186・要員 650。全部を1ページに並べると 32 画面ぶんになる。
+    タブで分け、絞り込みとページ送りで目的の行へ届くようにする。
+  {% endcomment %}
   <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">年度</span>
-      <span class="card-act">計数は年度と月で持ちます</span>
+    <div class="mst-bar">
+      <div class="mst-tabs" role="tablist">
+        <a class="mst-tab{% if tab == 'orgs' %} on{% endif %}"
+           href="?tab=orgs{% if keyword %}&amp;q={{ keyword|urlencode }}{% endif %}">
+          組織 <b>{{ org_count }}</b>
+        </a>
+        <a class="mst-tab{% if tab == 'members' %} on{% endif %}"
+           href="?tab=members{% if keyword %}&amp;q={{ keyword|urlencode }}{% endif %}">
+          要員 <b>{{ member_count }}</b>
+        </a>
+      </div>
+
+      <form method="get" class="mst-filter">
+        <input type="hidden" name="tab" value="{{ tab }}">
+        <input type="search" name="q" value="{{ keyword }}"
+               placeholder="{% if tab == 'orgs' %}組織名・コードで探す{% else %}氏名・社員番号・所属で探す{% endif %}">
+        {% if tab == 'orgs' %}
+          <select name="level">
+            <option value="">階層すべて</option>
+            {% for value, label in levels %}
+              <option value="{{ value }}"{% if level == value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        {% endif %}
+        <button type="submit" class="btn-out sm">絞り込む</button>
+        {% if keyword or level %}
+          <a class="btn-ghost sm" href="?tab={{ tab }}">解除</a>
+        {% endif %}
+      </form>
     </div>
+
+    {% if tab == 'orgs' %}
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>コード</th><th>組織名</th><th>階層</th><th>ラインマネージャー</th><th></th></tr></thead>
+          <tbody>
+            {% for unit, depth in units %}
+              <tr>
+                <td class="nowrap">{{ unit.code }}</td>
+                <td class="org-cell d{{ depth }}">
+                  <a href="{% url 'performance:org_detail' unit.pk %}">{{ unit.name }}</a>
+                </td>
+                <td class="nowrap">{{ unit.get_level_display }}</td>
+                <td>{{ unit.manager|default:"—" }}</td>
+                <td class="nowrap">
+                  {% if can_manage and unit.pk in managed_ids %}<a href="{% url 'performance:org_edit' unit.pk %}">編集</a>{% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5"><div class="dashboard-empty">条件に合う組織がありません。</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="t-wrap">
+        <table class="t">
+          <thead><tr><th>社員番号</th><th>氏名</th><th>所属</th><th>役割</th><th>利用者</th><th></th></tr></thead>
+          <tbody>
+            {% for member in members %}
+              <tr>
+                <td class="nowrap">{{ member.employee_code }}</td>
+                <td class="nowrap"><a href="{% url 'performance:member_detail' member.pk %}">{{ member.name }}</a></td>
+                <td>{{ member.org_unit.name }}</td>
+                <td class="nowrap">{{ member.title|default:"—" }}</td>
+                <td>{{ member.user.email|default:"—" }}</td>
+                <td class="nowrap">{% if can_manage %}<a href="{% url 'performance:member_edit' member.pk %}">編集</a>{% endif %}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6"><div class="dashboard-empty">条件に合う要員がありません。</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+    {% include "partials/pager.html" %}
+  </div>
+
+  <details class="fold">
+    <summary>年度（{{ fiscal_years|length }} 件）</summary>
     <div class="t-wrap">
       <table class="t">
         <thead><tr><th>コード</th><th>年度名</th><th>期首</th><th>期末</th><th>今期</th><th></th></tr></thead>
@@ -35,61 +116,6 @@
         </tbody>
       </table>
     </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">組織（部 → 課 → プロジェクト）</span>
-      <span class="card-act">編集できるのは自分が管理する組織とその配下だけです</span>
-    </div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead><tr><th>コード</th><th>組織名</th><th>階層</th><th>ラインマネージャー</th><th></th></tr></thead>
-        <tbody>
-          {% for unit, depth in units %}
-            <tr>
-              <td class="nowrap">{{ unit.code }}</td>
-              <td class="org-cell d{{ depth }}">
-                <a href="{% url 'performance:org_detail' unit.pk %}">{{ unit.name }}</a>
-              </td>
-              <td class="nowrap">{{ unit.get_level_display }}</td>
-              <td>{{ unit.manager|default:"—" }}</td>
-              <td class="nowrap">
-                {% if can_manage and unit.pk in managed_ids %}<a href="{% url 'performance:org_edit' unit.pk %}">編集</a>{% endif %}
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="5"><div class="dashboard-empty">参照できる組織がありません。</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-t">メンバー</span>
-      <span class="card-act">個人別の計数を持つ単位</span>
-    </div>
-    <div class="t-wrap">
-      <table class="t">
-        <thead><tr><th>社員番号</th><th>氏名</th><th>所属</th><th>役割</th><th>利用者</th><th></th></tr></thead>
-        <tbody>
-          {% for member in members %}
-            <tr>
-              <td class="nowrap">{{ member.employee_code }}</td>
-              <td><a href="{% url 'performance:member_detail' member.pk %}">{{ member.name }}</a></td>
-              <td>{{ member.org_unit.name }}</td>
-              <td>{{ member.title|default:"—" }}</td>
-              <td>{{ member.user.email|default:"—" }}</td>
-              <td class="nowrap">{% if can_manage %}<a href="{% url 'performance:member_edit' member.pk %}">編集</a>{% endif %}</td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="6"><div class="dashboard-empty">メンバーが登録されていません。</div></td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+  </details>
 
 {% endblock %}

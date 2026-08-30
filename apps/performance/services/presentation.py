@@ -393,6 +393,18 @@ class OrgLine:
 
         return min(values) if values else Decimal("0")
 
+    @property
+    def shortfall(self) -> Decimal:
+        """計画に対して足りない売上額。並べ替え用に正の数で返す。
+
+        率だけで並べると、小さな案件の 60% が大きな案件の 92% より
+        先に来る。実際に先に手を打つのは、額の大きいほうであることが多い。
+        """
+
+        diff = self.revenue.diff
+
+        return -diff if diff < 0 else Decimal("0")
+
 
 def org_line(
     label: str, comparison: Comparison, url: str = "", note: str = "", unit: str = DEFAULT_UNIT

@@ -177,6 +177,71 @@ def effective_figures(fiscal_year: FiscalYear, org_ids=None) -> dict[tuple, Effe
     }
 
 
+def effective_amounts(fiscal_year: FiscalYear, org_ids=None) -> dict[tuple, tuple]:
+    """`(org_id, member_id, month)` → (売上, 粗利, 利益) の組。
+
+    集計に要るのは金額だけで、行のモデルインスタンスも由来の版も使わない。
+    `effective_figures` は 1 行ごとに PlanFigure と EffectiveFigure を作るため、
+    実運用規模（1万行超）ではオブジェクト生成がそのまま待ち時間になる。
+    ここでは値のタプルだけを取り出す。
+    """
+
+    versions = active_versions(fiscal_year)
+
+    if not versions:
+        return {}
+
+    queryset = PlanFigure.objects.filter(plan_version__in=versions)
+
+    if org_ids is not None:
+        queryset = queryset.filter(org_unit_id__in=list(org_ids))
+
+    rows = queryset.values_list(
+        "plan_version_id",
+        "org_unit_id",
+        "member_id",
+        "month",
+        "revenue",
+        "gross_profit",
+        "operating_profit",
+    )
+
+    by_version: dict = {}
+
+    for row in rows:
+        by_version.setdefault(str(row[0]), []).append(row)
+
+    effective: dict[tuple, tuple] = {}
+
+    # 版を効く順に上書きする。後続の版が触れていない組織・月は前の版が残る。
+    for version in versions:
+        for _, org_id, member_id, month, revenue, gross, profit in by_version.get(
+            str(version.pk), []
+        ):
+            if month < version.effective_from:
+                continue
+
+            effective[(org_id, member_id, month)] = (revenue, gross, profit)
+
+    return effective
+
+
+def version_amounts(version: PlanVersion, org_ids=None) -> dict[tuple, tuple]:
+    """単一の版の金額。`effective_amounts` と同じ理由で値だけを返す。"""
+
+    queryset = PlanFigure.objects.filter(plan_version=version)
+
+    if org_ids is not None:
+        queryset = queryset.filter(org_unit_id__in=list(org_ids))
+
+    return {
+        (org_id, member_id, month): (revenue, gross, profit)
+        for org_id, member_id, month, revenue, gross, profit in queryset.values_list(
+            "org_unit_id", "member_id", "month", "revenue", "gross_profit", "operating_profit"
+        )
+    }
+
+
 def version_figures(version: PlanVersion, org_ids=None) -> dict[tuple, PlanFigure]:
     """単一の版に登録されている計画値。版そのものを見せる画面で使う。"""
 

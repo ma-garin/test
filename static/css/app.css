@@ -357,9 +357,9 @@ a { color: inherit; text-decoration: none; }
 .main {
   overflow-y: auto;
   background: var(--bg);
-  padding: 7px 18px 4px;
+  padding: 7px 18px 3px;
   display: grid;
-  gap: 8px;
+  gap: 7px;
   align-content: start;
 }
 
@@ -1117,6 +1117,45 @@ a { color: inherit; text-decoration: none; }
   font-weight: 400;
 }
 
+/* マスタ管理のタブと絞り込み。件数を出すのは、絞り込んだ結果が
+   全体の何割なのかを見失わないため。 */
+.mst-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+.mst-tabs { display: flex; gap: 4px; }
+.mst-tab {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.mst-tab.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.mst-tab b { font-variant-numeric: tabular-nums; margin-left: 4px; }
+.mst-filter { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+.mst-filter input[type="search"] {
+  width: 260px;
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.mst-filter select {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* 表の上に置く絞り込み。カード見出しの下、表の直前に来る。 */
+.kpi-filter { margin: 0 0 10px; }
+
 .ps.err { color: var(--red); font-weight: 800; }
 .inline-form { display: inline-block; margin-left: 6px; }
 
@@ -1203,8 +1242,8 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow);
-  padding: 12px 16px;
-  margin-bottom: 12px;
+  padding: 10px 16px;
+  margin: 0;
 }
 .fold > summary { font-size: 13px; font-weight: 800; cursor: pointer; color: var(--ink); }
 .fold > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
@@ -1249,7 +1288,7 @@ a { color: inherit; text-decoration: none; }
    縦に積むと2画面になる。関連するものを横へ並べ、
    スクロールせずに全体を読めるようにする。 */
 
-.band { display: grid; gap: 8px; align-items: start; }
+.band { display: grid; gap: 7px; align-items: start; }
 .band-a { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
 .band-b { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
 /* 取込は「入力は短く、確認するものは長い」。列の広さをそれに合わせる。 */
@@ -1272,7 +1311,7 @@ a { color: inherit; text-decoration: none; }
 .t.figures thead th { padding-bottom: 5px; }
 
 /* 組織別は10列ある。列ごとの余白を詰め、名前が縦に折れないようにする。 */
-.t.figures td, .t.figures th { padding-left: 9px; padding-right: 9px; }
+.t.figures td, .t.figures th { padding-left: 7px; padding-right: 7px; }
 .t.figures td:first-child { white-space: nowrap; }
 .t.figures .row-note { display: block; font-size: 10.5px; color: var(--muted); font-weight: 400; }
 
