@@ -39,7 +39,7 @@
                   </span>
                 </label>
               {% else %}
-                <div>
+                <div{% if field.name == "fiscal_year" or field.name == "plan_version" %} data-needs="{{ field.name }}"{% endif %}>
                   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                   {{ field }}
                   {% if field.help_text %}<div class="ps">{{ field.help_text }}</div>{% endif %}
@@ -112,4 +112,30 @@
 
   </div>
 
+
+  {{ needs_year|json_script:"needs-year" }}
+  {{ needs_version|json_script:"needs-version" }}
+  <script>
+  // 取込種別で要る条件が変わる。要らない欄を出したままにすると
+  // 「選ばなくていいのか」を毎回考えさせる。
+  (function () {
+    var kind = document.querySelector("select[name=kind]");
+
+    if (!kind) { return; }
+
+    var need = {
+      fiscal_year: JSON.parse(document.getElementById("needs-year").textContent),
+      plan_version: JSON.parse(document.getElementById("needs-version").textContent)
+    };
+
+    function apply() {
+      document.querySelectorAll("[data-needs]").forEach(function (box) {
+        box.hidden = need[box.dataset.needs].indexOf(kind.value) === -1;
+      });
+    }
+
+    kind.addEventListener("change", apply);
+    apply();
+  })();
+  </script>
 {% endblock %}

@@ -13,8 +13,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.constants import Role
-from apps.performance.constants import FigureSource, PlanKind, PlanStatus
-from apps.performance.models import ActualFigure, PlanFigure, PlanVersion
+from apps.performance.constants import FigureSource, ImportKind, PlanKind, PlanStatus
+from apps.performance.models import ActualFigure, KpiDefinition, PlanFigure, PlanVersion
 from apps.performance.services import aggregation
 from apps.performance.services import chart as chart_service
 from apps.performance.tests import factories
@@ -600,3 +600,126 @@ class ChartAxisUnitTests(TestCase):
 
     def test_small_amounts_stay_in_yen(self) -> None:
         self.assertEqual(self._axis(400), "円")
+
+
+class DashboardAttentionTests(TestCase):
+    """ダッシュボードの「手当が要るところ」が、深い階層の落ち込みを拾うこと。
+
+    課で平均すると配下の未達が消える。課の行だけを見る作りだと、
+    22ポイント足りないプロジェクトが画面から消え、判断を誤らせる。
+    """
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.manager = factories.make_user(self.tenant, "manager@example.com")
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant, manager=self.manager)
+        self.version = factories.make_version(self.tenant, self.year)
+        self.month = date(2026, 4, 1)
+        self.client.force_login(self.manager)
+
+    def _get(self):
+        return self.client.get(
+            reverse("performance:dashboard"), {"year": self.year.code, "upto": "2026-04"}
+        )
+
+    def test_shortfall_below_the_child_level_is_listed(self) -> None:
+        # 課は計画どおり、その下のプロジェクトだけが大きく未達。
+        factories.add_plan(self.version, self.units["sec"], self.month, 1000)
+        factories.add_actual(self.year, self.units["sec"], self.month, 1000)
+        factories.add_plan(self.version, self.units["prj"], self.month, 500)
+        factories.add_actual(self.year, self.units["prj"], self.month, 100)
+
+        labels = [line.label for line in self._get().context["attention_lines"]]
+
+        self.assertIn(self.units["prj"].name, labels)
+
+    def test_attention_rows_carry_their_parent(self) -> None:
+        """「どの課の下か」が分からないと、行を見ても手の打ちようがない。"""
+
+        factories.add_plan(self.version, self.units["prj"], self.month, 500)
+        factories.add_actual(self.year, self.units["prj"], self.month, 100)
+
+        line = next(
+            item
+            for item in self._get().context["attention_lines"]
+            if item.label == self.units["prj"].name
+        )
+
+        self.assertIn(self.units["sec"].name, line.note)
+
+    def test_all_shortfalls_are_listed(self) -> None:
+        """件数で切らない。切ると、隠れた行が一番大きいことがある。"""
+
+        for org in (self.units["sec"], self.units["prj"]):
+            factories.add_plan(self.version, org, self.month, 1000)
+            factories.add_actual(self.year, org, self.month, 500)
+
+        labels = [line.label for line in self._get().context["attention_lines"]]
+
+        self.assertIn(self.units["sec"].name, labels)
+        self.assertIn(self.units["prj"].name, labels)
+
+
+class EntryDefaultTargetTests(TestCase):
+    """計数入力を開いたとき、値を入れられる組織が選ばれていること。"""
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.manager = factories.make_user(self.tenant, "manager@example.com")
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant, manager=self.manager)
+        self.client.force_login(self.manager)
+
+    def test_defaults_to_a_leaf_org(self) -> None:
+        """部を既定にすると全欄が空の表が出て、データが無いのか
+        入れる場所が違うのかを利用者が区別できない。"""
+
+        response = self.client.get(reverse("performance:figure_entry"), {"year": self.year.code})
+
+        self.assertEqual(response.context["unit"], self.units["prj"])
+
+    def test_warns_when_the_org_has_children(self) -> None:
+        response = self.client.get(
+            reverse("performance:figure_entry"),
+            {"year": self.year.code, "org": self.units["sec"].pk},
+        )
+
+        self.assertTrue(response.context["has_children"])
+
+
+class DefaultChoiceTests(TestCase):
+    """毎月使う画面で、選び直さなくていいものが選ばれていること。
+
+    空欄のまま出すと、取り込むたび・入力するたびに同じ選択を繰り返させる。
+    """
+
+    def setUp(self) -> None:
+        self.tenant = factories.make_tenant()
+        self.manager = factories.make_user(self.tenant, "manager@example.com", role=Role.PMO)
+        self.year = factories.make_year(self.tenant)
+        self.units = factories.make_tree(self.tenant, manager=self.manager)
+        self.version = factories.make_version(self.tenant, self.year)
+        self.client.force_login(self.manager)
+
+    def test_import_form_preselects_current_year_and_version(self) -> None:
+        form = self.client.get(reverse("performance:import")).context["form"]
+
+        self.assertEqual(form.fields["fiscal_year"].initial, self.year)
+        self.assertEqual(form.fields["plan_version"].initial, self.version)
+
+    def test_import_form_defaults_to_actual_figures(self) -> None:
+        """毎月の取込は計数実績。組織マスタは初期設定のときだけ使う。"""
+
+        form = self.client.get(reverse("performance:import")).context["form"]
+
+        self.assertEqual(form.fields["kind"].initial, ImportKind.ACTUAL_FIGURE)
+
+    def test_kpi_entry_opens_with_a_kpi_selected(self) -> None:
+        definition = KpiDefinition.objects.create(
+            tenant=self.tenant, code="churn", name="解約率", unit="%"
+        )
+
+        response = self.client.get(reverse("performance:kpi_entry"), {"year": self.year.code})
+
+        self.assertEqual(response.context["definition"], definition)

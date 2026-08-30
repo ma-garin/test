@@ -657,6 +657,10 @@ a { color: inherit; text-decoration: none; }
    ラベルを左の固定列へ寄せ、入力欄の左端を1本の線に揃える。
    揃っていないと、項目がいくつあるのか目で数えられない。 */
 .form-tight { gap: 8px; --label-w: 104px; --label-gap: 12px; }
+/* hidden はブラウザ既定の display:none。詳細度の高い display 指定に
+   負けるので、隠す指示を必ず勝たせる。 */
+[hidden] { display: none !important; }
+
 .form-tight > div:not(.ps):not(.callout):not(.actions) {
   display: grid;
   grid-template-columns: var(--label-w) minmax(0, 1fr);
@@ -1095,6 +1099,8 @@ a { color: inherit; text-decoration: none; }
 }
 /* 4列を画面いっぱいに広げると、見出しと入力欄が離れて対応が読めなくなる。 */
 .perf-grid { max-width: 660px; }
+/* KPI は月と実績値の2列しかない。計数入力と同じ幅にすると列が間延びする。 */
+.perf-grid.kpi-grid { max-width: 400px; }
 /* 表が660pxなのにカードだけ全幅だと、右半分が理由もなく空く。 */
 .entry-card { max-width: 720px; }
 .perf-grid td { padding: 2px 8px; }
@@ -1163,8 +1169,10 @@ a { color: inherit; text-decoration: none; }
 
 /* 手当が要るものだけを並べる箇条書き。 */
 .watch { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.watch li { font-size: 13px; line-height: 1.7; }
-.watch li .badge { margin-right: 6px; }
+/* 判定バッジが独立した行になると、1件が2行になって4件で画面を食う。
+   バッジと中身を同じ行に置く。情報は減らさず高さだけ半分にする。 */
+.watch li { display: flex; align-items: baseline; gap: 8px; font-size: 13px; line-height: 1.55; }
+.watch li .badge { flex: none; }
 .watch-ok { font-size: 13px; color: var(--muted); margin: 0; }
 
 /* 件数の数え上げ。カードを4枚並べるより、1行で読めるほうが速い。 */
@@ -1174,6 +1182,12 @@ a { color: inherit; text-decoration: none; }
 .tally b.warn { color: var(--yellow); }
 .tally b.bad { color: var(--red); }
 .tally-note { font-size: 12px; }
+
+/* 手当カードの補足。どこの組織か、何件隠れているかを小さく添える。 */
+.watch-where { font-size: 11px; color: var(--muted); white-space: nowrap; }
+/* 手当が多い日は入りきらない。件数で切って隠すより、ここだけを
+   スクロールさせる。画面全体を動かすよりは指の動きが小さい。 */
+.watch-scroll { max-height: 214px; overflow-y: auto; }
 
 /* 判定と同じ色を数字にも載せる。バッジと同じ記号（r/a/g）で揃える。 */
 .tone-r { color: var(--red); font-weight: 700; }
@@ -1240,6 +1254,7 @@ a { color: inherit; text-decoration: none; }
 .band-b { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
 /* 取込は「入力は短く、確認するものは長い」。列の広さをそれに合わせる。 */
 .band-import { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+.band-watch { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
 .stack-tight { display: grid; gap: 8px; align-content: start; }
 
 /* サイドバーの2文字コードは畳んだときだけ出す。
@@ -1248,7 +1263,7 @@ a { color: inherit; text-decoration: none; }
 .nav-collapsed .sb-badge { display: inline-grid; }
 
 @media (max-width: 1180px) {
-  .band-a, .band-b, .band-import { grid-template-columns: 1fr; }
+  .band-a, .band-b, .band-import, .band-watch { grid-template-columns: 1fr; }
 }
 
 /* 計数サマリは1画面の上部を占める。行高を最小限にして、
@@ -1311,6 +1326,9 @@ a { color: inherit; text-decoration: none; }
 
 /* 列見出しの単位。数字と同じ列にあるが、値ではないので小さく弱く。 */
 .th-unit { display: block; font-size: 9px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+/* 組織別は行数が少ないのに見出しが3段あり、見出しのほうが高くなる。
+   「売上」と単位を同じ行へ置いて1段ぶん詰める。 */
+.t.figures .group-head .th-unit { display: inline; margin-left: 4px; }
 
 /* 「手当が要るところ」の1行。文章で書くと数値の直後で折れるため、
    ラベル＋数値の塊を並べる形にする。塊の内部では改行しない。 */

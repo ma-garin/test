@@ -198,17 +198,54 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     prior_total = prior_report.totals(roots).actual if prior_report is not None else None
     unit = presentation.unit_from(request)
 
-    lines = [
-        presentation.org_line(
+    def _line(summary):
+        return presentation.org_line(
             summary.unit.name,
             summary.comparison,
             url=reverse("performance:org_detail", args=[summary.unit.pk]),
             note=summary.unit.get_level_display(),
             unit=unit,
         )
+
+    lines = [
+        _line(summary)
         for summary in (report.for_unit(unit) for unit in breakdown)
         if summary is not None
     ]
+
+    # 手当の対象は、1階層下ではなく見えている組織すべてから選ぶ。
+    # 課で平均すると配下の落ち込みが消える（課90.6%の中に78%のプロジェクトが
+    # いても、課の行しか見なければ「あと少し」に見える）。
+    # 深い階層の未達こそ、まずダッシュボードに出す必要がある。
+    def _deep_line(summary):
+        # 「車載ECU 結合検証」だけでは、どの課の下かが読み手に伝わらない。
+        parent = summary.unit.parent
+
+        return presentation.org_line(
+            summary.unit.name,
+            summary.comparison,
+            url=reverse("performance:org_detail", args=[summary.unit.pk]),
+            note=f"{parent.name}／{summary.unit.get_level_display()}"
+            if parent is not None
+            else summary.unit.get_level_display(),
+            unit=unit,
+        )
+
+    deep_lines = [
+        _deep_line(summary)
+        for summary in (report.for_unit(item) for item in units if item not in roots)
+        if summary is not None
+    ]
+
+    attention_all = sorted(
+        (line for line in deep_lines if line.needs_attention),
+        key=lambda line: line.worst_achievement,
+    )
+    # 件数で切らない。手当が要る組織はここに全部出す。金額のインパクトがある
+    # 未達を「あと1件あります」で片付けると、その1件が一番大きいことがある
+    # （実際、隠れていた第1検証課の計画差 -9,900,000 円が最大だった）。
+    # 組織が増えて入りきらない場合は、カードの中だけをスクロールさせる。
+    attention_lines = attention_all
 
     statuses = kpi_service.kpi_statuses(
         fiscal_year,
@@ -242,10 +279,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             # 手当が要る行を先に出す。全部を読ませてから探させない。
             # 組織とKPIを合わせて3件まで。並びは手当の要る順なので、
             # 落ちるのは相対的に軽い項目になる。全件は各画面で見る。
-            "attention_lines": sorted(
-                (line for line in lines if line.needs_attention),
-                key=lambda line: line.worst_achievement,
-            )[:2],
+            "attention_lines": attention_lines,
             "metric": metric,
             "metric_tabs": presentation.metric_tabs(metric),
             "chart": chart_service.monthly_chart(monthly, metric),
@@ -672,9 +706,18 @@ def _entry_target(request, units: list[OrgUnit]):
     org_id = request.GET.get("org") or request.POST.get("org")
 
     if not org_id:
-        # 指定が無ければ、編集できる組織の先頭を開く。ラインマネージャーが
-        # 入力する組織はほぼ固定で、毎回選ばせると入力の前に一手増えるだけになる。
-        return next((item for item in units if selectors.can_edit_org(request.user, item)), None), None
+        # 指定が無ければ、編集できる末端の組織を開く。
+        # 部を既定にすると全欄が空の表が出る（部の計数は課の積み上げで、
+        # 直接は持たない）。利用者からは「データが無い」のか
+        # 「入れる場所が違う」のか区別がつかない。
+        parents = {item.parent_id for item in units}
+        editable = [item for item in units if selectors.can_edit_org(request.user, item)]
+
+        return (
+            next((item for item in editable if item.pk not in parents), None)
+            or next(iter(editable), None),
+            None,
+        )
 
     unit = next((item for item in units if str(item.pk) == str(org_id)), None)
 
@@ -715,8 +758,11 @@ def figure_entry(request: HttpRequest) -> HttpResponse:
             else plans.current_version(fiscal_year)
         )
 
+    has_children = bool(unit and any(item.parent_id == unit.pk for item in units))
+
     context = {
         "page_title": "計数入力",
+        "has_children": has_children,
         "page_subtitle": "CSV 取込と同じ保存処理を通ります。空欄は「値なし」として既存値を削除します。",
         "units": units,
         "unit": unit,
@@ -911,9 +957,14 @@ def kpi_entry(request: HttpRequest) -> HttpResponse:
     fiscal_year = _require_year(request)
     units = _visible_units(request)
     unit, member = _entry_target(request, units) if fiscal_year else (None, None)
-    definition = KpiDefinition.objects.filter(
-        pk=request.GET.get("kpi") or request.POST.get("kpi"), tenant=request.tenant
-    ).first()
+    definitions = KpiDefinition.objects.filter(tenant=request.tenant, is_active=True)
+    kpi_id = request.GET.get("kpi") or request.POST.get("kpi")
+    definition = (
+        definitions.filter(pk=kpi_id).first()
+        if kpi_id
+        # 未指定なら先頭を開く。空の画面から始めると、入力の前に必ず一手増える。
+        else definitions.first()
+    )
     version = plans.current_version(fiscal_year) if fiscal_year else None
 
     context = {
@@ -923,7 +974,7 @@ def kpi_entry(request: HttpRequest) -> HttpResponse:
         "unit": unit,
         "member": member,
         "definition": definition,
-        "definitions": KpiDefinition.objects.filter(tenant=request.tenant, is_active=True),
+        "definitions": definitions,
         "version": version,
         "members": selectors.members_for(request.user, request.tenant, [unit.pk] if unit else None),
         **_year_context(request, fiscal_year),
@@ -1002,8 +1053,13 @@ def import_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST" and not can_import:
         raise PermissionDenied("CSV を取り込む権限がありません。")
 
+    current_year = selectors.resolve_fiscal_year(request)
     form = CsvImportForm(
-        request.POST or None, request.FILES or None, tenant=request.tenant
+        request.POST or None,
+        request.FILES or None,
+        tenant=request.tenant,
+        current_year=current_year,
+        current_version=plans.current_version(current_year) if current_year else None,
     )
     outcome = None
 
@@ -1068,6 +1124,10 @@ def import_view(request: HttpRequest) -> HttpResponse:
                 {"value": value, "label": label, "columns": csv_io.COLUMNS[value]}
                 for value, label in ImportKind.choices
             ],
+            # 種別によって要る条件が違う。画面から要らない欄を消すために渡す。
+            # 実績の取込で「対象計画版」が並んでいると、要るのかどうか迷わせる。
+            "needs_year": list(CsvImportForm.NEEDS_YEAR),
+            "needs_version": list(CsvImportForm.NEEDS_VERSION),
         },
     )
 

@@ -60,6 +60,13 @@
   </div>
 
   {% if unit and form %}
+    {% if has_children %}
+      <div class="callout w">
+        <p>{{ unit.name }} には配下の組織があります。集計は配下の合計で出しているため、
+        ここへ直接入れると二重に数えられます。ふつうは配下の組織ごとに入れてください。</p>
+      </div>
+    {% endif %}
+
     <div class="card entry-card">
       <div class="card-hdr">
         <span class="card-t">

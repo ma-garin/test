@@ -301,7 +301,9 @@ class KpiEntryForm(forms.Form):
 class CsvImportForm(forms.Form):
     """CSV 取込の条件。年度・計画版はファイルではなくここで選ぶ。"""
 
-    kind = forms.ChoiceField(label="取込種別", choices=ImportKind.choices)
+    kind = forms.ChoiceField(
+        label="取込種別", choices=ImportKind.choices, initial=ImportKind.ACTUAL_FIGURE
+    )
     csv_file = forms.FileField(
         label="CSVファイル",
         help_text="UTF-8 または Shift_JIS。1行目は列名。",
@@ -327,14 +329,24 @@ class CsvImportForm(forms.Form):
     NEEDS_YEAR = (ImportKind.ACTUAL_FIGURE, ImportKind.KPI_RESULT)
     NEEDS_VERSION = (ImportKind.PLAN_FIGURE, ImportKind.KPI_TARGET)
 
-    def __init__(self, *args, tenant=None, **kwargs) -> None:
+    def __init__(self, *args, tenant=None, current_year=None, current_version=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        if tenant is not None:
-            self.fields["fiscal_year"].queryset = FiscalYear.objects.filter(tenant=tenant)
-            self.fields["plan_version"].queryset = PlanVersion.objects.filter(
-                tenant=tenant
-            ).exclude(status=PlanStatus.ARCHIVED)
+        if tenant is None:
+            return
+
+        self.fields["fiscal_year"].queryset = FiscalYear.objects.filter(tenant=tenant)
+        self.fields["plan_version"].queryset = PlanVersion.objects.filter(
+            tenant=tenant
+        ).exclude(status=PlanStatus.ARCHIVED)
+
+        # 毎月の取込で年度と計画版を選び直すことはまずない。今期と適用中の版を
+        # 最初から入れておく。空欄のまま出すと、取り込むたびに2回選ばせることになる。
+        if current_year is not None and not self.is_bound:
+            self.fields["fiscal_year"].initial = current_year
+
+        if current_version is not None and not self.is_bound:
+            self.fields["plan_version"].initial = current_version
 
     def clean(self):
         cleaned = super().clean()

@@ -23,8 +23,12 @@
 
     {% include "partials/perf_summary.html" with summary_title=scope_label|add:"　計数サマリ（累計）" %}
 
-    {# 縦に積むと2画面になる。グラフと注意点、組織別とKPIを横へ並べて1画面へ収める。 #}
-    <div class="band band-a">
+    {% comment %}
+      手当が要るところを広く取る。ここが「次に何をするか」を決める場所で、
+      1件が2行に折れると読む手が止まる。グラフは推移の形が読めればよいので
+      狭めてよい。
+    {% endcomment %}
+    <div class="band band-watch">
       <div class="stack-tight">
         {% include "partials/perf_metric_tabs.html" %}
         {% include "partials/perf_chart.html" %}
@@ -37,7 +41,7 @@
           <span class="card-act">対計画比の低い順</span>
         </div>
         {% if attention_lines or kpi_alerts %}
-          <ul class="watch">
+          <ul class="watch watch-scroll">
             {% for line in attention_lines %}
               {% comment %}
                 数値・単位・述語を1塊にする。途中で折れると
@@ -47,6 +51,7 @@
                 <span class="badge {{ line.tone }}">{{ line.status_label }}</span>
                 <span class="watch-body">
                   <a href="{{ line.url }}?year={{ fiscal_year.code }}&amp;upto={{ upto|date:'Y-m' }}">{{ line.label }}</a>
+                  <span class="watch-where">{{ line.note }}</span>
                   <span class="watch-part">売上 <span class="fig">{{ line.revenue.achievement|floatformat:1 }}%</span></span>
                   <span class="watch-part">利益 {% if line.operating_profit.achievement is None %}—{% else %}<span class="fig">{{ line.operating_profit.achievement|floatformat:1 }}%</span>{% endif %}</span>
                   <span class="watch-part">計画差 <span class="fig">{{ line.revenue.diff_display|floatformat:unit_decimals|intcomma }}</span>{{ unit_label }}</span>
@@ -67,6 +72,7 @@
         {% else %}
           <p class="watch-ok">計画に対して未達の組織・KPI はありません。</p>
         {% endif %}
+
 
         {# KPI は件数だけをここへ畳む。独立カードにすると枠の分だけ縦を取る。 #}
         <p class="tally">

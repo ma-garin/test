@@ -52,26 +52,27 @@
   </div>
 
   {% if form %}
-    <div class="card">
+    <div class="card entry-card">
       <div class="card-hdr">
         <span class="card-t">{{ definition.name }} ／ {{ unit.name }}{% if member %} ／ {{ member.name }}{% endif %}</span>
         <span class="card-act">{{ definition.get_direction_display }}・年度集計は{{ definition.get_aggregation_display }}</span>
       </div>
-      <form method="post" class="form">
+      <form method="post" class="form form-tight">
         {% csrf_token %}
         <input type="hidden" name="org" value="{{ unit.pk }}">
         <input type="hidden" name="kpi" value="{{ definition.pk }}">
         {% if member %}<input type="hidden" name="member" value="{{ member.pk }}">{% endif %}
 
         <div>
-          <label for="{{ form.target_value.id_for_label }}">目標値（{{ version }}）</label>
+          {# 版はカード上部に出ている。ラベルへ入れるとラベル列で2行に折れる。 #}
+          <label for="{{ form.target_value.id_for_label }}">目標値{% if definition.unit %}（{{ definition.unit }}）{% endif %}</label>
           {{ form.target_value }}
           {% if form.target_value.errors %}<div class="callout d">{{ form.target_value.errors|join:" " }}</div>{% endif %}
-          <div class="ps">空欄で保存すると、この計画版の目標を削除します。</div>
+          <div class="ps">{{ version }} に保存します。空欄にすると、この版の目標を削除します。</div>
         </div>
 
         <div class="t-wrap">
-          <table class="t perf-grid">
+          <table class="t perf-grid kpi-grid">
             <thead><tr><th>月</th><th>実績値{% if definition.unit %}（{{ definition.unit }}）{% endif %}</th></tr></thead>
             <tbody>
               {% for row in form.rows %}
@@ -84,7 +85,7 @@
           </table>
         </div>
 
-        <button type="submit" class="btn-b">保存する</button>
+        <div class="actions"><button type="submit" class="btn-b">保存する</button></div>
       </form>
     </div>
   {% else %}
