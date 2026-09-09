@@ -1,6 +1,0 @@
-{% comment %}
-表 / ガントの切り替えタブ。絞り込み条件を落とすと切り替えた瞬間に対象が
-変わってしまうため、現在の条件（view と page を除く）をリンクへ引き継ぐ。
-{% endcomment %}
-<a class="{% if view_mode == 'gantt' %}btn-out{% else %}btn-b{% endif %} sm" href="?{{ view_query }}view=table">表</a>
-<a class="{% if view_mode == 'gantt' %}btn-b{% else %}btn-out{% endif %} sm" href="?{{ view_query }}view=gantt">ガント</a>
