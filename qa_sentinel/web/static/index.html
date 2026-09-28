@@ -26,6 +26,33 @@ button{cursor:pointer}button.primary{background:var(--ink);color:var(--bg);borde
 .form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--node)}
 .form textarea{flex:1 1 320px;min-height:40px}
 .muted{color:var(--muted);font-size:12px}.ev{font-size:12px;margin:6px 0 0;padding-left:1.2em}
+
+/* --- 動きの見える流れ図（AI のレーン／あなたのレーン） --- */
+.flow{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;margin:10px 0;overflow-x:auto}
+.flow svg{display:block;width:100%;height:auto;min-width:620px;color:var(--ink)}
+.lane{fill:none;stroke:var(--line);stroke-dasharray:4 4}.lane-label{font-size:11px;font-weight:600}.lane-label.ai{fill:var(--llm)}.lane-label.hum{fill:var(--accent)}
+.fn rect{fill:var(--node);stroke:var(--line);stroke-width:1.2;transition:fill .4s,stroke .4s}
+.fn text{fill:var(--ink);font-size:11.5px}.fn .sub{fill:var(--muted);font-size:9.5px}
+.fn.done rect{fill:#dcfce7;stroke:var(--ok)}.fn.active rect{fill:#dbeafe;stroke:var(--llm);stroke-width:2}
+.fn.wait rect{fill:#fde9c8;stroke:var(--accent);stroke-width:2;animation:pulse 1.6s ease-in-out infinite}
+.fn.bad rect{fill:#fee2e2;stroke:var(--stop);stroke-width:2;animation:pulse 1.6s ease-in-out infinite}
+.fn.stopped rect{fill:#fee2e2;stroke:var(--stop)}
+@media (prefers-color-scheme:dark){.fn.done rect{fill:#0f2e1a}.fn.active rect{fill:#12233f}.fn.wait rect{fill:#3d2a08}.fn.bad rect,.fn.stopped rect{fill:#3b1212}}
+@keyframes pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.35}}
+.edge{stroke:var(--line);stroke-width:1.4;fill:none}.edge.lit{stroke:var(--accent);stroke-width:2}
+.drop{stroke:var(--accent);stroke-width:1.6;fill:none;stroke-dasharray:3 3;opacity:0;transition:opacity .4s}.drop.lit{opacity:1}
+#dot{fill:var(--accent);stroke:var(--panel);stroke-width:2;transition:cx .7s cubic-bezier(.4,0,.2,1),cy .7s cubic-bezier(.4,0,.2,1),opacity .3s}
+#ring{fill:none;stroke:var(--llm);stroke-width:2;stroke-dasharray:14 30;opacity:0;transition:cx .7s,cy .7s}
+#ring.on{opacity:1;animation:spin 1.2s linear infinite}
+@keyframes spin{to{stroke-dashoffset:-44}}
+.now-banner{display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:8px;margin:8px 0;font-size:13px;border:1px solid var(--line)}
+.now-banner.hum{background:#fde9c8;color:#92400e;border-color:transparent}.now-banner.ai{background:#dbeafe;color:#1e40af;border-color:transparent}.now-banner.bad{background:#fee2e2;color:#991b1b;border-color:transparent}.now-banner.ok{background:#dcfce7;color:#166534;border-color:transparent}
+@media (prefers-color-scheme:dark){.now-banner.hum{background:#3d2a08;color:#f5c26b}.now-banner.ai{background:#12233f;color:#8ab4ff}.now-banner.bad{background:#3b1212;color:#f87171}.now-banner.ok{background:#0f2e1a;color:#4ade80}}
+.money{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);margin:6px 0}.money .bar{flex:1;height:8px;background:var(--node);border-radius:4px;overflow:hidden;max-width:260px}.money .bar i{display:block;height:100%;background:var(--ok);transition:width .8s}
+.tl{margin:8px 0 0;padding:0;list-style:none;font-size:12px;max-height:150px;overflow:auto}.tl li{display:grid;grid-template-columns:56px 1fr;gap:8px;padding:3px 0;border-left:3px solid var(--line);padding-left:8px;animation:fadein .5s}.tl li.h{border-left-color:var(--accent)}.tl li.a{border-left-color:var(--llm)}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.toast{position:fixed;right:16px;bottom:16px;background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .4s;pointer-events:none}.toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.fn.wait rect,.fn.bad rect,#ring.on{animation:none}#dot{transition:none}.tl li{animation:none}}
 </style>
 </head>
 <body>
@@ -35,20 +62,68 @@ button{cursor:pointer}button.primary{background:var(--ink);color:var(--bg);borde
   <label>何が変わりましたか（1 文）<br><input id="r-nl" style="width:100%;box-sizing:border-box" placeholder="例: 貸出上限を 5 冊から 3 冊に変更"></label>
   <label>どこまで AI にやらせますか<br><select id="r-mode"><option value="M2">準備まで AI、テスト実行は自分（いつもの使い方）</option><option value="M1">全部 AI（最後だけ確認）</option><option value="M3">段ごとに毎回確認</option><option value="M4">設計まで AI</option><option value="M6">古いテストの入れ替えだけ AI</option><option value="M7">自分で作って AI に見てもらう</option></select></label>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><label>だれが確認しますか <input id="r-by" placeholder="あなたの名前"></label><label>いくらまで（USD） <input id="r-budget" value="5" style="width:70px"></label><label>プロジェクト <input id="r-project" value="library-loan"></label></div>
+  <div class="muted" id="r-preview"></div>
   <div><button class="primary" id="r-go">始める</button> <span class="muted" id="r-msg"></span></div>
 </div></details>
 <h2 style="font-size:14px;margin:14px 0 6px">やることリスト <span class="muted">あなたの番のものが上に来ます。5 秒ごとに更新</span></h2>
 <table><thead><tr><th>タスク</th><th>プロジェクト</th><th>モード</th><th>段</th><th>状態</th><th>予算</th><th>確認者</th><th>理由</th></tr></thead><tbody id="rows"></tbody></table>
 <div id="detail" hidden></div>
+<div class="toast" id="toast"></div>
 <script>
 let meta=null,cur=null;
+// ---- 動きの見える流れ図。台帳の状態が変わると玉が動き、あなたの番は脈打つ ----
+const FL=[['test-plan','計画'],['test-analysis','基本設計'],['test-strategy','詳細設計'],['test-design','設計'],['test-implementation','準備'],['test-execution','実行'],['defect-analysis','原因'],['test-completion','報告'],['regression-swap','入替'],['final','承認']];
+const W=88,H=38,YA=44,YH=150,X0=14,GAP=96;const pos={};
+function buildFlow(){
+  const parts=[];parts.push(`<rect class="lane" x="6" y="20" width="${X0+FL.length*GAP}" height="84" rx="8"/><text class="lane-label ai" x="12" y="14">AI のレーン（下書きを作る。動いている間だけお金がかかる）</text>`);
+  parts.push(`<rect class="lane" x="6" y="126" width="${X0+FL.length*GAP}" height="84" rx="8"/><text class="lane-label hum" x="12" y="120">あなたのレーン（直して OK・自分でやる・質問に答える・承認）</text>`);
+  FL.forEach(([id,l],i)=>{const x=X0+i*GAP;pos[id]={ax:x+W-2,ay:YA+2,hx:x+W-2,hy:YH+2};
+    if(i<FL.length-1)parts.push(`<path id="e-${id}" class="edge" d="M${x+W},${YA+H/2} L${x+GAP},${YA+H/2}"/>`);
+    parts.push(`<path id="d-${id}" class="drop" d="M${x+W/2-10},${YA+H} L${x+W/2-10},${YH}"/><path id="u-${id}" class="drop" d="M${x+W/2+10},${YH} L${x+W/2+10},${YA+H}"/>`);
+    parts.push(`<g class="fn" id="fa-${id}"><rect x="${x}" y="${YA}" width="${W}" height="${H}" rx="7"/><text x="${x+W/2}" y="${YA+17}" text-anchor="middle" font-weight="500">${l}</text><text class="sub" x="${x+W/2}" y="${YA+30}" text-anchor="middle" id="sa-${id}"></text></g>`);
+    parts.push(`<g class="fn" id="fh-${id}"><rect x="${x}" y="${YH}" width="${W}" height="${H}" rx="7"/><text x="${x+W/2}" y="${YH+17}" text-anchor="middle" font-weight="500" id="th-${id}">${id==='final'?'最終承認':'あなた'}</text><text class="sub" x="${x+W/2}" y="${YH+30}" text-anchor="middle" id="sh-${id}"></text></g>`);
+  });
+  parts.push(`<circle id="ring" r="11" cx="-20" cy="-20"/><circle id="dot" r="6" cx="-20" cy="-20" opacity="0"/>`);
+  return `<svg viewBox="0 0 ${X0+FL.length*GAP+8} 220" role="img" aria-label="AI のレーンとあなたのレーン。玉が今の作業の位置"><defs></defs>${parts.join('')}</svg>`;
+}
+const prevState={};
+function renderFlow(t){
+  const el=document.getElementById('flow');if(!el.firstChild)el.innerHTML=buildFlow();
+  const done=new Set(t.history.filter(h=>h.status==='done').map(h=>h.phase));
+  const cur=t.phase==='waiting_human'||t.phase==='done'?'final':t.phase;
+  const humanTurn=['review','handoff','blocked','paused'].includes(t.status);
+  document.querySelectorAll('#flow .fn').forEach(n=>n.className.baseVal='fn');document.querySelectorAll('#flow .edge,#flow .drop').forEach(e=>e.classList.remove('lit'));
+  FL.forEach(([id],i)=>{const sa=document.getElementById('sa-'+id),sh=document.getElementById('sh-'+id);
+    const dr=t.plan.draft?(t.plan.draft.includes(id)?'AI が下書き':(id==='final'?'':'あなたがやる')):'';sa.textContent=dr;
+    sh.textContent=t.plan.stop_at&&t.plan.stop_at.includes(id)?'止まって確認':(t.plan.draft&&!t.plan.draft.includes(id)&&id!=='final'?'自分でやる':'');
+    if(done.has(id)||(id!=='final'&&FL.findIndex(x=>x[0]===cur)>i))document.getElementById('fa-'+id).classList.add('done');
+    if(i<FL.findIndex(x=>x[0]===cur))document.getElementById('e-'+id)?.classList.add('lit');});
+  if(t.status==='done'){document.getElementById('fh-final').classList.add('done');document.getElementById('fa-final').classList.add('done');}
+  const dot=document.getElementById('dot'),ring=document.getElementById('ring');const p=pos[cur];
+  if(!p){dot.setAttribute('opacity',0);return;}
+  if(humanTurn){const n=document.getElementById('fh-'+cur);n.classList.add(t.status==='blocked'?'bad':'wait');document.getElementById('d-'+cur).classList.add('lit');dot.setAttribute('cx',p.hx);dot.setAttribute('cy',p.hy);ring.classList.remove('on');}
+  else if(t.status==='running'){document.getElementById('fa-'+cur).classList.add('active');dot.setAttribute('cx',p.ax);dot.setAttribute('cy',p.ay);ring.setAttribute('cx',p.ax);ring.setAttribute('cy',p.ay);ring.classList.add('on');}
+  else if(t.status==='stopped'){document.getElementById('fa-'+cur).classList.add('stopped');dot.setAttribute('cx',p.ax);dot.setAttribute('cy',p.ay);ring.classList.remove('on');}
+  else{dot.setAttribute('cx',p.hx);dot.setAttribute('cy',p.hy);ring.classList.remove('on');}
+  dot.setAttribute('opacity',t.status==='done'?0:1);
+  // 状態が変わった瞬間だけ知らせる
+  const key=t.phase+'/'+t.status;if(prevState[t.task]&&prevState[t.task]!==key){toast(humanTurn?`あなたの番: ${meta.labels[t.phase]||t.phase}`:t.status==='running'?`AI が ${meta.labels[t.phase]||t.phase} を始めました`:t.status==='done'?'完了しました':`止まりました: ${t.reason||''}`);}
+  prevState[t.task]=key;
+  const b=document.getElementById('banner');const cls=t.status==='blocked'||t.status==='stopped'?'bad':humanTurn?'hum':t.status==='done'?'ok':'ai';
+  const msg={review:`⏸ あなたの番 — ${meta.labels[t.phase]} の下書きができました。直して OK か、差し戻し`,handoff:`⏸ あなたの番 — ${meta.labels[t.phase]} はあなたがやります。終わったら結果を渡す`,blocked:`✋ AI から質問 — ${t.reason||''}`,paused:'⏸ あなたの番 — 最終承認',running:`● AI が ${meta.labels[t.phase]} を作業中`,done:'✔ 完了',stopped:`■ 止まりました — ${t.reason||''}`,queued:'待機中'}[t.status]||t.status;
+  b.className='now-banner '+cls;b.textContent=msg;
+  const spent=t.session.spent_usd||0,budget=t.plan.budget_usd||t.session.budget_usd||0;
+  document.getElementById('m-spent').textContent='$'+spent.toFixed(2);document.getElementById('m-budget').textContent='$'+budget.toFixed(2);document.getElementById('m-bar').style.width=(budget?Math.min(100,spent/budget*100):0)+'%';document.getElementById('m-dec').textContent=`あなたが決めた回数 ${t.decisions.length}`;
+}
+let toastT=null;function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('on'),3500);}
+
 const WHO={review:'あなた: 直して OK',handoff:'あなた: 自分でやる',blocked:'あなた: 質問に答える',paused:'あなた: 最終承認',running:'AI が作業中',done:'完了',stopped:'止まった',queued:'待機'};
 const MINE=new Set(['review','handoff','blocked','paused','stopped']);
 async function j(u,o){const r=await fetch(u,o);return r.json()}
 function pill(s){return `<span class="pill ${s}">${WHO[s]||s}</span>`}
 function post(u,body){return fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)}).then(r=>r.json())}
 async function load(){
-  meta=meta||await j('/api/meta');
+  if(!meta){meta=await j('/api/meta');preview();}
   const ts=(await j('/api/tasks')).sort((a,b)=>(MINE.has(b.status)?1:0)-(MINE.has(a.status)?1:0));
   document.getElementById('rows').innerHTML=ts.map(t=>`<tr data-task="${t.task}"><td>${t.task}</td><td>${t.project}</td><td>${t.mode}</td><td>${meta.labels[t.phase]||t.phase}</td><td>${pill(t.status)}</td><td>$${(t.session.spent_usd||0).toFixed(2)} / ${(t.plan.budget_usd||t.session.budget_usd||0).toFixed(2)}</td><td>${t.plan.reviewer||''}</td><td>${t.reason||''}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">タスクなし。CLI: qa-sentinel run --project library-loan --nl "..."</td></tr>';
   document.querySelectorAll('tr[data-task]').forEach(r=>r.onclick=()=>show(r.dataset.task));
@@ -67,11 +142,15 @@ async function show(id){
   if(t.status==='blocked')form=`<div class="form"><b>回答 — ${t.reason||''}</b><input id="by" value="${by}" aria-label="回答者"><textarea id="note" placeholder="回答"></textarea><button class="primary" id="ans">回答して再開</button></div>`;
   if(t.status==='paused')form=`<div class="form"><b>最終承認</b><span class="muted">AI は approver を埋めない</span><input id="by" value="${by}" aria-label="承認者"><button class="primary" id="ap">承認</button></div>`;
   d.innerHTML=`<b>${t.task}</b> ${t.project} · ${t.mode} ${pill(t.status)} <span class="muted">event ${t.event} · session ${t.session.id||'-'}${t.session.ended?'（終了）':''} · branch ${t.branch||'-'}</span>
-  <div class="steps">${all.map(p=>`<span class="step ${p===t.phase?(t.status==='blocked'||t.status==='stopped'?'bad now':'now'):(doneSet.has(p)?'done':'')}" title="${(meta.gates[p]||{}).gate||''}">${meta.labels[p]||p}<small>${drafter(p)}${stops(p)}</small></span>`).join('')}</div>
+  <div id="banner"></div>
+  <div class="flow" id="flow"></div>
+  <div class="money">使った <b id="m-spent"></b> / 上限 <b id="m-budget"></b><div class="bar"><i id="m-bar"></i></div><span id="m-dec"></span></div>
   ${form}
   <div class="muted">影響: ${t.impact.join(', ')||'-'} ／ 追加: ${t.cases.added.join(', ')||'-'} ／ 失効: ${t.cases.retired.join(', ')||'-'}</div>
   ${t.evidence[t.phase]?`<div class="muted" style="margin-top:6px">根拠（${meta.labels[t.phase]}）</div><ul class="ev">${t.evidence[t.phase].map(e=>`<li>${e}</li>`).join('')}</ul>`:''}
-  <pre>${t.history.map(h=>`${h.at}  ${h.phase.padEnd(20)} ${h.status.padEnd(8)} ${h.reason||''}`).join('\n')}${t.decisions.length?'\n\n決定:\n'+t.decisions.map(x=>`${x.by.padEnd(10)} ${x.kind.padEnd(8)} ${x.phase.padEnd(20)} ${x.note||''}`).join('\n'):''}</pre>`;
+  <ul class="tl">${[...t.history].reverse().slice(0,8).map(h=>`<li class="${['review','handoff','blocked','paused'].includes(h.status)?'h':'a'}"><span class="muted">${h.at.slice(11,16)}</span><span>${meta.labels[h.phase]||h.phase} — ${WHO[h.status]||h.status}${h.reason?' · '+h.reason:''}</span></li>`).join('')}${t.decisions.length?[...t.decisions].reverse().slice(0,4).map(d=>`<li class="h"><span class="muted">決定</span><span><b>${d.by}</b> が ${{confirm:'OK',reject:'差し戻し',submit:'結果を渡した',answer:'回答',approve:'承認'}[d.kind]||d.kind}${d.note?' · '+d.note:''}</span></li>`).join(''):''}</ul>
+  <details><summary class="muted">全部の記録</summary><pre>${t.history.map(h=>`${h.at}  ${h.phase.padEnd(20)} ${h.status.padEnd(8)} ${h.reason||''}`).join('\n')}${t.decisions.length?'\n\n決定:\n'+t.decisions.map(x=>`${x.by.padEnd(10)} ${x.kind.padEnd(8)} ${x.phase.padEnd(20)} ${x.note||''}`).join('\n'):''}</pre></details>`;
+  renderFlow(t);
   const g=id=>document.getElementById(id);const val=id=>g(id)?g(id).value:'';
   if(g('ok'))g('ok').onclick=async()=>{await post('/api/review',{task:id,by:val('by'),ok:'1',note:val('note')});load();};
   if(g('rej'))g('rej').onclick=async()=>{await post('/api/review',{task:id,by:val('by'),ok:'0',note:val('note')});load();};
@@ -79,6 +158,8 @@ async function show(id){
   if(g('ans'))g('ans').onclick=async()=>{await post('/api/answer',{task:id,by:val('by'),text:val('note')});load();};
   if(g('ap'))g('ap').onclick=async()=>{await post('/api/approve',{task:id,by:val('by')});load();};
 }
+function preview(){if(!meta)return;const m=document.getElementById('r-mode').value;const p=meta.presets[m];if(!p)return;const L=x=>meta.labels[x]||x;document.getElementById('r-preview').textContent=`この設定だと: AI が下書きする段 ${p.draft.length} / ${meta.phases.length}（${p.draft.length?L(p.draft[p.draft.length-1])+' まで':'なし'}）。止まって確認する出口: ${p.stop_at.map(L).join('・')}。あなたがやる段: ${meta.phases.filter(x=>!p.draft.includes(x)).map(L).join('・')||'なし'}`;}
+document.getElementById('r-mode').onchange=preview;
 document.getElementById('r-go').onclick=async()=>{const g=id=>document.getElementById(id).value;const m=document.getElementById('r-msg');m.textContent='…';const r=await post('/api/run',{project:g('r-project'),nl:g('r-nl'),mode:g('r-mode'),reviewer:g('r-by'),budget:g('r-budget')});m.textContent=r.error?('エラー: '+r.error):(r.task+' を始めました');if(!r.error){document.getElementById('start').open=false;cur=r.task;}load();};
 load();setInterval(load,5000);
 </script>

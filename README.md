@@ -15,6 +15,7 @@
 | `docs/05_協業モデル.md` | AI が下書き・人が直して確定。安全策 4 つ、開始時の 4 問、プリセット M1〜M8、状態 review/handoff |
 | `docs/06_ループ設計.md` | ループエンジニアリング: 7 つのループの終了条件・上限・脱出先、8 つの技法、止まる条件の優先順位 |
 | `.claude/skills/fanout-review-fix/` | 開発の段取りスキル（Sonnet 並列下書き → Opus レビュー → 本人修正 → Haiku git） |
+| `docs/08_進行表示の設計.md` | 画面の動き（アニメーション）の設計。参考にした事例（Devin・Copilot・Actions・Temporal・Vercel・HAX）と採用 |
 | `docs/07_使い方.md` | **初めての人向け**: start.bat → 画面で「始める」→ やることリストを片づける |
 | `start.bat` / `start.sh` | ダブルクリックで準備・起動・ブラウザを開く |
 | `docs/codex/RUN_ALL.md` | **一言で全部作る指示書**（Codex に「RUN_ALL.md に従え」と貼るだけ。T01〜T07 → 図書館デモ → 実機 → PR） |
