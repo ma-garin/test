@@ -8,7 +8,7 @@ Codex（gpt-6-sol, high）に貼る文はこれだけ:
 
 > `docs/codex/RUN_ALL.md` に従って、止まらずに最後までやれ。
 
-**Windows 11・zip・cmd の場合**: GitHub から ZIP を取得 → 解凍 → そのフォルダで cmd → Codex 起動 → 上の一言の末尾に「OS は Windows 11、シェルは cmd」を足す。読み替え表は `RUN_ALL.md` §0-W。検証は `venv\Scripts\python scripts\verify.py`。
+**前提（決定 2026-09-28）**: Codex 環境は Windows 11・zip 解凍・cmd。**git も bash も無い**。実機接続（T08）は今回やらない（mock まで）。成果は zip で受け取り、取り込み（commit・PR）は Claude が行う。一言は「`docs/codex/RUN_ALL.md` に従って、止まらずに最後までやれ。OS は Windows 11、シェルは cmd、git は無い。」
 
 RUN_ALL は §1〜§5 を Codex が自分で回す（verify → commit → 次のタスク）。人がやるのは、鍵 3 つを環境変数に置くこと（実機確認をするときだけ）と、最後の PR をマージすることの 2 つ。以下は手で分けてやるときの手順。
 
@@ -60,6 +60,7 @@ Codex が「質問」を返したら、指示書に答えを追記してから�
 | T05 | `HANDOFF_T05.md` | 承認の機械判定、確定画面の差分表示・根拠ガード | T01 |
 | T06 | `HANDOFF_T06.md` | `triggers/tracker.py`、`watch`（LLM を使わない監視） | T04 |
 | T07 | `HANDOFF_T07.md` | ループ上限の判定（差し戻し 3・確認待ち 5・セッション 10） | T05 |
+| T09 | `HANDOFF_T09_trace_check_py.md` | `trace_check.py`（bash 版の Python 移植。git/bash の無い環境で gate を動かす） | T01 |
 
 ## 3. 道具を配る（人）— `run_gate` が呼ぶスクリプトの実体
 

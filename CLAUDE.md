@@ -9,7 +9,7 @@
 
 ## 作業
 
-- 設計・文書・レビュー・commit は Claude、実装は Codex（`docs/codex/HANDOFF_*.md`）
+- 設計・文書・レビュー・commit は Claude、実装は Codex（`docs/codex/HANDOFF_*.md`）。Codex 環境は Windows・git なし・bash なし。成果は zip で受け取る
 - 検証は `python scripts/verify.py` の末尾 `ALL GREEN`
 - 3 本以上の同型ファイルは `.claude/skills/fanout-review-fix/` の段取り（Sonnet 並列 → Opus レビュー → 本人修正 → Haiku git）
 - 自己ウェイク・定期実行・CI は作らない

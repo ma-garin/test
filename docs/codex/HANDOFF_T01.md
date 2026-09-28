@@ -52,15 +52,17 @@ class GateResult:
     ok: bool
     summary: str            # stdout+stderr の末尾 20 行以内。全量は返さない
     report_path: str | None = None
+    skipped: bool = False   # 判定不能（exit 2）や missing（127）。ok=False だが「不合格」ではなく「未検査」
 
 #: 名前 → コマンド。<lifecycle_dir> <cases_csv> <branch> は Project.config["project"] から埋める。<ID> は args[0]
 GATE_COMMANDS: dict[str, list[str]] = {
-    "impact":            ["./scripts/trace-check.sh", "<lifecycle_dir>", "--impact", "<ID>"],
-    "trace-check":       ["./scripts/trace-check.sh", "<lifecycle_dir>"],
-    "test-metrics":      ["./scripts/test-metrics.sh", "--gate"],
-    "test-weaken-check": ["python3", "scripts/test-weaken-check.py", "--base", "<branch>"],
-    "check-approval":    ["./scripts/check-approval.sh"],
-    "pw-spec-lint":      ["python3", "scripts/pw-spec-lint.py", "tests"],
+    # bash も git も無い環境（Windows の Codex）で動くよう、全部 Python 直呼び。PY = sys.executable
+    "impact":            [PY, "scripts/trace_check.py", "<lifecycle_dir>", "--impact", "<ID>"],   # T09 の Python 移植
+    "trace-check":       [PY, "scripts/trace_check.py", "<lifecycle_dir>"],
+    "test-metrics":      [PY, "scripts/test_metrics.py", "--gate"],
+    "test-weaken-check": [PY, "scripts/test-weaken-check.py", "--base", "<branch>"],             # git が無いと exit 2（判定不能）
+    "check-approval":    [PY, "scripts/check_approval.py"],
+    "pw-spec-lint":      [PY, "scripts/pw-spec-lint.py", "tests"],
 }
 # "cases" だけはスクリプトではなく内部実装（下記）
 
@@ -71,8 +73,8 @@ def run_gate(name: str, args: list[str], project: Project, cwd: str | Path = "."
   - 列 `仕様の状態` が空でない（`失効` で始まる行は除く）
   - 列 `期待される結果` が空
   - CSV が無い → `exit_code=127, ok=False, summary="missing: <path>"`
-- スクリプト系: `subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)`。`ok = (returncode == 0)`
-  - `FileNotFoundError` → `exit_code=127, ok=False, summary="missing: <cmd[0]>"`
+- スクリプト系: `subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)`。`ok = (returncode == 0)`。`returncode == 2` は kit の規約で「判定不能」→ `skipped=True`（summary に「未検査: <理由の行>」）
+  - `FileNotFoundError`（またはスクリプトのパスが無い）→ `exit_code=127, ok=False, skipped=True, summary="missing: <path>"`
   - `subprocess.TimeoutExpired` → `exit_code=124, ok=False, summary="timeout: <timeout>s"`
   - `<ID>` が必要なのに `args` が空 → `ValueError("impact には ID が要る")`
 - 未知の name → `ValueError(f"unknown gate: {name}")`
@@ -85,9 +87,10 @@ def run_gate(name: str, args: list[str], project: Project, cwd: str | Path = "."
 
 1. 未知の name → `ValueError`
 2. スクリプトが無い → `exit_code == 127` かつ `ok is False` かつ summary が `missing:` で始まる
-3. 正常: `scripts/trace-check.sh` を `#!/bin/sh\necho "NG=0"\necho "詳細: out/report.md"\nexit 0` で作り（`chmod 755`）、`run_gate("trace-check", [], project, cwd=tmp_path)` が `ok is True` かつ `report_path == "out/report.md"`
+3. 正常: `scripts/trace_check.py` を `print("NG=0"); print("詳細: out/report.md")` の 2 行で作り、`run_gate("trace-check", [], project, cwd=tmp_path)` が `ok is True` かつ `report_path == "out/report.md"`（Windows でも動くよう .py の偽スクリプトにする）
 4. `cases`: 期待結果が空の行と `仕様の状態=確認待ち: …` の行を含む CSV で `ok is False`、summary に両方の ID がある。`失効(ST-013)` の行は数えない
 5. `impact` に args 無し → `ValueError`
+6. exit 2 を返す偽スクリプト（`import sys; sys.exit(2)`）→ `ok is False` かつ `skipped is True`
 
 CSV のヘッダは正確にこれ（15 列）:
 `テストID,ロール,対象機能,ツアー観点,テスト目的,前提条件,手順,期待される結果,severity,結果,実施日,実施者,DEF,根拠の版,仕様の状態`
@@ -95,14 +98,14 @@ CSV のヘッダは正確にこれ（15 列）:
 ## 6. 完了条件
 
 - [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
-- [ ] `python3 -m pytest -q tests/test_gates.py` が 5 passed
+- [ ] `python -m pytest -q tests/test_gates.py` が 6 passed
 - [ ] 変更が「触るファイル」2 本に収まっている（`git status --short` で確認してよい。add はしない）
 
 ## 7. スコープ外（やらないこと）
 
 - Managed Agents への接続（T02）、CSV の書き換え（T03）、orchestrator / runtime の変更
 - 既存テストの書き換え（壊れる場合は報告）
-- `scripts/` 配下の実スクリプト作成（trace-check.sh 等は yuki-aidd-kit から配布される前提。ここでは呼ぶだけ）
+- `scripts/` 配下の実スクリプト作成（`demo/library-loan/scripts/` に同梱済み。`trace_check.py` は T09。ここでは呼ぶだけ）
 - git 操作
 
 ## 8. 最後の報告（この形で。5 行以内）
