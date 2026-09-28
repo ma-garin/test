@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qa-sentinel CLI デモ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#f5f7fa;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#c9d2de;--accent:#d97706;--ok:#15803d;--stop:#b91c1c;--llm:#1d4ed8;--term:#0f141b;--term-ink:#d7dee8;--term-dim:#8391a3;--term-cmd:#f5c26b;--term-ok:#7ee2a0;--term-stop:#ff8b8b;--term-llm:#8ab4ff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--term:#070a0f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--term:#070a0f;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "IBM Plex Sans JP",system-ui,sans-serif;padding:20px 16px 40px;max-width:1120px;margin-inline:auto}
+h1{font-size:20px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 12px;max-width:72ch}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button,select{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--llm);outline-offset:2px}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}@media (max-width:820px){.grid{grid-template-columns:1fr}}
+.term{background:var(--term);color:var(--term-ink);border-radius:8px;padding:14px 16px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;line-height:1.55;min-height:420px;max-height:560px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.term .cmd{color:var(--term-cmd)}.term .dim{color:var(--term-dim)}.term .ok{color:var(--term-ok)}.term .stop{color:var(--term-stop)}.term .llm{color:var(--term-llm)}
+.term .cursor::after{content:"▍";animation:blink 1s steps(1) infinite}@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.term .cursor::after{animation:none}}
+.side{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.panel h2{font-size:12px;margin:0 0 8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.steps{display:flex;flex-wrap:wrap;gap:5px}.step{padding:3px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:var(--bg)}
+.step.done{border-color:var(--ok)}.step.now{border-color:var(--accent);font-weight:600}.step.bad{border-color:var(--stop)}
+.who{display:flex;gap:8px;align-items:center;font-size:13px}.who b{padding:2px 10px;border-radius:999px;font-size:12px}
+.who .human{background:#fde9c8;color:#92400e}.who .host{background:#e5e7eb;color:#374151}.who .llm{background:#dbeafe;color:#1e40af}
+@media (prefers-color-scheme:dark){.who .human{background:#3d2a08;color:#f5c26b}.who .host{background:#1f2937;color:#c9d2de}.who .llm{background:#12233f;color:#8ab4ff}}
+.note{font-size:13px;color:var(--muted);margin:0}
+</style>
+</head>
+<body>
+<h1>qa-sentinel CLI デモ</h1>
+<p class="lead">ターミナルでの実際の操作順。コマンドは人が打ち、段の進行はホスト（司令塔）が台帳に書き、LLM はセッションの中だけで動く。右側に「いま誰が動いているか」と台帳の段が出る。</p>
+<div class="controls">
+  <select id="scenario" aria-label="シナリオ">
+    <option value="happy">A. 自然言語 → 全段 → 承認</option>
+    <option value="blocked">B. 確認待ちで止まる → 回答 → 再開 → 承認</option>
+    <option value="budget">C. 予算超過で停止 → 人が判断</option>
+    <option value="watch">D. relay 監視（イベントなし。LLM 0 回）</option>
+  </select>
+  <button id="play" class="primary">▶ 再生</button><button id="step">次へ</button><button id="reset">最初から</button>
+</div>
+<div class="grid">
+  <div class="term" id="term" aria-live="polite"></div>
+  <div class="side">
+    <div class="panel"><h2>いま動いているのは</h2><div class="who" id="who"><b class="host">ホスト</b><span id="who-text">待機</span></div></div>
+    <div class="panel"><h2>台帳 tasks/T-0001.json の段</h2><div class="steps" id="steps"></div><p class="note" id="ledger-note" style="margin-top:8px"></p></div>
+    <div class="panel"><h2>この段階の要点</h2><p class="note" id="point"></p></div>
+  </div>
+</div>
+<script>
+(function(){
+const PH=['test-plan','test-analysis','test-strategy','test-design','test-implementation','test-execution','defect-analysis','test-completion','regression-swap','waiting_human','done'];
+const L={'test-plan':'計画','test-analysis':'基本設計','test-strategy':'詳細設計','test-design':'ケース設計','test-implementation':'実装','test-execution':'実行','defect-analysis':'不具合分析','test-completion':'完了報告','regression-swap':'差し替え','waiting_human':'承認待ち','done':'完了'};
+// 1 ステップ = {who, text(term に追記する行。cmd: 人の入力), phase, status, point}
+const c=(s)=>({t:s,cls:'cmd',type:true});
+const o=(s,cls)=>({t:s,cls:cls||''});
+const runLines=(from)=>{const out=[];const ph=PH.slice(0,9);const start=from?ph.indexOf(from):0;for(let i=start;i<ph.length;i++){out.push(o(`  [${ph[i].padEnd(20)}] running  `,'llm'));out.push(o(`  [${ph[i].padEnd(20)}] done     gate ok`,'ok'));}return out;};
+const S={
+ happy:[
+  {who:'human',w:'人がコマンドを打つ',lines:[c('$ qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --runtime managed')],phase:null,status:null,point:'④自然言語トリガー。ここまで LLM は動いていない。'},
+  {who:'host',w:'ホスト: env.md / config.toml を読み、ChangeEvent を作る',lines:[o('  event evt_20260928_130001  source=nl  changed_ids=[]  → test-plan で補完','dim'),o('  session ses_8f2a  budget $5.00  resources: repo, env.md','dim')],phase:'test-plan',status:'running',point:'環境情報が無ければここで止まる（FileNotFoundError）。予算はセッション作成時に固定。'},
+  {who:'llm',w:'LLM: セッション内で段を実行。run_gate はホストが実行',lines:[o('  [test-plan           ] running  ','llm'),o('  run_gate trace-check --impact REQ-F-003 → exit 0  BD-002 DD-004 UT-011 ST-005','dim'),o('  [test-plan           ] done     gate ok','ok')],phase:'test-plan',status:'done',point:'終了条件の exit code はホストが判定。LLM に解釈させない。'},
+  {who:'llm',w:'LLM: 以降の段も同じ形で進む',lines:runLines('test-analysis').slice(0,14),phase:'test-completion',status:'done',point:'FAIL は ODC 分類 → 最小差分で修整 → 再実行。同一欠陥 2 周まで。'},
+  {who:'llm',w:'LLM: 差し替え。ホストが 2 検査を実行',lines:[o('  [regression-swap     ] running  ','llm'),o('  retired ST-005 → 失効(ST-013)   added ST-013 ST-014 UT-020','dim'),o('  run_gate trace-check → exit 0 / test-weaken-check → exit 0','dim'),o('  [regression-swap     ] done     gate ok','ok')],phase:'regression-swap',status:'done',point:'どちらか NG なら .swap.bak から戻して stopped。'},
+  {who:'host',w:'ホスト: セッションを終了し、承認待ちに',lines:[o('  session ended  spent $4.10 / $5.00','dim'),o('T-0001  library-loan   承認待ち         paused   $4.10/5.00  approver は人だけ。AI は埋めない','ok')],phase:'waiting_human',status:'paused',point:'ここで LLM は待たない。セッションは終了している。'},
+  {who:'human',w:'人が確認して承認',lines:[c('$ qa-sentinel status T-0001'),o('T-0001  library-loan   承認待ち         paused   $4.10/5.00','dim'),o('  2026-09-28T13:00:04Z  test-plan            done','dim'),o('  ...','dim'),o('  2026-09-28T13:09:41Z  regression-swap      done','dim'),o('  2026-09-28T13:09:42Z  waiting_human        paused   approver は人だけ','dim'),c('$ qa-sentinel approve T-0001 --by yuki'),o('T-0001  library-loan   完了             done     $4.10/5.00','ok')],phase:'done',status:'done',point:'check-approval.sh（T05）が通らなければ approve は拒否される。'},
+ ],
+ blocked:[
+  {who:'human',w:'人がコマンドを打つ',lines:[c('$ qa-sentinel run --project library-loan --nl "上限到達時の扱いを変更" --runtime managed')],phase:null,status:null,point:'仕様に無い判断が含まれる変更。'},
+  {who:'llm',w:'LLM: 計画〜詳細設計は進む',lines:[o('  session ses_9c11  budget $5.00','dim'),...runLines().slice(0,6)],phase:'test-strategy',status:'done',point:''},
+  {who:'llm',w:'LLM: ケース設計で決められない',lines:[o('  [test-design         ] running  ','llm'),o('  ST-013 期待結果: 確認待ち: 上限到達時に予約へ誘導するか、拒否のみか','stop'),o('  run_gate cases → exit 1  確認待ち 1 件','dim')],phase:'test-design',status:'running',point:'推測で埋めない。仕様の状態=確認待ち にして止まる。'},
+  {who:'host',w:'ホスト: セッションを終了し blocked に',lines:[o('  session ended  spent $1.90 / $5.00','dim'),o('T-0001  library-loan   ケース設計       blocked  $1.90/5.00  確認待ち: 上限到達時の誘導先','stop')],phase:'test-design',status:'blocked',point:'実装・実行へは進まない。人の回答を待つが、LLM は待っていない。'},
+  {who:'human',w:'人が回答（CLI か Web の回答フォーム）',lines:[c('$ qa-sentinel answer T-0001 --text "誘導しない。拒否メッセージのみ" --runtime managed'),o('  event evt_20260928_130001_answer  source=approval  resume_from=test-design','dim'),o('  session ses_a377  budget $5.00  (continue)','dim')],phase:'test-design',status:'running',point:'回答は新しいイベント。新セッションが test-design から再開。上流はやり直さない。'},
+  {who:'llm',w:'LLM: 残りの段を進める',lines:runLines('test-design'),phase:'regression-swap',status:'done',point:''},
+  {who:'host',w:'ホスト: 承認待ちへ',lines:[o('  session ended  spent $3.20 / $5.00','dim'),o('T-0001  library-loan   承認待ち         paused   $3.20/5.00','ok')],phase:'waiting_human',status:'paused',point:'台帳の history に blocked → running(test-design) が 2 回残る。'},
+  {who:'human',w:'人が承認',lines:[c('$ qa-sentinel approve T-0001 --by yuki'),o('T-0001  library-loan   完了             done     $3.20/5.00','ok')],phase:'done',status:'done',point:''},
+ ],
+ budget:[
+  {who:'human',w:'人がコマンドを打つ（予算を小さく設定した config）',lines:[c('$ qa-sentinel run --project library-loan --nl "貸出上限を 3 冊に" --runtime managed'),o('  session ses_b902  budget $2.00','dim')],phase:'test-plan',status:'running',point:'予算はセッション作成時の hard cap。'},
+  {who:'llm',w:'LLM: 実行段で修整ループが長引く',lines:[...runLines().slice(0,8),o('  [test-execution      ] running  ','llm'),o('  ST-013 FAIL → ODC: 実装欠陥 → 修整 → 再実行 FAIL → 修整 → ...','dim'),o('  session idle  stop_reason=budget_reached','stop')],phase:'test-execution',status:'running',point:'Managed Agents が予算で止める。ホストは stop_reason を読むだけ。'},
+  {who:'host',w:'ホスト: stopped を台帳に書き、セッションを終了',lines:[o('T-0001  library-loan   実行             stopped  $2.00/2.00  budget_reached','stop')],phase:'test-execution',status:'stopped',point:'自動で再試行しない。'},
+  {who:'human',w:'人が判断: 予算を上げて再開するか、打ち切るか',lines:[c('$ qa-sentinel status T-0001'),o('T-0001  library-loan   実行             stopped  $2.00/2.00  budget_reached','dim'),o('  ...  test-execution       running','dim'),o('  ...  test-execution       stopped  budget_reached','dim'),c('$ # config.toml の budget_usd を 5.0 にして'),c('$ qa-sentinel run --project library-loan --resume T-0001 --runtime managed   # T02 以降'),o('  session ses_c410  budget $5.00  resume_from=test-execution','dim')],phase:'test-execution',status:'running',point:'再開も人が起点。止まった段から続ける。'},
+ ],
+ watch:[
+  {who:'human',w:'人が常駐を起動（systemd/launchd でも同じコマンド）',lines:[c('$ qa-sentinel watch --project proj-x'),o('  tracker relay  kind=jira  poll=10min  credential=env:JIRA_TOKEN','dim')],phase:null,status:null,point:'⑥ relay モード。社内 JIRA はローカルから見る。'},
+  {who:'host',w:'ホスト: REST で updated >= last_seen を取得',lines:[o('  13:00  GET /rest/api/2/search?jql=... updated >= "2026-09-28T12:50"','dim'),o('  polled: 0 events','dim')],phase:null,status:null,point:'イベント 0。台帳に何も書かない。LLM 起動 0 回。'},
+  {who:'host',w:'ホスト: 10 分後も同じ',lines:[o('  13:10  polled: 0 events','dim'),o('  13:20  polled: 0 events','dim'),o('  13:30  polled: 0 events','dim')],phase:null,status:null,point:'「定期的に自分を起こして確認する」を LLM にやらせない理由。ここは決定論的コードで、トークン消費 0。'},
+  {who:'host',w:'ホスト: 更新を検知したときだけ run と同じ経路へ',lines:[o('  13:40  polled: 1 event  PROJ-123 "貸出上限の変更"','ok'),o('  event evt_20260928_134000  source=tracker  changed_ids=[REQ-F-003]','dim'),o('  session ses_d551  budget $5.00','llm'),o('  [test-plan           ] running  ','llm')],phase:'test-plan',status:'running',point:'ここで初めて LLM が動く。sessions_started が 1 増える。'},
+ ],
+};
+const $=id=>document.getElementById(id);
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let steps=S.happy,i=-1,timer=null,typing=false;
+function renderSteps(phase,status){
+  $('steps').innerHTML=PH.map(p=>{let cls='';if(phase){const idx=PH.indexOf(phase);const k=PH.indexOf(p);if(k<idx)cls='done';else if(k===idx)cls=(status==='blocked'||status==='stopped')?'bad now':(status==='done'&&p!=='done'?'done':'now');}return `<span class="step ${cls}">${L[p]}</span>`;}).join('');
+  $('ledger-note').textContent=phase?`phase=${phase}  status=${status}`:'台帳なし（イベント未発生）';
+}
+function setWho(w,text){$('who').innerHTML=`<b class="${w}">${{human:'人',host:'ホスト',llm:'LLM'}[w]}</b><span>${text}</span>`;}
+async function typeLine(line){
+  const term=$('term');const el=document.createElement('div');el.className=line.cls;term.appendChild(el);
+  if(line.type&&!reduce){el.classList.add('cursor');for(let k=0;k<line.t.length;k++){el.textContent=line.t.slice(0,k+1);term.scrollTop=term.scrollHeight;await new Promise(r=>setTimeout(r,18));}el.classList.remove('cursor');}
+  else{el.textContent=line.t;}
+  term.scrollTop=term.scrollHeight;
+}
+async function next(){
+  if(typing||i>=steps.length-1){if(i>=steps.length-1)stop();return;}
+  typing=true;i++;const s=steps[i];setWho(s.who,s.w);$('point').textContent=s.point||'—';
+  for(const ln of s.lines){await typeLine(ln);if(!reduce)await new Promise(r=>setTimeout(r,ln.type?250:120));}
+  renderSteps(s.phase,s.status);typing=false;
+}
+function play(){if(timer){stop();return;}$('play').textContent='❚❚ 停止';timer=setInterval(async()=>{if(i>=steps.length-1){stop();return;}await next();},reduce?1500:3200);next();}
+function stop(){clearInterval(timer);timer=null;$('play').textContent='▶ 再生';}
+function reset(){stop();i=-1;typing=false;$('term').innerHTML='<div class="dim"># qa-sentinel CLI デモ — 再生を押す</div>';setWho('host','待機');renderSteps(null,null);$('point').textContent='—';}
+$('play').onclick=play;$('step').onclick=()=>{stop();next();};$('reset').onclick=reset;
+$('scenario').onchange=e=>{steps=S[e.target.value];reset();};
+reset();
+})();
+</script>
+</body>
+</html>
