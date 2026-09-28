@@ -91,7 +91,7 @@ qa-sentinel show T-0002
 
 - [ ] 4-3 と 4-4 の期待をすべて満たす
 - [ ] `docs/codex/LIVE_CHECK_RESULT.md` に 4-1〜4-5 の出力（鍵を除く）と §5 の表の結果がある
-- [ ] `bash scripts/verify.sh` が `ALL GREEN`（修正した場合）
+- [ ] `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）が `ALL GREEN`（修正した場合）
 - [ ] 使った金額の合計を報告に書く
 
 ## 7. スコープ外（やらないこと）

@@ -33,7 +33,7 @@ $Q answer T-0003 --by verify "拒否のみ" | grep -q 確定待ち || fail "answ
 $Q run --project library-loan --nl "x" --mode M7 --reviewer verify </dev/null | grep -q 手渡し || fail "M7 → 人が下書き（セッション無し）"
 
 step "4. 文書の存在"
-for f in docs/00_概要.md docs/01_設計仕様.md docs/02_フロー.html docs/codex/README.md docs/05_協業モデル.md projects/_template/env.md; do [ -f "$f" ] || fail "missing $f"; done
+for f in docs/00_概要.md docs/01_設計仕様.md docs/02_フロー.html docs/codex/README.md docs/05_協業モデル.md docs/codex/RUN_ALL.md scripts/verify.py projects/_template/env.md; do [ -f "$f" ] || fail "missing $f"; done
 
 step "5. デモ同梱物（kit スクリプトが動く）"
 ( cd demo/library-loan && ./scripts/trace-check.sh docs/lifecycle >/dev/null 2>&1 ) || fail "demo trace-check"

@@ -8,6 +8,8 @@ Codex（gpt-6-sol, high）に貼る文はこれだけ:
 
 > `docs/codex/RUN_ALL.md` に従って、止まらずに最後までやれ。
 
+**Windows 11・zip・cmd の場合**: GitHub から ZIP を取得 → 解凍 → そのフォルダで cmd → Codex 起動 → 上の一言の末尾に「OS は Windows 11、シェルは cmd」を足す。読み替え表は `RUN_ALL.md` §0-W。検証は `venv\Scripts\python scripts\verify.py`。
+
 RUN_ALL は §1〜§5 を Codex が自分で回す（verify → commit → 次のタスク）。人がやるのは、鍵 3 つを環境変数に置くこと（実機確認をするときだけ）と、最後の PR をマージすることの 2 つ。以下は手で分けてやるときの手順。
 
 ## 0-b. 全体像
