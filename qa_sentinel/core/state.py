@@ -43,6 +43,12 @@ GATES: dict[str, dict[str, str]] = {
     "regression-swap": {"gate": "trace-check NG=0 かつ test-weaken-check NG=0", "stop": "どちらか NG → 戻す"},
 }
 
+#: ループの上限（docs/06_ループ設計.md §4）。超えたら stopped にして人へ。判定は core.orchestrator（T07）
+MAX_ROUNDS_PER_PHASE = 2      # 段の中の生成→検証の周回（L3/L4。セッション内。system prompt にも同じ値）
+MAX_REJECTS_PER_PHASE = 3     # 同一段の差し戻し回数（L5）
+MAX_QUESTIONS_PER_TASK = 5    # 1 タスクの確認待ち件数（L6）
+MAX_SESSIONS_PER_TASK = 10    # 1 タスクのセッション数（L7）
+
 STATUSES: tuple[str, ...] = ("queued", "running", "review", "handoff", "blocked", "paused", "stopped", "done")
 #: review=AI の下書き完了・人の確定待ち / handoff=人が下書きする段・入力待ち / blocked=確認待ち / paused=最終承認待ち
 

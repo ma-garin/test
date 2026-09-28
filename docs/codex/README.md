@@ -18,6 +18,20 @@
 | T04 | PR トリガー（本文の関係 ID 欄 ＋ diff → ChangeEvent） | — |
 | T05 | 承認の機械判定（`check-approval.sh` 連携）と review 画面の差分表示・根拠ガード | T01 |
 | T06 | トラッカー relay ポーラー（`qa-sentinel watch`。LLM を使わない） | T04 |
-| T07 | ループ上限の判定（`docs/06_ループ設計.md` §4: reject 3 回・確認待ち 5 件・セッション 10 本で stopped）。指示書は未作成 | T05 |
+| T07 | ループ上限の判定（`docs/06_ループ設計.md` §4: reject 3 回・確認待ち 5 件・セッション 10 本で stopped） | T05 |
+| T08 | Managed Agents 実機確認（予算 $1 で 1 段。`HANDOFF_T08_live_check.md`） | T01〜T07 |
 
-順序の推奨: T01 → T03 → T02 → T04 → T05 → T06。T02 の実機検証（API キー・予算）は Claude が行う。
+順序の推奨: T01 → T03 → T02 → T04 → T05 → T06 → T07。
+
+## T08 実機確認（Codex 環境でやり切る）
+
+`HANDOFF_T08_live_check.md` を貼る。構築全体の順序は `BUILD_GUIDE.md`。
+
+## （旧記載）T02 の実機確認について
+
+Codex の T02 が終わったあと、Claude が Managed Agents に実際に接続して 1 段だけ回す。この環境には `ANTHROPIC_API_KEY` と `anthropic` パッケージが無いため未実行。必要なもの:
+- `ANTHROPIC_API_KEY`（従量。予算 $1 でセッションを 1 本）
+- `QA_SENTINEL_ENV_ID`（`client.beta.environments.create` で作った環境の ID）
+- `GITHUB_TOKEN`（yuki-aidd-kit を読める）
+- `pip install -e .[managed]`
+手順: `python -m qa_sentinel.agent.register --project library-loan` → `qa-sentinel run --project library-loan --nl "貸出上限を 3 冊に" --mode M1 --reviewer <name> --budget 1 --runtime managed` → 台帳に `evidence` と `spent_usd` が入ることを確認。
