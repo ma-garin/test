@@ -29,7 +29,8 @@ button{cursor:pointer}button.primary{background:var(--ink);color:var(--bg);borde
 
 /* --- 動きの見える流れ図（AI のレーン／あなたのレーン） --- */
 .flow{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px;margin:10px 0;overflow-x:auto}
-.flow svg{display:block;width:100%;height:auto;min-width:620px;color:var(--ink)}
+.flow canvas{display:block;width:100%;height:260px}.flow-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 2px 6px;font-size:12px}.flow-bar select{font-size:12px;padding:3px 6px}
+.welcome{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--llm);border-radius:6px;padding:10px 14px;margin:0 0 12px;font-size:13px}.welcome ol{margin:6px 0 0;padding-left:1.4em}.welcome li{margin:2px 0}.flow-legend{display:flex;gap:14px;font-size:11.5px;color:var(--muted);margin:4px 2px 0}.lg{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}.lg.ai{background:#5b8def;box-shadow:0 0 6px #5b8def}.lg.hum{background:#f5a524;box-shadow:0 0 6px #f5a524}.lg.done{background:#34d399}
 .lane{fill:none;stroke:var(--line);stroke-dasharray:4 4}.lane-label{font-size:11px;font-weight:600}.lane-label.ai{fill:var(--llm)}.lane-label.hum{fill:var(--accent)}
 .fn rect{fill:var(--node);stroke:var(--line);stroke-width:1.2;transition:fill .4s,stroke .4s}
 .fn text{fill:var(--ink);font-size:11.5px}.fn .sub{fill:var(--muted);font-size:9.5px}
@@ -56,7 +57,10 @@ button{cursor:pointer}button.primary{background:var(--ink);color:var(--bg);borde
 </style>
 </head>
 <body>
-<h1>qa-sentinel <span class="muted">AI が下書き、あなたが直して OK</span></h1>
+<h1>qa-sentinel <span class="muted">AI が下書き、あなたが直して OK</span> <a class="muted" href="/guide" target="_blank" style="float:right">使い方</a></h1>
+<div class="welcome" id="welcome" hidden><b>はじめてですか？</b> 3 分で流れが分かるデモがあります。
+<ol><li><button class="primary" id="demo-go">図書館デモを動かす</button> <span class="muted">「貸出上限を 5 冊から 3 冊に変更」を AI に伝えます（お金はかかりません: mock）</span></li><li>下の「やることリスト」に <b>あなた: 直して OK</b> が出たら、行をクリック → 下書きを見て <b>OK</b></li><li>「実行」はあなたの番。結果を <b>渡す</b> → 最後に <b>承認</b></li></ol>
+<span class="muted">黒い画面なら <code>qa-sentinel demo</code>（または <code>qa-sentinel</code> → 5）。詳しくは <a href="/guide" target="_blank">使い方</a></span></div>
 <details id="start" open><summary style="cursor:pointer;font-weight:600">変更を伝えて始める</summary>
 <div class="form" style="display:grid;grid-template-columns:1fr;gap:8px">
   <label>何が変わりましたか（1 文）<br><input id="r-nl" style="width:100%;box-sizing:border-box" placeholder="例: 貸出上限を 5 冊から 3 冊に変更"></label>
@@ -69,45 +73,26 @@ button{cursor:pointer}button.primary{background:var(--ink);color:var(--bg);borde
 <table><thead><tr><th>タスク</th><th>プロジェクト</th><th>モード</th><th>段</th><th>状態</th><th>予算</th><th>確認者</th><th>理由</th></tr></thead><tbody id="rows"></tbody></table>
 <div id="detail" hidden></div>
 <div class="toast" id="toast"></div>
+<script src="/static/progress-views.js"></script>
 <script>
 let meta=null,cur=null;
-// ---- 動きの見える流れ図。台帳の状態が変わると玉が動き、あなたの番は脈打つ ----
+// ---- 進行表示: /static/progress-views.js の 5 つの型（業務ツール型）。台帳の状態を PV.state に写す ----
 const FL=[['test-plan','計画'],['test-analysis','基本設計'],['test-strategy','詳細設計'],['test-design','設計'],['test-implementation','準備'],['test-execution','実行'],['defect-analysis','原因'],['test-completion','報告'],['regression-swap','入替'],['final','承認']];
-const W=88,H=38,YA=44,YH=150,X0=14,GAP=96;const pos={};
-function buildFlow(){
-  const parts=[];parts.push(`<rect class="lane" x="6" y="20" width="${X0+FL.length*GAP}" height="84" rx="8"/><text class="lane-label ai" x="12" y="14">AI のレーン（下書きを作る。動いている間だけお金がかかる）</text>`);
-  parts.push(`<rect class="lane" x="6" y="126" width="${X0+FL.length*GAP}" height="84" rx="8"/><text class="lane-label hum" x="12" y="120">あなたのレーン（直して OK・自分でやる・質問に答える・承認）</text>`);
-  FL.forEach(([id,l],i)=>{const x=X0+i*GAP;pos[id]={ax:x+W-2,ay:YA+2,hx:x+W-2,hy:YH+2};
-    if(i<FL.length-1)parts.push(`<path id="e-${id}" class="edge" d="M${x+W},${YA+H/2} L${x+GAP},${YA+H/2}"/>`);
-    parts.push(`<path id="d-${id}" class="drop" d="M${x+W/2-10},${YA+H} L${x+W/2-10},${YH}"/><path id="u-${id}" class="drop" d="M${x+W/2+10},${YH} L${x+W/2+10},${YA+H}"/>`);
-    parts.push(`<g class="fn" id="fa-${id}"><rect x="${x}" y="${YA}" width="${W}" height="${H}" rx="7"/><text x="${x+W/2}" y="${YA+17}" text-anchor="middle" font-weight="500">${l}</text><text class="sub" x="${x+W/2}" y="${YA+30}" text-anchor="middle" id="sa-${id}"></text></g>`);
-    parts.push(`<g class="fn" id="fh-${id}"><rect x="${x}" y="${YH}" width="${W}" height="${H}" rx="7"/><text x="${x+W/2}" y="${YH+17}" text-anchor="middle" font-weight="500" id="th-${id}">${id==='final'?'最終承認':'あなた'}</text><text class="sub" x="${x+W/2}" y="${YH+30}" text-anchor="middle" id="sh-${id}"></text></g>`);
-  });
-  parts.push(`<circle id="ring" r="11" cx="-20" cy="-20"/><circle id="dot" r="6" cx="-20" cy="-20" opacity="0"/>`);
-  return `<svg viewBox="0 0 ${X0+FL.length*GAP+8} 220" role="img" aria-label="AI のレーンとあなたのレーン。玉が今の作業の位置"><defs></defs>${parts.join('')}</svg>`;
-}
+const VIEW_HELP={workflow:'段を箱でつなぐ。今どこか・どこで止まるかが一目で分かる',pipeline:'段の並びと実行ログ。何をしているかを文字で追える',swimlane:'AI／あなた／システムのレーン。誰の番かが分かる',kanban:'タスクを列で管理。複数タスクをまとめて見る',timeline:'時系列と根拠パネル。決定の記録を見返す'};
+function mountFlow(){const c=document.getElementById('flow-canvas');if(!c||c.dataset.pv)return;c.dataset.pv='1';PV.mount(c);
+  const sel=document.getElementById('view-sel');if(sel){sel.innerHTML=Object.entries(PV.views).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');sel.value=PV.current;sel.onchange=()=>{PV.use(sel.value);document.getElementById('view-help').textContent=VIEW_HELP[sel.value]||'';};document.getElementById('view-help').textContent=VIEW_HELP[PV.current]||'';}}
 const prevState={};
 function renderFlow(t){
-  const el=document.getElementById('flow');if(!el.firstChild)el.innerHTML=buildFlow();
-  const done=new Set(t.history.filter(h=>h.status==='done').map(h=>h.phase));
-  const cur=t.phase==='waiting_human'||t.phase==='done'?'final':t.phase;
-  const humanTurn=['review','handoff','blocked','paused'].includes(t.status);
-  document.querySelectorAll('#flow .fn').forEach(n=>n.className.baseVal='fn');document.querySelectorAll('#flow .edge,#flow .drop').forEach(e=>e.classList.remove('lit'));
-  FL.forEach(([id],i)=>{const sa=document.getElementById('sa-'+id),sh=document.getElementById('sh-'+id);
-    const dr=t.plan.draft?(t.plan.draft.includes(id)?'AI が下書き':(id==='final'?'':'あなたがやる')):'';sa.textContent=dr;
-    sh.textContent=t.plan.stop_at&&t.plan.stop_at.includes(id)?'止まって確認':(t.plan.draft&&!t.plan.draft.includes(id)&&id!=='final'?'自分でやる':'');
-    if(done.has(id)||(id!=='final'&&FL.findIndex(x=>x[0]===cur)>i))document.getElementById('fa-'+id).classList.add('done');
-    if(i<FL.findIndex(x=>x[0]===cur))document.getElementById('e-'+id)?.classList.add('lit');});
-  if(t.status==='done'){document.getElementById('fh-final').classList.add('done');document.getElementById('fa-final').classList.add('done');}
-  const dot=document.getElementById('dot'),ring=document.getElementById('ring');const p=pos[cur];
-  if(!p){dot.setAttribute('opacity',0);return;}
-  if(humanTurn){const n=document.getElementById('fh-'+cur);n.classList.add(t.status==='blocked'?'bad':'wait');document.getElementById('d-'+cur).classList.add('lit');dot.setAttribute('cx',p.hx);dot.setAttribute('cy',p.hy);ring.classList.remove('on');}
-  else if(t.status==='running'){document.getElementById('fa-'+cur).classList.add('active');dot.setAttribute('cx',p.ax);dot.setAttribute('cy',p.ay);ring.setAttribute('cx',p.ax);ring.setAttribute('cy',p.ay);ring.classList.add('on');}
-  else if(t.status==='stopped'){document.getElementById('fa-'+cur).classList.add('stopped');dot.setAttribute('cx',p.ax);dot.setAttribute('cy',p.ay);ring.classList.remove('on');}
-  else{dot.setAttribute('cx',p.hx);dot.setAttribute('cy',p.hy);ring.classList.remove('on');}
-  dot.setAttribute('opacity',t.status==='done'?0:1);
-  // 状態が変わった瞬間だけ知らせる
-  const key=t.phase+'/'+t.status;if(prevState[t.task]&&prevState[t.task]!==key){toast(humanTurn?`あなたの番: ${meta.labels[t.phase]||t.phase}`:t.status==='running'?`AI が ${meta.labels[t.phase]||t.phase} を始めました`:t.status==='done'?'完了しました':`止まりました: ${t.reason||''}`);}
+  mountFlow();
+  const cur=t.phase==='waiting_human'||t.phase==='done'?'final':t.phase;const idx=FL.findIndex(x=>x[0]===cur);
+  const humanTurn=['review','handoff','paused'].includes(t.status);
+  const S=PV.state;S.phases=FL.map(x=>x[1]);S.cur=Math.max(0,idx);S.title=`${t.task} ${t.project}`;
+  S.mode=t.status==='done'?'done':t.status==='blocked'?'ask':humanTurn?'human':t.status==='running'?'ai':t.status==='stopped'?'stopped':'idle';
+  S.label={review:'直して OK',handoff:'自分でやって渡す',paused:'最終承認',blocked:(t.reason||'質問').replace(/^確認待ち:\s*/,''),stopped:t.reason||''}[t.status]||'';
+  S.cost={spent:t.session.spent_usd||0,budget:t.plan.budget_usd||t.session.budget_usd||0};
+  S.stops=(t.plan.stop_at||[]).map(p=>FL.findIndex(x=>x[0]===p)).filter(i=>i>=0);S.human=meta.phases.filter(p=>t.plan.draft&&!t.plan.draft.includes(p)).map(p=>FL.findIndex(x=>x[0]===p)).filter(i=>i>=0);
+  S.log=[...t.history].reverse().slice(0,4).map(h=>`${h.at.slice(11,16)} ${meta.labels[h.phase]||h.phase} ${WHO[h.status]||h.status}`);S.who=t.plan.reviewer||'';S.evidence=t.evidence[t.phase]||[];
+  const key=t.phase+'/'+t.status;if(prevState[t.task]&&prevState[t.task]!==key){toast(humanTurn||t.status==='blocked'?`あなたの番: ${meta.labels[t.phase]||t.phase}`:t.status==='running'?`AI が ${meta.labels[t.phase]||t.phase} を始めました`:t.status==='done'?'完了しました':`止まりました: ${t.reason||''}`);}
   prevState[t.task]=key;
   const b=document.getElementById('banner');const cls=t.status==='blocked'||t.status==='stopped'?'bad':humanTurn?'hum':t.status==='done'?'ok':'ai';
   const msg={review:`⏸ あなたの番 — ${meta.labels[t.phase]} の下書きができました。直して OK か、差し戻し`,handoff:`⏸ あなたの番 — ${meta.labels[t.phase]} はあなたがやります。終わったら結果を渡す`,blocked:`✋ AI から質問 — ${t.reason||''}`,paused:'⏸ あなたの番 — 最終承認',running:`● AI が ${meta.labels[t.phase]} を作業中`,done:'✔ 完了',stopped:`■ 止まりました — ${t.reason||''}`,queued:'待機中'}[t.status]||t.status;
@@ -127,6 +112,8 @@ async function load(){
   const ts=(await j('/api/tasks')).sort((a,b)=>(MINE.has(b.status)?1:0)-(MINE.has(a.status)?1:0));
   document.getElementById('rows').innerHTML=ts.map(t=>`<tr data-task="${t.task}"><td>${t.task}</td><td>${t.project}</td><td>${t.mode}</td><td>${meta.labels[t.phase]||t.phase}</td><td>${pill(t.status)}</td><td>$${(t.session.spent_usd||0).toFixed(2)} / ${(t.plan.budget_usd||t.session.budget_usd||0).toFixed(2)}</td><td>${t.plan.reviewer||''}</td><td>${t.reason||''}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">タスクなし。CLI: qa-sentinel run --project library-loan --nl "..."</td></tr>';
   document.querySelectorAll('tr[data-task]').forEach(r=>r.onclick=()=>show(r.dataset.task));
+  document.getElementById('welcome').hidden=ts.length>0;
+  PV.state.others=ts.filter(x=>x.task!==cur).slice(0,4).map(x=>({cur:Math.max(0,FL.findIndex(f=>f[0]===(x.phase==='waiting_human'||x.phase==='done'?'final':x.phase))),title:x.task+' '+(x.project||''),mode:x.status==='done'?'done':x.status==='blocked'?'ask':['review','handoff','paused'].includes(x.status)?'human':x.status==='running'?'ai':x.status==='stopped'?'stopped':'idle',meta:`${x.plan.reviewer||''} · $${(x.session.spent_usd||0).toFixed(2)} / ${(x.plan.budget_usd||0).toFixed(2)}`}));
   if(cur)show(cur);
 }
 async function show(id){
@@ -143,7 +130,7 @@ async function show(id){
   if(t.status==='paused')form=`<div class="form"><b>最終承認</b><span class="muted">AI は approver を埋めない</span><input id="by" value="${by}" aria-label="承認者"><button class="primary" id="ap">承認</button></div>`;
   d.innerHTML=`<b>${t.task}</b> ${t.project} · ${t.mode} ${pill(t.status)} <span class="muted">event ${t.event} · session ${t.session.id||'-'}${t.session.ended?'（終了）':''} · branch ${t.branch||'-'}</span>
   <div id="banner"></div>
-  <div class="flow" id="flow"></div>
+  <div class="flow" id="flow"><div class="flow-bar"><label>表示の型 <select id="view-sel"></select></label><span class="muted" id="view-help"></span><a class="muted" href="/guide#views" target="_blank">5 つの型を比べる</a></div><canvas id="flow-canvas" aria-label="進行表示: 済んだ段・AI が作業中の段・あなたの番の段" role="img"></canvas><div class="flow-legend"><span><i class="lg ai"></i>AI が下書き</span><span><i class="lg hum"></i>あなたの番</span><span><i class="lg done"></i>済んだ段</span></div></div>
   <div class="money">使った <b id="m-spent"></b> / 上限 <b id="m-budget"></b><div class="bar"><i id="m-bar"></i></div><span id="m-dec"></span></div>
   ${form}
   <div class="muted">影響: ${t.impact.join(', ')||'-'} ／ 追加: ${t.cases.added.join(', ')||'-'} ／ 失効: ${t.cases.retired.join(', ')||'-'}</div>
@@ -161,6 +148,7 @@ async function show(id){
 function preview(){if(!meta)return;const m=document.getElementById('r-mode').value;const p=meta.presets[m];if(!p)return;const L=x=>meta.labels[x]||x;document.getElementById('r-preview').textContent=`この設定だと: AI が下書きする段 ${p.draft.length} / ${meta.phases.length}（${p.draft.length?L(p.draft[p.draft.length-1])+' まで':'なし'}）。止まって確認する出口: ${p.stop_at.map(L).join('・')}。あなたがやる段: ${meta.phases.filter(x=>!p.draft.includes(x)).map(L).join('・')||'なし'}`;}
 document.getElementById('r-mode').onchange=preview;
 document.getElementById('r-go').onclick=async()=>{const g=id=>document.getElementById(id).value;const m=document.getElementById('r-msg');m.textContent='…';const r=await post('/api/run',{project:g('r-project'),nl:g('r-nl'),mode:g('r-mode'),reviewer:g('r-by'),budget:g('r-budget')});m.textContent=r.error?('エラー: '+r.error):(r.task+' を始めました');if(!r.error){document.getElementById('start').open=false;cur=r.task;}load();};
+document.getElementById('demo-go').onclick=async()=>{const b=document.getElementById('demo-go');b.disabled=true;b.textContent='…';const r=await post('/api/demo',{by:document.getElementById('r-by').value||'demo'});if(r.error){alert('エラー: '+r.error);b.disabled=false;b.textContent='図書館デモを動かす';return;}cur=r.task;document.getElementById('start').open=false;load();};
 load();setInterval(load,5000);
 </script>
 </body>

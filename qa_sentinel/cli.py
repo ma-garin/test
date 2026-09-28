@@ -104,6 +104,12 @@ def main(argv: list[str] | None = None) -> int:
     sh.add_argument("task")
     sh.add_argument("--json", action="store_true")
 
+    d = sub.add_parser("demo", help="図書館デモを 1 コマンドで始める（貸出上限 5→3 冊、準備まで AI）")
+    d.add_argument("--by", default="demo", help="あなたの名前（既定 demo）")
+    d.add_argument("--mode", default="M2", choices=list(PRESETS))
+    d.add_argument("--budget", type=float, default=5.0)
+    d.add_argument("--runtime", default="mock", choices=["mock", "managed"])
+
     v = sub.add_parser("web", help="台帳の Web 表示")
     v.add_argument("--port", type=int, default=8790)
     v.add_argument("--host", default="127.0.0.1")
@@ -120,6 +126,13 @@ def main(argv: list[str] | None = None) -> int:
             plan = build_plan(args, ledger, project)
             print(f"  mode {plan.mode}  AI 下書き {len(plan.draft)}/{len(PHASES)} 段  止まる出口 {', '.join(plan.stop_at)}  確認 {plan.reviewer}  予算 ${plan.budget_usd:.2f}")
             print(_fmt(run_event(ev, _runtime(args.runtime, args), ledger, project, plan=plan)))
+        elif args.cmd == "demo":
+            from .web.app import DEMO_NL, DEMO_PROJECT
+            project = load_project(DEMO_PROJECT, args.projects)
+            plan = Plan.from_preset(args.mode, args.by, args.budget)
+            t = run_event(nl.from_text(DEMO_PROJECT, DEMO_NL), _runtime(args.runtime, args), ledger, project, plan=plan)
+            print(_fmt(t))
+            print(f"  次: qa-sentinel show {t.task} で下書きを見て、qa-sentinel ok {t.task} --by {args.by} で次の段へ（ブラウザなら qa-sentinel web）")
         elif args.cmd == "status":
             for t in ledger.list():
                 print(_fmt(t))
@@ -147,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
             print(_fmt(approve(args.task, args.by, ledger)))
         elif args.cmd == "web":
             from .web.app import serve
-            serve(ledger, args.host, args.port)
+            serve(ledger, args.host, args.port, args.projects)
         return 0
     except (ValueError, FileNotFoundError) as e:
         print(f"error: {e}", file=sys.stderr)

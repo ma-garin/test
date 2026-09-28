@@ -1,6 +1,6 @@
 """台帳の Web 表示。標準ライブラリだけ。
-GET  /  /api/meta  /api/tasks  /api/tasks/<id>
-POST /api/run (project, nl, mode, reviewer, budget)  /api/review (task, by, ok=1|0, note)  /api/submit (task, by, file, note)  /api/answer (task, by, text)  /api/approve (task, by)
+GET  /  /guide  /static/<file>  /api/meta  /api/tasks  /api/tasks/<id>
+POST /api/run (project, nl, mode, reviewer, budget)  /api/demo (by, budget)  /api/review (task, by, ok=1|0, note)  /api/submit (task, by, file, note)  /api/answer (task, by, text)  /api/approve (task, by)
 ランタイムは環境変数 QA_SENTINEL_RUNTIME（mock|managed、既定 mock）。
 """
 from __future__ import annotations
@@ -19,6 +19,9 @@ from ..triggers import nl as nl_trigger
 from ..core.state import GATES, PHASE_LABELS, PHASES
 
 _STATIC = Path(__file__).parent / "static"
+_MIME = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
+DEMO_NL = "貸出上限を 5 冊から 3 冊に変更"
+DEMO_PROJECT = "library-loan"
 
 
 def _runtime():
@@ -41,10 +44,16 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
 
         def do_GET(self):
             u = urlparse(self.path)
-            if u.path == "/":
-                b = (_STATIC / "index.html").read_bytes()
+            static = {"/": "index.html", "/guide": "guide.html"}.get(u.path)
+            if static is None and u.path.startswith("/static/"):
+                static = u.path[len("/static/"):]
+            if static is not None:
+                f = _STATIC / static
+                if "/" in static or ".." in static or not f.is_file() or f.suffix not in _MIME:
+                    return self._json({"error": "not found"}, 404)
+                b = f.read_bytes()
                 self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Type", _MIME[f.suffix])
                 self.send_header("Content-Length", str(len(b)))
                 self.end_headers()
                 self.wfile.write(b)
@@ -71,6 +80,11 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
                     plan = Plan.from_preset(q.get("mode", "M2"), q.get("reviewer", ""), float(q.get("budget", project.budget_usd)))
                     t = run_event(nl_trigger.from_text(q["project"], q.get("nl", "")), rt, ledger, project, plan=plan)
                     return self._json(t.to_dict())
+                if u.path == "/api/demo":  # 図書館デモを 1 文で始める（GUI の「デモを動かす」）
+                    project = load_project(DEMO_PROJECT, projects_dir)
+                    plan = Plan.from_preset(q.get("mode", "M2"), q.get("by", "demo"), float(q.get("budget", project.budget_usd)))
+                    t = run_event(nl_trigger.from_text(DEMO_PROJECT, DEMO_NL), rt, ledger, project, plan=plan)
+                    return self._json(t.to_dict())
                 task, by = q["task"], q.get("by", "")
                 if u.path == "/api/review":
                     t = review(task, by, q.get("ok", "1") == "1", ledger, rt, note=q.get("note", ""))
@@ -92,8 +106,8 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
     return H
 
 
-def serve(ledger: Ledger, host: str = "127.0.0.1", port: int = 8790) -> None:
-    srv = ThreadingHTTPServer((host, port), make_handler(ledger))
+def serve(ledger: Ledger, host: str = "127.0.0.1", port: int = 8790, projects_dir: str = "projects") -> None:
+    srv = ThreadingHTTPServer((host, port), make_handler(ledger, projects_dir=projects_dir))
     print(f"qa-sentinel web: http://{host}:{port}/  (Ctrl+C で停止)")
     try:
         srv.serve_forever()

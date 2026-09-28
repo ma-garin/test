@@ -228,3 +228,42 @@ def test_menu_runs_when_no_subcommand(ws, monkeypatch, capsys):
     assert main(["--tasks", str(ws / "tasks"), "--projects", str(ws / "projects")]) == 0
     out = capsys.readouterr().out
     assert "あなたの番" in out and "T-0001" in out
+
+
+def test_web_static_guide_and_demo(ws):
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+
+    from qa_sentinel.web.app import make_handler
+
+    led = Ledger(ws / "tasks")
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(led, MockRuntime(), projects_dir=str(ws / "projects")))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        u = f"http://127.0.0.1:{srv.server_address[1]}"
+        get = lambda path: urllib.request.urlopen(u + path)
+        assert "window.PV" in get("/static/progress-views.js").read().decode()
+        assert get("/static/progress-views.js").headers["Content-Type"].startswith("text/javascript")
+        assert "図書館デモを動かす" in get("/").read().decode()
+        assert "この型にする" in get("/guide").read().decode()
+        for bad in ("/static/../pyproject.toml", "/static/nope.js", "/static/app.py"):
+            try:
+                get(bad)
+                assert False, bad
+            except urllib.error.HTTPError as e:
+                assert e.code == 404
+        d = json.loads(urllib.request.urlopen(urllib.request.Request(u + "/api/demo", data=b"by=qa", method="POST")).read())
+        assert d["project"] == "library-loan" and d["status"] == "review" and d["plan"]["reviewer"] == "qa" and d["plan"]["mode"] == "M2"
+    finally:
+        srv.shutdown()
+
+
+def test_cli_demo_and_menu_item_5(ws, capsys, monkeypatch):
+    assert main(["--tasks", str(ws / "tasks"), "--projects", str(ws / "projects"), "demo", "--by", "qa"]) == 0
+    out = capsys.readouterr().out
+    assert "T-0001" in out and "qa-sentinel ok T-0001 --by qa" in out
+    answers = iter(["5", "qa", "0"])
+    monkeypatch.setattr("builtins.input", lambda *_: next(answers))
+    assert main(["--tasks", str(ws / "tasks"), "--projects", str(ws / "projects")]) == 0
+    assert "T-0002" in capsys.readouterr().out

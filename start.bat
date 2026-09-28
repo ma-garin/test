@@ -6,5 +6,8 @@ if not exist venv\Scripts\python.exe (
   python -m venv venv || (echo Python 3.11 以上を入れてください & pause & exit /b 1)
   venv\Scripts\pip install -q -e .[dev]
 )
-start "" http://127.0.0.1:8790/
+set URL=http://127.0.0.1:8790/
+if not exist tasks set URL=http://127.0.0.1:8790/guide
+rem 画面が立ち上がってからブラウザを開く（初回は使い方の画面）
+start "" /min cmd /c "timeout /t 2 >nul & start "" %URL%"
 venv\Scripts\python -m qa_sentinel.cli web --port 8790
