@@ -13,6 +13,8 @@
 | `docs/03_CLIデモ.html` | CLI デモ（4 問 → 進み具合 1 行 → あなたの番の帯 → ok / results / answer / approve） |
 | `docs/04_画面案.html` | 画面案（始める 4 問・AI の下書きを直して OK・自分でやる段・やることリスト・誰がいつ決めたか） |
 | `docs/05_協業モデル.md` | AI が下書き・人が直して確定。安全策 4 つ、開始時の 4 問、プリセット M1〜M8、状態 review/handoff |
+| `docs/06_ループ設計.md` | ループエンジニアリング: 7 つのループの終了条件・上限・脱出先、8 つの技法、止まる条件の優先順位 |
+| `.claude/skills/fanout-review-fix/` | 開発の段取りスキル（Sonnet 並列下書き → Opus レビュー → 本人修正 → Haiku git） |
 | `docs/codex/` | Codex 向けタスク指示書（T01〜T06）と雛形 |
 | `qa_sentinel/` | MVP（台帳・状態機械・モックランタイム・CLI・Web） |
 | `projects/` | プロジェクトごとの環境情報（`env.md`）と設定（`config.toml`） |

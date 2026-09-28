@@ -18,5 +18,6 @@
 | T04 | PR トリガー（本文の関係 ID 欄 ＋ diff → ChangeEvent） | — |
 | T05 | 承認の機械判定（`check-approval.sh` 連携）と review 画面の差分表示・根拠ガード | T01 |
 | T06 | トラッカー relay ポーラー（`qa-sentinel watch`。LLM を使わない） | T04 |
+| T07 | ループ上限の判定（`docs/06_ループ設計.md` §4: reject 3 回・確認待ち 5 件・セッション 10 本で stopped）。指示書は未作成 | T05 |
 
 順序の推奨: T01 → T03 → T02 → T04 → T05 → T06。T02 の実機検証（API キー・予算）は Claude が行う。
