@@ -4,12 +4,12 @@
 
 | 項目 | 値 |
 |---|---|
-| 本体 | 単一 HTML `01_利用者向け資料/90_サンプル/図書貸出/library-loan.html`（`app.css` / `app.js`）。`build.py` で結合 |
+| 本体 | 単一 HTML `demo/library-loan/library-loan.html`（`app.css` / `app.js`）。`build.py` で結合。kit のスクリプトは `demo/library-loan/scripts/` に同梱 |
 | 起動手順 | ブラウザでファイルを開く。サーバ不要。Playwright は `file://` で開く |
 | データ置き場 | `localStorage`（ブラウザ内）。テスト前に `localStorage.clear()` |
 | ソース変更 | 可（修整は最小差分。`build.py` を再実行） |
 | 仕様 | `spec.md`、進捗 `CURRENT_STATE.md` |
-| 工程文書 | `docs/lifecycle/`（`init-lifecycle.sh` で配置）、ケース表 `docs/quality/system_test_cases.csv` |
+| 工程文書 | `docs/lifecycle/`（`init-lifecycle.sh` で配置）、ケース表 `docs/test/system_test_cases.csv` |
 
 ## 2. アカウント
 

@@ -6,3 +6,7 @@ tasks/*.json
 tasks/*.tmp
 *.egg-info/
 .env
+
+# demo のレポート
+demo/**/trace-check-report.md
+demo/**/test-metrics-report.md

@@ -1,0 +1,22 @@
+/* ── library-loan 固有（部品・骨格はキットの CSS をそのまま使う。ここは配置だけ） ── */
+.view { display: none; }
+.view.active { display: block; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); }
+.toolbar .input { min-width: 240px; }
+.toolbar .spacer { flex: 1; }
+.app-content > .card + .card, .view > .card + .card { margin-top: var(--space-6); }   /* KPI 列の中の card には効かせない */
+.card > h3 { margin: 0 0 var(--space-3); font-size: var(--text-lg); }
+.due-soon { color: var(--color-high); font-weight: 600; }
+.due-over { color: var(--color-critical); font-weight: 700; }
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-4); }
+.row-actions { display: flex; gap: var(--space-1); white-space: nowrap; }
+.row-actions .btn { min-height: 36px; padding: 0 var(--space-3); font-size: var(--text-sm); }
+.table .num { white-space: nowrap; }
+.form-grid { display: grid; gap: var(--space-4); }
+.hint { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.import-box { border: 2px dashed var(--color-border); border-radius: var(--radius-md); padding: var(--space-6); text-align: center; color: var(--color-text-secondary); }
+.version { font-size: var(--text-xs); color: var(--color-text-disabled); }
+@media (max-width: 768px) {
+  .toolbar .input { min-width: 0; flex: 1 1 100%; }
+  .row-actions { flex-direction: column; }
+}

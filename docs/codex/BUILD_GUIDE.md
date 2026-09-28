@@ -2,13 +2,21 @@
 
 このリポジトリ（qa-sentinel）を、Codex を実装担当にして動くところまで持っていく手順。人（あなた）がやること、Codex がやること、Claude がやることを分けて書く。
 
-## 0. 全体像
+## 0. 一言で全部やらせる（推奨）
+
+Codex（gpt-6-sol, high）に貼る文はこれだけ:
+
+> `docs/codex/RUN_ALL.md` に従って、止まらずに最後までやれ。
+
+RUN_ALL は §1〜§5 を Codex が自分で回す（verify → commit → 次のタスク）。人がやるのは、鍵 3 つを環境変数に置くこと（実機確認をするときだけ）と、最後の PR をマージすることの 2 つ。以下は手で分けてやるときの手順。
+
+## 0-b. 全体像
 
 ```
 [準備 §1]  clone → venv → verify.sh ALL GREEN（MVP が動くことを確認。LLM なし）
 [実装 §2]  HANDOFF_T01 → T03 → T02 → T04 → T05 → T06 → T07 を 1 本ずつ Codex に貼る
            各回: Codex が実装 → verify.sh ALL GREEN → 人（または Claude）が diff を見て commit
-[道具 §3]  yuki-aidd-kit のスクリプトを対象プロジェクトに配る（run_gate が呼ぶ実体）
+[道具 §3]  （同梱済み）demo/library-loan/scripts/ に kit のスクリプト、docs/ に工程文書・ケース表
 [実機 §4]  HANDOFF_T08 で Managed Agents に接続し、予算 $1 で 1 段だけ回す
 [運用 §5]  自分のプロジェクトの env.md / config.toml を書き、4 問で始める
 ```

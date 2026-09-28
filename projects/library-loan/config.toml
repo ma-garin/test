@@ -1,17 +1,17 @@
 [project]
 name = "library-loan"
-repo = "ma-garin/yuki-aidd-kit"
+repo = "ma-garin/test"
 branch = "main"
-subdir = "01_利用者向け資料/90_サンプル/図書貸出"
+subdir = "demo/library-loan"
 lifecycle_dir = "docs/lifecycle"
-cases_csv = "docs/quality/system_test_cases.csv"
+cases_csv = "docs/test/system_test_cases.csv"
 test_cmd = "npx playwright test"
 
 [triggers]
 enabled = ["nl", "pr"]
 
 [triggers.pr]
-repo = "ma-garin/yuki-aidd-kit"
+repo = "ma-garin/test"
 
 [session]
 budget_usd = 5.0
