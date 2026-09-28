@@ -6,21 +6,20 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans+JP:wght@400;500;700&display=swap">
 <style>
 :root{--bg:#f3f5f8;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#cfd7e1;
- --t-bg:#0b0f16;--t-ink:#d7dee8;--t-dim:#6f7d90;--t-cmd:#ffd479;--t-ok:#7ee2a0;--t-bad:#ff8b8b;--t-ai:#8ab4ff;--t-hum:#f5a524;--t-chk:#c4b5fd;--t-box:#2a3648;--t-bar:#3b82f6;--t-barbg:#1d2735}
+ --t-bg:#0b0f16;--t-ink:#d7dee8;--t-dim:#6f7d90;--t-cmd:#ffd479;--t-ok:#7ee2a0;--t-bad:#ff8b8b;--t-ai:#8ab4ff;--t-hum:#f5a524;--t-box:#2a3648}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--t-bg:#05080d;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--t-bg:#05080d;color-scheme:dark}
-body{background:var(--bg);color:var(--ink);font:14px/1.6 "IBM Plex Sans JP",system-ui,sans-serif;padding:0 16px;padding-block:18px 40px;max-width:1120px;margin:0 auto}
+body{background:var(--bg);color:var(--ink);font:14px/1.6 "IBM Plex Sans JP",system-ui,sans-serif;padding:0 16px;padding-block:18px 40px;max-width:1000px;margin:0 auto}
 h1{font-size:20px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 12px;max-width:76ch}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 button,select{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
-button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}button:focus-visible,select:focus-visible{outline:2px solid var(--t-bar);outline-offset:2px}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}button:focus-visible,select:focus-visible{outline:2px solid var(--t-ai);outline-offset:2px}
 .win{background:var(--t-bg);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);overflow:hidden}
 .titlebar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#161c26;color:#8391a3;font-size:12px}
 .titlebar i{width:11px;height:11px;border-radius:50%;display:inline-block}.titlebar i:nth-child(1){background:#ff5f57}.titlebar i:nth-child(2){background:#febc2e}.titlebar i:nth-child(3){background:#28c840}
 .titlebar span{margin-left:8px;font-family:"IBM Plex Mono",monospace}
-.term{color:var(--t-ink);padding:14px 18px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;line-height:1.5;min-height:460px;max-height:600px;overflow:auto;white-space:pre;overflow-x:auto}
-.cmd{color:var(--t-cmd);font-weight:500}.dim{color:var(--t-dim)}.ok{color:var(--t-ok)}.bad{color:var(--t-bad)}.ai{color:var(--t-ai)}.hum{color:var(--t-hum)}.chk{color:var(--t-chk)}.box{color:var(--t-box)}.b{font-weight:700}
-.bar-fill{color:var(--t-bar)}.bar-bg{color:var(--t-barbg)}
+.term{color:var(--t-ink);padding:14px 18px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;line-height:1.55;min-height:440px;max-height:600px;overflow:auto;white-space:pre;overflow-x:auto}
+.cmd{color:var(--t-cmd);font-weight:500}.dim{color:var(--t-dim)}.ok{color:var(--t-ok)}.bad{color:var(--t-bad)}.ai{color:var(--t-ai)}.hum{color:var(--t-hum)}.b{font-weight:700}
 .banner{display:inline-block;background:#3d2a08;color:#f5c26b;padding:0 8px;border-radius:3px}
 .cursor::after{content:"▍";animation:blink 1s steps(1) infinite}@keyframes blink{50%{opacity:0}}
 .spin{display:inline-block;width:1ch}
@@ -31,81 +30,70 @@ button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}but
 <body>
 
 <h1>qa-sentinel CLI デモ</h1>
-<p class="lead">ターミナルの実際の見え方。段の一覧に担当（AI／人／確認）と状態が常に出て、人の番になると黄色の帯で止まり、プロンプトで回答・結果入力・承認を受ける。</p>
+<p class="lead">黒い画面でも考え方は同じ。<b>AI が下書き、あなたが直して OK。</b> 毎回出るのは「どこまで進んだか」の 1 行と「今あなたがすること」だけ。詳しく見たいときだけ開く。</p>
 <div class="bar">
   <select id="scenario" aria-label="シナリオ">
-    <option value="m2" selected>M2 実装まで AI → 実行は人 → AI が分析・差し替え → 承認</option>
-    <option value="m1">M1 全自動（確認待ちで一度止まる）</option>
-    <option value="m3">M3 各段の出口で人が承認</option>
-    <option value="watch">relay 監視（イベントなし。LLM 0 回）</option>
+    <option value="m2" selected>準備は AI、テスト実行は自分（いつもの使い方）</option>
+    <option value="q">AI が決められなくて質問してくる</option>
+    <option value="m1">全部 AI に任せて、最後だけ確認</option>
+    <option value="watch">見張りだけ（何も起きなければ AI は動かない）</option>
   </select>
   <button id="play" class="primary">▶ 再生</button><button id="step">次へ</button><button id="reset">最初から</button>
 </div>
-<div class="win"><div class="titlebar"><i></i><i></i><i></i><span>yuki@mac — qa-sentinel — 100×32</span></div><div class="term" id="term" aria-live="polite"></div></div>
-<p class="note">色の意味: <span style="color:var(--t-cmd)">黄=人が打ったコマンド</span> · <span style="color:var(--t-ai)">青=AI（セッション内）</span> · <span style="color:var(--t-hum)">橙=人の番</span> · <span style="color:var(--t-chk)">紫=人の確認</span> · <span style="color:var(--t-ok)">緑=終了条件 OK</span> · <span style="color:var(--t-bad)">赤=止まった</span></p>
+<div class="win"><div class="titlebar"><i></i><i></i><i></i><span>yuki@mac — qa-sentinel</span></div><div class="term" id="term" aria-live="polite"></div></div>
+<p class="note">色: <span style="color:var(--t-cmd)">黄＝あなたが打つ</span> · <span style="color:var(--t-ai)">青＝AI がやっている</span> · <span style="color:var(--t-hum)">橙＝あなたの番</span> · <span style="color:var(--t-ok)">緑＝OK</span> · <span style="color:var(--t-bad)">赤＝止まった</span></p>
 
 <script>
 (function(){
-const PH=[['test-plan','計画・影響分析'],['test-analysis','基本設計'],['test-strategy','詳細設計'],['test-design','ケース設計'],['test-implementation','ケース実装'],['test-execution','テスト実行'],['defect-analysis','不具合分析'],['test-completion','完了報告'],['regression-swap','差し替え'],['approval','最終承認']];
-const W=96;
 const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-const pad=(s,n)=>{let w=0;for(const ch of s)w+=/[　-鿿＀-￯]/.test(ch)?2:1;return s+' '.repeat(Math.max(0,n-w));};
-function bar(p){const n=Math.round(p*30);return `<span class="bar-fill">${'█'.repeat(n)}</span><span class="bar-bg">${'░'.repeat(30-n)}</span> ${String(Math.round(p*100)).padStart(3)}%`;}
-function header(task,ev,mode,sess,spent,budget){return `<span class="box">┌${'─'.repeat(W-2)}┐</span>\n<span class="box">│</span> <span class="b">qa-sentinel</span>  ${esc(task)}  <span class="dim">${esc(ev)}</span>${' '.repeat(Math.max(1,W-4-14-task.length-ev.length-2))}<span class="box">│</span>\n<span class="box">│</span> mode <span class="b">${mode}</span>   session <span class="ai">${sess}</span>   spent <span class="b">$${spent.toFixed(2)}</span> / $${budget.toFixed(2)}${' '.repeat(Math.max(1,W-4-44-sess.length))}<span class="box">│</span>\n<span class="box">└${'─'.repeat(W-2)}┘</span>`;}
-function table(assign,states){
-  let out=`  <span class="dim">${pad('#',3)}${pad('段',18)}${pad('担当',12)}${pad('状態',14)}終了条件</span>\n`;
-  PH.forEach(([p,l],i)=>{const a=assign[p]||'ai';const st=states[p]||'';
-    const who=a==='ai'?'<span class="ai">AI</span>        ':a==='human'?'<span class="hum">人</span>         ':'<span class="chk">AI→人確認</span> ';
-    const icon={done:'<span class="ok">✔ done</span>     ',run:'<span class="ai">● running</span>  ',wait:'<span class="hum">⏸ 人の番</span>    ',chk:'<span class="chk">◆ 確認待ち</span>  ',bad:'<span class="bad">✖ blocked</span>  ',stop:'<span class="bad">■ stopped</span>  ',hand:'<span class="hum">⏸ 手渡し</span>    ','':'<span class="dim">○ pending</span>  '}[st];
-    const gate={'test-plan':'impact','test-design':'cases','test-implementation':'pw-spec-lint','test-execution':'test-metrics --gate','regression-swap':'trace-check · weaken-check','approval':'check-approval'}[p]||'—';
-    out+=`  ${pad(String(i+1).padStart(2,'0'),3)}${pad(l,18)}${who}${icon}<span class="dim">${gate}</span>\n`;});
-  return out;}
-const c=s=>({t:s,cls:'cmd',type:true});const o=(s,cls)=>({t:s,cls:cls||''});const raw=h=>({html:h});
-const A_M2={'test-execution':'human',approval:'human'},A_M1={approval:'human'},A_M3=Object.fromEntries(PH.map(([p])=>[p,p==='approval'?'human':'check']));
-const done=(...ps)=>Object.fromEntries(ps.map(p=>[p,'done']));
+const c=s=>({t:s,cls:'cmd',type:true});const o=(s,cls)=>({t:s,cls:cls||''});const r=h=>({html:h});
+// 進み具合 1 行。done=済んだ段数, cur=いまの段, human=自分の段
+const STEPS=['計画','設計','準備','実行','原因','入替','承認'];
+function prog(done,cur,humanIdx,label){return r('  '+STEPS.map((s,i)=>{if(i<done)return `<span class="ok">✔${s}</span>`;if(i===cur)return `<span class="${label==='hum'?'hum':'ai'}">● ${s}</span>`;return `<span class="dim">${humanIdx.includes(i)?'○'+s+'(自分)':'○'+s}</span>`;}).join('  '));}
+const money=(a,b)=>`<span class="dim">$${a.toFixed(2)} / $${b.toFixed(2)}</span>`;
 const S={
  m2:[
-  [c('$ qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --mode M2')],
-  [raw(header('T-0042','evt_20260928_130001 (nl)','M2','ses_8f2a',0,5)),o(''),raw(table(A_M2,{'test-plan':'run'})),o(''),o('  <span class="spin">⠋</span> test-plan  trace-check --impact REQ-F-003','ai',true)],
-  [o('  ✔ impact: BD-002 DD-004 UT-011 ST-005   C7 suspect: ST-005（根拠の版が古い）','ok'),o('  ✔ 計画: docs/quality/iso29119-test-plan.md','ok'),o(''),raw(table(A_M2,{...done('test-plan'),'test-analysis':'run'}))],
-  [o('  ✔ 条件 4 件 · 方針表（対象外: UI 文言）· ケース ST-013 ST-014 ST-015 UT-020 · pw-spec-lint NG=0','ok'),o(''),raw(table(A_M2,{...done('test-plan','test-analysis','test-strategy','test-design','test-implementation'),'test-execution':'hand'})),o(''),raw(`  <span class="banner">⏸ 人の番: テスト実行（M2）</span>  セッション終了 $2.10  手順書 docs/quality/ST-013..015.md  スクリプト tests/e2e/loan-limit.spec.ts`),o('  結果を入れる:  qa-sentinel results T-0042   または  Web の受信箱','dim')],
-  [c('$ qa-sentinel results T-0042'),o(''),o('  ST-013  4 冊目を拒否            期待: 「上限 3 冊」の拒否メッセージ','dim'),raw('  結果? <span class="cmd">[p]ass [f]ail [b]locked</span> › <span class="ok">PASS</span>   証跡 › <span class="dim">st013.png</span>'),o('  ST-014  3 冊目は成功            期待: 一覧が 3 件','dim'),raw('  結果? <span class="cmd">[p]ass [f]ail [b]locked</span> › <span class="bad">FAIL</span>   証跡 › <span class="dim">st014.png</span>'),raw('  観察（推測は書かない）› <span class="cmd">3 冊目のボタンが disabled。判定が <= の可能性</span>'),o('  ST-015  返却後の再貸出          期待: 成功','dim'),raw('  結果? › <span class="ok">PASS</span>'),o('  UT-020  AI 実行済 PASS（junit.xml）','dim'),o(''),raw(`  ${bar(1)}  PASS 3 / FAIL 1 / BLOCKED 0`),raw('  AI へ渡す? <span class="cmd">[Y/n]</span> › <span class="cmd">Y</span>')],
-  [raw(header('T-0042','evt_20260928_130001_results (approval)','M2','ses_c9d0',2.10,5)),o(''),raw(table(A_M2,{...done('test-plan','test-analysis','test-strategy','test-design','test-implementation','test-execution'),'defect-analysis':'run'})),o(''),o('  <span class="spin">⠙</span> defect-analysis  ST-014 → 製品欠陥（loan.js:42 上限判定 <=）· 修整パッチ作成','ai',true)],
-  [o('  ✔ ODC: 製品欠陥 1 · 修整 → 再実行は 人 へ差し戻し（M2）','ok'),o('  ✔ 完了報告 metrics:begin/end · 申し送り Medium 0 Low 1','ok'),o('  ✔ 差し替え: ST-005 → 失効(ST-013) · 追加 ST-013 ST-014 ST-015 UT-020 · trace-check NG=0 · weaken-check NG=0','ok'),o(''),raw(table(A_M2,{...done(...PH.slice(0,9).map(x=>x[0])),approval:'wait'})),o(''),raw(`  <span class="banner">⏸ 人の番: 最終承認</span>  セッション終了 $3.85 / $5.00  check-approval: exit 0`)],
-  [c('$ qa-sentinel approve T-0042 --by yuki'),raw('  <span class="ok">✔</span> T-0042 done  approver=yuki  spent $3.85  sessions 2  人の判断 2 回（結果入力・承認）'),o('')],
+  [c('$ qa-sentinel run "貸出上限を 5 冊から 3 冊に変更"')],
+  [r('  <span class="dim">前回と同じでよければ Enter</span>'),r('  ? どこまで AI に下書きさせますか      › <span class="cmd">準備まで（実行は自分）</span>'),r('  ? どこで止まって確認しますか          › <span class="cmd">設計, 入替</span>'),r('  ? だれが確認しますか                  › <span class="cmd">yuki</span>'),r('  ? いくらまで使ってよいですか          › <span class="cmd">$5.00</span>'),o('')],
+  [r('  <span class="b">T-0042</span> 始めました   '+money(0,5)),prog(0,0,[3],'ai'),r('  <span class="spin">⠋</span> <span class="ai">AI が計画を書いています</span>')],
+  [prog(1,1,[3],'ai'),r('  <span class="spin">⠙</span> <span class="ai">AI がテストの設計を書いています</span>'),o('')],
+  [r('  <span class="banner">⏸ あなたの番</span>  テストの設計の下書きができました   '+money(1.9,5)),o(''),r('  AI がテストを <span class="b">4 件</span> 作り、古い <span class="b">1 件</span>（ST-005）を失効にしました。根拠 4 件。'),o(''),r('    ST-013  4 冊目は借りられない      → 上限のメッセージが出る'),r('    ST-014  3 冊目は借りられる        → 一覧が 3 件になる'),r('    ST-015  返したらまた借りられる    → 借りられる'),r('    UT-020  上限の数字そのもの（自動）→ 3 で OK、4 で NG'),r('    <span class="dim">ST-005  5 冊目は借りられない      → 失効（ST-013 に置き換え）</span>'),o(''),r('  <span class="dim">詳しく見る: qa-sentinel show T-0042      直す: 表を開いて編集 → qa-sentinel ok T-0042</span>')],
+  [c('$ qa-sentinel ok T-0042 --by yuki -m "ST-014 の期待結果を直した"'),r('  <span class="ok">✔ OK</span> yuki が確定（記録しました）   作業用の枝 qa-sentinel/T-0042 に保存'),prog(2,2,[3],'ai'),r('  <span class="spin">⠹</span> <span class="ai">AI がテストの準備をしています（Playwright / pytest）</span>')],
+  [r('  <span class="banner">⏸ あなたの番</span>  テスト実行はあなたの担当です   '+money(2.1,5)),o(''),r('  AI が用意したもの: 手順書 4 件、自動テスト 1 件（UT-020 は AI が実行済み・OK）'),r('  <span class="dim">結果を入れる: qa-sentinel results T-0042</span>')],
+  [c('$ qa-sentinel results T-0042'),r('  ST-013  4 冊目は借りられない      できた? <span class="cmd">[y]es [n]o [s]kip</span> › <span class="ok">y</span>'),r('  ST-014  3 冊目は借りられる        できた? › <span class="bad">n</span>'),r('          何が見えましたか（見たまま）› <span class="cmd">3 冊目の「借りる」ボタンが押せなかった（灰色）</span>'),r('  ST-015  返したらまた借りられる    できた? › <span class="ok">y</span>'),o(''),r('  できた 3 / できなかった 1 / 試せない 0      AI に渡しますか <span class="cmd">[Y/n]</span> › <span class="cmd">Y</span>')],
+  [prog(4,4,[3],'ai'),r('  <span class="spin">⠸</span> <span class="ai">AI が原因を整理し、古いテストの入れ替えを書いています</span>')],
+  [r('  <span class="banner">⏸ あなたの番</span>  入れ替えの下書きができました   '+money(3.85,5)),o(''),r('  ST-014 が失敗した原因: <span class="b">アプリ側の不具合</span>（上限の判定が 1 つずれている）'),r('  → AI は直しません。直し方の案を <span class="dim">fix_proposal.md</span> に書きました。開発者に渡してください'),r('  入れ替え: ST-005 を失効、ST-013〜015 と UT-020 を追加。チェック 2 つとも OK'),o(''),c('$ qa-sentinel ok T-0042 --by yuki'),r('  <span class="ok">✔ OK</span> 残りは最終承認だけ')],
+  [c('$ qa-sentinel approve T-0042 --by yuki'),r('  <span class="ok">✔ 完了</span> T-0042   使った金額 $3.85   あなたが決めた回数 3（OK 2・結果入力 1）'),o('')],
+ ],
+ q:[
+  [c('$ qa-sentinel run "上限に達したときの扱いを変更"'),r('  <span class="dim">（4 つの質問は前回と同じ → Enter）</span>'),r('  <span class="b">T-0043</span> 始めました   '+money(0,5)),prog(1,1,[3],'ai'),r('  <span class="spin">⠼</span> <span class="ai">AI がテストの設計を書いています</span>')],
+  [r('  <span class="bad">✋ AI から質問</span>  決められないことがあります   '+money(1.4,5)),o(''),r('  上限に達したとき、予約画面に案内しますか？'),r('  <span class="dim">仕様（spec.md）に書いてありません。推測で進めず止まっています。</span>'),o(''),r('  <span class="dim">答える: qa-sentinel answer T-0043</span>')],
+  [c('$ qa-sentinel answer T-0043 --by yuki "案内しない。メッセージだけ"'),r('  <span class="ok">✔</span> 回答を記録。仕様にも追記する案を作ります'),prog(1,1,[3],'ai'),r('  <span class="spin">⠴</span> <span class="ai">AI が設計の続きを書いています</span>')],
+  [r('  <span class="banner">⏸ あなたの番</span>  テストの設計の下書きができました   '+money(2.0,5)),r('  <span class="dim">（この先はいつもの使い方と同じ）</span>')],
  ],
  m1:[
-  [c('$ qa-sentinel run --project library-loan --nl "上限到達時の扱いを変更" --mode M1')],
-  [raw(header('T-0043','evt_20260928_140000 (nl)','M1','ses_9c11',0,5)),o(''),raw(table(A_M1,{...done('test-plan','test-analysis','test-strategy'),'test-design':'run'})),o(''),o('  <span class="spin">⠹</span> test-design  技法: 状態遷移 · 境界値','ai',true)],
-  [o('  ✖ ST-013 期待結果を決められない: 上限到達時に予約へ誘導するか、拒否のみか（spec.md に無い）','bad'),o('  cases gate: exit 1  確認待ち 1 件','dim'),o(''),raw(table(A_M1,{...done('test-plan','test-analysis','test-strategy'),'test-design':'bad'})),o(''),raw(`  <span class="banner">✖ 止まりました: 確認待ち</span>  セッション終了 $1.90  回答: qa-sentinel answer T-0043`)],
-  [c('$ qa-sentinel answer T-0043'),raw('  Q: 上限到達時に予約へ誘導しますか？ › <span class="cmd">誘導しない。拒否メッセージのみ</span>'),raw('  spec.md にも追記する? <span class="cmd">[Y/n]</span> › <span class="cmd">Y</span>'),o(''),raw(header('T-0043','evt_20260928_140000_answer (approval)','M1','ses_a377 (continue: test-design)',1.90,5)),raw(table(A_M1,{...done('test-plan','test-analysis','test-strategy'),'test-design':'run'}))],
-  [o('  ✔ ケース 4 件 · 実装 · 実行 PASS 4 / FAIL 0（修整 1: ODC 製品欠陥）· 報告 · 差し替え NG=0','ok'),o(''),raw(table(A_M1,{...done(...PH.slice(0,9).map(x=>x[0])),approval:'wait'})),raw(`  <span class="banner">⏸ 人の番: 最終承認</span>  $3.20 / $5.00`),c('$ qa-sentinel approve T-0043 --by yuki'),raw('  <span class="ok">✔</span> T-0043 done  人の判断 2 回（回答・承認）')],
- ],
- m3:[
-  [c('$ qa-sentinel run --project library-loan --nl "貸出上限を 3 冊に" --mode M3')],
-  [raw(header('T-0044','evt_20260928_150000 (nl)','M3','ses_d001',0,5)),o(''),raw(table(A_M3,{'test-plan':'run'})),o('  <span class="spin">⠸</span> test-plan','ai',true)],
-  [o('  ✔ impact: BD-002 DD-004 UT-011 ST-005 · 計画作成','ok'),raw(table(A_M3,{'test-plan':'chk'})),raw(`  <span class="banner">◆ 確認: test-plan の出口</span>  セッション終了 $0.40  成果物 docs/quality/iso29119-test-plan.md`),c('$ qa-sentinel review T-0044'),raw('  範囲 REQ-F-003 / レベル UT+ST / 終了基準 Critical/High 0 …  承認? <span class="cmd">[a]pprove [r]eject</span> › <span class="chk">a</span>')],
-  [raw(header('T-0044','… (approval)','M3','ses_d002 (continue: test-analysis)',0.40,5)),raw(table(A_M3,{...done('test-plan'),'test-analysis':'run'})),o('  … 以下、各段の出口で同じように止まる（9 回）。1 段ごとにセッションが立つので予算は段数 × 単価','dim'),o('  M3 は監査要件が強い案件向け。日常は M1/M2 を推奨','dim')],
+  [c('$ qa-sentinel run "貸出上限を 3 冊に" --preset 全部AI'),r('  <span class="b">T-0044</span> 始めました   全部 AI が下書き、入替で止まります   '+money(0,5)),prog(0,0,[],'ai'),r('  <span class="spin">⠦</span> <span class="ai">AI が計画 → 設計 → 準備 → 実行 → 原因 → 入替 と進めています</span>')],
+  [prog(3,3,[],'ai'),r('  <span class="ai">実行: できた 3 / できなかった 1 → 原因を整理中</span>')],
+  [r('  <span class="banner">⏸ あなたの番</span>  全部の下書きができました   '+money(4.1,5)),o(''),r('  作った 4 件、失効 1 件、失敗 1 件（アプリ側の不具合・直し方の案あり）'),r('  <span class="dim">詳しく見る: qa-sentinel show T-0044</span>'),c('$ qa-sentinel ok T-0044 --by yuki'),c('$ qa-sentinel approve T-0044 --by yuki'),r('  <span class="ok">✔ 完了</span> 使った金額 $4.10   あなたが決めた回数 2')],
  ],
  watch:[
-  [c('$ qa-sentinel watch --project proj-x'),raw('  tracker <span class="b">relay</span>  kind=jira  poll=10min  credential=env:JIRA_TOKEN  <span class="dim">LLM は起動しない</span>')],
-  [raw('  13:00  GET /rest/api/2/search … updated >= 12:50   <span class="dim">polled: 0 events</span>'),raw('  13:10  <span class="dim">polled: 0 events</span>'),raw('  13:20  <span class="dim">polled: 0 events</span>'),raw('  13:30  <span class="dim">polled: 0 events</span>   <span class="dim">sessions_started 0 · tokens 0</span>')],
-  [raw('  13:40  <span class="ok">polled: 1 event</span>  PROJ-123 「貸出上限の変更」  changed_ids=[REQ-F-003]'),raw(header('T-0045','evt_20260928_134000 (tracker)','M2','ses_e771',0,5)),raw(table(A_M2,{'test-plan':'run'})),o('  <span class="spin">⠼</span> test-plan  ← ここで初めて LLM が動く','ai',true)],
+  [c('$ qa-sentinel watch'),r('  JIRA を 10 分ごとに見ています（AI は動いていません・お金はかかりません）')],
+  [r('  <span class="dim">13:00  変化なし</span>'),r('  <span class="dim">13:10  変化なし</span>'),r('  <span class="dim">13:20  変化なし</span>')],
+  [r('  13:30  <span class="ok">変化あり</span>  PROJ-123「貸出上限の変更」'),r('  <span class="b">T-0045</span> 始めました（設定はいつもの使い方）   '+money(0,5)),prog(0,0,[3],'ai'),r('  <span class="spin">⠧</span> <span class="ai">ここで初めて AI が動きます</span>')],
  ],
 };
 const $=id=>document.getElementById(id);const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-let steps=S.m2,i=-1,timer=null,busy=false,spin=null;
-const F=['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+let steps=S.m2,i=-1,timer=null,busy=false,spin=null;const F=['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
 async function put(line){const term=$('term');const el=document.createElement('div');term.appendChild(el);
   if(line.html){el.innerHTML=line.html;}
-  else if(line.type&&!reduce){el.className=line.cls+' cursor';for(let k=0;k<line.t.length;k++){el.textContent=line.t.slice(0,k+1);term.scrollTop=term.scrollHeight;await new Promise(r=>setTimeout(r,16));}el.classList.remove('cursor');}
-  else{el.className=line.cls;el.innerHTML=line.t.includes('<span')?line.t:esc(line.t);}
+  else if(line.type&&!reduce){el.className=line.cls+' cursor';for(let k=0;k<line.t.length;k++){el.textContent=line.t.slice(0,k+1);term.scrollTop=term.scrollHeight;await new Promise(x=>setTimeout(x,16));}el.classList.remove('cursor');}
+  else{el.className=line.cls;el.textContent=line.t;}
   term.scrollTop=term.scrollHeight;
   if(spin){clearInterval(spin);spin=null;}
   const sp=el.querySelector('.spin');if(sp&&!reduce){let k=0;spin=setInterval(()=>{sp.textContent=F[k++%F.length];},80);}
 }
-async function next(){if(busy||i>=steps.length-1){if(i>=steps.length-1)stop();return;}busy=true;i++;for(const ln of steps[i]){await put(ln);if(!reduce)await new Promise(r=>setTimeout(r,ln.type?200:70));}busy=false;}
-function play(){if(timer){stop();return;}$('play').textContent='❚❚ 停止';timer=setInterval(async()=>{if(i>=steps.length-1){stop();return;}await next();},reduce?1800:3600);next();}
+async function next(){if(busy||i>=steps.length-1){if(i>=steps.length-1)stop();return;}busy=true;i++;for(const ln of steps[i]){await put(ln);if(!reduce)await new Promise(x=>setTimeout(x,ln.type?200:60));}busy=false;}
+function play(){if(timer){stop();return;}$('play').textContent='❚❚ 停止';timer=setInterval(async()=>{if(i>=steps.length-1){stop();return;}await next();},reduce?1800:3400);next();}
 function stop(){clearInterval(timer);timer=null;$('play').textContent='▶ 再生';}
 function reset(){stop();if(spin){clearInterval(spin);spin=null;}i=-1;busy=false;$('term').innerHTML='<div class="dim"># 再生を押す。「次へ」で 1 手ずつ</div>';}
 $('play').onclick=play;$('step').onclick=()=>{stop();next();};$('reset').onclick=reset;
