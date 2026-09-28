@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qa-sentinel 動作フロー</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f3f5f8;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#cfd7e1;--soft:#e9eef4;
+ --ai:#1d4ed8;--ai-soft:#dbeafe;--human:#b45309;--human-soft:#fde9c8;--ok:#15803d;--ok-soft:#dcfce7;--stop:#b91c1c;--stop-soft:#fee2e2;--now:#d97706}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--soft:#1f2937;
+ --ai:#8ab4ff;--ai-soft:#12233f;--human:#f5c26b;--human-soft:#3d2a08;--ok:#4ade80;--ok-soft:#0f2e1a;--stop:#f87171;--stop-soft:#3b1212;--now:#f5a524;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--soft:#1f2937;
+ --ai:#8ab4ff;--ai-soft:#12233f;--human:#f5c26b;--human-soft:#3d2a08;--ok:#4ade80;--ok-soft:#0f2e1a;--stop:#f87171;--stop-soft:#3b1212;--now:#f5a524;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:14px/1.6 "IBM Plex Sans JP",system-ui,sans-serif;padding:0 16px;padding-block:18px 40px;max-width:1080px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 12px;max-width:74ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button,select{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}button:focus-visible,select:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+.spacer{flex:1}.meter{display:flex;gap:14px;font-size:12.5px;color:var(--muted)}.meter b{color:var(--ink);font-variant-numeric:tabular-nums}
+figure{margin:0 0 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;overflow-x:auto}
+svg{display:block;width:100%;height:auto;min-width:640px;color:var(--ink)}
+.lane{fill:none;stroke:var(--line);stroke-dasharray:4 4}
+.lane-label{font-size:12px;font-weight:600}.lane-label.ai{fill:var(--ai)}.lane-label.hum{fill:var(--human)}
+.node rect{fill:var(--soft);stroke:var(--line);stroke-width:1.2;transition:fill .3s,stroke .3s}
+.node text{fill:var(--ink);font-size:12.5px;font-family:"IBM Plex Sans JP",system-ui,sans-serif}
+.node.active rect{fill:var(--ai-soft);stroke:var(--ai);stroke-width:2}.node.done rect{fill:var(--ok-soft);stroke:var(--ok)}
+.node.wait rect{fill:var(--human-soft);stroke:var(--human);stroke-width:2}.node.bad rect{fill:var(--stop-soft);stroke:var(--stop);stroke-width:2}
+.edge{stroke:var(--line);stroke-width:1.4;fill:none}.edge.lit{stroke:var(--now);stroke-width:2}
+.drop{stroke:var(--human);stroke-width:1.6;fill:none;stroke-dasharray:3 3;opacity:0}.drop.lit{opacity:1}
+#dot{fill:var(--now);stroke:var(--panel);stroke-width:2}
+.money text{font-size:11px;fill:var(--muted);font-family:"IBM Plex Mono",monospace}
+figcaption{font-size:12px;color:var(--muted);margin-top:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-height:96px}
+.panel .who{display:inline-block;padding:1px 10px;border-radius:999px;font-size:12px;font-weight:600;margin-right:6px}
+.who.ai{background:var(--ai-soft);color:var(--ai)}.who.hum{background:var(--human-soft);color:var(--human)}.who.none{background:var(--soft);color:var(--muted)}
+.panel .t{font-size:15px;font-weight:700;margin:4px 0}.panel .d{margin:0;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.node rect{transition:none}}
+</style>
+</head>
+<body>
+
+<h1>qa-sentinel 動作フロー</h1>
+<p class="lead">上のレーンが AI、下のレーンがあなた。<b>AI が下書きを作り、止まる点であなたのレーンに降りてくる。</b> あなたが OK を押すと、また AI のレーンに戻って続きをやる。AI が待っている間はお金がかからない。</p>
+<div class="bar">
+  <select id="scenario" aria-label="シナリオ">
+    <option value="m2" selected>いつもの使い方（準備は AI、テスト実行は自分）</option>
+    <option value="q">AI が決められなくて質問してくる</option>
+    <option value="m1">全部 AI に任せて、最後だけ確認</option>
+    <option value="watch">見張りだけ（何も起きなければ AI は動かない）</option>
+  </select>
+  <button id="play" class="primary">▶ 再生</button><button id="step">次へ</button><button id="reset">最初から</button>
+  <span class="spacer"></span>
+  <div class="meter"><span>使った <b id="m-cost">$0.00</b> / $5.00</span><span>あなたが決めた回数 <b id="m-dec">0</b></span></div>
+</div>
+
+<figure>
+<svg id="flow" viewBox="0 0 1000 300" role="img" aria-label="AI のレーンで計画から入れ替えまでの下書きが進み、止まる点であなたのレーンに降りて確認・実行・回答をし、OK で AI のレーンに戻る流れ">
+  <defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+  <rect class="lane" x="8" y="30" width="984" height="96" rx="8"/><text class="lane-label ai" x="18" y="22">AI のレーン（下書きを作る。動いている間だけお金がかかる）</text>
+  <rect class="lane" x="8" y="170" width="984" height="96" rx="8"/><text class="lane-label hum" x="18" y="162">あなたのレーン（直して OK・自分でやる・質問に答える）</text>
+  <g id="edges"></g><g id="nodes"></g>
+  <circle id="dot" r="8" cx="-20" cy="-20" opacity="0"/>
+</svg>
+<figcaption>玉＝いまの作業。緑＝終わった段。橙＝あなたの番。赤＝AI が止まって質問している。</figcaption>
+</figure>
+
+<div class="panel"><span class="who none" id="p-who">—</span><span id="p-title" class="t">再生を押してください</span><p class="d" id="p-desc"></p></div>
+
+<script>
+(function(){
+const AI=[['plan','計画',60],['design','設計',190],['prep','準備',320],['exec','実行',450],['cause','原因',580],['swap','入替',710],['final','承認',840]];
+const HUM=[['h-design','設計を直して OK',190],['h-exec','自分でテスト',450],['h-swap','入替を直して OK',710],['h-final','最終承認',840]];
+const W=110,H=44,YA=56,YH=196;
+const svg=document.getElementById('flow'),gN=document.getElementById('nodes'),gE=document.getElementById('edges');
+const pos={};
+function node(id,label,x,y){pos[id]={x:x+W/2,y:y+H/2};const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','node');g.id='n-'+id;g.innerHTML=`<rect x="${x}" y="${y}" width="${W}" height="${H}" rx="8"/><text x="${x+W/2}" y="${y+H/2+4}" text-anchor="middle" font-weight="500">${label}</text>`;gN.appendChild(g);}
+AI.forEach(([id,l,x])=>node(id,l,x,YA));HUM.forEach(([id,l,x])=>node(id,l,x,YH));
+function path(d,cls,id){const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',d);p.setAttribute('class',cls);p.setAttribute('marker-end','url(#arrow)');p.id=id;gE.appendChild(p);}
+for(let i=0;i<AI.length-1;i++){const a=AI[i],b=AI[i+1];path(`M${a[2]+W},${YA+H/2} L${b[2]},${YA+H/2}`,'edge','e-'+a[0]);}
+// drops: AI node ↔ human node (down and back up)
+[['design','h-design'],['exec','h-exec'],['swap','h-swap'],['final','h-final']].forEach(([a,h])=>{const x=pos[a].x;path(`M${x-14},${YA+H} L${x-14},${YH}`,'drop','d-'+a);path(`M${x+14},${YH} L${x+14},${YA+H}`,'drop','u-'+a);});
+// steps: {at, who:'ai'|'hum'|'none', title, desc, done:[...], wait:[...], bad:[...], lit:[...], cost, dec}
+const S={
+ m2:[
+  {at:'plan',who:'ai',title:'AI が計画を書く',desc:'変更「貸出上限を 5 冊 → 3 冊」がどこに効くかを調べ、何をテストするか決める。',cost:.4},
+  {at:'design',who:'ai',title:'AI がテストの設計を下書き',desc:'4 件の新しいテストと、古くなった 1 件（失効）。根拠を付ける。',done:['plan'],cost:1.9},
+  {at:'h-design',who:'hum',title:'あなたの番：設計を直して OK',desc:'表を直して OK。AI は止まっていて、お金はかかっていない。',done:['plan'],wait:['design'],lit:['d-design'],cost:1.9,dec:1},
+  {at:'prep',who:'ai',title:'AI がテストの準備',desc:'手順書と自動テストのコードを作業用の枝に書く。',done:['plan','design'],lit:['u-design'],cost:2.1},
+  {at:'h-exec',who:'hum',title:'あなたの番：自分でテスト',desc:'手順どおりに試して、できた／できなかったを入れる。見たままを書く。',done:['plan','design','prep'],wait:['exec'],lit:['d-exec'],cost:2.1,dec:2},
+  {at:'cause',who:'ai',title:'AI が原因を整理',desc:'できなかった 1 件はアプリ側の不具合。AI は直さず「直し方の案」を書く。',done:['plan','design','prep','exec'],lit:['u-exec'],cost:3.2},
+  {at:'swap',who:'ai',title:'AI が古いテストの入れ替えを下書き',desc:'古い 1 件を失効、新しい 4 件を追加。チェック 2 つが通ったことを確認。',done:['plan','design','prep','exec','cause'],cost:3.85},
+  {at:'h-swap',who:'hum',title:'あなたの番：入れ替えを直して OK',desc:'消してはいない（失効の印だけ）。OK で本線に入る。',done:['plan','design','prep','exec','cause'],wait:['swap'],lit:['d-swap'],cost:3.85,dec:3},
+  {at:'h-final',who:'hum',title:'あなたの番：最終承認',desc:'AI は承認欄を埋めない。あなたの名前で記録される。',done:['plan','design','prep','exec','cause','swap'],wait:['final'],lit:['u-swap','d-final'],cost:3.85,dec:4},
+  {at:'final',who:'none',title:'完了',desc:'使った金額 $3.85。あなたが決めた回数 4。',done:['plan','design','prep','exec','cause','swap','final'],cost:3.85,dec:4},
+ ],
+ q:[
+  {at:'plan',who:'ai',title:'AI が計画を書く',desc:'変更「上限に達したときの扱い」。',cost:.4},
+  {at:'design',who:'ai',title:'AI がテストの設計を下書き',desc:'途中で、仕様に書いていないことに気づく。',done:['plan'],cost:1.4},
+  {at:'h-design',who:'hum',title:'あなたの番：質問に答える',desc:'「上限に達したとき、予約画面に案内しますか？」推測で進めず止まっている。',done:['plan'],bad:['design'],lit:['d-design'],cost:1.4,dec:1},
+  {at:'design',who:'ai',title:'AI が設計の続きを書く',desc:'回答「案内しない」を使って続きを作る。前の段はやり直さない。',done:['plan'],lit:['u-design'],cost:2.0},
+  {at:'h-design',who:'hum',title:'あなたの番：設計を直して OK',desc:'ここから先は「いつもの使い方」と同じ。',done:['plan'],wait:['design'],lit:['d-design'],cost:2.0,dec:2},
+ ],
+ m1:[
+  {at:'plan',who:'ai',title:'AI が計画',desc:'全部 AI に任せる設定。止まるのは入替と承認だけ。',cost:.4},
+  {at:'design',who:'ai',title:'AI が設計',desc:'',done:['plan'],cost:1.0},
+  {at:'prep',who:'ai',title:'AI が準備',desc:'',done:['plan','design'],cost:1.6},
+  {at:'exec',who:'ai',title:'AI がテスト実行',desc:'できた 3 / できなかった 1。',done:['plan','design','prep'],cost:2.9},
+  {at:'cause',who:'ai',title:'AI が原因を整理',desc:'アプリ側の不具合。直し方の案だけ。',done:['plan','design','prep','exec'],cost:3.5},
+  {at:'swap',who:'ai',title:'AI が入れ替えを下書き',desc:'',done:['plan','design','prep','exec','cause'],cost:4.1},
+  {at:'h-swap',who:'hum',title:'あなたの番：全部まとめて確認',desc:'AI がやったこと全部の要約を見て OK。',done:['plan','design','prep','exec','cause'],wait:['swap'],lit:['d-swap'],cost:4.1,dec:1},
+  {at:'h-final',who:'hum',title:'あなたの番：最終承認',desc:'',done:['plan','design','prep','exec','cause','swap'],wait:['final'],lit:['u-swap','d-final'],cost:4.1,dec:2},
+ ],
+ watch:[
+  {at:null,who:'none',title:'見張り中（AI は動いていない）',desc:'JIRA を 10 分ごとに見る。変化がなければ何もしない。お金は $0。',cost:0},
+  {at:null,who:'none',title:'変化なし',desc:'13:10、13:20、13:30 … 何も起きない。',cost:0},
+  {at:'plan',who:'ai',title:'変化あり → ここで初めて AI が動く',desc:'PROJ-123「貸出上限の変更」を検知。いつもの使い方で始める。',cost:.4},
+ ],
+};
+const $=id=>document.getElementById(id);const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let steps=S.m2,i=-1,timer=null;
+function render(){
+  document.querySelectorAll('.node').forEach(n=>n.classList.remove('active','done','wait','bad'));
+  document.querySelectorAll('.edge,.drop').forEach(e=>e.classList.remove('lit'));
+  const s=steps[i];const dot=$('dot');
+  if(!s){$('p-who').className='who none';$('p-who').textContent='—';$('p-title').textContent='再生を押してください';$('p-desc').textContent='';dot.setAttribute('opacity',0);$('m-cost').textContent='$0.00';$('m-dec').textContent='0';return;}
+  (s.done||[]).forEach(id=>$('n-'+id).classList.add('done'));
+  (s.wait||[]).forEach(id=>$('n-'+id).classList.add('wait'));
+  (s.bad||[]).forEach(id=>$('n-'+id).classList.add('bad'));
+  (s.lit||[]).forEach(id=>{const e=$(id);if(e)e.classList.add('lit');});
+  if(s.at){const n=$('n-'+s.at);n.classList.add(s.who==='hum'?'wait':s.who==='ai'?'active':'done');const p=pos[s.at];dot.style.transition=reduce?'none':'cx .6s,cy .6s';dot.setAttribute('cx',p.x);dot.setAttribute('cy',p.y);dot.setAttribute('opacity',1);
+    // light edges up to current AI node
+    const idx=AI.findIndex(a=>a[0]===s.at);if(idx>0)for(let k=0;k<idx;k++)$('e-'+AI[k][0]).classList.add('lit');}
+  else dot.setAttribute('opacity',0);
+  $('p-who').className='who '+s.who;$('p-who').textContent={ai:'AI',hum:'あなた',none:'—'}[s.who];
+  $('p-title').textContent=`${i+1}/${steps.length}　${s.title}`;$('p-desc').textContent=s.desc||'';
+  $('m-cost').textContent='$'+s.cost.toFixed(2);$('m-dec').textContent=s.dec||0;
+}
+function next(){if(i>=steps.length-1){stop();return;}i++;render();}
+function play(){if(timer){stop();return;}$('play').textContent='❚❚ 停止';timer=setInterval(()=>{if(i>=steps.length-1){stop();return;}next();},reduce?1600:2600);if(i<0)next();}
+function stop(){clearInterval(timer);timer=null;$('play').textContent='▶ 再生';}
+function reset(){stop();i=-1;render();}
+$('play').onclick=play;$('step').onclick=()=>{stop();next();};$('reset').onclick=reset;
+$('scenario').onchange=e=>{steps=S[e.target.value];reset();};
+reset();next();
+})();
+</script>
+
+</body>
+</html>

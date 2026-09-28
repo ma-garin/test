@@ -1,0 +1,27 @@
+[project]
+name = "qa-sentinel"
+version = "0.1.0"
+description = "変更駆動 QA エージェント（枠組み・MVP）"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+managed = ["anthropic>=1.0"]
+
+[project.scripts]
+qa-sentinel = "qa_sentinel.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["qa_sentinel*"]
+
+[tool.setuptools.package-data]
+"qa_sentinel.web" = ["static/*.html"]
+"qa_sentinel.agent" = ["*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

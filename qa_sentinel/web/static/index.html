@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qa-sentinel 台帳</title>
+<style>
+:root{--bg:#f5f7fa;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#c9d2de;--accent:#d97706;--ok:#15803d;--stop:#b91c1c;--llm:#1d4ed8;--check:#6d28d9;--node:#eef2f7}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--node:#1f2937;--llm:#8ab4ff;--check:#c4b5fd;--ok:#4ade80;--stop:#f87171;--accent:#f5a524;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,sans-serif;padding:16px;max-width:1100px;margin-inline:auto}
+h1{font-size:18px;margin:0 0 10px}
+table{border-collapse:collapse;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;font-variant-numeric:tabular-nums}
+th{color:var(--muted);font-weight:500;font-size:12px}
+tr[data-task]{cursor:pointer}tr[data-task]:hover{background:var(--node)}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
+.pill.running{border-color:var(--accent);color:var(--accent)}.pill.done{border-color:var(--ok);color:var(--ok)}
+.pill.blocked,.pill.stopped{border-color:var(--stop);color:var(--stop)}.pill.paused,.pill.review{border-color:var(--check);color:var(--check)}.pill.handoff{border-color:var(--accent);color:var(--accent)}
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.step{padding:4px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:var(--node)}
+.step.done{border-color:var(--ok)}.step.now{border-color:var(--accent);background:transparent;font-weight:600}.step.bad{border-color:var(--stop)}
+.step small{display:block;color:var(--muted);font-size:10.5px}
+#detail{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px}
+pre{font-size:12px;white-space:pre-wrap;margin:8px 0 0}
+button,input,textarea{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+button{cursor:pointer}button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--node)}
+.form textarea{flex:1 1 320px;min-height:40px}
+.muted{color:var(--muted);font-size:12px}.ev{font-size:12px;margin:6px 0 0;padding-left:1.2em}
+</style>
+</head>
+<body>
+<h1>qa-sentinel 台帳 <span class="muted">tasks/*.json を 5 秒ごとに再読</span></h1>
+<table><thead><tr><th>タスク</th><th>プロジェクト</th><th>モード</th><th>段</th><th>状態</th><th>予算</th><th>確認者</th><th>理由</th></tr></thead><tbody id="rows"></tbody></table>
+<div id="detail" hidden></div>
+<script>
+let meta=null,cur=null;
+const WHO={review:'確定待ち',handoff:'手渡し',blocked:'回答待ち',paused:'承認待ち',running:'AI 実行中',done:'完了',stopped:'停止',queued:'待機'};
+async function j(u,o){const r=await fetch(u,o);return r.json()}
+function pill(s){return `<span class="pill ${s}">${WHO[s]||s}</span>`}
+function post(u,body){return fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)}).then(r=>r.json())}
+async function load(){
+  meta=meta||await j('/api/meta');
+  const ts=await j('/api/tasks');
+  document.getElementById('rows').innerHTML=ts.map(t=>`<tr data-task="${t.task}"><td>${t.task}</td><td>${t.project}</td><td>${t.mode}</td><td>${meta.labels[t.phase]||t.phase}</td><td>${pill(t.status)}</td><td>$${(t.session.spent_usd||0).toFixed(2)} / ${(t.plan.budget_usd||t.session.budget_usd||0).toFixed(2)}</td><td>${t.plan.reviewer||''}</td><td>${t.reason||''}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">タスクなし。CLI: qa-sentinel run --project library-loan --nl "..."</td></tr>';
+  document.querySelectorAll('tr[data-task]').forEach(r=>r.onclick=()=>show(r.dataset.task));
+  if(cur)show(cur);
+}
+async function show(id){
+  cur=id;const t=await j('/api/tasks/'+id);const d=document.getElementById('detail');d.hidden=false;
+  const doneSet=new Set(t.history.filter(h=>h.status==='done').map(h=>h.phase));
+  const all=[...meta.phases,'waiting_human','done'];
+  const drafter=p=>t.plan.draft?(t.plan.draft.includes(p)?'AI 下書き':'人が下書き'):'';
+  const stops=p=>t.plan.stop_at&&t.plan.stop_at.includes(p)?' · 出口で確定':'';
+  const by=t.plan.reviewer||'';
+  let form='';
+  if(t.status==='review')form=`<div class="form"><b>確定 — ${meta.labels[t.phase]}</b><span class="muted">AI の下書きを直してから OK。差し戻すと同じ段を AI がやり直す</span><input id="by" value="${by}" aria-label="確定者"><textarea id="note" placeholder="直した点・差し戻しの理由"></textarea><button class="primary" id="ok">OK（次の段へ）</button><button id="rej">差し戻す</button></div>`;
+  if(t.status==='handoff')form=`<div class="form"><b>手渡し — ${meta.labels[t.phase]} は人が下書き</b><input id="by" value="${by}" aria-label="提出者"><input id="file" placeholder="成果物のパス" style="flex:1 1 220px"><textarea id="note" placeholder="観察・メモ（推測は書かない）"></textarea><button class="primary" id="sub">渡す（次の段へ）</button></div>`;
+  if(t.status==='blocked')form=`<div class="form"><b>回答 — ${t.reason||''}</b><input id="by" value="${by}" aria-label="回答者"><textarea id="note" placeholder="回答"></textarea><button class="primary" id="ans">回答して再開</button></div>`;
+  if(t.status==='paused')form=`<div class="form"><b>最終承認</b><span class="muted">AI は approver を埋めない</span><input id="by" value="${by}" aria-label="承認者"><button class="primary" id="ap">承認</button></div>`;
+  d.innerHTML=`<b>${t.task}</b> ${t.project} · ${t.mode} ${pill(t.status)} <span class="muted">event ${t.event} · session ${t.session.id||'-'}${t.session.ended?'（終了）':''} · branch ${t.branch||'-'}</span>
+  <div class="steps">${all.map(p=>`<span class="step ${p===t.phase?(t.status==='blocked'||t.status==='stopped'?'bad now':'now'):(doneSet.has(p)?'done':'')}" title="${(meta.gates[p]||{}).gate||''}">${meta.labels[p]||p}<small>${drafter(p)}${stops(p)}</small></span>`).join('')}</div>
+  ${form}
+  <div class="muted">影響: ${t.impact.join(', ')||'-'} ／ 追加: ${t.cases.added.join(', ')||'-'} ／ 失効: ${t.cases.retired.join(', ')||'-'}</div>
+  ${t.evidence[t.phase]?`<div class="muted" style="margin-top:6px">根拠（${meta.labels[t.phase]}）</div><ul class="ev">${t.evidence[t.phase].map(e=>`<li>${e}</li>`).join('')}</ul>`:''}
+  <pre>${t.history.map(h=>`${h.at}  ${h.phase.padEnd(20)} ${h.status.padEnd(8)} ${h.reason||''}`).join('\n')}${t.decisions.length?'\n\n決定:\n'+t.decisions.map(x=>`${x.by.padEnd(10)} ${x.kind.padEnd(8)} ${x.phase.padEnd(20)} ${x.note||''}`).join('\n'):''}</pre>`;
+  const g=id=>document.getElementById(id);const val=id=>g(id)?g(id).value:'';
+  if(g('ok'))g('ok').onclick=async()=>{await post('/api/review',{task:id,by:val('by'),ok:'1',note:val('note')});load();};
+  if(g('rej'))g('rej').onclick=async()=>{await post('/api/review',{task:id,by:val('by'),ok:'0',note:val('note')});load();};
+  if(g('sub'))g('sub').onclick=async()=>{await post('/api/submit',{task:id,by:val('by'),file:val('file'),note:val('note')});load();};
+  if(g('ans'))g('ans').onclick=async()=>{await post('/api/answer',{task:id,by:val('by'),text:val('note')});load();};
+  if(g('ap'))g('ap').onclick=async()=>{await post('/api/approve',{task:id,by:val('by')});load();};
+}
+load();setInterval(load,5000);
+</script>
+</body>
+</html>
