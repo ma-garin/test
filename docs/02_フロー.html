@@ -1,0 +1,274 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>
+<title>qa-sentinel 動作フロー</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f5f7fa; --panel:#ffffff; --ink:#1b2230; --muted:#5b6675; --line:#c9d2de;
+  --accent:#d97706; --accent-soft:#fde9c8; --ok:#15803d; --ok-soft:#dcfce7;
+  --stop:#b91c1c; --stop-soft:#fee2e2; --llm:#1d4ed8; --llm-soft:#dbeafe; --node:#eef2f7;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f141b; --panel:#171e28; --ink:#e6ebf2; --muted:#9aa7b8; --line:#2c3a4d;
+    --accent:#f5a524; --accent-soft:#3d2a08; --ok:#4ade80; --ok-soft:#0f2e1a;
+    --stop:#f87171; --stop-soft:#3b1212; --llm:#60a5fa; --llm-soft:#12233f; --node:#1f2937;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --panel:#171e28; --ink:#e6ebf2; --muted:#9aa7b8; --line:#2c3a4d;
+  --accent:#f5a524; --accent-soft:#3d2a08; --ok:#4ade80; --ok-soft:#0f2e1a;
+  --stop:#f87171; --stop-soft:#3b1212; --llm:#60a5fa; --llm-soft:#12233f; --node:#1f2937;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans JP",system-ui,sans-serif;font-size:14px;line-height:1.6;padding:0 16px;padding-block:20px 40px;max-width:1120px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px;text-wrap:balance}
+.lead{color:var(--muted);margin:0 0 16px;max-width:70ch}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.controls button,.controls select{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+.controls button:focus-visible,.controls select:focus-visible{outline:2px solid var(--llm);outline-offset:2px}
+.controls button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.controls .spacer{flex:1}
+.meter{display:flex;gap:14px;font-size:12.5px;color:var(--muted)}
+.meter b{color:var(--ink);font-variant-numeric:tabular-nums}
+figure{margin:0 0 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}
+figure svg{display:block;width:100%;height:auto;min-width:640px;color:var(--ink)}
+figcaption{font-size:12px;color:var(--muted);margin-top:6px}
+.node rect{fill:var(--node);stroke:var(--line);stroke-width:1.2;transition:fill .3s,stroke .3s}
+.node text{fill:var(--ink);font-size:12px;font-family:"IBM Plex Sans JP",system-ui,sans-serif}
+.node .sub{fill:var(--muted);font-size:10px}
+.node.active rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.node.done rect{fill:var(--ok-soft);stroke:var(--ok)}
+.node.blocked rect{fill:var(--stop-soft);stroke:var(--stop);stroke-width:2}
+.node.llm-on rect{stroke-dasharray:none}
+.edge{stroke:var(--line);stroke-width:1.4;fill:none}
+.edge.lit{stroke:var(--accent);stroke-width:2}
+.edge-label{fill:var(--muted);font-size:10px;font-family:"IBM Plex Mono",monospace}
+.lane{fill:none;stroke:var(--line);stroke-dasharray:4 4}
+.lane-label{fill:var(--muted);font-size:10.5px;letter-spacing:.06em}
+#dot{fill:var(--accent);stroke:var(--panel);stroke-width:2}
+#llmbadge rect{fill:var(--llm-soft);stroke:var(--llm)}
+#llmbadge text{fill:var(--llm);font-size:10.5px;font-weight:500}
+.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-height:180px}
+.panel h2{font-size:13px;margin:0 0 8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.step-title{font-weight:700;font-size:15px;margin:0 0 6px}
+.step-lines{margin:0;padding-left:1.2em}
+.step-lines li{margin:2px 0}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--line)}
+.tag.gate{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.tag.stop{background:var(--stop-soft);color:var(--stop);border-color:transparent}
+.tag.llm{background:var(--llm-soft);color:var(--llm);border-color:transparent}
+.tag.nollm{background:var(--node);color:var(--muted)}
+pre.ledger{margin:0;white-space:pre-wrap;font-size:12px;line-height:1.5}
+.log{margin-top:12px;border-top:1px solid var(--line);padding-top:8px;max-height:220px;overflow:auto;font-size:12.5px}
+.log div{padding:2px 0;color:var(--muted)}
+.log div.now{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin:10px 0 0}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px;border:1px solid var(--line)}
+.legend .l-active::before{background:var(--accent-soft);border-color:var(--accent)}
+.legend .l-done::before{background:var(--ok-soft);border-color:var(--ok)}
+.legend .l-stop::before{background:var(--stop-soft);border-color:var(--stop)}
+.legend .l-llm::before{background:var(--llm-soft);border-color:var(--llm)}
+.rules{margin-top:16px;font-size:13px}
+.rules table{border-collapse:collapse;width:100%}
+.rules th,.rules td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.rules th{color:var(--muted);font-weight:500;font-size:12px}
+@media (prefers-reduced-motion: reduce){.node rect{transition:none}}
+</style>
+
+<h1>qa-sentinel 動作フロー</h1>
+<p class="lead">変更（CUD）が起きたときに、影響分析からリグレッション差し替えまでを自律的に回す QA エージェントの動き。シナリオを選んで再生すると、イベントが工程を進み、各段の機械判定・止まる条件・台帳・LLM 起動回数が変わる。</p>
+
+<div class="controls">
+  <select id="scenario" aria-label="シナリオ">
+    <option value="nl">A. 自然言語トリガー → 一気通貫で成功</option>
+    <option value="wait">B. 期待結果が決められない → 確認待ち → 承認で再開</option>
+    <option value="pr">C. PR トリガー（本文の ID と diff から）</option>
+    <option value="idle">D. イベントなし（監視だけ。LLM は起動しない）</option>
+  </select>
+  <button id="play" class="primary">▶ 再生</button>
+  <button id="step">次へ</button>
+  <button id="reset">最初から</button>
+  <span class="spacer"></span>
+  <div class="meter">
+    <span>LLM セッション <b id="m-sessions">0</b></span>
+    <span>予算消費 <b id="m-budget">0%</b></span>
+    <span>ポーリング <b id="m-polls">0</b> 回（LLM 0）</span>
+  </div>
+</div>
+
+<figure>
+<svg id="flow" viewBox="0 0 1000 330" role="img" aria-label="トリガーから ChangeEvent、セッション起動、テスト工程 8 段、リグレッション差し替え、人の承認までの流れ。監視は LLM を使わず、イベントがあるときだけセッションが起動する。">
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker>
+  </defs>
+  <!-- lanes -->
+  <rect class="lane" x="8" y="8" width="984" height="90" rx="6"/>
+  <text class="lane-label" x="18" y="24">監視・正規化（決定論的コード。LLM を使わない）</text>
+  <rect class="lane" x="8" y="108" width="984" height="214" rx="6"/>
+  <text class="lane-label" x="18" y="124">Managed Agents セッション（1 イベント = 1 セッション。予算つき。人待ちで終了）</text>
+  <g id="llmbadge" opacity="0"><rect x="760" y="112" width="228" height="20" rx="10"/><text x="874" y="126" text-anchor="middle">LLM 稼働中 · session budget 監視</text></g>
+  <g id="edges"></g>
+  <g id="nodes"></g>
+  <circle id="dot" r="7" cx="-20" cy="-20" opacity="0"/>
+</svg>
+<figcaption>上段は LLM を使わない監視層、下段は LLM セッション。矢印のラベルは各段の終了条件を判定する機械（スクリプト）。</figcaption>
+<div class="legend"><span class="l-active">処理中</span><span class="l-done">終了条件を満たした</span><span class="l-stop">止まって人へ</span><span class="l-llm">LLM 稼働中</span></div>
+</figure>
+
+<div class="grid">
+  <div class="panel">
+    <h2>いま何をしているか</h2>
+    <p class="step-title" id="s-title">再生を押してください</p>
+    <ul class="step-lines" id="s-lines"></ul>
+    <div class="tags" id="s-tags"></div>
+    <div class="log" id="log"></div>
+  </div>
+  <div class="panel">
+    <h2>台帳 tasks/&lt;id&gt;.json（CLI と Web が同じものを読む）</h2>
+    <pre class="ledger" id="ledger"></pre>
+  </div>
+</div>
+
+<div class="rules">
+  <h2 style="font-size:14px;margin:0 0 6px">止まる／進むの判定表（人に聞かない条件）</h2>
+  <table>
+    <tr><th>段</th><th>終了条件（機械が判定）</th><th>止まって人へ渡す条件</th></tr>
+    <tr><td>テスト計画</td><td><code>trace-check.sh --impact</code> で影響 ID 一覧が出る</td><td>追跡表に無い変更（ID を割り当てられない）</td></tr>
+    <tr><td>ケース設計</td><td>全ケースに期待結果がある</td><td>期待結果を 1 つに決められない → <code>仕様の状態=確認待ち</code></td></tr>
+    <tr><td>実装・実行</td><td>Critical/High 残ゼロ・<code>test-metrics.sh --gate</code> exit 0</td><td>同一欠陥が 2 周しても収束しない／原因が設計</td></tr>
+    <tr><td>差し替え</td><td><code>trace-check.sh</code> NG=0・<code>test-weaken-check.py</code> NG=0</td><td>どちらか NG → 差し替えを戻す</td></tr>
+    <tr><td>承認</td><td><code>check-approval.sh</code> exit 0</td><td>常に人。AI は approver 欄を埋めない</td></tr>
+    <tr><td>全段共通</td><td>セッション予算内</td><td>予算超過 → 停止し、台帳に理由を残す</td></tr>
+  </table>
+</div>
+
+<script>
+(function(){
+const NODES=[
+ {id:'trigger',x:40,y:40,w:120,label:'トリガー',sub:'①仕様書 ②JIRA等 ③PR ④自然言語'},
+ {id:'poll',x:210,y:40,w:120,label:'差分検知',sub:'ポーリング / webhook'},
+ {id:'event',x:380,y:40,w:120,label:'ChangeEvent',sub:'ID・diff・出典に正規化'},
+ {id:'session',x:550,y:40,w:130,label:'セッション起動',sub:'env.md + config 同梱'},
+ {id:'plan',x:40,y:150,w:120,label:'テスト計画',sub:'影響分析 --impact'},
+ {id:'analysis',x:210,y:150,w:120,label:'テスト基本設計',sub:'観点・条件'},
+ {id:'strategy',x:380,y:150,w:120,label:'テスト詳細設計',sub:'レベル×技法×自動化'},
+ {id:'design',x:550,y:150,w:120,label:'ケース設計',sub:'期待結果を確定'},
+ {id:'impl',x:720,y:150,w:120,label:'ケース実装',sub:'表→Playwright/pytest'},
+ {id:'exec',x:720,y:250,w:120,label:'実行・修整',sub:'ODC 分類・2 周まで'},
+ {id:'report',x:550,y:250,w:120,label:'完了報告',sub:'metrics:begin/end'},
+ {id:'swap',x:380,y:250,w:120,label:'差し替え',sub:'失効→新ケース追記'},
+ {id:'human',x:210,y:250,w:120,label:'人の承認',sub:'approver は人だけ'},
+ {id:'done',x:40,y:250,w:120,label:'完了',sub:'台帳 done'},
+];
+const H=52;
+const EDGES=[
+ ['trigger','poll','変更あり?'],['poll','event','あり'],['event','session','起動'],
+ ['session','plan','',true],['plan','analysis','ID 一覧'],['analysis','strategy','条件'],['strategy','design','方針表'],['design','impl','期待結果あり'],
+ ['impl','exec','コード'],['exec','report','gate 0'],['report','swap','報告'],['swap','human','NG=0'],['human','done','承認'],
+];
+const byId=Object.fromEntries(NODES.map(n=>[n.id,n]));
+const svg=document.getElementById('flow');
+const gN=document.getElementById('nodes'), gE=document.getElementById('edges');
+function c(n){return {x:n.x+n.w/2,y:n.y+H/2}}
+function edgePath(a,b){
+  const A=byId[a],B=byId[b];
+  if(A.y===B.y){ const l=A.x<B.x; const x1=l?A.x+A.w:A.x, x2=l?B.x:B.x+B.w; return {d:`M${x1},${A.y+H/2} L${x2},${B.y+H/2}`,lx:(x1+x2)/2,ly:A.y+H/2-6}; }
+  if(A.x===B.x){ return {d:`M${A.x+A.w/2},${A.y+H} L${B.x+B.w/2},${B.y}`,lx:A.x+A.w/2+8,ly:(A.y+H+B.y)/2+4}; }
+  // session -> plan: elbow down-left
+  const sx=A.x+A.w/2, sy=A.y+H, ex=B.x+B.w/2, ey=B.y; const my=(sy+ey)/2;
+  return {d:`M${sx},${sy} L${sx},${my} L${ex},${my} L${ex},${ey}`,lx:(sx+ex)/2,ly:my-5};
+}
+EDGES.forEach(([a,b,label])=>{
+  const p=edgePath(a,b);
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d',p.d); path.setAttribute('class','edge'); path.setAttribute('marker-end','url(#arrow)'); path.dataset.edge=a+'>'+b;
+  gE.appendChild(path);
+  if(label){const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',p.lx);t.setAttribute('y',p.ly);t.setAttribute('text-anchor','middle');t.setAttribute('class','edge-label');t.textContent=label;gE.appendChild(t);}
+});
+NODES.forEach(n=>{
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','node'); g.id='n-'+n.id;
+  g.innerHTML=`<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${H}" rx="6"/><text x="${n.x+n.w/2}" y="${n.y+22}" text-anchor="middle" font-weight="500">${n.label}</text><text class="sub" x="${n.x+n.w/2}" y="${n.y+40}" text-anchor="middle">${n.sub}</text>`;
+  gN.appendChild(g);
+});
+
+// ---- scenarios ----
+const L=(phase,status,extra)=>Object.assign({task:'T-0042',project:'library-loan',phase,status},extra||{});
+const base=[
+ {node:'trigger',title:'④ 自然言語で指示',lines:['「貸出上限を 5 冊から 3 冊に変更」を CLI で受ける','対象プロジェクト library-loan の env.md と config.yml を特定'],llm:false,ledger:L('received','queued',{source:'nl'})},
+ {node:'poll',title:'差分検知（LLM なし）',lines:['自然言語は即イベント扱い。PR・トラッカーの場合はここで決定論的に差分を見る','差分が無ければ何も起こさない（セッション 0）'],llm:false,ledger:L('received','queued',{source:'nl'})},
+ {node:'event',title:'ChangeEvent に正規化',lines:['text → 影響候補 ID を抽出（REQ-F-003 貸出上限）','diff は無し。出典 nl、受信時刻を記録'],llm:false,ledger:L('received','normalized',{changed_ids:['REQ-F-003']})},
+ {node:'session',title:'セッション起動',lines:['Managed Agents の Session を 1 つ作成。env.md・config.yml・docs/lifecycle・scripts/ を同梱','session budget を設定（超えたら停止）'],llm:true,gate:'budget ≤ 上限',ledger:L('test-plan','running',{session:'ses_8f2a',budget:'0%'}),session:1},
+ {node:'plan',title:'テスト計画（影響分析）',lines:['trace-check.sh --impact REQ-F-003 → BD-002, DD-004, UT-011, ST-005 が連鎖','C7: ST-005 の根拠の版が古い → suspect','29119 テスト計画に範囲・レベル・終了基準を記入'],llm:true,gate:'影響 ID 一覧あり',stop:'追跡表に無い変更',ledger:L('test-plan','running',{impact:['BD-002','DD-004','UT-011','ST-005']}),budget:12},
+ {node:'analysis',title:'テスト基本設計',lines:['フィーチャー: 貸出上限チェック','テスト条件: 上限ちょうど・上限+1・0 冊・返却後の再貸出','品質特性の漏れ点検（ISO 25010）'],llm:true,gate:'条件一覧あり',ledger:L('test-analysis','running'),budget:20},
+ {node:'strategy',title:'テスト詳細設計（方針）',lines:['条件ごとに レベル(UT/ST) × 技法(境界値・状態遷移) × 自動化可否','対象外を明示（UI の文言は uiux_review へ）'],llm:true,gate:'方針表に対象外が明示',ledger:L('test-strategy','running'),budget:27},
+ {node:'design',title:'ケース設計',lines:['ST-013: 3 冊借りた状態で 4 冊目 → 拒否メッセージ','ST-014: 2 冊 → 3 冊目は成功','UT-020: 上限定数 3 の境界'],llm:true,gate:'全ケースに期待結果',stop:'期待結果を決められない',ledger:L('test-design','running',{new_cases:['ST-013','ST-014','UT-020']}),budget:38},
+ {node:'impl',title:'ケース実装',lines:['表 → Playwright spec / pytest を生成','pw-spec-lint: 固定待ち・.only なし'],llm:true,gate:'lint NG=0',ledger:L('test-implementation','running'),budget:50},
+ {node:'exec',title:'実行・修整',lines:['実行 → ST-013 FAIL','ODC: 実装欠陥（上限チェックが < ではなく <=）→ 最小差分で修整 → 再実行 PASS','test-metrics.sh --gate → exit 0'],llm:true,gate:'Critical/High 残ゼロ',stop:'2 周で収束せず',ledger:L('test-execution','running',{pass:3,fail:0,fixed:1}),budget:71},
+ {node:'report',title:'完了報告',lines:['iso29119-test-completion-report に metrics:begin/end','残 Medium/Low を申し送りに'],llm:true,gate:'metrics 埋まる',ledger:L('test-completion','running'),budget:76},
+ {node:'swap',title:'リグレッション差し替え',lines:['ST-005（旧上限 5 冊）を 仕様の状態=失効(ST-013) に','ST-013/014, UT-020 を追記、追跡表の REQ-F-003 行を更新','trace-check.sh NG=0・test-weaken-check.py NG=0 を確認'],llm:true,gate:'両検査 NG=0',stop:'どちらか NG → 戻す',ledger:L('regression-swap','running',{retired:['ST-005'],added:['ST-013','ST-014','UT-020']}),budget:82},
+ {node:'human',title:'人の承認待ち（セッション終了）',lines:['approver 欄は空のまま。AI は埋めない','セッションは終了。自分を起こす仕組みは持たない','承認イベントが来たら次へ'],llm:false,stop:'人が判定',ledger:L('waiting_human','paused',{session:'ended',budget:'82%'})},
+ {node:'done',title:'完了',lines:['check-approval.sh exit 0','台帳 done。成果物パスと予算消費を記録'],llm:false,gate:'check-approval 0',ledger:L('done','done',{budget:'82%'})},
+];
+const SC={
+ nl:base,
+ wait:[...base.slice(0,7),
+  {node:'design',title:'ケース設計 — 決められない',lines:['「上限到達時に予約へ誘導するか」が仕様に無い','ST-013 の期待結果を 仕様の状態=確認待ち: 質問文 にして止める','実装・実行へは進まない'],llm:true,stop:'期待結果を決められない',blocked:true,ledger:L('test-design','blocked',{waiting:'確認待ち: 上限到達時の誘導先'}),budget:40},
+  {node:'human',title:'人が答える（セッションは終了している）',lines:['Web の /approve で「誘導しない。拒否メッセージのみ」を回答','LLM は待っていない。回答が新しいイベントになる'],llm:false,stop:'人が判定',ledger:L('waiting_human','paused',{session:'ended',budget:'40%'})},
+  {node:'session',title:'continue で再開',lines:['新セッション。解析をやり直さず design から続ける（webspec2doc goals.continue と同じ考え方）'],llm:true,gate:'budget ≤ 上限',ledger:L('test-design','running',{session:'ses_9c11',resume_from:'test-design'}),session:1,budget:42},
+  ...base.slice(7).map(s=>Object.assign({},s,{budget:s.budget?s.budget+4:undefined})),
+ ],
+ pr:[
+  {node:'trigger',title:'③ PR が開かれた',lines:['webhook で PR #87 を受信','本文の関係 ID 欄: REQ-F-003 / DD-004'],llm:false,ledger:L('received','queued',{source:'pr',pr:87})},
+  {node:'poll',title:'差分検知（LLM なし）',lines:['diff を取得: src/loan.py の上限定数と判定式','ID 欄が空なら diff のパスから追跡表を逆引き'],llm:false,ledger:L('received','queued',{source:'pr',files:['src/loan.py']})},
+  {node:'event',title:'ChangeEvent に正規化',lines:['changed_ids = [REQ-F-003, DD-004]、diff 同梱'],llm:false,ledger:L('received','normalized',{changed_ids:['REQ-F-003','DD-004']})},
+  ...base.slice(3),
+ ],
+ idle:[
+  {node:'trigger',title:'② JIRA を監視（relay モード）',lines:['社内 JIRA は Managed Agents から届かない','ローカルの決定論的ポーラーが 10 分ごとに REST で updated を見る'],llm:false,poll:1,ledger:{poller:'relay',project:'library-loan',last_seen:'2026-09-28T13:00Z'}},
+  {node:'poll',title:'差分なし',lines:['前回以降の更新 0 件','ChangeEvent を作らない。セッションを起動しない。トークン消費 0'],llm:false,poll:1,ledger:{poller:'relay',events:0,llm_sessions:0}},
+  {node:'trigger',title:'次のポーリング',lines:['同じことを繰り返す。LLM は関与しない','「定期的に自分を起こして確認する」設計を持たない理由はここ'],llm:false,poll:1,ledger:{poller:'relay',events:0,llm_sessions:0}},
+  {node:'poll',title:'差分なし',lines:['更新 0 件。何も起こさない'],llm:false,poll:1,ledger:{poller:'relay',events:0,llm_sessions:0,polls:4}},
+ ],
+};
+
+// ---- player ----
+let steps=SC.nl, i=-1, timer=null, sessions=0, polls=0, budget=0;
+const $=id=>document.getElementById(id);
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function setDot(nodeId,show){const p=c(byId[nodeId]);const d=$('dot');d.style.transition=reduce?'none':'cx .5s, cy .5s';d.setAttribute('cx',p.x);d.setAttribute('cy',p.y);d.setAttribute('opacity',show?1:0);}
+function render(){
+  document.querySelectorAll('.node').forEach(n=>n.classList.remove('active','done','blocked'));
+  document.querySelectorAll('.edge').forEach(e=>e.classList.remove('lit'));
+  for(let k=0;k<=i;k++){const s=steps[k];const g=$('n-'+s.node);if(k<i){g.classList.add(s.blocked?'blocked':'done');}else{g.classList.add(s.blocked?'blocked':'active');}
+    if(k>0){const e=document.querySelector(`[data-edge="${steps[k-1].node}>${s.node}"]`);if(e)e.classList.add('lit');}}
+  const s=steps[i];
+  if(!s){$('s-title').textContent='再生を押してください';$('s-lines').innerHTML='';$('s-tags').innerHTML='';$('ledger').textContent='';$('llmbadge').setAttribute('opacity',0);setDot('trigger',false);return;}
+  setDot(s.node,true);
+  $('llmbadge').setAttribute('opacity',s.llm?1:0);
+  $('s-title').textContent=`${i+1}/${steps.length}　${s.title}`;
+  $('s-lines').innerHTML=s.lines.map(l=>`<li>${l}</li>`).join('');
+  const tags=[`<span class="tag ${s.llm?'llm':'nollm'}">${s.llm?'LLM 稼働':'LLM なし'}</span>`];
+  if(s.gate)tags.push(`<span class="tag gate">終了条件: ${s.gate}</span>`);
+  if(s.stop)tags.push(`<span class="tag stop">止まる条件: ${s.stop}</span>`);
+  $('s-tags').innerHTML=tags.join('');
+  $('ledger').textContent=JSON.stringify(s.ledger,null,2);
+  $('m-sessions').textContent=sessions;$('m-budget').textContent=budget+'%';$('m-polls').textContent=polls;
+  const log=$('log');[...log.children].forEach(x=>x.classList.remove('now'));const d=document.createElement('div');d.className='now';d.textContent=`${String(i+1).padStart(2,'0')} ${s.node} — ${s.title}`;log.appendChild(d);log.scrollTop=log.scrollHeight;
+}
+function next(){ if(i>=steps.length-1){stop();return;} i++; const s=steps[i]; if(s.session)sessions+=s.session; if(s.poll)polls+=s.poll; if(s.budget!==undefined)budget=s.budget; render(); }
+function play(){ if(timer){stop();return;} $('play').textContent='❚❚ 停止'; timer=setInterval(()=>{ if(i>=steps.length-1){stop();return;} next(); }, reduce?1600:2200); if(i<0)next(); }
+function stop(){ clearInterval(timer);timer=null;$('play').textContent='▶ 再生'; }
+function reset(){ stop(); i=-1;sessions=0;polls=0;budget=0;$('log').innerHTML='';render(); }
+$('play').onclick=play;$('step').onclick=()=>{stop();next();};$('reset').onclick=reset;
+$('scenario').onchange=e=>{steps=SC[e.target.value];reset();};
+try{const saved=localStorage.getItem('qa-sentinel-scenario');if(saved&&SC[saved]){$('scenario').value=saved;steps=SC[saved];}}catch(e){}
+$('scenario').addEventListener('change',e=>{try{localStorage.setItem('qa-sentinel-scenario',e.target.value)}catch(err){}});
+reset(); next(); // 初期表示は 1 段目を見せる
+})();
+</script>
+</body></html>

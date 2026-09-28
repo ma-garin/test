@@ -1,0 +1,28 @@
+[project]
+name = "<PROJECT>"
+repo = "owner/repo"
+branch = "main"
+lifecycle_dir = "docs/lifecycle"
+cases_csv = "docs/quality/system_test_cases.csv"
+test_cmd = "python3 -m pytest -q"
+
+[triggers]
+enabled = ["nl"]
+
+[triggers.pr]
+repo = "owner/repo"
+
+[triggers.doc]
+paths = ["docs/lifecycle"]
+
+[triggers.tracker]
+mode = "relay"          # direct | relay
+kind = "jira"            # jira | confluence | redmine
+base_url = "https://jira.example.com"
+query = "project = PROJ AND updated >= -1d"
+poll_minutes = 10
+credential_ref = "vault:jira-token"
+
+[session]
+budget_usd = 5.0
+model = "claude-opus-5"
