@@ -40,10 +40,12 @@ tests/test_core.py               既存テスト（壊さない）
 ```python
 # qa_sentinel/core/gates.py
 from __future__ import annotations
-import csv, subprocess
+import csv, subprocess, sys
 from dataclasses import dataclass
 from pathlib import Path
 from .project import Project
+
+PY = sys.executable  # Windows でも "python3" が無くても動く
 
 @dataclass
 class GateResult:
@@ -81,7 +83,7 @@ def run_gate(name: str, args: list[str], project: Project, cwd: str | Path = "."
 - `report_path`: stdout に `詳細: <パス>` または `report: <パス>` の行があればそのパス。無ければ `None`
 - 型ヒントと docstring は既存ファイルと同じ密度（1〜2 行）。print しない。ログも不要
 
-## 5. テスト（tests/test_gates.py）— この 5 ケースを書く
+## 5. テスト（tests/test_gates.py）— この 6 ケースを書く
 
 `tmp_path` に偽の `scripts/` と `docs/quality/system_test_cases.csv` を置き、`Project(name="p", root=tmp_path, config={"project": {"lifecycle_dir": "docs/lifecycle", "cases_csv": "docs/quality/system_test_cases.csv", "branch": "main"}}, env_md="")` を使う。
 
@@ -99,7 +101,7 @@ CSV のヘッダは正確にこれ（15 列）:
 
 - [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
 - [ ] `python -m pytest -q tests/test_gates.py` が 6 passed
-- [ ] 変更が「触るファイル」2 本に収まっている（`git status --short` で確認してよい。add はしない）
+- [ ] 変更が「触るファイル」2 本に収まっている（変更したファイルの一覧を自分で書き出して確認する。git は無い）
 
 ## 7. スコープ外（やらないこと）
 

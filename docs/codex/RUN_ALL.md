@@ -35,7 +35,7 @@ venv\Scripts\python scripts\verify.py            :: 末尾 ALL GREEN（MVP が�
 ```
 
 同梱済みで、取りに行く必要が無いもの:
-- `demo/library-loan/` — 図書貸出のデモアプリ（単一 HTML）＋ `scripts/`（trace-check.sh・test-metrics.sh・test-weaken-check.py・check-approval.sh・pw-spec-lint.py・section_hash.py）＋ `docs/lifecycle/`（工程文書と追跡表）＋ `docs/test/`（ケース表・29119 文書）
+- `demo/library-loan/` — 図書貸出のデモアプリ（単一 HTML）＋ `scripts/`（Python: test_metrics.py・check_approval.py・pw-spec-lint.py・section_hash.py・test-weaken-check.py。`.sh` は Windows では使わない）＋ `docs/lifecycle/`（工程文書と追跡表）＋ `docs/test/`（ケース表・29119 文書）
 - `projects/library-loan/` — その環境情報と設定
 
 kit のスクリプトのうち `.sh` は動かない（bash なし）。Python 版を使う: `test_metrics.py`・`check_approval.py`・`pw-spec-lint.py`・`section_hash.py`。`trace_check.py` は **T09** で作る（それまで trace-check は「未検査」）。`test-weaken-check.py` は git が要るので常に「未検査」。
@@ -51,7 +51,7 @@ echo Tnn DONE >> docs\codex\PROGRESS.md
 
 - HANDOFF の「触るファイル」の外は触らない。触らないと通らないときは、最小の変更にして §7 に書く。
 - HANDOFF に「Claude が行う」「人が用意」とある項目は、**あなたがやる**（このファイルの権限が優先）。ただし T08（実機）は今回やらない。
-- T02 の `run_gate` は `demo/library-loan/scripts/` の実体を呼ぶ。`cwd` は `projects/library-loan/config.toml` の `subdir`（`demo/library-loan`）。
+- T02 の `run_gate` は `demo/library-loan/scripts/` の実体を呼ぶ。`cwd` は `project.config["project"]["subdir"]`（`demo/library-loan`）を渡す（HANDOFF_T02 §4 のとおり）。
 - T09（`trace_check.py`）は T01 の直後にやる。T03 の gate が使う。
 
 ## 3. デモを通す（mock ランタイムで一気通貫。鍵不要）
@@ -61,14 +61,17 @@ T07 まで終わったら、図書館デモで人の操作込みの一連を回�
 ```bat
 set Q=venv\Scripts\qa-sentinel
 %Q% run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --mode M2 --reviewer codex --budget 5
-%Q% ok T-0001 --by codex -m "設計を確認"                # 設計の出口 → 実行は人の段（手渡し）
+%Q% ok T-0001 --by codex -m "設計を確認"
+:: ↑ 設計の出口 → 実行は人の段（手渡し）
 %Q% results T-0001 --by codex --file demo/library-loan/docs/test/system_test_cases.csv -m "できた 3 / できなかった 0"
-%Q% ok T-0001 --by codex                               :: 入れ替えの出口
+%Q% ok T-0001 --by codex
+:: ↑ 入れ替えの出口
 %Q% approve T-0001 --by codex
-%Q% show T-0001                                        :: decisions が 4 件、evidence が段ごとにある
+%Q% show T-0001
+:: ↑ decisions が 4 件、evidence が段ごとにある
 ```
 
-加えて、実際の差し替えが CSV に効くことを **swap（T03）で直接** 確かめる: `demo/library-loan/docs/test/system_test_cases.csv` に `根拠の版=REQ-F-001@...` の行を 1 つ足し、`core.swap.swap(project, ["REQ-F-001"], [<新ケース 1 件>], cwd="demo/library-loan")` を呼んで、その行の `仕様の状態` が `失効(ST-xxx)` になり `trace-check.sh` が NG=0 のままであること。結果を `docs/codex/DEMO_RESULT.md` に貼る（コマンドと出力）。
+加えて、実際の差し替えが CSV に効くことを **swap（T03）で直接** 確かめる: `demo/library-loan/docs/test/system_test_cases.csv` に `根拠の版=REQ-F-001@...` の行を 1 つ足し、`core.swap.swap(project, ["REQ-F-001"], [<新ケース 1 件>], cwd="demo/library-loan")` を呼んで、その行の `仕様の状態` が `失効(ST-xxx)` になり、`venv\Scripts\python demo\library-loan\scripts\trace_check.py demo\library-loan\docs\lifecycle` が NG=0 のままであること。結果を `docs/codex/DEMO_RESULT.md` に貼る（コマンドと出力）。
 
 Web も 1 回起動して `/api/tasks` が台帳を返すことを確認（`start /b venv\Scripts\qa-sentinel web --port 8790` → `curl -s http://127.0.0.1:8790/api/tasks` → ブラウザで `http://127.0.0.1:8790/` を開く → その cmd を閉じて止める）。
 

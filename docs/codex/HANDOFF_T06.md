@@ -7,8 +7,8 @@
 ## 0. あなた（Codex）の役割
 
 - このリポジトリ（qa-sentinel）の **指示書の範囲内の実装** を行う。ファイル編集まで。
-- **git 操作はしない**（add / commit / push / branch を実行しない）。検証と commit は人（Claude）が行う。
-- 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。
+- **Codex 環境に git は無い。git 操作は行わない**。検証と commit は人（Claude）が行う。
+- 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。変更したファイルの一覧は自分で書き出して確認する（git status は使えない）。
 - 推測で埋めない。分からないことは最後の報告に「質問」として書く。
 - 完了の基準は 1 つ: `python scripts/verify.py`の末尾が `ALL GREEN`。
 
@@ -110,14 +110,14 @@ qa-sentinel watch --project <p> [--once] [--runtime mock|managed] [--mode <prese
 ## 6. 完了条件
 
 - [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
-- [ ] `python3 -m pytest -q tests/test_tracker.py` が 4 passed
-- [ ] 変更が「触るファイル」4 本（`qa_sentinel/triggers/tracker.py` 新規、`qa_sentinel/cli.py` の `watch` 追加のみ、`tests/test_tracker.py` 新規、`projects/_template/config.toml` の `credential_ref` 変更）に収まっている
+- [ ] `python -m pytest -q tests/test_tracker.py` が 4 passed
+- [ ] 変更したファイルの一覧を自分で書き出して確認し、「触るファイル」4 本（`qa_sentinel/triggers/tracker.py` 新規、`qa_sentinel/cli.py` の `watch` 追加のみ、`tests/test_tracker.py` 新規、`projects/_template/config.toml` の `credential_ref` 変更）に収まっている
 
 ## 7. スコープ外（やらないこと）
 
 - `direct` モード（セッション内 custom tool ＋ vault、未割当（別タスク））
 - cron / systemd / launchd 等の常駐設定ファイルの作成（常駐は人が行う。このプロセスは `--once` か素の `watch` ループを提供するだけ）
-- git 操作
+- git 操作（Codex 環境に git は無い）
 
 ## 8. 最後の報告（この形で。5 行以内）
 

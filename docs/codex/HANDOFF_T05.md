@@ -18,7 +18,7 @@
 qa_sentinel/core/orchestrator.py    approve(task_id, by, ledger) が最終承認。今回 gate 判定を足す
 qa_sentinel/core/gates.py           T01 で作成済み。run_gate(name, args, project, cwd=".", timeout=600) -> GateResult
 qa_sentinel/core/project.py         load_project(name, projects_dir="projects") -> Project(config は dict)
-qa_sentinel/web/app.py              make_handler(ledger, runtime=None)。GET/POST の一覧はファイル冒頭コメント
+qa_sentinel/web/app.py              make_handler(ledger, runtime=None, projects_dir="projects")（既にこの引数がある）。GET/POST の一覧はファイル冒頭コメント
 qa_sentinel/web/static/index.html   review フォームがある。OK ボタンの id は "ok"。根拠は t.evidence[t.phase] を「根拠」の下に描画済み
 tests/test_core.py                  既存テスト（壊さない）。特に test_m1_walks_all_phases_stops_at_swap_then_approve と test_web_api_review_submit_answer_approve は approve(...) を位置引数 3 つで呼んでいる
 scripts/verify.py                   検証ゲート。py_compile → pytest → CLI スモーク → 文書存在
@@ -62,8 +62,7 @@ scripts/verify.py                   検証ゲート。py_compile → pytest → 
 
 ### (b) `qa_sentinel/web/app.py` — `GET /api/tasks/<id>/diff` と `approve` の呼び出し
 
-- `make_handler(ledger, runtime=None)` に `projects_dir: str = "projects"` を追加する: `make_handler(ledger, runtime=None, projects_dir="projects")`
-- `do_POST` 内 `/api/approve` の分岐で `approve(task, by, ledger)` を `approve(task, by, ledger, projects_dir=projects_dir)` に変更する
+- `make_handler` は既に `projects_dir: str = "projects"` を持っている（追加不要）。`do_POST` 内 `/api/approve` の分岐だけを直す: `approve(task, by, ledger)` を `approve(task, by, ledger, projects_dir=projects_dir)` に変更する
 - `serve()` は `make_handler(ledger)` のままでよい（`projects_dir` 省略時は既定の `"projects"`）
 
 `do_GET` に `/api/tasks/<id>/diff` の分岐を足す（`/api/tasks/` の分岐より前で判定する。パスは `/api/tasks/<id>/diff` の形）。
@@ -83,14 +82,14 @@ scripts/verify.py                   検証ゲート。py_compile → pytest → 
 ## 5. テスト（tests/test_core.py に追記。既存は消さない）
 
 1. `approve` が gate NG で `ValueError` になる: `monkeypatch` で `qa_sentinel.core.gates.run_gate`（or orchestrator が import している名前）を `ok=False, exit_code=1` の `GateResult` を返すよう差し替え、`approve(t.task, "yuki", led)` （既定 `gate=True`）が `ValueError` を送出し、`ledger.load(t.task).status` が `paused` のまま（done になっていない）ことを確認
-2. スクリプトが無い環境（差し替えなし、実リポジトリに `scripts/check-approval.sh` は無い前提）で `approve(t.task, "yuki", led, projects_dir=str(ws / "projects"))` が成功し `t.status == "done"` かつ `t.decisions[-1]["gate"] == "missing"`（`ws` fixture を使うテストにする。`load_project` が正しい projects ディレクトリを見るように必ず `projects_dir` を渡す）
+2. スクリプトが無い環境（差し替えなし、実リポジトリに `scripts/check_approval.py` は無い前提）で `approve(t.task, "yuki", led, projects_dir=str(ws / "projects"))` が成功し `t.status == "done"` かつ `t.decisions[-1]["gate"] == "missing"`（`ws` fixture を使うテストにする。`load_project` が正しい projects ディレクトリを見るように必ず `projects_dir` を渡す）
 3. `/api/tasks/<id>/diff` が存在しないブランチ／git 無しで `{"stat": None, "diff": None}` を返す（`make_handler` を使い、`test_web_api_review_submit_answer_approve` と同様の立て方でよい）
 
 ## 6. 完了条件
 
 - [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
 - [ ] 全テスト pass（既存の `test_m1_walks_all_phases_stops_at_swap_then_approve` と `test_web_api_review_submit_answer_approve` を含む）
-- [ ] 変更が「触るファイル」4 本（orchestrator.py, web/app.py, web/static/index.html, tests/test_core.py）に収まっている
+- [ ] 変更が「触るファイル」5 本（orchestrator.py, web/app.py, web/static/index.html, cli.py, tests/test_core.py）に収まっている
 
 ## 7. スコープ外（やらないこと）
 

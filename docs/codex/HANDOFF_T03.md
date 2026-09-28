@@ -90,8 +90,8 @@ def swap(project: Project, impact_ids: list[str], new_cases: list[dict], cwd: st
 ## 6. 完了条件
 
 - [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
-- [ ] `python3 -m pytest -q tests/test_swap.py` が 4 passed
-- [ ] 変更が「触るファイル」内（`qa_sentinel/core/swap.py`, `tests/test_swap.py`, `tests/fixtures/swap/*`）に収まっている（`git status --short` で確認してよい。add はしない）
+- [ ] `python -m pytest -q tests/test_swap.py` が 4 passed
+- [ ] 変更が「触るファイル」内（`qa_sentinel/core/swap.py`, `tests/test_swap.py`, `tests/fixtures/swap/*`）に収まっている（変更したファイルの一覧を自分で書き出して確認する（git は無い））
 
 ## 7. スコープ外（やらないこと）
 
