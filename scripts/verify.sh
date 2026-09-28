@@ -35,4 +35,9 @@ $Q run --project library-loan --nl "x" --mode M7 --reviewer verify </dev/null | 
 step "4. 文書の存在"
 for f in docs/00_概要.md docs/01_設計仕様.md docs/02_フロー.html docs/codex/README.md docs/05_協業モデル.md projects/_template/env.md; do [ -f "$f" ] || fail "missing $f"; done
 
+step "5. デモ同梱物（kit スクリプトが動く）"
+( cd demo/library-loan && ./scripts/trace-check.sh docs/lifecycle >/dev/null 2>&1 ) || fail "demo trace-check"
+[ -f demo/library-loan/docs/test/system_test_cases.csv ] || fail "demo cases csv"
+rm -f demo/library-loan/trace-check-report.md
+
 echo; echo "ALL GREEN"
