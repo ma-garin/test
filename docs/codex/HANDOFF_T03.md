@@ -73,7 +73,7 @@ def swap(project: Project, impact_ids: list[str], new_cases: list[dict], cwd: st
   1. `system_test_cases.csv` と `traceability-matrix.md` を、それぞれ同じディレクトリに `<元のファイル名>.swap.bak` としてコピー（`shutil.copy2`）。
   2. 両ファイルを新しい内容で書き換える。
   3. `run_gate("trace-check", [], project, cwd)` と `run_gate("test-weaken-check", [], project, cwd)` を呼ぶ。
-  4. どちらかが `ok=False` なら、2 つの `.swap.bak` から元の内容を復元し（`shutil.copy2` で戻す。bak ファイル自体は残してよい）、`SwapResult(ok=False, retired=[], added=[], reason=<NG だった gate の summary>)` を返す。両方 NG なら先に検査した方の summary を使う。
+  4. どちらかが `ok=False`（ただし `skipped=True`＝未検査は数えない。git が無い環境では test-weaken-check が常に未検査になる）なら、2 つの `.swap.bak` から元の内容を復元し（`shutil.copy2` で戻す。bak ファイル自体は残してよい）、`SwapResult(ok=False, retired=[], added=[], reason=<NG だった gate の summary>)` を返す。両方 NG なら先に検査した方の summary を使う。
   5. 両方 `ok=True` なら `SwapResult(ok=True, retired=<失効させた既存ID一覧>, added=<新規ID一覧>, reason=None)` を返す。
 - 決定論的。LLM を呼ばない。ケース内容（`根拠の版` 以外のテスト本文）は `new_cases` にすでに入っている値をそのまま書くだけで、生成はしない。
 - 型ヒントと docstring は既存ファイルと同じ密度（1〜2 行）。print しない。ログも不要。
