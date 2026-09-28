@@ -30,13 +30,15 @@ class MockRuntime:
             return PhaseResult("stopped", reason="budget_reached" if handle.spent_usd > handle.budget_usd else "not_converged", spent_usd=handle.spent_usd)
         if phase == self.blocked_at:
             return PhaseResult("blocked", reason="確認待ち: 期待結果を 1 つに決められない", spent_usd=handle.spent_usd)
-        r = PhaseResult("ok", spent_usd=handle.spent_usd)
+        r = PhaseResult("ok", spent_usd=handle.spent_usd, evidence=[f"mock: {phase} gate exit 0"])
         ids = event.changed_ids or ["REQ-F-003"]
         if phase == "test-plan":
             r.impact = [f"BD-{i:03d}" for i in range(2, 2 + len(ids))] + ["DD-004", "UT-011", "ST-005"]
             r.artifacts["plan"] = "docs/quality/iso29119-test-plan.md"
+            r.evidence.append("trace-check --impact REQ-F-003: exit 0")
         elif phase == "test-design":
             r.cases_added = ["ST-013", "ST-014", "UT-020"]
+            r.evidence.append("spec.md#4 貸出上限")
         elif phase == "test-completion":
             r.artifacts["report"] = "docs/quality/iso29119-test-completion-report.md"
         elif phase == "regression-swap":

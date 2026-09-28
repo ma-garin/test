@@ -43,7 +43,8 @@ GATES: dict[str, dict[str, str]] = {
     "regression-swap": {"gate": "trace-check NG=0 かつ test-weaken-check NG=0", "stop": "どちらか NG → 戻す"},
 }
 
-STATUSES: tuple[str, ...] = ("queued", "running", "blocked", "paused", "stopped", "done")
+STATUSES: tuple[str, ...] = ("queued", "running", "review", "handoff", "blocked", "paused", "stopped", "done")
+#: review=AI の下書き完了・人の確定待ち / handoff=人が下書きする段・入力待ち / blocked=確認待ち / paused=最終承認待ち
 
 
 def next_phase(phase: str) -> str | None:

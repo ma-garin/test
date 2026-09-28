@@ -27,6 +27,7 @@ class PhaseResult:
     cases_added: list[str] = field(default_factory=list)
     cases_retired: list[str] = field(default_factory=list)
     artifacts: dict = field(default_factory=dict)
+    evidence: list[str] = field(default_factory=list)  # 根拠（仕様の節・gate と exit code・ログのパス）
     spent_usd: float = 0.0
 
 

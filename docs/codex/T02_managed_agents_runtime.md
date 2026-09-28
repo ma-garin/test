@@ -22,6 +22,7 @@
   - `session.status_terminated` → `PhaseResult("stopped","terminated")`
   - `spent_usd` はセッションの `list_cost` があればそれ、無ければ 0.0（推測値を入れない）
   - `impact` / `cases_added` / `cases_retired` は、エージェントが `/mnt/session/outputs/phase_result.json` に書いた内容から読む（無ければ空）。system prompt にその書式を 1 行追記してよい（`qa_sentinel/agent/system_prompt.md` は触らず、送るメッセージ側で指示する）
+- 協業モデル（docs/05）の守り: 書き込みは `task.branch`（`qa-sentinel/<task>`）にだけ。製品コードは修整せず「原因と直し方の案」を `/mnt/session/outputs/fix_proposal.md` に書かせる。`PhaseResult.evidence` に gate 名と exit code・参照した仕様の節・ログのパスを入れる（空なら `blocked` 扱いにして人へ）
 - `end()`: `client.beta.sessions.archive(session_id)`。失敗しても例外を外に出さない（台帳には ended=True）
 - 環境変数: `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, `QA_SENTINEL_ENV_ID`。無ければ `start()` で `RuntimeError` に理由を書く
 

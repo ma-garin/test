@@ -27,6 +27,11 @@ class Task:
     cases: dict = field(default_factory=lambda: {"added": [], "retired": []})
     artifacts: dict = field(default_factory=dict)
     history: list[dict] = field(default_factory=list)
+    plan: dict = field(default_factory=dict)          # 4 問の答え（core.plan.Plan）
+    mode: str = "custom"
+    branch: str = ""                                    # AI が書き込む作業ブランチ
+    evidence: dict = field(default_factory=dict)      # 段 → 根拠の一覧
+    decisions: list[dict] = field(default_factory=list)  # 人の確定・回答・承認（名前つき）
     created_at: str = field(default_factory=_now)
     updated_at: str = field(default_factory=_now)
 

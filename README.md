@@ -12,6 +12,7 @@
 | `docs/02_フロー.html` | 動作フローのアニメーション（ブラウザで開く） |
 | `docs/03_CLIデモ.html` | CLI のターミナル再生デモ（運用モード別。担当列・人の番の帯・プロンプト） |
 | `docs/04_画面案.html` | GUI 5 パターン（指揮ワークフロー・かんばん・受信箱・手動実行と結果入力・タスク詳細）と運用モード M1〜M4 |
+| `docs/05_協業モデル.md` | AI が下書き・人が直して確定。安全策 4 つ、開始時の 4 問、プリセット M1〜M8、状態 review/handoff |
 | `docs/codex/` | Codex 向けタスク指示書（T01〜T06）と雛形 |
 | `qa_sentinel/` | MVP（台帳・状態機械・モックランタイム・CLI・Web） |
 | `projects/` | プロジェクトごとの環境情報（`env.md`）と設定（`config.toml`） |
@@ -21,8 +22,11 @@
 
 ```bash
 python3 -m venv venv && venv/bin/pip install -e .[dev]
-venv/bin/qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更"   # モックランタイムで全段を進める
-venv/bin/qa-sentinel status                                                              # 台帳一覧
+venv/bin/qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更"   # 開始時に 4 問（--mode M2 で省略可）
+venv/bin/qa-sentinel status                                                              # 台帳一覧（確定待ち／手渡し／回答待ち／承認待ち）
+venv/bin/qa-sentinel review T-0001 --by yuki --ok                                        # 段の出口で確定（--reject "理由" で差し戻し）
+venv/bin/qa-sentinel submit T-0001 --by yuki --file results.csv                          # 人が下書きした段を渡す
+venv/bin/qa-sentinel approve T-0001 --by yuki                                            # 最終承認
 venv/bin/qa-sentinel web --port 8790                                                     # http://127.0.0.1:8790/ で同じ台帳を見る
 bash scripts/verify.sh
 ```

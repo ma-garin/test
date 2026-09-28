@@ -21,12 +21,18 @@ step "2. pytest"
 
 step "3. CLI スモーク（mock）"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
-"$PY" -m qa_sentinel.cli --tasks "$TMP/tasks" run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" | grep -q paused || fail "run → paused"
-"$PY" -m qa_sentinel.cli --tasks "$TMP/tasks" approve T-0001 --by verify | grep -q done || fail "approve → done"
-"$PY" -m qa_sentinel.cli --tasks "$TMP/tasks" run --project library-loan --nl "x" --mock-block-at test-design | grep -q blocked || fail "blocked 経路"
-"$PY" -m qa_sentinel.cli --tasks "$TMP/tasks" answer T-0002 --text "拒否のみ" | grep -q paused || fail "answer → 再開"
+Q="$PY -m qa_sentinel.cli --tasks $TMP/tasks"
+$Q run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --mode M1 --reviewer verify </dev/null | grep -q 確定待ち || fail "M1 run → 差し替えで確定待ち"
+$Q review T-0001 --by verify --ok | grep -q 承認待ち || fail "review --ok → 承認待ち"
+$Q approve T-0001 --by verify | grep -q done || fail "approve → done"
+$Q run --project library-loan --nl "x" --mode M2 --reviewer verify </dev/null | grep -q 確定待ち || fail "M2 run → 設計で確定待ち"
+$Q review T-0002 --by verify --ok | grep -q 手渡し || fail "M2 review → 実行は手渡し"
+$Q submit T-0002 --by verify --file results.csv | grep -q 確定待ち || fail "submit → 差し替えで確定待ち"
+$Q run --project library-loan --nl "x" --mode M1 --reviewer verify --mock-block-at test-design </dev/null | grep -q 回答待ち || fail "blocked 経路"
+$Q answer T-0003 --by verify --text "拒否のみ" | grep -q 確定待ち || fail "answer → 再開"
+$Q run --project library-loan --nl "x" --mode M7 --reviewer verify </dev/null | grep -q 手渡し || fail "M7 → 人が下書き（セッション無し）"
 
 step "4. 文書の存在"
-for f in docs/00_概要.md docs/01_設計仕様.md docs/02_フロー.html docs/codex/README.md projects/_template/env.md; do [ -f "$f" ] || fail "missing $f"; done
+for f in docs/00_概要.md docs/01_設計仕様.md docs/02_フロー.html docs/codex/README.md docs/05_協業モデル.md projects/_template/env.md; do [ -f "$f" ] || fail "missing $f"; done
 
 echo; echo "ALL GREEN"
