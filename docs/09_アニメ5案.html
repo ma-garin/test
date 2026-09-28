@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>進行アニメ 5 案</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f3f5f8;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#cfd7e1;--soft:#e9eef4;--ai:#5b8def;--hum:#f5a524;--ok:#34d399;--bad:#ef4444}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--soft:#1f2937;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--soft:#1f2937;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:14px/1.6 "IBM Plex Sans JP",system-ui,sans-serif;padding:0 16px;padding-block:18px 40px;max-width:1120px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 12px;max-width:76ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:8px 0;z-index:2}
+button{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}button:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+.idea{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.idea header{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin-bottom:6px}
+.idea h2{font-size:15px;margin:0}.idea .tag{font-size:11.5px;color:var(--muted)}
+.idea canvas{display:block;width:100%;height:210px;border-radius:8px;background:var(--soft)}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:12.5px;margin-top:8px}.meta b{color:var(--muted);font-weight:500}
+@media (max-width:700px){.meta{grid-template-columns:1fr}}
+.pick{margin-left:auto;font-size:12.5px;display:flex;gap:6px;align-items:center}
+.note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<h1>進行アニメ 5 案</h1>
+<p class="lead">同じ 4 つの状態（AI が作業中／あなたの番／AI から質問／完了）を、5 つの表現で見比べる。上のボタンで全案の状態が同時に切り替わる。気に入った案に印を付けると、この端末に記憶される。</p>
+<div class="bar">
+  <span class="note">状態:</span>
+  <button data-st="ai" aria-pressed="true">AI が作業中</button><button data-st="human" aria-pressed="false">あなたの番</button><button data-st="ask" aria-pressed="false">AI から質問</button><button data-st="done" aria-pressed="false">完了</button>
+  <button id="auto" aria-pressed="false">自動で切り替え</button>
+</div>
+
+<section class="idea" data-id="river"><header><h2>案 1 光の川</h2><span class="tag">粒子が川を流れ、AI は渦、あなたの番は岸の玉（今の実装）</span><label class="pick"><input type="radio" name="pick" value="river">これがよい</label></header><canvas></canvas>
+<div class="meta"><div><b>らしさ</b> 流れ・渦・波紋で「考えている／待っている」を直感で読める</div><div><b>弱み</b> 段の名前が読みにくくなりがち。粒子が多いと安っぽくなる</div></div></section>
+
+<section class="idea" data-id="constellation"><header><h2>案 2 星座</h2><span class="tag">段は星。AI が考えると星の間に思考の線が結ばれては消える。あなたの番は一等星が輝く</span><label class="pick"><input type="radio" name="pick" value="constellation">これがよい</label></header><canvas></canvas>
+<div class="meta"><div><b>らしさ</b> 「つながりを探している」という AI の推論の見立て。夜空で落ち着く</div><div><b>弱み</b> 明るい部屋・ライトテーマでコントラストが出しにくい</div></div></section>
+
+<section class="idea" data-id="cell"><header><h2>案 3 生きもの</h2><span class="tag">タスクは 1 つの細胞。段を進むと成長し、AI が考えると中身が渦巻き、あなたの番は手を伸ばす</span><label class="pick"><input type="radio" name="pick" value="cell">これがよい</label></header><canvas></canvas>
+<div class="meta"><div><b>らしさ</b> 有機的で唯一無二。「育てている」感覚が協業モデルに合う</div><div><b>弱み</b> 段の順序が伝わりにくい。好みが分かれる</div></div></section>
+
+<section class="idea" data-id="loom"><header><h2>案 4 織り</h2><span class="tag">段ごとに糸が編まれて布になる。AI が考えると糸が絡み合い、あなたの番は結び目で手が止まる</span><label class="pick"><input type="radio" name="pick" value="loom">これがよい</label></header><canvas></canvas>
+<div class="meta"><div><b>らしさ</b> 「テストを織り上げる」比喩。進捗が面積で見える</div><div><b>弱み</b> 動きが横方向だけで単調になりやすい</div></div></section>
+
+<section class="idea" data-id="terminal"><header><h2>案 5 思考の流れ（文字）</h2><span class="tag">AI の思考がトークンのように流れ落ちる。あなたの番はプロンプトのカーソルが点滅して待つ</span><label class="pick"><input type="radio" name="pick" value="terminal">これがよい</label></header><canvas></canvas>
+<div class="meta"><div><b>らしさ</b> LLM そのもの。技術者に刺さる。段の名前も文字で読める</div><div><b>弱み</b> 非技術者には「壊れている」ように見える恐れ</div></div></section>
+
+<p class="note">共通ルール: 済＝緑、AI＝青、あなた＝橙、質問＝赤。`prefers-reduced-motion` では静止。</p>
+
+<script>
+(function(){
+const PH=['計画','基本設計','詳細設計','設計','準備','実行','原因','報告','入替','承認'];
+const CUR=4; // 今の段（準備）
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const dark=()=>matchMatch('(prefers-color-scheme: dark)');
+function matchMatch(q){return matchMedia(q).matches;}
+let state='ai';const rnd=(n)=>Array.from({length:n},()=>Math.random());
+const C={ai:'#5b8def',hum:'#f5a524',ok:'#34d399',bad:'#ef4444'};
+const ink=()=>dark()?'#e6ebf2':'#1b2230',mut=()=>dark()?'#9aa7b8':'#5b6675',faint=()=>dark()?'rgba(255,255,255,.08)':'rgba(27,34,48,.08)';
+const label=()=>({ai:'AI が考えています',human:'あなたの番: 直して OK',ask:'AI から質問: 上限到達時の扱いは？',done:'完了'})[state];
+const col=()=>({ai:C.ai,human:C.hum,ask:C.bad,done:C.ok})[state];
+
+// ---------- 案 1 光の川 ----------
+const river={parts:rnd(60).map((t,i)=>({t,v:.05+Math.random()*.08,r:1+Math.random()*1.8,ph:Math.random()*6.28})),sw:rnd(24).map((a,i)=>({a:a*6.28,ring:i%3,w:(.8+Math.random()*.6)*(i%3===1?-1:1)})),
+ draw(x,W,H,ts,dt){const n=PH.length,pt=i=>({x:36+(W-72)*i/(n-1),y:66+Math.sin(i*1.1)*12});const lp=t=>{const f=Math.min(n-1,t*(n-1)),i=Math.floor(f),k=f-i,a=pt(i),b=pt(Math.min(n-1,i+1));return{x:a.x+(b.x-a.x)*k,y:a.y+(b.y-a.y)*k}};
+  const cur=state==='done'?n-1:CUR,prog=cur/(n-1);
+  x.lineCap='round';x.lineWidth=10;x.strokeStyle=faint();x.beginPath();for(let i=0;i<n;i++){const p=pt(i);i?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y)}x.stroke();
+  const g=x.createLinearGradient(0,0,W,0);g.addColorStop(0,C.ok);g.addColorStop(1,C.ai);x.strokeStyle=g;x.lineWidth=4;x.shadowColor=C.ai;x.shadowBlur=14;x.beginPath();for(let k=0;k<=60;k++){const p=lp(prog*k/60);k?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y)}x.stroke();x.shadowBlur=0;
+  x.font='11px "IBM Plex Sans JP",system-ui';x.textAlign='center';
+  PH.forEach((l,i)=>{const p=pt(i);const done=i<cur||state==='done',isCur=i===cur&&state!=='done';x.beginPath();x.arc(p.x,p.y,isCur?9:6,0,6.28);x.fillStyle=done?C.ok:isCur?col():faint();if(done||isCur){x.shadowColor=x.fillStyle;x.shadowBlur=12}x.fill();x.shadowBlur=0;x.fillStyle=isCur?ink():mut();x.fillText(l,p.x,p.y+24)});
+  const cp=pt(cur);const hum=state==='human'||state==='ask';
+  this.parts.forEach(q=>{if(!reduce)q.t+=q.v*dt;if(q.t>prog)q.t=hum?0:Math.random()*prog*.3;const p=lp(q.t);x.beginPath();x.arc(p.x,p.y+Math.sin(ts/400+q.ph)*3,q.r,0,6.28);x.fillStyle=`rgba(91,141,239,${.35+.4*Math.sin(ts/300+q.ph)**2})`;x.fill()});
+  if(state==='ai'){this.sw.forEach(o=>{if(!reduce)o.a+=o.w*dt*1.6;const R=14+o.ring*8;x.beginPath();x.arc(cp.x+Math.cos(o.a)*R,cp.y+Math.sin(o.a)*R*.55,1.6+o.ring*.4,0,6.28);x.fillStyle=o.ring===2?C.ok:C.ai;x.shadowColor=x.fillStyle;x.shadowBlur=8;x.fill();x.shadowBlur=0});x.fillStyle=C.ai;x.textAlign='left';x.fillText(label()+'.'.repeat(1+Math.floor(ts/400)%3),cp.x+34,cp.y-12)}
+  if(hum){const ox=cp.x,oy=158,c=col();x.strokeStyle=c;x.lineWidth=2;x.setLineDash([4,5]);x.lineDashOffset=reduce?0:-ts/40;x.beginPath();x.moveTo(cp.x,cp.y+8);x.bezierCurveTo(cp.x,cp.y+50,ox,oy-50,ox,oy-22);x.stroke();x.setLineDash([]);
+    for(let k=0;k<3;k++){const ph=((ts/(state==='ask'?900:1600))+k/3)%1;x.beginPath();x.arc(ox,oy,14+ph*32,0,6.28);x.strokeStyle=c;x.globalAlpha=(1-ph)*.45;x.lineWidth=1.5;x.stroke();x.globalAlpha=1}
+    const br=reduce?1:1+.06*Math.sin(ts/700);const gg=x.createRadialGradient(ox-4,oy-4,2,ox,oy,18*br);gg.addColorStop(0,'#fff7e6');gg.addColorStop(1,c);x.beginPath();x.arc(ox,oy,16*br,0,6.28);x.fillStyle=gg;x.shadowColor=c;x.shadowBlur=22;x.fill();x.shadowBlur=0;x.fillStyle='#fff';x.font='bold 13px system-ui';x.textAlign='center';x.fillText(state==='ask'?'?':'✋',ox,oy+5);x.fillStyle=c;x.font='11px "IBM Plex Sans JP",system-ui';x.fillText(label(),ox,oy+36)}
+  if(state==='done'&&!reduce){const e=pt(n-1);for(let k=0;k<12;k++){const ph=((ts/1500)+k/12)%1,a=k/12*6.28;x.beginPath();x.arc(e.x+Math.cos(a)*ph*36,e.y+Math.sin(a)*ph*36,2.2*(1-ph),0,6.28);x.fillStyle=`rgba(52,211,153,${1-ph})`;x.fill()}}}};
+
+// ---------- 案 2 星座 ----------
+const constellation={stars:PH.map((_,i)=>({x:.06+.88*i/(PH.length-1),y:.35+.28*Math.sin(i*1.7+.5),tw:Math.random()*6.28})),bg:rnd(70).map(()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.2+.3,ph:Math.random()*6.28})),links:[],
+ draw(x,W,H,ts,dt){const D=dark();x.fillStyle=D?'#0b1020':'#0f172a';x.fillRect(0,0,W,H);
+  this.bg.forEach(s=>{x.beginPath();x.arc(s.x*W,s.y*H,s.r,0,6.28);x.fillStyle=`rgba(255,255,255,${.25+.35*Math.sin(ts/900+s.ph)**2})`;x.fill()});
+  const cur=state==='done'?PH.length-1:CUR;const P=this.stars.map(s=>({x:s.x*W,y:s.y*H}));
+  // 済んだ星座線
+  x.strokeStyle='rgba(52,211,153,.55)';x.lineWidth=1.2;x.beginPath();for(let i=0;i<=cur;i++){i?x.lineTo(P[i].x,P[i].y):x.moveTo(P[i].x,P[i].y)}x.stroke();
+  // AI の思考の線: ランダムな星の間に線が生まれては消える
+  if(state==='ai'){if(!reduce&&Math.random()<dt*6)this.links.push({a:cur,b:Math.floor(Math.random()*PH.length),t:0});this.links=this.links.filter(l=>(l.t+=dt)<1.2);
+    this.links.forEach(l=>{const al=Math.sin(Math.min(1,l.t/1.2)*Math.PI);x.strokeStyle=`rgba(91,141,239,${al*.8})`;x.lineWidth=1;x.beginPath();x.moveTo(P[l.a].x,P[l.a].y);x.lineTo(P[l.b].x,P[l.b].y);x.stroke()})}
+  x.font='11px "IBM Plex Sans JP",system-ui';x.textAlign='center';
+  P.forEach((p,i)=>{const done=i<cur||state==='done',isCur=i===cur&&state!=='done';const tw=.7+.3*Math.sin(ts/500+this.stars[i].tw);const r=isCur?7*tw:done?4:2.5;
+    x.beginPath();x.arc(p.x,p.y,r,0,6.28);x.fillStyle=done?C.ok:isCur?col():'rgba(255,255,255,.6)';x.shadowColor=x.fillStyle;x.shadowBlur=isCur?26:done?10:0;x.fill();x.shadowBlur=0;
+    if(isCur){for(let k=0;k<4;k++){const a=k*Math.PI/2+ts/2000;x.strokeStyle=col();x.globalAlpha=.6;x.beginPath();x.moveTo(p.x+Math.cos(a)*10,p.y+Math.sin(a)*10);x.lineTo(p.x+Math.cos(a)*(18+6*tw),p.y+Math.sin(a)*(18+6*tw));x.stroke();x.globalAlpha=1}}
+    x.fillStyle=isCur?'#fff':'rgba(255,255,255,.7)';x.fillText(PH[i],p.x,p.y+22)});
+  x.fillStyle=col();x.font='12px "IBM Plex Sans JP",system-ui';x.textAlign='left';x.fillText((state==='ai'?'✦ ':state==='ask'?'? ':state==='done'?'✔ ':'✋ ')+label(),14,H-14);}};
+
+// ---------- 案 3 生きもの ----------
+const cell={blobs:rnd(28).map((a,i)=>({a:a*6.28,r:.3+Math.random()*.6,w:(.3+Math.random()*.5)*(i%2?1:-1)})),
+ draw(x,W,H,ts,dt){const cur=state==='done'?PH.length-1:CUR;const grow=(cur+1)/PH.length;const cx=W*.32,cy=H*.5,R=40+grow*50;
+  // 膜（呼吸しながらゆらぐ）
+  x.beginPath();for(let k=0;k<=64;k++){const a=k/64*6.28;const w=1+.05*Math.sin(a*3+ts/600)+.03*Math.sin(a*5-ts/400);const rr=R*(reduce?1:w);k?x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr):x.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr)}x.closePath();
+  const g=x.createRadialGradient(cx-R*.3,cy-R*.3,4,cx,cy,R);g.addColorStop(0,dark()?'#1e3a5f':'#e0ecff');g.addColorStop(1,dark()?'#12233f':'#c7dafc');x.fillStyle=g;x.fill();x.strokeStyle=state==='done'?C.ok:C.ai;x.lineWidth=2;x.shadowColor=x.strokeStyle;x.shadowBlur=18;x.stroke();x.shadowBlur=0;
+  // 中身: 済んだ段が核として並び、AI が考えると細胞質が渦巻く
+  for(let i=0;i<=cur;i++){const a=i/PH.length*6.28-1.2,d=R*.55;x.beginPath();x.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d,5,0,6.28);x.fillStyle=i===cur&&state!=='done'?col():C.ok;x.shadowColor=x.fillStyle;x.shadowBlur=8;x.fill();x.shadowBlur=0}
+  if(state==='ai'){this.blobs.forEach(b=>{if(!reduce)b.a+=b.w*dt;const d=R*b.r*.8;x.beginPath();x.arc(cx+Math.cos(b.a)*d,cy+Math.sin(b.a)*d*.8,2,0,6.28);x.fillStyle=`rgba(91,141,239,.7)`;x.fill()})}
+  // 手を伸ばす（あなたの番）
+  if(state==='human'||state==='ask'){const hx=W*.72,hy=cy;const reach=reduce?1:.5+.5*Math.sin(ts/900)**2;const ex=cx+R+(hx-cx-R-30)*reach;x.strokeStyle=col();x.lineWidth=8;x.lineCap='round';x.beginPath();x.moveTo(cx+R-6,cy);x.quadraticCurveTo((cx+R+ex)/2,cy-20*reach,ex,cy);x.stroke();
+    x.beginPath();x.arc(hx,hy,20,0,6.28);x.fillStyle=col();x.shadowColor=col();x.shadowBlur=20;x.fill();x.shadowBlur=0;x.fillStyle='#fff';x.font='bold 15px system-ui';x.textAlign='center';x.fillText(state==='ask'?'?':'✋',hx,hy+5);x.fillStyle=col();x.font='11px "IBM Plex Sans JP",system-ui';x.fillText(label(),hx,hy+40)}
+  x.fillStyle=ink();x.font='12px "IBM Plex Sans JP",system-ui';x.textAlign='left';x.fillText(`いま: ${PH[cur]}（${cur+1}/${PH.length}）`,14,20);x.fillStyle=mut();x.font='11px system-ui';x.fillText(state==='ai'?'細胞の中で考えている':state==='done'?'育ちきった':'あなたを待っている',14,36);}};
+
+// ---------- 案 4 織り ----------
+const loom={draw(x,W,H,ts,dt){const cur=state==='done'?PH.length-1:CUR;const cols=PH.length,cw=(W-40)/cols,top=30,bh=H-80;
+  x.font='11px "IBM Plex Sans JP",system-ui';x.textAlign='center';
+  for(let i=0;i<cols;i++){const x0=20+i*cw;const done=i<cur||state==='done',isCur=i===cur&&state!=='done';
+    // 織られた布（済）は横糸が密、今の段は糸が絡む、未来は縦糸だけ
+    for(let k=0;k<6;k++){const xx=x0+cw*(k+.5)/6;x.strokeStyle=done?C.ok:isCur?col():faint();x.globalAlpha=done?.9:isCur?.9:.5;x.lineWidth=1.2;x.beginPath();x.moveTo(xx,top);x.lineTo(xx,top+bh);x.stroke()}
+    if(done){for(let r=0;r<bh;r+=6){x.strokeStyle=C.ok;x.globalAlpha=.35+.25*Math.sin(r/9+ts/800);x.beginPath();x.moveTo(x0+2,top+r);x.lineTo(x0+cw-2,top+r);x.stroke()}}
+    if(isCur){const fill=state==='ai'?(reduce?.5:(ts/2500)%1):.5;for(let r=0;r<bh*fill;r+=6){x.strokeStyle=col();x.globalAlpha=.5;x.beginPath();x.moveTo(x0+2,top+r);x.lineTo(x0+cw-2,top+r);x.stroke()}
+      if(state==='ai'){for(let k=0;k<5;k++){const ph=((ts/700)+k/5)%1;const yy=top+bh*fill;x.strokeStyle=C.ai;x.globalAlpha=1-ph;x.lineWidth=1.5;x.beginPath();x.moveTo(x0+2,yy);x.bezierCurveTo(x0+cw*.3,yy-14*ph,x0+cw*.7,yy+14*ph,x0+cw-2,yy);x.stroke()}}
+      else{const yy=top+bh*.5;const br=reduce?1:1+.08*Math.sin(ts/600);x.globalAlpha=1;x.beginPath();x.arc(x0+cw/2,yy,12*br,0,6.28);x.fillStyle=col();x.shadowColor=col();x.shadowBlur=16;x.fill();x.shadowBlur=0;x.fillStyle='#fff';x.font='bold 12px system-ui';x.fillText(state==='ask'?'?':'✋',x0+cw/2,yy+4);x.font='11px "IBM Plex Sans JP",system-ui'}}
+    x.globalAlpha=1;x.fillStyle=isCur?ink():mut();x.fillText(PH[i],x0+cw/2,top+bh+18)}
+  x.fillStyle=col();x.font='12px "IBM Plex Sans JP",system-ui';x.textAlign='left';x.fillText(label(),14,20)}};
+
+// ---------- 案 5 思考の流れ（文字） ----------
+const TOK=['影響: REQ-F-003','trace-check --impact','BD-002 DD-004 ST-005','境界値: 3, 4','状態遷移: 貸出→返却','期待結果を確認','ST-013 を追加','根拠 spec.md §4','gate exit 0','失効(ST-005)'];
+const terminal={lines:[],acc:0,draw(x,W,H,ts,dt){const D=dark();x.fillStyle=D?'#05080d':'#0b0f16';x.fillRect(0,0,W,H);x.font='12px "IBM Plex Mono",monospace';x.textAlign='left';
+  const cur=state==='done'?PH.length-1:CUR;
+  // 上: 段の進み（文字）
+  let sx=14;PH.forEach((l,i)=>{const done=i<cur||state==='done',isCur=i===cur&&state!=='done';x.fillStyle=done?C.ok:isCur?col():'#4b5563';x.fillText((done?'✔':isCur?'●':'○')+l,sx,20);sx+=x.measureText('✔'+l).width+14});
+  // 中: 思考トークンが流れ落ちる
+  if(state==='ai'&&!reduce){this.acc+=dt;if(this.acc>.28){this.acc=0;this.lines.push({t:TOK[Math.floor(Math.random()*TOK.length)],y:40,a:1});if(this.lines.length>9)this.lines.shift()}}
+  this.lines.forEach((l,i)=>{l.y=48+i*16;x.fillStyle=`rgba(139,180,255,${.35+.65*(i/9)})`;x.fillText('  '+l.t,14,l.y)});
+  if(state==='ai'){x.fillStyle=C.ai;x.fillText('▍ AI が考えています'+'.'.repeat(1+Math.floor(ts/400)%3),14,H-20)}
+  else{const blink=reduce||Math.floor(ts/500)%2===0;x.fillStyle=col();x.fillText((state==='ask'?'? ':state==='done'?'✔ ':'✋ ')+label(),14,H-42);x.fillStyle=col();x.fillText('あなた › '+(blink?'▍':' '),14,H-20)}}};
+
+// ---------- 共通ループ ----------
+const ideas={river,constellation,cell,loom,terminal};const cvs={};
+document.querySelectorAll('.idea').forEach(sec=>{const id=sec.dataset.id,c=sec.querySelector('canvas');const x=c.getContext('2d');const size=()=>{const r=c.getBoundingClientRect();c.width=r.width*devicePixelRatio;c.height=210*devicePixelRatio;x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)};size();new ResizeObserver(size).observe(c);cvs[id]={c,x}});
+let last=0;function loop(ts){const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;for(const id in cvs){const {c,x}=cvs[id];const W=c.getBoundingClientRect().width;x.clearRect(0,0,W,210);ideas[id].draw(x,W,210,ts,dt)}requestAnimationFrame(loop)}requestAnimationFrame(loop);
+const order=['ai','human','ask','done'];let auto=null;
+function setState(s){state=s;document.querySelectorAll('[data-st]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.st===s));terminal.lines=[]}
+document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{if(auto){clearInterval(auto);auto=null;document.getElementById('auto').setAttribute('aria-pressed','false')}setState(b.dataset.st)});
+document.getElementById('auto').onclick=e=>{if(auto){clearInterval(auto);auto=null;e.target.setAttribute('aria-pressed','false');return}e.target.setAttribute('aria-pressed','true');let i=0;auto=setInterval(()=>{i=(i+1)%order.length;setState(order[i])},3500)};
+try{const p=localStorage.getItem('anim-pick');if(p){const r=document.querySelector(`input[value="${p}"]`);if(r)r.checked=true}}catch(e){}
+document.querySelectorAll('input[name=pick]').forEach(r=>r.onchange=()=>{try{localStorage.setItem('anim-pick',r.value)}catch(e){}});
+})();
+</script>
+
+</body>
+</html>
