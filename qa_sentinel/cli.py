@@ -71,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="qa-sentinel")
     p.add_argument("--tasks", default="tasks", help="台帳ディレクトリ")
     p.add_argument("--projects", default="projects")
-    sub = p.add_subparsers(dest="cmd", required=True)
+    sub = p.add_subparsers(dest="cmd", required=False)
 
     r = sub.add_parser("run", help="イベントを 1 つ処理する（開始時に 4 問）")
     r.add_argument("--project", required=True)
@@ -109,6 +109,9 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--host", default="127.0.0.1")
 
     args = p.parse_args(argv)
+    if not args.cmd:  # 引数なし → 番号で選ぶメニュー（初心者向け）
+        from .menu import main as menu
+        return menu(args.tasks, args.projects)
     ledger = Ledger(args.tasks)
     try:
         if args.cmd == "run":

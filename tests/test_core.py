@@ -195,3 +195,36 @@ def test_web_api_review_submit_answer_approve(ws):
             assert e.code == 400
     finally:
         srv.shutdown()
+
+
+def test_web_api_run_starts_task(ws):
+    import threading
+    import urllib.parse
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+
+    from qa_sentinel.web.app import make_handler
+
+    led = Ledger(ws / "tasks")
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(led, MockRuntime(), projects_dir=str(ws / "projects")))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        u = f"http://127.0.0.1:{srv.server_address[1]}"
+        body = urllib.parse.urlencode({"project": "library-loan", "nl": "貸出上限を 3 冊に", "mode": "M2", "reviewer": "yuki", "budget": "3"}).encode()
+        d = json.loads(urllib.request.urlopen(urllib.request.Request(u + "/api/run", data=body, method="POST")).read())
+        assert d["task"] == "T-0001" and d["status"] == "review" and d["plan"]["reviewer"] == "yuki" and d["plan"]["budget_usd"] == 3.0
+        try:
+            urllib.request.urlopen(urllib.request.Request(u + "/api/run", data=b"project=library-loan&nl=x&mode=M2&reviewer=", method="POST"))
+            assert False, "名前なしは 400"
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+    finally:
+        srv.shutdown()
+
+
+def test_menu_runs_when_no_subcommand(ws, monkeypatch, capsys):
+    answers = iter(["1", "library-loan", "貸出上限を 3 冊に", "M1", "qa", "2", "0"])
+    monkeypatch.setattr("builtins.input", lambda *_: next(answers))
+    assert main(["--tasks", str(ws / "tasks"), "--projects", str(ws / "projects")]) == 0
+    out = capsys.readouterr().out
+    assert "あなたの番" in out and "T-0001" in out
