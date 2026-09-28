@@ -23,7 +23,7 @@
 - 未知の name は `ValueError`
 
 ## 完了条件
-- [ ] `bash scripts/verify.sh` が `ALL GREEN`
+- [ ] `python scripts/verify.py` が `ALL GREEN`
 - [ ] `tests/test_gates.py`: 未知 name / missing script / `cases` の空期待結果検出 / 正常（`echo` を使う偽スクリプトを tmp に置く）の 4 ケースが pass
 - [ ] 変更が上記「触るファイル」内に収まっている
 

@@ -10,7 +10,7 @@
 - **git 操作はしない**（add / commit / push / branch を実行しない）。検証と commit は人（Claude）が行う。
 - 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。
 - 推測で埋めない。分からないことは最後の報告に「質問」として書く。
-- 完了の基準は 1 つ: `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）の末尾が `ALL GREEN`。
+- 完了の基準は 1 つ: `python scripts/verify.py`の末尾が `ALL GREEN`。
 
 ## 1. リポジトリの地図（これだけ知っていればよい）
 
@@ -23,7 +23,7 @@ qa_sentinel/core/orchestrator.py run_event(event, runtime, ledger, project, plan
 qa_sentinel/core/ledger.py       Ledger.save の tmp→os.replace パターン（今回は触らない。tracker.py の永続化はこの書き方を真似る）
 qa_sentinel/cli.py               サブコマンド定義。watch を追加する
 projects/_template/config.toml   [triggers.tracker] mode/kind/base_url/query/poll_minutes/credential_ref
-scripts/verify.sh                検証ゲート
+scripts/verify.py                検証ゲート
 ```
 
 背景: 社内ネットにある JIRA / Confluence / Redmine を、ローカル常駐の決定論的ポーラーが見張り、更新を検知したときだけ ChangeEvent を作って `run` と同じ経路（`run_event`）に渡す。**イベントが無い間は LLM を一切起動しない**（`docs/00_概要.md` の制約: 監視は LLM を使わない決定論的コードが行う。定期的に自分を起こして確認する設計を持たない。cron や自己ウェイクの仕組みは作らない。常駐は systemd/launchd で人が行う）。
@@ -109,7 +109,7 @@ qa-sentinel watch --project <p> [--once] [--runtime mock|managed] [--mode <prese
 
 ## 6. 完了条件
 
-- [ ] `bash scripts/verify.sh` の末尾が `ALL GREEN`
+- [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
 - [ ] `python3 -m pytest -q tests/test_tracker.py` が 4 passed
 - [ ] 変更が「触るファイル」4 本（`qa_sentinel/triggers/tracker.py` 新規、`qa_sentinel/cli.py` の `watch` 追加のみ、`tests/test_tracker.py` 新規、`projects/_template/config.toml` の `credential_ref` 変更）に収まっている
 
@@ -124,7 +124,7 @@ qa-sentinel watch --project <p> [--once] [--runtime mock|managed] [--mode <prese
 ```
 結果: ALL GREEN / 失敗（どのステップ）
 作ったファイル: <パス>, <パス>
-verify.sh の末尾 3 行: …
+verify.py の末尾 3 行: …
 触った以外のファイル: なし / <パス>（理由）
 質問: なし / <内容>
 ```

@@ -27,7 +27,7 @@
 - 環境変数: `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, `QA_SENTINEL_ENV_ID`。無ければ `start()` で `RuntimeError` に理由を書く
 
 ## 完了条件
-- [ ] `bash scripts/verify.sh` が `ALL GREEN`
+- [ ] `python scripts/verify.py` が `ALL GREEN`
 - [ ] `tests/test_managed_runtime.py`: budget を渡している / custom_tool_use に対して custom_tool_result を送る / budget_reached で stopped / 環境変数欠落で RuntimeError の 4 ケース（SDK はモック）
 - [ ] 変更が上記「触るファイル」内に収まっている
 

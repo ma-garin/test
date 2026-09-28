@@ -21,7 +21,7 @@ Windows での読み替え（本文の bash 表記は次に置き換える）:
 | 本文 | Windows（cmd） |
 |---|---|
 | `venv/bin/python` / `venv/bin/qa-sentinel` | `venv\Scripts\python` / `venv\Scripts\qa-sentinel` |
-| `PY=venv/bin/python bash scripts/verify.sh` | `venv\Scripts\python scripts\verify.py` |
+| `venv/bin/python scripts/verify.py` | `venv\Scripts\python scripts\verify.py` |
 | `./scripts/trace-check.sh …`（デモ内） | Git for Windows があれば `bash scripts\trace-check.sh …`。無ければ飛ばす（verify.py が「未検査」と出す） |
 | `git checkout -b codex/build-…` | `.git` が無い（zip）なら先に `git init` → `git add -A` → `git commit -m baseline`。git 自体が無ければ commit は省略し、§7 に「git なし」と書く |
 | PR を作る | 作れない。代わりに `git format-patch main --stdout > codex-build.patch`（git あり）か、フォルダを zip にして人に渡す |
@@ -32,14 +32,14 @@ Windows での読み替え（本文の bash 表記は次に置き換える）:
 - このリポジトリ（qa-sentinel）を **動くところまで** 作る。実装・検証・commit を自分で回す。人に聞かない（聞きたいことは §7 の報告に書いて先へ進む）。
 - git は **作業ブランチ `codex/build-<日付>`** でだけ使う。`git add <パス明示>` → `commit`。`main` への push・force・reset・rebase は禁止。最後に PR を 1 本作る（`gh pr create --fill --base main` が使えれば。無ければ §7 にブランチ名を書く）。
 - 秘密情報をファイルや報告に書かない。
-- 各タスクの完了基準は 1 つ: `PY=venv/bin/python bash scripts/verify.sh`（Windows: `venv\Scripts\python scripts\verify.py`）の末尾が `ALL GREEN`。
+- 各タスクの完了基準は 1 つ: `venv/bin/python scripts/verify.py`（Windows: `venv\Scripts\python scripts\verify.py`）の末尾が `ALL GREEN`。
 - 上限: 1 タスクにつき verify 失敗からのやり直しは **3 回**。3 回で通らなければそのタスクを `SKIPPED` にして次へ進み、§7 に理由を書く。
 
 ## 1. 準備（5 分）
 
 ```bash
 python3 -m venv venv && venv/bin/pip install -e .[dev]
-PY=venv/bin/python bash scripts/verify.sh          # ALL GREEN（MVP が動く）
+venv/bin/python scripts/verify.py          # ALL GREEN（MVP が動く）
 git checkout -b codex/build-$(date +%Y%m%d)
 ```
 
@@ -54,7 +54,7 @@ git checkout -b codex/build-$(date +%Y%m%d)
 各 `docs/codex/HANDOFF_Tnn.md` を **上から順に読んで実装** する。1 本ごとに:
 
 ```bash
-PY=venv/bin/python bash scripts/verify.sh | tail -1     # ALL GREEN
+venv/bin/python scripts/verify.py | tail -1     # ALL GREEN
 git add <HANDOFF の「触るファイル」に列挙されたパスだけ>
 git commit -m "feat(Tnn): <HANDOFF のタイトル>"
 ```
@@ -89,7 +89,7 @@ Web も 1 回起動して `/api/tasks` が台帳を返すことを確認（`$Q w
 
 - `README.md` の「すぐ試す」を、§3 で実際に通したコマンド列に更新（動かなかったものは書かない）
 - `docs/codex/DEMO_RESULT.md` と（あれば）`LIVE_CHECK_RESULT.md` を commit
-- `PY=venv/bin/python bash scripts/verify.sh` 最終 ALL GREEN
+- `venv/bin/python scripts/verify.py` 最終 ALL GREEN
 - PR を作る（できなければブランチ名を報告）
 
 ## 6. 止まる条件（これ以外では止まらない）

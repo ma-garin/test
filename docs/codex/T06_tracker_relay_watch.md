@@ -20,7 +20,7 @@
 - LLM 起動回数を `tasks/.tracker-<project>.json` の `sessions_started` に記録（イベント 0 なら増えない）
 
 ## 完了条件
-- [ ] `bash scripts/verify.sh` が `ALL GREEN`
+- [ ] `python scripts/verify.py` が `ALL GREEN`
 - [ ] `tests/test_tracker.py`: 0 件で何も起きない / 1 件で ChangeEvent / 取得失敗で last_seen が進まない / `--once` の 4 ケース
 - [ ] 変更が上記「触るファイル」内に収まっている
 

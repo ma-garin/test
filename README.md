@@ -21,7 +21,7 @@
 | `docs/codex/` | Codex 向け指示書 HANDOFF_T01〜T08 と雛形 |
 | `qa_sentinel/` | MVP（台帳・状態機械・モックランタイム・CLI・Web） |
 | `projects/` | プロジェクトごとの環境情報（`env.md`）と設定（`config.toml`） |
-| `scripts/verify.sh` / `scripts/verify.py` | 検証ゲート（bash 版 / Python 版＝Windows cmd 用）。末尾 `ALL GREEN` で合格 |
+| `scripts/verify.py` | 検証ゲート（唯一の実装。`verify.sh` は薄い呼び出し）。末尾 `ALL GREEN` で合格 |
 
 ## すぐ試す（MVP。LLM は使わない）
 
@@ -34,7 +34,7 @@ venv/bin/qa-sentinel results T-0001 --by yuki --file results.csv                
 venv/bin/qa-sentinel show T-0001                                                         # 履歴・根拠・誰が決めたか
 venv/bin/qa-sentinel approve T-0001 --by yuki                                            # 最終承認
 venv/bin/qa-sentinel web --port 8790                                                     # http://127.0.0.1:8790/ で同じ台帳を見る
-bash scripts/verify.sh            # Windows: venv\Scripts\python scripts\verify.py
+venv/bin/python scripts/verify.py     # Windows: venv\Scripts\python scripts\verify.py
 ```
 
 `--runtime managed` は Codex の T02 で実装される（現状は NotImplementedError）。
