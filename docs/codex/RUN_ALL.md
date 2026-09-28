@@ -8,12 +8,31 @@
 
 ---
 
+## 0-W. Windows 11 ＋ zip で始める場合（人が最初に 1 回だけ）
+
+GitHub の「Code → Download ZIP」で取得し、解凍したフォルダで **cmd** を開き、そこで Codex を起動する。前提: Python 3.11 以上（`python --version`）。Git for Windows は任意（あると kit の `.sh` 検査が有効になり、`git` で commit できる）。
+
+Codex に貼る文は同じ:
+
+> `docs/codex/RUN_ALL.md` に従って、止まらずに最後までやれ。OS は Windows 11、シェルは cmd。
+
+Windows での読み替え（本文の bash 表記は次に置き換える）:
+
+| 本文 | Windows（cmd） |
+|---|---|
+| `venv/bin/python` / `venv/bin/qa-sentinel` | `venv\Scripts\python` / `venv\Scripts\qa-sentinel` |
+| `PY=venv/bin/python bash scripts/verify.sh` | `venv\Scripts\python scripts\verify.py` |
+| `./scripts/trace-check.sh …`（デモ内） | Git for Windows があれば `bash scripts\trace-check.sh …`。無ければ飛ばす（verify.py が「未検査」と出す） |
+| `git checkout -b codex/build-…` | `.git` が無い（zip）なら先に `git init` → `git add -A` → `git commit -m baseline`。git 自体が無ければ commit は省略し、§7 に「git なし」と書く |
+| PR を作る | 作れない。代わりに `git format-patch main --stdout > codex-build.patch`（git あり）か、フォルダを zip にして人に渡す |
+| `$Q web --port 8790 &` → `curl` | `start /b venv\Scripts\qa-sentinel web --port 8790` → `curl -s http://127.0.0.1:8790/api/tasks`（curl は Windows 10 以降に同梱）→ `taskkill /f /im python.exe` は使わない（他の python を巻き込む）。ブラウザで開いて確認し、cmd を閉じて止める |
+
 ## 0. あなた（Codex）の役割と権限
 
 - このリポジトリ（qa-sentinel）を **動くところまで** 作る。実装・検証・commit を自分で回す。人に聞かない（聞きたいことは §7 の報告に書いて先へ進む）。
 - git は **作業ブランチ `codex/build-<日付>`** でだけ使う。`git add <パス明示>` → `commit`。`main` への push・force・reset・rebase は禁止。最後に PR を 1 本作る（`gh pr create --fill --base main` が使えれば。無ければ §7 にブランチ名を書く）。
 - 秘密情報をファイルや報告に書かない。
-- 各タスクの完了基準は 1 つ: `PY=venv/bin/python bash scripts/verify.sh` の末尾が `ALL GREEN`。
+- 各タスクの完了基準は 1 つ: `PY=venv/bin/python bash scripts/verify.sh`（Windows: `venv\Scripts\python scripts\verify.py`）の末尾が `ALL GREEN`。
 - 上限: 1 タスクにつき verify 失敗からのやり直しは **3 回**。3 回で通らなければそのタスクを `SKIPPED` にして次へ進み、§7 に理由を書く。
 
 ## 1. 準備（5 分）

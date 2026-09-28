@@ -10,7 +10,7 @@
 - **git 操作はしない**（add / commit / push / branch を実行しない）。検証と commit は人（Claude）が行う。
 - 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。
 - 推測で埋めない。分からないことは最後の報告に「質問」として書く。
-- 完了の基準は 1 つ: `bash scripts/verify.sh` の末尾が `ALL GREEN`。
+- 完了の基準は 1 つ: `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）の末尾が `ALL GREEN`。
 
 ## 1. リポジトリの地図（これだけ知っていればよい）
 
