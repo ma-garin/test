@@ -10,7 +10,8 @@
 | `docs/00_概要.md` | 何を解くか・決定事項・守る制約 |
 | `docs/01_設計仕様.md` | 工程・判定表・ChangeEvent・台帳・env/config・ランタイム境界・Managed Agents 接続 |
 | `docs/02_フロー.html` | 動作フローのアニメーション（ブラウザで開く） |
-| `docs/03_CLIデモ.html` | CLI 操作のターミナル再生デモ（人・ホスト・LLM の分担と台帳の段） |
+| `docs/03_CLIデモ.html` | CLI のターミナル再生デモ（運用モード別。担当列・人の番の帯・プロンプト） |
+| `docs/04_画面案.html` | GUI 5 パターン（指揮ワークフロー・かんばん・受信箱・手動実行と結果入力・タスク詳細）と運用モード M1〜M4 |
 | `docs/codex/` | Codex 向けタスク指示書（T01〜T06）と雛形 |
 | `qa_sentinel/` | MVP（台帳・状態機械・モックランタイム・CLI・Web） |
 | `projects/` | プロジェクトごとの環境情報（`env.md`）と設定（`config.toml`） |

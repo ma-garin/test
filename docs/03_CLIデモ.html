@@ -3,121 +3,116 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>qa-sentinel CLI デモ</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans+JP:wght@400;500;700&display=swap">
 <style>
-:root{--bg:#f5f7fa;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#c9d2de;--accent:#d97706;--ok:#15803d;--stop:#b91c1c;--llm:#1d4ed8;--term:#0f141b;--term-ink:#d7dee8;--term-dim:#8391a3;--term-cmd:#f5c26b;--term-ok:#7ee2a0;--term-stop:#ff8b8b;--term-llm:#8ab4ff}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--term:#070a0f;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--term:#070a0f;color-scheme:dark}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "IBM Plex Sans JP",system-ui,sans-serif;padding:20px 16px 40px;max-width:1120px;margin-inline:auto}
-h1{font-size:20px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 12px;max-width:72ch}
-.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+:root{--bg:#f3f5f8;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#cfd7e1;
+ --t-bg:#0b0f16;--t-ink:#d7dee8;--t-dim:#6f7d90;--t-cmd:#ffd479;--t-ok:#7ee2a0;--t-bad:#ff8b8b;--t-ai:#8ab4ff;--t-hum:#f5a524;--t-chk:#c4b5fd;--t-box:#2a3648;--t-bar:#3b82f6;--t-barbg:#1d2735}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--t-bg:#05080d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--t-bg:#05080d;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:14px/1.6 "IBM Plex Sans JP",system-ui,sans-serif;padding:0 16px;padding-block:18px 40px;max-width:1120px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 12px;max-width:76ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 button,select{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
-button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-button:focus-visible,select:focus-visible{outline:2px solid var(--llm);outline-offset:2px}
-.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}@media (max-width:820px){.grid{grid-template-columns:1fr}}
-.term{background:var(--term);color:var(--term-ink);border-radius:8px;padding:14px 16px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;line-height:1.55;min-height:420px;max-height:560px;overflow:auto;white-space:pre-wrap;word-break:break-all}
-.term .cmd{color:var(--term-cmd)}.term .dim{color:var(--term-dim)}.term .ok{color:var(--term-ok)}.term .stop{color:var(--term-stop)}.term .llm{color:var(--term-llm)}
-.term .cursor::after{content:"▍";animation:blink 1s steps(1) infinite}@keyframes blink{50%{opacity:0}}
-@media (prefers-reduced-motion:reduce){.term .cursor::after{animation:none}}
-.side{display:flex;flex-direction:column;gap:12px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
-.panel h2{font-size:12px;margin:0 0 8px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
-.steps{display:flex;flex-wrap:wrap;gap:5px}.step{padding:3px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:var(--bg)}
-.step.done{border-color:var(--ok)}.step.now{border-color:var(--accent);font-weight:600}.step.bad{border-color:var(--stop)}
-.who{display:flex;gap:8px;align-items:center;font-size:13px}.who b{padding:2px 10px;border-radius:999px;font-size:12px}
-.who .human{background:#fde9c8;color:#92400e}.who .host{background:#e5e7eb;color:#374151}.who .llm{background:#dbeafe;color:#1e40af}
-@media (prefers-color-scheme:dark){.who .human{background:#3d2a08;color:#f5c26b}.who .host{background:#1f2937;color:#c9d2de}.who .llm{background:#12233f;color:#8ab4ff}}
-.note{font-size:13px;color:var(--muted);margin:0}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}button:focus-visible,select:focus-visible{outline:2px solid var(--t-bar);outline-offset:2px}
+.win{background:var(--t-bg);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);overflow:hidden}
+.titlebar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#161c26;color:#8391a3;font-size:12px}
+.titlebar i{width:11px;height:11px;border-radius:50%;display:inline-block}.titlebar i:nth-child(1){background:#ff5f57}.titlebar i:nth-child(2){background:#febc2e}.titlebar i:nth-child(3){background:#28c840}
+.titlebar span{margin-left:8px;font-family:"IBM Plex Mono",monospace}
+.term{color:var(--t-ink);padding:14px 18px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px;line-height:1.5;min-height:460px;max-height:600px;overflow:auto;white-space:pre;overflow-x:auto}
+.cmd{color:var(--t-cmd);font-weight:500}.dim{color:var(--t-dim)}.ok{color:var(--t-ok)}.bad{color:var(--t-bad)}.ai{color:var(--t-ai)}.hum{color:var(--t-hum)}.chk{color:var(--t-chk)}.box{color:var(--t-box)}.b{font-weight:700}
+.bar-fill{color:var(--t-bar)}.bar-bg{color:var(--t-barbg)}
+.banner{display:inline-block;background:#3d2a08;color:#f5c26b;padding:0 8px;border-radius:3px}
+.cursor::after{content:"▍";animation:blink 1s steps(1) infinite}@keyframes blink{50%{opacity:0}}
+.spin{display:inline-block;width:1ch}
+@media (prefers-reduced-motion:reduce){.cursor::after{animation:none}}
+.note{font-size:12.5px;color:var(--muted);margin:8px 0 0}
 </style>
 </head>
 <body>
+
 <h1>qa-sentinel CLI デモ</h1>
-<p class="lead">ターミナルでの実際の操作順。コマンドは人が打ち、段の進行はホスト（司令塔）が台帳に書き、LLM はセッションの中だけで動く。右側に「いま誰が動いているか」と台帳の段が出る。</p>
-<div class="controls">
+<p class="lead">ターミナルの実際の見え方。段の一覧に担当（AI／人／確認）と状態が常に出て、人の番になると黄色の帯で止まり、プロンプトで回答・結果入力・承認を受ける。</p>
+<div class="bar">
   <select id="scenario" aria-label="シナリオ">
-    <option value="happy">A. 自然言語 → 全段 → 承認</option>
-    <option value="blocked">B. 確認待ちで止まる → 回答 → 再開 → 承認</option>
-    <option value="budget">C. 予算超過で停止 → 人が判断</option>
-    <option value="watch">D. relay 監視（イベントなし。LLM 0 回）</option>
+    <option value="m2" selected>M2 実装まで AI → 実行は人 → AI が分析・差し替え → 承認</option>
+    <option value="m1">M1 全自動（確認待ちで一度止まる）</option>
+    <option value="m3">M3 各段の出口で人が承認</option>
+    <option value="watch">relay 監視（イベントなし。LLM 0 回）</option>
   </select>
   <button id="play" class="primary">▶ 再生</button><button id="step">次へ</button><button id="reset">最初から</button>
 </div>
-<div class="grid">
-  <div class="term" id="term" aria-live="polite"></div>
-  <div class="side">
-    <div class="panel"><h2>いま動いているのは</h2><div class="who" id="who"><b class="host">ホスト</b><span id="who-text">待機</span></div></div>
-    <div class="panel"><h2>台帳 tasks/T-0001.json の段</h2><div class="steps" id="steps"></div><p class="note" id="ledger-note" style="margin-top:8px"></p></div>
-    <div class="panel"><h2>この段階の要点</h2><p class="note" id="point"></p></div>
-  </div>
-</div>
+<div class="win"><div class="titlebar"><i></i><i></i><i></i><span>yuki@mac — qa-sentinel — 100×32</span></div><div class="term" id="term" aria-live="polite"></div></div>
+<p class="note">色の意味: <span style="color:var(--t-cmd)">黄=人が打ったコマンド</span> · <span style="color:var(--t-ai)">青=AI（セッション内）</span> · <span style="color:var(--t-hum)">橙=人の番</span> · <span style="color:var(--t-chk)">紫=人の確認</span> · <span style="color:var(--t-ok)">緑=終了条件 OK</span> · <span style="color:var(--t-bad)">赤=止まった</span></p>
+
 <script>
 (function(){
-const PH=['test-plan','test-analysis','test-strategy','test-design','test-implementation','test-execution','defect-analysis','test-completion','regression-swap','waiting_human','done'];
-const L={'test-plan':'計画','test-analysis':'基本設計','test-strategy':'詳細設計','test-design':'ケース設計','test-implementation':'実装','test-execution':'実行','defect-analysis':'不具合分析','test-completion':'完了報告','regression-swap':'差し替え','waiting_human':'承認待ち','done':'完了'};
-// 1 ステップ = {who, text(term に追記する行。cmd: 人の入力), phase, status, point}
-const c=(s)=>({t:s,cls:'cmd',type:true});
-const o=(s,cls)=>({t:s,cls:cls||''});
-const runLines=(from)=>{const out=[];const ph=PH.slice(0,9);const start=from?ph.indexOf(from):0;for(let i=start;i<ph.length;i++){out.push(o(`  [${ph[i].padEnd(20)}] running  `,'llm'));out.push(o(`  [${ph[i].padEnd(20)}] done     gate ok`,'ok'));}return out;};
+const PH=[['test-plan','計画・影響分析'],['test-analysis','基本設計'],['test-strategy','詳細設計'],['test-design','ケース設計'],['test-implementation','ケース実装'],['test-execution','テスト実行'],['defect-analysis','不具合分析'],['test-completion','完了報告'],['regression-swap','差し替え'],['approval','最終承認']];
+const W=96;
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const pad=(s,n)=>{let w=0;for(const ch of s)w+=/[　-鿿＀-￯]/.test(ch)?2:1;return s+' '.repeat(Math.max(0,n-w));};
+function bar(p){const n=Math.round(p*30);return `<span class="bar-fill">${'█'.repeat(n)}</span><span class="bar-bg">${'░'.repeat(30-n)}</span> ${String(Math.round(p*100)).padStart(3)}%`;}
+function header(task,ev,mode,sess,spent,budget){return `<span class="box">┌${'─'.repeat(W-2)}┐</span>\n<span class="box">│</span> <span class="b">qa-sentinel</span>  ${esc(task)}  <span class="dim">${esc(ev)}</span>${' '.repeat(Math.max(1,W-4-14-task.length-ev.length-2))}<span class="box">│</span>\n<span class="box">│</span> mode <span class="b">${mode}</span>   session <span class="ai">${sess}</span>   spent <span class="b">$${spent.toFixed(2)}</span> / $${budget.toFixed(2)}${' '.repeat(Math.max(1,W-4-44-sess.length))}<span class="box">│</span>\n<span class="box">└${'─'.repeat(W-2)}┘</span>`;}
+function table(assign,states){
+  let out=`  <span class="dim">${pad('#',3)}${pad('段',18)}${pad('担当',12)}${pad('状態',14)}終了条件</span>\n`;
+  PH.forEach(([p,l],i)=>{const a=assign[p]||'ai';const st=states[p]||'';
+    const who=a==='ai'?'<span class="ai">AI</span>        ':a==='human'?'<span class="hum">人</span>         ':'<span class="chk">AI→人確認</span> ';
+    const icon={done:'<span class="ok">✔ done</span>     ',run:'<span class="ai">● running</span>  ',wait:'<span class="hum">⏸ 人の番</span>    ',chk:'<span class="chk">◆ 確認待ち</span>  ',bad:'<span class="bad">✖ blocked</span>  ',stop:'<span class="bad">■ stopped</span>  ',hand:'<span class="hum">⏸ 手渡し</span>    ','':'<span class="dim">○ pending</span>  '}[st];
+    const gate={'test-plan':'impact','test-design':'cases','test-implementation':'pw-spec-lint','test-execution':'test-metrics --gate','regression-swap':'trace-check · weaken-check','approval':'check-approval'}[p]||'—';
+    out+=`  ${pad(String(i+1).padStart(2,'0'),3)}${pad(l,18)}${who}${icon}<span class="dim">${gate}</span>\n`;});
+  return out;}
+const c=s=>({t:s,cls:'cmd',type:true});const o=(s,cls)=>({t:s,cls:cls||''});const raw=h=>({html:h});
+const A_M2={'test-execution':'human',approval:'human'},A_M1={approval:'human'},A_M3=Object.fromEntries(PH.map(([p])=>[p,p==='approval'?'human':'check']));
+const done=(...ps)=>Object.fromEntries(ps.map(p=>[p,'done']));
 const S={
- happy:[
-  {who:'human',w:'人がコマンドを打つ',lines:[c('$ qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --runtime managed')],phase:null,status:null,point:'④自然言語トリガー。ここまで LLM は動いていない。'},
-  {who:'host',w:'ホスト: env.md / config.toml を読み、ChangeEvent を作る',lines:[o('  event evt_20260928_130001  source=nl  changed_ids=[]  → test-plan で補完','dim'),o('  session ses_8f2a  budget $5.00  resources: repo, env.md','dim')],phase:'test-plan',status:'running',point:'環境情報が無ければここで止まる（FileNotFoundError）。予算はセッション作成時に固定。'},
-  {who:'llm',w:'LLM: セッション内で段を実行。run_gate はホストが実行',lines:[o('  [test-plan           ] running  ','llm'),o('  run_gate trace-check --impact REQ-F-003 → exit 0  BD-002 DD-004 UT-011 ST-005','dim'),o('  [test-plan           ] done     gate ok','ok')],phase:'test-plan',status:'done',point:'終了条件の exit code はホストが判定。LLM に解釈させない。'},
-  {who:'llm',w:'LLM: 以降の段も同じ形で進む',lines:runLines('test-analysis').slice(0,14),phase:'test-completion',status:'done',point:'FAIL は ODC 分類 → 最小差分で修整 → 再実行。同一欠陥 2 周まで。'},
-  {who:'llm',w:'LLM: 差し替え。ホストが 2 検査を実行',lines:[o('  [regression-swap     ] running  ','llm'),o('  retired ST-005 → 失効(ST-013)   added ST-013 ST-014 UT-020','dim'),o('  run_gate trace-check → exit 0 / test-weaken-check → exit 0','dim'),o('  [regression-swap     ] done     gate ok','ok')],phase:'regression-swap',status:'done',point:'どちらか NG なら .swap.bak から戻して stopped。'},
-  {who:'host',w:'ホスト: セッションを終了し、承認待ちに',lines:[o('  session ended  spent $4.10 / $5.00','dim'),o('T-0001  library-loan   承認待ち         paused   $4.10/5.00  approver は人だけ。AI は埋めない','ok')],phase:'waiting_human',status:'paused',point:'ここで LLM は待たない。セッションは終了している。'},
-  {who:'human',w:'人が確認して承認',lines:[c('$ qa-sentinel status T-0001'),o('T-0001  library-loan   承認待ち         paused   $4.10/5.00','dim'),o('  2026-09-28T13:00:04Z  test-plan            done','dim'),o('  ...','dim'),o('  2026-09-28T13:09:41Z  regression-swap      done','dim'),o('  2026-09-28T13:09:42Z  waiting_human        paused   approver は人だけ','dim'),c('$ qa-sentinel approve T-0001 --by yuki'),o('T-0001  library-loan   完了             done     $4.10/5.00','ok')],phase:'done',status:'done',point:'check-approval.sh（T05）が通らなければ approve は拒否される。'},
+ m2:[
+  [c('$ qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --mode M2')],
+  [raw(header('T-0042','evt_20260928_130001 (nl)','M2','ses_8f2a',0,5)),o(''),raw(table(A_M2,{'test-plan':'run'})),o(''),o('  <span class="spin">⠋</span> test-plan  trace-check --impact REQ-F-003','ai',true)],
+  [o('  ✔ impact: BD-002 DD-004 UT-011 ST-005   C7 suspect: ST-005（根拠の版が古い）','ok'),o('  ✔ 計画: docs/quality/iso29119-test-plan.md','ok'),o(''),raw(table(A_M2,{...done('test-plan'),'test-analysis':'run'}))],
+  [o('  ✔ 条件 4 件 · 方針表（対象外: UI 文言）· ケース ST-013 ST-014 ST-015 UT-020 · pw-spec-lint NG=0','ok'),o(''),raw(table(A_M2,{...done('test-plan','test-analysis','test-strategy','test-design','test-implementation'),'test-execution':'hand'})),o(''),raw(`  <span class="banner">⏸ 人の番: テスト実行（M2）</span>  セッション終了 $2.10  手順書 docs/quality/ST-013..015.md  スクリプト tests/e2e/loan-limit.spec.ts`),o('  結果を入れる:  qa-sentinel results T-0042   または  Web の受信箱','dim')],
+  [c('$ qa-sentinel results T-0042'),o(''),o('  ST-013  4 冊目を拒否            期待: 「上限 3 冊」の拒否メッセージ','dim'),raw('  結果? <span class="cmd">[p]ass [f]ail [b]locked</span> › <span class="ok">PASS</span>   証跡 › <span class="dim">st013.png</span>'),o('  ST-014  3 冊目は成功            期待: 一覧が 3 件','dim'),raw('  結果? <span class="cmd">[p]ass [f]ail [b]locked</span> › <span class="bad">FAIL</span>   証跡 › <span class="dim">st014.png</span>'),raw('  観察（推測は書かない）› <span class="cmd">3 冊目のボタンが disabled。判定が <= の可能性</span>'),o('  ST-015  返却後の再貸出          期待: 成功','dim'),raw('  結果? › <span class="ok">PASS</span>'),o('  UT-020  AI 実行済 PASS（junit.xml）','dim'),o(''),raw(`  ${bar(1)}  PASS 3 / FAIL 1 / BLOCKED 0`),raw('  AI へ渡す? <span class="cmd">[Y/n]</span> › <span class="cmd">Y</span>')],
+  [raw(header('T-0042','evt_20260928_130001_results (approval)','M2','ses_c9d0',2.10,5)),o(''),raw(table(A_M2,{...done('test-plan','test-analysis','test-strategy','test-design','test-implementation','test-execution'),'defect-analysis':'run'})),o(''),o('  <span class="spin">⠙</span> defect-analysis  ST-014 → 製品欠陥（loan.js:42 上限判定 <=）· 修整パッチ作成','ai',true)],
+  [o('  ✔ ODC: 製品欠陥 1 · 修整 → 再実行は 人 へ差し戻し（M2）','ok'),o('  ✔ 完了報告 metrics:begin/end · 申し送り Medium 0 Low 1','ok'),o('  ✔ 差し替え: ST-005 → 失効(ST-013) · 追加 ST-013 ST-014 ST-015 UT-020 · trace-check NG=0 · weaken-check NG=0','ok'),o(''),raw(table(A_M2,{...done(...PH.slice(0,9).map(x=>x[0])),approval:'wait'})),o(''),raw(`  <span class="banner">⏸ 人の番: 最終承認</span>  セッション終了 $3.85 / $5.00  check-approval: exit 0`)],
+  [c('$ qa-sentinel approve T-0042 --by yuki'),raw('  <span class="ok">✔</span> T-0042 done  approver=yuki  spent $3.85  sessions 2  人の判断 2 回（結果入力・承認）'),o('')],
  ],
- blocked:[
-  {who:'human',w:'人がコマンドを打つ',lines:[c('$ qa-sentinel run --project library-loan --nl "上限到達時の扱いを変更" --runtime managed')],phase:null,status:null,point:'仕様に無い判断が含まれる変更。'},
-  {who:'llm',w:'LLM: 計画〜詳細設計は進む',lines:[o('  session ses_9c11  budget $5.00','dim'),...runLines().slice(0,6)],phase:'test-strategy',status:'done',point:''},
-  {who:'llm',w:'LLM: ケース設計で決められない',lines:[o('  [test-design         ] running  ','llm'),o('  ST-013 期待結果: 確認待ち: 上限到達時に予約へ誘導するか、拒否のみか','stop'),o('  run_gate cases → exit 1  確認待ち 1 件','dim')],phase:'test-design',status:'running',point:'推測で埋めない。仕様の状態=確認待ち にして止まる。'},
-  {who:'host',w:'ホスト: セッションを終了し blocked に',lines:[o('  session ended  spent $1.90 / $5.00','dim'),o('T-0001  library-loan   ケース設計       blocked  $1.90/5.00  確認待ち: 上限到達時の誘導先','stop')],phase:'test-design',status:'blocked',point:'実装・実行へは進まない。人の回答を待つが、LLM は待っていない。'},
-  {who:'human',w:'人が回答（CLI か Web の回答フォーム）',lines:[c('$ qa-sentinel answer T-0001 --text "誘導しない。拒否メッセージのみ" --runtime managed'),o('  event evt_20260928_130001_answer  source=approval  resume_from=test-design','dim'),o('  session ses_a377  budget $5.00  (continue)','dim')],phase:'test-design',status:'running',point:'回答は新しいイベント。新セッションが test-design から再開。上流はやり直さない。'},
-  {who:'llm',w:'LLM: 残りの段を進める',lines:runLines('test-design'),phase:'regression-swap',status:'done',point:''},
-  {who:'host',w:'ホスト: 承認待ちへ',lines:[o('  session ended  spent $3.20 / $5.00','dim'),o('T-0001  library-loan   承認待ち         paused   $3.20/5.00','ok')],phase:'waiting_human',status:'paused',point:'台帳の history に blocked → running(test-design) が 2 回残る。'},
-  {who:'human',w:'人が承認',lines:[c('$ qa-sentinel approve T-0001 --by yuki'),o('T-0001  library-loan   完了             done     $3.20/5.00','ok')],phase:'done',status:'done',point:''},
+ m1:[
+  [c('$ qa-sentinel run --project library-loan --nl "上限到達時の扱いを変更" --mode M1')],
+  [raw(header('T-0043','evt_20260928_140000 (nl)','M1','ses_9c11',0,5)),o(''),raw(table(A_M1,{...done('test-plan','test-analysis','test-strategy'),'test-design':'run'})),o(''),o('  <span class="spin">⠹</span> test-design  技法: 状態遷移 · 境界値','ai',true)],
+  [o('  ✖ ST-013 期待結果を決められない: 上限到達時に予約へ誘導するか、拒否のみか（spec.md に無い）','bad'),o('  cases gate: exit 1  確認待ち 1 件','dim'),o(''),raw(table(A_M1,{...done('test-plan','test-analysis','test-strategy'),'test-design':'bad'})),o(''),raw(`  <span class="banner">✖ 止まりました: 確認待ち</span>  セッション終了 $1.90  回答: qa-sentinel answer T-0043`)],
+  [c('$ qa-sentinel answer T-0043'),raw('  Q: 上限到達時に予約へ誘導しますか？ › <span class="cmd">誘導しない。拒否メッセージのみ</span>'),raw('  spec.md にも追記する? <span class="cmd">[Y/n]</span> › <span class="cmd">Y</span>'),o(''),raw(header('T-0043','evt_20260928_140000_answer (approval)','M1','ses_a377 (continue: test-design)',1.90,5)),raw(table(A_M1,{...done('test-plan','test-analysis','test-strategy'),'test-design':'run'}))],
+  [o('  ✔ ケース 4 件 · 実装 · 実行 PASS 4 / FAIL 0（修整 1: ODC 製品欠陥）· 報告 · 差し替え NG=0','ok'),o(''),raw(table(A_M1,{...done(...PH.slice(0,9).map(x=>x[0])),approval:'wait'})),raw(`  <span class="banner">⏸ 人の番: 最終承認</span>  $3.20 / $5.00`),c('$ qa-sentinel approve T-0043 --by yuki'),raw('  <span class="ok">✔</span> T-0043 done  人の判断 2 回（回答・承認）')],
  ],
- budget:[
-  {who:'human',w:'人がコマンドを打つ（予算を小さく設定した config）',lines:[c('$ qa-sentinel run --project library-loan --nl "貸出上限を 3 冊に" --runtime managed'),o('  session ses_b902  budget $2.00','dim')],phase:'test-plan',status:'running',point:'予算はセッション作成時の hard cap。'},
-  {who:'llm',w:'LLM: 実行段で修整ループが長引く',lines:[...runLines().slice(0,8),o('  [test-execution      ] running  ','llm'),o('  ST-013 FAIL → ODC: 実装欠陥 → 修整 → 再実行 FAIL → 修整 → ...','dim'),o('  session idle  stop_reason=budget_reached','stop')],phase:'test-execution',status:'running',point:'Managed Agents が予算で止める。ホストは stop_reason を読むだけ。'},
-  {who:'host',w:'ホスト: stopped を台帳に書き、セッションを終了',lines:[o('T-0001  library-loan   実行             stopped  $2.00/2.00  budget_reached','stop')],phase:'test-execution',status:'stopped',point:'自動で再試行しない。'},
-  {who:'human',w:'人が判断: 予算を上げて再開するか、打ち切るか',lines:[c('$ qa-sentinel status T-0001'),o('T-0001  library-loan   実行             stopped  $2.00/2.00  budget_reached','dim'),o('  ...  test-execution       running','dim'),o('  ...  test-execution       stopped  budget_reached','dim'),c('$ # config.toml の budget_usd を 5.0 にして'),c('$ qa-sentinel run --project library-loan --resume T-0001 --runtime managed   # T02 以降'),o('  session ses_c410  budget $5.00  resume_from=test-execution','dim')],phase:'test-execution',status:'running',point:'再開も人が起点。止まった段から続ける。'},
+ m3:[
+  [c('$ qa-sentinel run --project library-loan --nl "貸出上限を 3 冊に" --mode M3')],
+  [raw(header('T-0044','evt_20260928_150000 (nl)','M3','ses_d001',0,5)),o(''),raw(table(A_M3,{'test-plan':'run'})),o('  <span class="spin">⠸</span> test-plan','ai',true)],
+  [o('  ✔ impact: BD-002 DD-004 UT-011 ST-005 · 計画作成','ok'),raw(table(A_M3,{'test-plan':'chk'})),raw(`  <span class="banner">◆ 確認: test-plan の出口</span>  セッション終了 $0.40  成果物 docs/quality/iso29119-test-plan.md`),c('$ qa-sentinel review T-0044'),raw('  範囲 REQ-F-003 / レベル UT+ST / 終了基準 Critical/High 0 …  承認? <span class="cmd">[a]pprove [r]eject</span> › <span class="chk">a</span>')],
+  [raw(header('T-0044','… (approval)','M3','ses_d002 (continue: test-analysis)',0.40,5)),raw(table(A_M3,{...done('test-plan'),'test-analysis':'run'})),o('  … 以下、各段の出口で同じように止まる（9 回）。1 段ごとにセッションが立つので予算は段数 × 単価','dim'),o('  M3 は監査要件が強い案件向け。日常は M1/M2 を推奨','dim')],
  ],
  watch:[
-  {who:'human',w:'人が常駐を起動（systemd/launchd でも同じコマンド）',lines:[c('$ qa-sentinel watch --project proj-x'),o('  tracker relay  kind=jira  poll=10min  credential=env:JIRA_TOKEN','dim')],phase:null,status:null,point:'⑥ relay モード。社内 JIRA はローカルから見る。'},
-  {who:'host',w:'ホスト: REST で updated >= last_seen を取得',lines:[o('  13:00  GET /rest/api/2/search?jql=... updated >= "2026-09-28T12:50"','dim'),o('  polled: 0 events','dim')],phase:null,status:null,point:'イベント 0。台帳に何も書かない。LLM 起動 0 回。'},
-  {who:'host',w:'ホスト: 10 分後も同じ',lines:[o('  13:10  polled: 0 events','dim'),o('  13:20  polled: 0 events','dim'),o('  13:30  polled: 0 events','dim')],phase:null,status:null,point:'「定期的に自分を起こして確認する」を LLM にやらせない理由。ここは決定論的コードで、トークン消費 0。'},
-  {who:'host',w:'ホスト: 更新を検知したときだけ run と同じ経路へ',lines:[o('  13:40  polled: 1 event  PROJ-123 "貸出上限の変更"','ok'),o('  event evt_20260928_134000  source=tracker  changed_ids=[REQ-F-003]','dim'),o('  session ses_d551  budget $5.00','llm'),o('  [test-plan           ] running  ','llm')],phase:'test-plan',status:'running',point:'ここで初めて LLM が動く。sessions_started が 1 増える。'},
+  [c('$ qa-sentinel watch --project proj-x'),raw('  tracker <span class="b">relay</span>  kind=jira  poll=10min  credential=env:JIRA_TOKEN  <span class="dim">LLM は起動しない</span>')],
+  [raw('  13:00  GET /rest/api/2/search … updated >= 12:50   <span class="dim">polled: 0 events</span>'),raw('  13:10  <span class="dim">polled: 0 events</span>'),raw('  13:20  <span class="dim">polled: 0 events</span>'),raw('  13:30  <span class="dim">polled: 0 events</span>   <span class="dim">sessions_started 0 · tokens 0</span>')],
+  [raw('  13:40  <span class="ok">polled: 1 event</span>  PROJ-123 「貸出上限の変更」  changed_ids=[REQ-F-003]'),raw(header('T-0045','evt_20260928_134000 (tracker)','M2','ses_e771',0,5)),raw(table(A_M2,{'test-plan':'run'})),o('  <span class="spin">⠼</span> test-plan  ← ここで初めて LLM が動く','ai',true)],
  ],
 };
-const $=id=>document.getElementById(id);
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-let steps=S.happy,i=-1,timer=null,typing=false;
-function renderSteps(phase,status){
-  $('steps').innerHTML=PH.map(p=>{let cls='';if(phase){const idx=PH.indexOf(phase);const k=PH.indexOf(p);if(k<idx)cls='done';else if(k===idx)cls=(status==='blocked'||status==='stopped')?'bad now':(status==='done'&&p!=='done'?'done':'now');}return `<span class="step ${cls}">${L[p]}</span>`;}).join('');
-  $('ledger-note').textContent=phase?`phase=${phase}  status=${status}`:'台帳なし（イベント未発生）';
-}
-function setWho(w,text){$('who').innerHTML=`<b class="${w}">${{human:'人',host:'ホスト',llm:'LLM'}[w]}</b><span>${text}</span>`;}
-async function typeLine(line){
-  const term=$('term');const el=document.createElement('div');el.className=line.cls;term.appendChild(el);
-  if(line.type&&!reduce){el.classList.add('cursor');for(let k=0;k<line.t.length;k++){el.textContent=line.t.slice(0,k+1);term.scrollTop=term.scrollHeight;await new Promise(r=>setTimeout(r,18));}el.classList.remove('cursor');}
-  else{el.textContent=line.t;}
+const $=id=>document.getElementById(id);const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let steps=S.m2,i=-1,timer=null,busy=false,spin=null;
+const F=['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+async function put(line){const term=$('term');const el=document.createElement('div');term.appendChild(el);
+  if(line.html){el.innerHTML=line.html;}
+  else if(line.type&&!reduce){el.className=line.cls+' cursor';for(let k=0;k<line.t.length;k++){el.textContent=line.t.slice(0,k+1);term.scrollTop=term.scrollHeight;await new Promise(r=>setTimeout(r,16));}el.classList.remove('cursor');}
+  else{el.className=line.cls;el.innerHTML=line.t.includes('<span')?line.t:esc(line.t);}
   term.scrollTop=term.scrollHeight;
+  if(spin){clearInterval(spin);spin=null;}
+  const sp=el.querySelector('.spin');if(sp&&!reduce){let k=0;spin=setInterval(()=>{sp.textContent=F[k++%F.length];},80);}
 }
-async function next(){
-  if(typing||i>=steps.length-1){if(i>=steps.length-1)stop();return;}
-  typing=true;i++;const s=steps[i];setWho(s.who,s.w);$('point').textContent=s.point||'—';
-  for(const ln of s.lines){await typeLine(ln);if(!reduce)await new Promise(r=>setTimeout(r,ln.type?250:120));}
-  renderSteps(s.phase,s.status);typing=false;
-}
-function play(){if(timer){stop();return;}$('play').textContent='❚❚ 停止';timer=setInterval(async()=>{if(i>=steps.length-1){stop();return;}await next();},reduce?1500:3200);next();}
+async function next(){if(busy||i>=steps.length-1){if(i>=steps.length-1)stop();return;}busy=true;i++;for(const ln of steps[i]){await put(ln);if(!reduce)await new Promise(r=>setTimeout(r,ln.type?200:70));}busy=false;}
+function play(){if(timer){stop();return;}$('play').textContent='❚❚ 停止';timer=setInterval(async()=>{if(i>=steps.length-1){stop();return;}await next();},reduce?1800:3600);next();}
 function stop(){clearInterval(timer);timer=null;$('play').textContent='▶ 再生';}
-function reset(){stop();i=-1;typing=false;$('term').innerHTML='<div class="dim"># qa-sentinel CLI デモ — 再生を押す</div>';setWho('host','待機');renderSteps(null,null);$('point').textContent='—';}
+function reset(){stop();if(spin){clearInterval(spin);spin=null;}i=-1;busy=false;$('term').innerHTML='<div class="dim"># 再生を押す。「次へ」で 1 手ずつ</div>';}
 $('play').onclick=play;$('step').onclick=()=>{stop();next();};$('reset').onclick=reset;
 $('scenario').onchange=e=>{steps=S[e.target.value];reset();};
 reset();
 })();
 </script>
+
 </body>
 </html>

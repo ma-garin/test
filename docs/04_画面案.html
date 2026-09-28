@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qa-sentinel 画面案</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#f3f5f8;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#cfd7e1;--soft:#e9eef4;
+ --ai:#1d4ed8;--ai-soft:#dbeafe;--human:#b45309;--human-soft:#fde9c8;--check:#6d28d9;--check-soft:#ede9fe;
+ --ok:#15803d;--ok-soft:#dcfce7;--stop:#b91c1c;--stop-soft:#fee2e2;--now:#d97706}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--soft:#1f2937;
+ --ai:#8ab4ff;--ai-soft:#12233f;--human:#f5c26b;--human-soft:#3d2a08;--check:#c4b5fd;--check-soft:#2a1f4d;--ok:#4ade80;--ok-soft:#0f2e1a;--stop:#f87171;--stop-soft:#3b1212;--now:#f5a524;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--soft:#1f2937;
+ --ai:#8ab4ff;--ai-soft:#12233f;--human:#f5c26b;--human-soft:#3d2a08;--check:#c4b5fd;--check-soft:#2a1f4d;--ok:#4ade80;--ok-soft:#0f2e1a;--stop:#f87171;--stop-soft:#3b1212;--now:#f5a524;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:14px/1.6 "IBM Plex Sans JP",system-ui,sans-serif;padding:0 16px;padding-block:18px 40px;max-width:1160px;margin:0 auto}
+h1{font-size:20px;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 12px;max-width:76ch}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12.5px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.bar label{font-size:12.5px;color:var(--muted)}
+select,button{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--ai);outline-offset:2px}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;padding:8px 12px}
+.tabs button[aria-selected="true"]{border-bottom-color:var(--ink);font-weight:600}
+.screen{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.screen h2{font-size:15px;margin:0 0 2px}.screen .why{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:500;white-space:nowrap}
+.chip.ai{background:var(--ai-soft);color:var(--ai)}.chip.human{background:var(--human-soft);color:var(--human)}.chip.check{background:var(--check-soft);color:var(--check)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}.chip.stop{background:var(--stop-soft);color:var(--stop)}.chip.now{background:transparent;border:1.5px solid var(--now);color:var(--now)}
+/* P1 pipeline */
+.pipe{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:6px;margin:8px 0 12px}
+.ph{border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--soft);min-height:78px;position:relative}
+.ph.now{border-color:var(--now);border-width:2px;background:transparent}.ph.done{border-color:var(--ok)}.ph.wait{border-color:var(--human);background:var(--human-soft)}
+.ph .n{font-size:11px;color:var(--muted)}.ph .t{font-weight:600;font-size:12.5px;line-height:1.3;margin:2px 0 6px}
+.ph select{font-size:11.5px;padding:2px 4px;width:100%}
+.split{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}@media (max-width:820px){.split{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--panel)}
+.card h3{font-size:13px;margin:0 0 6px;color:var(--muted);font-weight:500;letter-spacing:.04em}
+.list{margin:0;padding:0;list-style:none}.list li{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}.list li:first-child{border-top:0}
+.list .t{flex:1}.list small{color:var(--muted);display:block;font-size:11.5px}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{color:var(--muted);font-weight:500;font-size:12px}
+.tbl-wrap{overflow-x:auto}
+/* P2 kanban */
+.kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.col{background:var(--soft);border-radius:8px;padding:8px;min-height:180px}
+.col h4{font-size:12px;margin:0 0 6px;color:var(--muted);font-weight:500;display:flex;justify-content:space-between}
+.col.human{outline:1.5px dashed var(--human)}
+.tk{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-bottom:6px;font-size:12.5px}
+.tk b{display:block}.tk .m{color:var(--muted);font-size:11.5px}
+/* P3 inbox */
+.inbox li{cursor:pointer}.inbox li.sel{background:var(--soft);margin:0 -12px;padding-inline:12px}
+.form{display:grid;gap:8px}.form textarea,.form input[type=text]{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);width:100%;box-sizing:border-box}
+.radio{display:flex;gap:10px;flex-wrap:wrap}.radio label{display:flex;gap:4px;align-items:center;font-size:12.5px}
+.prog{height:8px;background:var(--soft);border-radius:4px;overflow:hidden}.prog i{display:block;height:100%;background:var(--ok)}
+.note{font-size:12.5px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted);margin:6px 0 0}
+.tl{margin:0;padding:0;list-style:none;font-size:12.5px}.tl li{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:4px 0;border-left:2px solid var(--line);padding-left:10px}.tl li.h{border-left-color:var(--human)}.tl li.a{border-left-color:var(--ai)}
+</style>
+</head>
+<body>
+
+<h1>qa-sentinel 画面案</h1>
+<p class="lead">中心は「どの段を誰がやり、どこで止まるか」。運用モードを切り替えると、全パターンの担当と止まる点が変わる。人の仕事は 3 種類だけ: <span class="chip human">実行・入力</span> <span class="chip check">確認・承認</span> <span class="chip stop">回答（確認待ち）</span>。</p>
+
+<div class="bar">
+  <label for="mode">運用モード</label>
+  <select id="mode">
+    <option value="M1">M1 全自動（人は回答と最終承認）</option>
+    <option value="M2" selected>M2 実装まで AI、テスト実行は人</option>
+    <option value="M3">M3 各段の出口で人が承認</option>
+    <option value="M4">M4 設計まで AI、実装以降は人</option>
+    <option value="custom">カスタム（P1 で段ごとに選ぶ）</option>
+  </select>
+  <span class="note" id="mode-note"></span>
+</div>
+
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="p1">P1 指揮ワークフロー</button>
+  <button role="tab" aria-selected="false" data-tab="p2">P2 かんばん</button>
+  <button role="tab" aria-selected="false" data-tab="p3">P3 人の受信箱</button>
+  <button role="tab" aria-selected="false" data-tab="p4">P4 手動実行と結果入力</button>
+  <button role="tab" aria-selected="false" data-tab="p5">P5 タスク詳細（監査）</button>
+</div>
+
+<!-- P1 -->
+<section class="screen" id="p1">
+  <h2>P1 指揮ワークフロー — 1 タスクの段と担当</h2>
+  <p class="why">webspec2doc の指揮ワークフロー画面の型。段ごとに担当（AI／人／AI→人確認）を持ち、現在位置と止まる点が一目で分かる。カスタムは段のセレクトで変える。</p>
+  <div class="mono note">T-0042 · library-loan · 「貸出上限を 5 冊から 3 冊に変更」 · session ses_8f2a（終了）· $2.10 / $5.00</div>
+  <div class="pipe" id="pipe"></div>
+  <div class="split">
+    <div class="card"><h3>この段で起きること</h3><div id="p1-detail"></div></div>
+    <div class="card"><h3>人の番になったら</h3>
+      <ul class="list" id="p1-actions"></ul>
+      <p class="note" style="margin:8px 0 0">通知先: CLI の `status`、Web の受信箱（P3）、Slack（任意）。LLM は待たず、セッションは終了している。</p>
+    </div>
+  </div>
+  <div class="legend"><span><span class="chip ai">AI</span> セッション内で LLM が実行</span><span><span class="chip human">人</span> 人が作業して結果を入力</span><span><span class="chip check">AI→人確認</span> AI が作り、人が出口で承認</span></div>
+</section>
+
+<!-- P2 -->
+<section class="screen" id="p2" hidden>
+  <h2>P2 かんばん — 複数タスクを段で並べる</h2>
+  <p class="why">プロジェクト横断で「いま人の列に何枚あるか」を見る画面。人の列は破線。カードをクリックすると P5 へ。</p>
+  <div class="kanban" id="kanban"></div>
+</section>
+
+<!-- P3 -->
+<section class="screen" id="p3" hidden>
+  <h2>P3 人の受信箱 — 自分がやることだけ</h2>
+  <p class="why">エージェントの都合ではなく、人の作業単位で並べる。開くと右にフォームが出て、送信が次のイベントになる。</p>
+  <div class="split">
+    <div class="card"><h3>受信箱（3 件）</h3>
+      <ul class="list inbox" id="inbox">
+        <li data-k="q" class="sel"><span class="chip stop">回答</span><span class="t">T-0042 ケース設計 — 上限到達時に予約へ誘導するか？<small>library-loan · 2 時間前 · セッション終了済み</small></span></li>
+        <li data-k="run"><span class="chip human">実行</span><span class="t">T-0041 テスト実行 — ST-013〜015 / UT-020（4 件）<small>library-loan · 手順書とスクリプトは準備済み</small></span></li>
+        <li data-k="ap"><span class="chip check">承認</span><span class="t">T-0039 差し替え完了 — ST-005 失効 / ST-011 追加<small>proj-x · trace-check NG=0 · weaken NG=0</small></span></li>
+      </ul>
+    </div>
+    <div class="card" id="inbox-form"></div>
+  </div>
+</section>
+
+<!-- P4 -->
+<section class="screen" id="p4" hidden>
+  <h2>P4 手動実行と結果入力 — M2 / M4 の中心画面</h2>
+  <p class="why">AI が用意したケース表・手順・（あれば）スクリプトを人が実行し、結果と証跡を入れる。「AI へ渡す」で不具合分析からセッションが再開する。</p>
+  <div class="mono note">T-0041 · test-execution · 担当: 人 · 期限なし · 消化 2 / 4</div>
+  <div class="prog" style="margin:6px 0 10px"><i style="width:50%"></i></div>
+  <div class="tbl-wrap"><table>
+    <tr><th>ID</th><th>目的</th><th>手順（要約）</th><th>期待結果</th><th>結果</th><th>証跡</th></tr>
+    <tr><td class="mono">ST-013</td><td>4 冊目を拒否</td><td>3 冊借りた状態で貸出</td><td>「上限 3 冊」の拒否メッセージ</td><td><span class="chip ok">PASS</span></td><td class="mono">st013.png</td></tr>
+    <tr><td class="mono">ST-014</td><td>3 冊目は成功</td><td>2 冊借りた状態で貸出</td><td>一覧が 3 件になる</td><td><span class="chip stop">FAIL</span></td><td class="mono">st014.png · console.log</td></tr>
+    <tr><td class="mono">ST-015</td><td>返却後の再貸出</td><td>3 冊 → 1 冊返却 → 貸出</td><td>成功</td><td><div class="radio"><label><input type="radio" name="r15" id="r15p">PASS</label><label><input type="radio" name="r15" id="r15f">FAIL</label><label><input type="radio" name="r15" id="r15b">BLOCKED</label></div></td><td><input type="file" id="ev15"></td></tr>
+    <tr><td class="mono">UT-020</td><td>上限定数の境界</td><td>自動（pytest）</td><td>3 で PASS / 4 で FAIL</td><td><span class="chip ai">AI 実行済 PASS</span></td><td class="mono">junit.xml</td></tr>
+  </table></div>
+  <div class="form" style="margin-top:10px">
+    <label for="obs" class="note">FAIL の観察（AI が ODC 分類に使う。推測は書かない）</label>
+    <textarea id="obs" rows="2">ST-014: 3 冊目の貸出ボタンが押せない（disabled）。上限判定が <= になっている可能性。</textarea>
+    <div class="bar"><button class="primary">AI へ渡す（不具合分析から再開）</button><button>下書き保存</button><span class="note">再開時に新セッションが立つ。予算は config の値</span></div>
+  </div>
+</section>
+
+<!-- P5 -->
+<section class="screen" id="p5" hidden>
+  <h2>P5 タスク詳細 — 誰が・いつ・何を決めたか</h2>
+  <p class="why">監査用。台帳 history をそのまま時系列に。人の行は橙、AI の行は青。承認と回答は必ず人の行になる。</p>
+  <div class="split">
+    <div class="card"><h3>T-0042 履歴</h3>
+      <ul class="tl">
+        <li class="a"><span class="mono">13:00</span><span>ChangeEvent 受信（nl）→ セッション ses_8f2a 起動 · 予算 $5.00</span></li>
+        <li class="a"><span class="mono">13:02</span><span>test-plan done · impact BD-002 DD-004 UT-011 ST-005（trace-check --impact exit 0）</span></li>
+        <li class="a"><span class="mono">13:05</span><span>test-analysis / test-strategy done</span></li>
+        <li class="a"><span class="mono">13:07</span><span>test-design blocked · 確認待ち: 上限到達時に予約へ誘導するか → セッション終了 $1.90</span></li>
+        <li class="h"><span class="mono">15:10</span><span>yuki が回答「誘導しない。拒否のみ」 → ses_a377 起動（continue from test-design）</span></li>
+        <li class="a"><span class="mono">15:14</span><span>test-design / test-implementation done · ST-013 ST-014 ST-015 UT-020</span></li>
+        <li class="h"><span class="mono">15:15</span><span>test-execution は 人 の担当（M2）→ 手渡し。セッション終了 $2.10</span></li>
+        <li class="h"><span class="mono">16:40</span><span>yuki が結果入力 · PASS 3 / FAIL 1（ST-014）→ ses_c9d0 起動（continue from defect-analysis）</span></li>
+        <li class="a"><span class="mono">16:44</span><span>defect-analysis: ST-014 = 製品欠陥（<= 判定）· 修整 → 再実行は 人 へ差し戻し</span></li>
+      </ul>
+    </div>
+    <div class="card"><h3>台帳（抜粋）</h3>
+<pre class="mono" style="margin:0;white-space:pre-wrap">{
+  "task": "T-0042", "mode": "M2",
+  "assignment": {"test-execution": "human", "test-completion": "check"},
+  "phase": "defect-analysis", "status": "done",
+  "sessions": ["ses_8f2a", "ses_a377", "ses_c9d0"],
+  "spent_usd": 3.85,
+  "decisions": [
+    {"at": "15:10", "by": "yuki", "kind": "answer", "text": "誘導しない。拒否のみ"},
+    {"at": "16:40", "by": "yuki", "kind": "results", "pass": 3, "fail": 1}
+  ]
+}</pre></div>
+  </div>
+</section>
+
+<script>
+(function(){
+const PH=[['test-plan','計画・影響分析'],['test-analysis','基本設計'],['test-strategy','詳細設計'],['test-design','ケース設計'],['test-implementation','ケース実装'],['test-execution','テスト実行'],['defect-analysis','不具合分析'],['test-completion','完了報告'],['regression-swap','差し替え'],['approval','最終承認']];
+const MODES={
+ M1:{note:'人は確認待ちの回答と最終承認だけ。',a:{approval:'human'}},
+ M2:{note:'ケース実装まで AI。実行は人が行い結果を入力、AI が不具合分析と差し替えを続ける。',a:{'test-execution':'human',approval:'human'}},
+ M3:{note:'AI が作り、各段の出口で人が承認してから次へ（段階承認）。',a:{'test-plan':'check','test-analysis':'check','test-strategy':'check','test-design':'check','test-implementation':'check','test-execution':'check','defect-analysis':'check','test-completion':'check','regression-swap':'check',approval:'human'}},
+ M4:{note:'ケース設計まで AI。実装・実行・分析は人。AI は差し替えの表操作だけ手伝う。',a:{'test-implementation':'human','test-execution':'human','defect-analysis':'human','test-completion':'human',approval:'human'}},
+ custom:{note:'P1 の各段で選ぶ。',a:{approval:'human'}},
+};
+const LABEL={ai:'AI',human:'人',check:'AI→人確認'};
+const DETAIL={
+ 'test-plan':'trace-check --impact で下流連鎖を出し、29119 計画に範囲・レベル・終了基準を書く。追跡表に無い変更なら止まる。',
+ 'test-analysis':'フィーチャーとテスト条件。ISO 25010 で漏れ点検。',
+ 'test-strategy':'条件 × レベル × 技法 × 自動化可否。対象外を明示。',
+ 'test-design':'技法でケース生成。期待結果を決められなければ 確認待ち で止まる。',
+ 'test-implementation':'表 → Playwright / pytest。人担当なら手順書として出す。',
+ 'test-execution':'AI 担当: 実行 → ODC → 最小差分で修整 → 再実行（2 周）。人担当: P4 で結果と証跡を入力。',
+ 'defect-analysis':'製品欠陥 / テスト欠陥 / 環境 / フレーク。人の観察をそのまま入力に使う。',
+ 'test-completion':'完了報告に metrics:begin/end。Medium/Low を申し送り。',
+ 'regression-swap':'失効(<新ID>) と追記、追跡表更新。trace-check と test-weaken-check が NG なら戻す。',
+ 'approval':'check-approval.sh exit 0 のうえで人が承認。AI は approver を埋めない。',
+};
+let mode='M2', custom={...MODES.custom.a}, cur='test-execution';
+const $=id=>document.getElementById(id);
+function assign(){return mode==='custom'?custom:Object.assign({},MODES[mode].a);}
+function who(p){return assign()[p]||'ai';}
+function stateOf(p){const i=PH.findIndex(x=>x[0]===p),c=PH.findIndex(x=>x[0]===cur);return i<c?'done':i===c?(who(p)==='human'?'wait':'now'):'';}
+function renderP1(){
+  $('mode-note').textContent=MODES[mode].note;
+  $('pipe').innerHTML=PH.map(([p,l],i)=>{const w=who(p);const st=stateOf(p);
+    const sel=`<select data-p="${p}" aria-label="${l} の担当" ${mode!=='custom'?'disabled':''}>${['ai','check','human'].map(k=>`<option value="${k}" ${k===w?'selected':''}>${LABEL[k]}</option>`).join('')}</select>`;
+    return `<div class="ph ${st}" data-p="${p}"><div class="n">${String(i+1).padStart(2,'0')} ${st==='done'?'✔':st==='wait'?'⏸ 人の番':st==='now'?'● 実行中':''}</div><div class="t">${l}</div><span class="chip ${w}">${LABEL[w]}</span><div style="margin-top:6px">${sel}</div></div>`;}).join('');
+  document.querySelectorAll('#pipe select').forEach(s=>s.onchange=e=>{custom[e.target.dataset.p]=e.target.value;renderAll();});
+  document.querySelectorAll('#pipe .ph').forEach(d=>d.onclick=e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='OPTION')return;cur=d.dataset.p;renderAll();});
+  const w=who(cur);
+  $('p1-detail').innerHTML=`<p style="margin:0 0 6px"><b>${PH.find(x=>x[0]===cur)[1]}</b> <span class="chip ${w}">${LABEL[w]}</span></p><p class="note" style="margin:0">${DETAIL[cur]}</p>`;
+  const acts=[];
+  PH.forEach(([p,l])=>{const a=who(p);if(a==='human')acts.push(`<li><span class="chip human">実行</span><span class="t">${l}<small>P4 で作業して結果を入力 → 次の段は AI が続ける</small></span></li>`);else if(a==='check')acts.push(`<li><span class="chip check">承認</span><span class="t">${l} の出口<small>成果物を見て承認／差し戻し。差し戻しは同じ段を AI がやり直す</small></span></li>`);});
+  acts.push(`<li><span class="chip stop">回答</span><span class="t">確認待ちが出たとき（主にケース設計）<small>質問に答えると同じ段から再開</small></span></li>`);
+  $('p1-actions').innerHTML=acts.join('');
+}
+function renderP2(){
+  const cols=[['test-plan','計画'],['test-design','設計'],['test-implementation','実装'],['test-execution','実行'],['defect-analysis','分析'],['regression-swap','差し替え'],['approval','承認']];
+  const cards={'test-design':[['T-0042','library-loan','stop','確認待ち: 誘導先']],'test-execution':[['T-0041','library-loan','human','ST-013〜015 手動'],['T-0038','proj-x','ai','2 周目 修整中']],'regression-swap':[['T-0040','proj-x','ai','weaken-check 実行中']],'approval':[['T-0039','proj-x','check','承認待ち']]};
+  $('kanban').innerHTML=cols.map(([p,l])=>{const w=who(p);const cs=(cards[p]||[]).map(([t,pr,k,m])=>`<div class="tk"><b>${t} <span class="chip ${k}">${k==='ai'?'AI':k==='human'?'人':k==='check'?'承認':'回答'}</span></b><span class="m">${pr} · ${m}</span></div>`).join('');
+    return `<div class="col ${w==='human'||w==='check'?'human':''}"><h4><span>${l}</span><span class="chip ${w}">${LABEL[w]}</span></h4>${cs||'<div class="note">—</div>'}</div>`;}).join('');
+}
+const FORMS={
+ q:`<h3>回答 — T-0042 ケース設計</h3><p class="note">AI の質問: 上限（3 冊）に達したとき、予約画面へ誘導しますか？ それとも拒否メッセージだけですか？ 仕様 spec.md §4 に記載がありません。</p><div class="form"><textarea id="ans" rows="3">誘導しない。拒否メッセージのみ。文言は既存の「貸出上限に達しています」を流用。</textarea><label class="note"><input type="checkbox" id="tospec" checked> spec.md にも追記する（AI が差分を作り、承認欄に載せる）</label><div class="bar"><button class="primary">回答して再開</button><span class="note">新セッションが test-design から続く</span></div></div>`,
+ run:`<h3>実行 — T-0041 テスト実行（4 件）</h3><p class="note">AI が用意したもの: ケース表・手順書・Playwright スクリプト（実行は人）。</p><ul class="list"><li><span class="chip ok">準備済</span><span class="t">docs/quality/system_test_cases.csv（ST-013〜015）</span></li><li><span class="chip ok">準備済</span><span class="t">tests/e2e/loan-limit.spec.ts</span></li><li><span class="chip ai">AI 実行済</span><span class="t">UT-020 PASS（junit.xml）</span></li></ul><div class="bar" style="margin-top:8px"><button class="primary">P4 を開いて結果を入力</button></div>`,
+ ap:`<h3>承認 — T-0039 差し替え</h3><div class="tbl-wrap"><table><tr><th>項目</th><th>結果</th></tr><tr><td>失効</td><td class="mono">ST-005 → 失効(ST-011)</td></tr><tr><td>追加</td><td class="mono">ST-011, UT-018</td></tr><tr><td>trace-check</td><td><span class="chip ok">NG=0</span></td></tr><tr><td>test-weaken-check</td><td><span class="chip ok">NG=0</span></td></tr><tr><td>check-approval</td><td><span class="chip ok">exit 0（記録あり・版一致）</span></td></tr></table></div><div class="form" style="margin-top:8px"><input type="text" id="approver" value="yuki" aria-label="承認者"><div class="bar"><button class="primary">承認</button><button>差し戻す（理由を書く）</button><span class="note">AI は approver を埋めない</span></div></div>`,
+};
+function renderP3(k){document.querySelectorAll('#inbox li').forEach(li=>li.classList.toggle('sel',li.dataset.k===k));$('inbox-form').innerHTML=FORMS[k];}
+document.querySelectorAll('#inbox li').forEach(li=>li.onclick=()=>renderP3(li.dataset.k));
+function renderAll(){renderP1();renderP2();}
+$('mode').onchange=e=>{mode=e.target.value;if(mode==='M2')cur='test-execution';else if(mode==='M4')cur='test-implementation';else cur='test-design';renderAll();};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));['p1','p2','p3','p4','p5'].forEach(id=>$(id).hidden=id!==b.dataset.tab);try{localStorage.setItem('qa-gui-tab',b.dataset.tab)}catch(e){}});
+try{const t=localStorage.getItem('qa-gui-tab');if(t){const b=document.querySelector(`.tabs button[data-tab="${t}"]`);if(b)b.click();}}catch(e){}
+renderAll();renderP3('q');
+})();
+</script>
+
+</body>
+</html>
