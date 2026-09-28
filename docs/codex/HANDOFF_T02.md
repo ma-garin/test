@@ -45,7 +45,7 @@ SDK は `anthropic`（`pip install -e .[managed]`）。名前を推測しない�
 
 `start(task, event, project)`:
 - まず環境変数チェック: `ANTHROPIC_API_KEY` / `GITHUB_TOKEN` / `QA_SENTINEL_ENV_ID` が 1 つでも無ければ `RuntimeError(f"環境変数が無い: {不足名の一覧}")`。`self.environment_id = os.environ["QA_SENTINEL_ENV_ID"]`。
-- 次に `projects/<project.name>/agent.toml` を読む（`self.project_name` ではなく **`project.name`** を使う。`register.py` が書いた `[agent]\nid\nversion` を `tomllib` で読み、`self.agent_id`, `self.agent_version` に入れる）。無ければ `RuntimeError(f"agent.toml が無い: {path}（先に register.py で登録する）")`。
+- 次に `project.root / "agent.toml"` を読む（`load_project` が `root = projects/<name>` を設定済みなので、`self.project_name` や `projects/<name>` を自分で組み立てない。`project.root` をそのまま使う）。`register.py` が書いた `[agent]\nid\nversion` を `tomllib` で読み、`self.agent_id`, `self.agent_version` に入れる。無ければ `RuntimeError(f"agent.toml が無い: {path}（先に register.py で登録する）")`。
 - `Anthropic()` を生成して `self._client` に保持。
 - `env_file = client.beta.files.upload(file=(project.root/"env.md").open("rb"))`
 - リポジトリ URL は `config["project"]["repo"]`（`"owner/repo"` 形式。`repo_url` というキーは無い）から組み立てる: `repo_url = "https://github.com/" + project.config["project"]["repo"]`。branch は `project.config["project"]["branch"]`（`task.branch` ではなくこちらを使う。作業ブランチへの書き込み制限は system prompt 側の指示で行う）。
@@ -55,7 +55,7 @@ SDK は `anthropic`（`pip install -e .[managed]`）。名前を推測しない�
 `run_phase(handle, phase, task, event, project)`:
 - `client.beta.sessions.events.send(session_id=handle.id, events=[{"type":"user.message","content":[{"type":"text","text": prompt}]}])` を先に送る。`prompt` には「段 `<phase>`。ChangeEvent: `<event.to_json()>`。resume_from: `<event.resume_from>`」に加え、「終了時は `/mnt/session/outputs/phase_result.json` に `{"impact":[...],"cases_added":[...],"cases_retired":[...],"evidence":[...]}` を書くこと。書き込みは `task.branch` のみ。製品コードは直さず `/mnt/session/outputs/fix_proposal.md` に原因と直し方の案を書くこと」を含める（system prompt を触らない代わりにここで指示する）。
 - `for ev in client.beta.sessions.events.stream(session_id=handle.id):` をループし、
-  - `ev.type == "agent.custom_tool_use" and ev.name == "run_gate"`: `run_gate(ev.input["name"], ev.input.get("args", []), project)` を呼ぶ。**`run_gate` は未知の名前や `impact` に ID 無しで `ValueError` を投げる**ので、ここを `try/except ValueError as e` で包み、失敗時は `exit_code=2, summary=str(e)` として扱う（成功時は `gate.exit_code`, `gate.summary`）。直近の gate 結果（`ok` の有無を含む）として保持し、`events.send` で `[{"type":"user.custom_tool_result","tool_use_id":ev.id,"content":{"summary":summary,"exit_code":exit_code}}]` を返す。**例外を `run_phase` の外へ出さない**。`name != "run_gate"` は無視して続行。
+  - `ev.type == "agent.custom_tool_use" and ev.name == "run_gate"`: `run_gate(ev.input["name"], ev.input.get("args", []), project, cwd=project.config["project"].get("subdir", "."))` を呼ぶ（`cwd` を渡さないと相対パスが解決できず、すべての gate が `exit_code=127` になる）。**`run_gate` は未知の名前や `impact` に ID 無しで `ValueError` を投げる**ので、ここを `try/except ValueError as e` で包み、失敗時は `exit_code=2, summary=str(e)` として扱う（成功時は `gate.exit_code`, `gate.summary`）。直近の gate 結果（`ok` の有無を含む）として保持し、`events.send` で `[{"type":"user.custom_tool_result","tool_use_id":ev.id,"content":{"summary":summary,"exit_code":exit_code}}]` を返す。**例外を `run_phase` の外へ出さない**。`name != "run_gate"` は無視して続行。
   - `ev.type == "session.status_idle"`: `spent = getattr(ev, "list_cost", None) or 0.0`。`ev.stop_reason == "budget_reached"` なら `PhaseResult("stopped","budget_reached", spent_usd=spent)`。それ以外は `phase_result.json` を取得する。**この JSON はセッションのコンテナ内にしか無い**ので、ホスト側は session files/outputs API 経由で取る: セッションのファイル一覧を取得し（例 `client.beta.sessions.files.list(session_id=handle.id)`）、`phase_result.json`（`outputs/phase_result.json` 相当のパス）があれば内容をダウンロードして `json.loads`、無ければ `{}` とする。テストはこの一覧・ダウンロード呼び出しをモックする。`evidence = data.get("evidence", [])`。**`evidence` が空なら `outcome="blocked", reason="no_evidence"`**（docs/05 の安全策: 根拠の無い下書きは確定に出さない）。空でなければ、直近の gate が `ok is False`（ValueError 経由の `exit_code=2` も含む。`cases` gate が `確認待ち` を含む場合も含む）のとき `outcome="blocked", reason=f"gate_ng:{gate名}"`、それ以外は `outcome="ok"`。`impact`/`cases_added`/`cases_retired`/`evidence` は `data` からそのまま詰め、`spent_usd=spent` を入れて返す。
   - `ev.type == "session.status_terminated"`: `PhaseResult("stopped","terminated")`。
 - `spent_usd` は必ずセッション由来の値か `0.0`。推測値を入れない。
@@ -71,7 +71,7 @@ SDK は `anthropic`（`pip install -e .[managed]`）。名前を推測しない�
 
 `unittest.mock.patch` で `qa_sentinel.runtime.managed_agents.Anthropic` を差し替える。実 HTTP は絶対に叩かない。`Project`/`Task`/`ChangeEvent` は最小のダミー（`Project(name="p", root=tmp_path, config={"project":{"repo":"owner/repo","branch":"main"}, "session":{"budget_usd":5.0}}, env_md="")`。`tmp_path` に `env.md` を置く）。
 
-ケース 1〜3 では **事前に** `monkeypatch.setenv("ANTHROPIC_API_KEY", ...)` / `monkeypatch.setenv("GITHUB_TOKEN", ...)` / `monkeypatch.setenv("QA_SENTINEL_ENV_ID", ...)` を行い、かつ `tmp_path/"agent.toml"`（`projects/p/agent.toml` 相当。`project.root` を `tmp_path` にしているのでそのまま `tmp_path/"agent.toml"` でよい）に `[agent]\nid = "agt_1"\nversion = "1"\n` を書いてから `start()` を呼ぶ。
+ケース 1〜3 では **事前に** `monkeypatch.setenv("ANTHROPIC_API_KEY", ...)` / `monkeypatch.setenv("GITHUB_TOKEN", ...)` / `monkeypatch.setenv("QA_SENTINEL_ENV_ID", ...)` を行い、かつ `project.root / "agent.toml"`（テストでは `project.root = tmp_path` なので `tmp_path/"agent.toml"`）に `[agent]\nid = "agt_1"\nversion = "1"\n` を書いてから `start()` を呼ぶ。
 
 1. **budget を渡している**: `start()` を呼び、モックした `sessions.create` の `kwargs["budget"]` が `{"type":"limit","max_list_cost":{"amount":5.0,"currency":"USD"}}` であることを assert。あわせて `resources` 中の `github_repository.url` が `"https://github.com/owner/repo"` であることも assert。
 2. **custom_tool_use → custom_tool_result**: `events.stream` が `agent.custom_tool_use`（`name="run_gate"`, `input={"name":"trace-check","args":[]}`）を 1 件、続けて `session.status_idle`（`stop_reason=None`）を yield するモック。session files/outputs 取得もモックして空（`{}`）を返させる。`run_gate` もモックして `ok=True` を返させ、`run_phase` 後に `events.send` が `user.custom_tool_result` を含む呼び出しで呼ばれたことを assert。
@@ -81,7 +81,7 @@ SDK は `anthropic`（`pip install -e .[managed]`）。名前を推測しない�
 ## 6. 完了条件
 
 - [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
-- [ ] `python3 -m pytest -q tests/test_managed_runtime.py` が 4 passed
+- [ ] `python -m pytest -q tests/test_managed_runtime.py` が 4 passed
 - [ ] 変更が「触るファイル」3 本に収まっている（`runtime/managed_agents.py`, `agent/register.py`, `tests/test_managed_runtime.py`）
 
 ## 7. スコープ外（やらないこと）

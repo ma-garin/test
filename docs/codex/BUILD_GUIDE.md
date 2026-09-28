@@ -16,8 +16,8 @@ RUN_ALL は §1〜§5 を Codex が自分で回す（verify → commit → 次�
 
 ```
 [準備 §1]  clone → venv → verify.py ALL GREEN（MVP が動くことを確認。LLM なし）
-[実装 §2]  HANDOFF_T01 → T03 → T02 → T04 → T05 → T06 → T07 を 1 本ずつ Codex に貼る
-           各回: Codex が実装 → verify.py ALL GREEN → 人（または Claude）が diff を見て commit
+[実装 §2]  HANDOFF_T01 → T09 → T03 → T02 → T04 → T05 → T06 → T07 を Codex が順に実装（RUN_ALL なら自動）
+           各回: verify.py ALL GREEN → PROGRESS.md に 1 行。成果は zip で受け取り、Claude が commit
 [道具 §3]  （同梱済み）demo/library-loan/scripts/ に kit のスクリプト、docs/ に工程文書・ケース表
 [実機 §4]  HANDOFF_T08 で Managed Agents に接続し、予算 $1 で 1 段だけ回す
 [運用 §5]  自分のプロジェクトの env.md / config.toml を書き、4 問で始める
@@ -27,56 +27,44 @@ RUN_ALL は §1〜§5 を Codex が自分で回す（verify → commit → 次�
 
 ## 1. 準備（人）
 
-```bash
-git clone https://github.com/ma-garin/test qa-sentinel && cd qa-sentinel
-python3 -m venv venv && venv/bin/pip install -e .[dev]
-venv/bin/python scripts/verify.py        # 末尾 ALL GREEN
-venv/bin/qa-sentinel run --project library-loan --nl "貸出上限を 3 冊に" --mode M2 --reviewer <あなたの名前>
-venv/bin/qa-sentinel status                        # 確定待ち が 1 行出れば MVP は動いている
+```bat
+:: GitHub の Code → Download ZIP を解凍したフォルダで cmd を開く
+python -m venv venv
+venv\Scripts\pip install -e .[dev]
+venv\Scripts\python scripts\verify.py            :: 末尾 ALL GREEN
+start.bat                                          :: ブラウザが開く。「変更を伝えて始める」で 1 件動かす
 ```
 
 ここまでで LLM も API キーも不要。動かなければ Python が 3.11 未満。
 
 ## 2. 実装（Codex に 1 本ずつ）
 
-順序と依存: **T01 → T03 → T02 → T04 → T05 → T06 → T07**（T02・T03・T05 は T01 の `run_gate` を前提にする）。
+順序と依存: **T01 → T09 → T03 → T02 → T04 → T05 → T06 → T07**（T02・T03・T05 は T01 の `run_gate`、T03 は T09 の `trace_check.py` を前提にする）。
 
 各回のやり方（webspec2doc の `CODEX_GUIDE.md` と同じ決定的ループ）:
 
 1. `docs/codex/HANDOFF_Tnn.md` の全文を Codex のプロンプトに貼る（`codex exec` でも同じ。作業ディレクトリはリポジトリ直下）
 2. Codex は「触るファイル」だけを編集し、最後に §8 の 5 行報告を返す
-3. あなた（または Claude）が `venv/bin/python scripts/verify.py` を実行し ALL GREEN を確認
-4. `git diff` を読む。指示書の「触るファイル」の外に変更があれば戻す
-5. `git add <パス>` → `git commit` → `git push`（Codex には git をさせない）
+3. Codex が `venv\Scripts\python scripts\verify.py` を実行し ALL GREEN を確認、`PROGRESS.md` に 1 行
+4. 全部終わったらフォルダを zip にして Claude に渡す。Claude が diff を見て「触るファイル」の外の変更を戻し、commit・PR する
 
 Codex が「質問」を返したら、指示書に答えを追記してから再実行する（会話で答えない。次の人が同じ質問をする）。
 
 | # | 指示書 | できあがるもの | 前提 |
 |---|---|---|---|
 | T01 | `HANDOFF_T01.md` | `core/gates.py`（終了条件スクリプトの実行器） | — |
+| T09 | `HANDOFF_T09_trace_check_py.md` | `trace_check.py`（bash 版の Python 移植。git/bash の無い環境で gate を動かす） | T01 |
 | T03 | `HANDOFF_T03.md` | `core/swap.py`（古いテストの失効・追記・戻し） | T01 |
 | T02 | `HANDOFF_T02.md` | `runtime/managed_agents.py`、`agent/register.py` | T01 |
 | T04 | `HANDOFF_T04.md` | `triggers/pr.py`、`run --pr` | — |
 | T05 | `HANDOFF_T05.md` | 承認の機械判定、確定画面の差分表示・根拠ガード | T01 |
 | T06 | `HANDOFF_T06.md` | `triggers/tracker.py`、`watch`（LLM を使わない監視） | T04 |
 | T07 | `HANDOFF_T07.md` | ループ上限の判定（差し戻し 3・確認待ち 5・セッション 10） | T05 |
-| T09 | `HANDOFF_T09_trace_check_py.md` | `trace_check.py`（bash 版の Python 移植。git/bash の無い環境で gate を動かす） | T01 |
 
-## 3. 道具を配る（人）— `run_gate` が呼ぶスクリプトの実体
+## 3. 道具（同梱済み。配る作業は不要）
 
-`run_gate` は `./scripts/trace-check.sh` などを呼ぶが、その実体は **yuki-aidd-kit** にある。対象プロジェクト（まずは図書貸出サンプル）に配る。
-
-```bash
-git clone https://github.com/ma-garin/yuki-aidd-kit ../yuki-aidd-kit
-cd ../yuki-aidd-kit
-./00_導入/02_プロジェクト配布/export-project.sh <対象プロジェクトのパス>     # scripts/ に trace-check.sh 等が入る
-./00_導入/02_プロジェクト配布/init-lifecycle.sh <対象プロジェクトのパス>     # docs/lifecycle/（追跡表など）
-./00_導入/02_プロジェクト配布/init-test-docs.sh <対象プロジェクトのパス>     # docs/quality/（system_test_cases.csv など）
-```
-
-図書貸出サンプルは `yuki-aidd-kit/01_利用者向け資料/90_サンプル/図書貸出/`。これを 1 つのプロジェクトとして切り出し、上の 3 つを当てる。`projects/library-loan/config.toml` の `repo`/`subdir` はその場所を指す。
-
-確認: 対象プロジェクトで `./scripts/trace-check.sh docs/lifecycle` が動き `NG=` の行を出す。
+`run_gate` が呼ぶスクリプトは `demo/library-loan/scripts/` に **Python で** 同梱済み（`test_metrics.py`・`check_approval.py`・`pw-spec-lint.py`・`section_hash.py`）。`trace_check.py` は T09 で作る。bash 版 `.sh` は Windows では使わない。
+自分のプロジェクトで使うときは、この `scripts/` と `docs/lifecycle/`・`docs/test/` の雛形をそのプロジェクトにコピーする。
 
 ## 4. 実機確認（Codex、HANDOFF_T08）
 
@@ -97,7 +85,7 @@ cd ../yuki-aidd-kit
 | 症状 | 見るところ |
 |---|---|
 | `env.md がない` で止まる | §5-2。環境情報を渡さないと起動しない設計 |
-| `run_gate` が `exit 127 missing` | §3 のスクリプト配布が未了 |
+| `run_gate` が `exit 127 missing` | `trace_check.py` がまだ無い（T09 未完）か、`cwd` が `subdir` を指していない |
 | 確定待ちのまま進まない | 人の番。`qa-sentinel status` で誰の番かを見る。AI は待っていない |
 | `budget_reached` | 予算を上げて `run --resume`（T02 以降）。上げるかは人が決める |
 | 同じ段で 3 回差し戻し / 確認待ち 5 件 / セッション 10 本で `stopped` | 進め方の見直し（`docs/06_ループ設計.md` §3） |

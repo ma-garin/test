@@ -86,8 +86,8 @@ def from_webhook(project: str, payload: dict) -> ChangeEvent | None: ...
 ## 6. 完了条件
 
 - [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
-- [ ] `python3 -m pytest -q tests/test_pr_trigger.py` が 4 passed
-- [ ] 変更が「触るファイル」3 本（`qa_sentinel/triggers/pr.py`、`qa_sentinel/cli.py` の `--pr` 追加部分のみ、`tests/test_pr_trigger.py`）に収まっている（`git status --short` で確認してよい。add はしない）
+- [ ] `python -m pytest -q tests/test_pr_trigger.py` が 4 passed
+- [ ] 変更が「触るファイル」3 本（`qa_sentinel/triggers/pr.py`、`qa_sentinel/cli.py` の `--pr` 追加部分のみ、`tests/test_pr_trigger.py`）に収まっている（変更したファイルの一覧を自分で書き出して確認する（git は無い））
 
 ## 7. スコープ外（やらないこと）
 
