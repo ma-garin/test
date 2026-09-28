@@ -34,6 +34,7 @@ def main(tasks_dir: str = "tasks", projects_dir: str = "projects", port: int = 8
         print("  2) やることリスト（自分の番のもの）")
         print("  3) ブラウザで開く（同じ内容を画面で）")
         print("  4) 全部の一覧")
+        print("  5) 図書館デモを動かす（貸出上限 5→3 冊の変更を AI に伝える）")
         print("  0) 終わる")
         c = ask("番号")
         if c == "0":
@@ -84,8 +85,12 @@ def main(tasks_dir: str = "tasks", projects_dir: str = "projects", port: int = 8
             url = f"http://127.0.0.1:{port}/"
             print(f"ブラウザで {url} を開きます（この画面で web を起動していない場合は、別の黒い画面で `qa-sentinel web` を先に）")
             webbrowser.open(url)
+        elif c == "5":
+            who = ask("あなたの名前", "demo")
+            cli(base + ["demo", "--by", who])
+            print("→ 2) やることリスト で自分の番を片づけてください")
         else:
-            print("0〜4 で選んでください")
+            print("0〜5 で選んでください")
 
 
 if __name__ == "__main__":

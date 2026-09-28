@@ -60,7 +60,8 @@ T07 まで終わったら、図書館デモで人の操作込みの一連を回�
 
 ```bat
 set Q=venv\Scripts\qa-sentinel
-%Q% run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --mode M2 --reviewer codex --budget 5
+%Q% demo --by codex
+:: ↑ = run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --mode M2 --reviewer codex --budget 5
 %Q% ok T-0001 --by codex -m "設計を確認"
 :: ↑ 設計の出口 → 実行は人の段（手渡し）
 %Q% results T-0001 --by codex --file demo/library-loan/docs/test/system_test_cases.csv -m "できた 3 / できなかった 0"
@@ -73,7 +74,7 @@ set Q=venv\Scripts\qa-sentinel
 
 加えて、実際の差し替えが CSV に効くことを **swap（T03）で直接** 確かめる: `demo/library-loan/docs/test/system_test_cases.csv` に `根拠の版=REQ-F-001@...` の行を 1 つ足し、`core.swap.swap(project, ["REQ-F-001"], [<新ケース 1 件>], cwd="demo/library-loan")` を呼んで、その行の `仕様の状態` が `失効(ST-xxx)` になり、`venv\Scripts\python demo\library-loan\scripts\trace_check.py demo\library-loan\docs\lifecycle` が NG=0 のままであること。結果を `docs/codex/DEMO_RESULT.md` に貼る（コマンドと出力）。
 
-Web も 1 回起動して `/api/tasks` が台帳を返すことを確認（`start /b venv\Scripts\qa-sentinel web --port 8790` → `curl -s http://127.0.0.1:8790/api/tasks` → ブラウザで `http://127.0.0.1:8790/` を開く → その cmd を閉じて止める）。
+Web も 1 回起動して確認（`start /b venv\Scripts\qa-sentinel web --port 8790` → `curl -s http://127.0.0.1:8790/api/tasks` が台帳を返す → ブラウザで `http://127.0.0.1:8790/guide`（使い方）と `http://127.0.0.1:8790/`（台帳。タスクが無いと「図書館デモを動かす」ボタンが出る。詳細の「表示の型」で 5 つの進行表示が切り替わる）を開く → その cmd を閉じて止める）。
 
 ## 4. 実機確認（今回はやらない）
 
@@ -82,6 +83,7 @@ Managed Agents への実接続（`HANDOFF_T08_live_check.md`）は **今回は�
 ## 5. 仕上げ
 
 - `README.md` の「すぐ試す」を、§3 で実際に通したコマンド列に更新（動かなかったものは書かない）
+- 人に渡す zip の使い方は `start.bat` → 初回は使い方の画面（`/guide`）が自動で開く。ここは変えない
 - `docs/codex/DEMO_RESULT.md` と（あれば）`LIVE_CHECK_RESULT.md` を commit
 - `venv\Scripts\python scripts\verify.py` 最終 ALL GREEN
 - PR を作る（できなければブランチ名を報告）

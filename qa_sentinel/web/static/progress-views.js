@@ -1,39 +1,3 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>qa-sentinel 進行表示 5 案（業務ツール型）</title>
-<style>
-:root{--bg:#f5f7fa;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#c9d2de;--accent:#d97706;--ok:#15803d;--llm:#1d4ed8;--node:#eef2f7}
-@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--node:#1f2937;--llm:#8ab4ff;--ok:#4ade80;--accent:#f5a524;color-scheme:dark}}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.7 "IBM Plex Sans JP",system-ui,sans-serif;padding:16px;max-width:1100px;margin-inline:auto}
-h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:26px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
-.muted{color:var(--muted);font-size:12.5px}
-table{border-collapse:collapse;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:13px}
-th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:500;font-size:12px}
-code{background:var(--node);padding:1px 5px;border-radius:4px;font-size:12.5px}pre{background:var(--node);padding:8px 12px;border-radius:6px;font-size:12.5px;overflow:auto}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:8px 0}
-.step{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}.step b{display:block;margin-bottom:4px}.step .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--bg);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
-button,select{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 12px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:2}
-.toolbar .sc{padding:4px 10px;border-radius:999px}.toolbar .sc.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.idea{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 14px}
-.idea header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.idea header h3{margin:0;font-size:15px}.idea header .ref{font-size:12px;color:var(--muted)}
-.idea canvas{display:block;width:100%;height:260px;margin:8px 0}
-.idea .pick{margin-left:auto}.idea.chosen{border-color:var(--ok);box-shadow:0 0 0 2px rgba(21,128,61,.18)}.idea .cmp{font-size:12.5px;color:var(--muted);margin:0}
-.ok{color:var(--ok)}
-</style>
-</head>
-<body>
-<h1>進行表示の 5 案 <span class="muted">同じ台帳を 5 つの業務ツールの型で描く。製品画面 /guide#views と同じ JS</span></h1>
-<h2 id="views">4. 進行表示の型を選ぶ（5 つ）</h2>
-<p class="muted">同じ台帳を 5 つの業務ツールの型で描きます。下のボタンで場面を切り替え、気に入った型の「この型にする」を押すと台帳の画面がその型になります（同じブラウザで開いた台帳の画面に反映）。</p>
-<div class="toolbar"><span class="muted">場面:</span>
-<button class="sc on" data-sc="ai">AI が作業中</button><button class="sc" data-sc="human">あなたの番</button><button class="sc" data-sc="ask">AI から質問</button><button class="sc" data-sc="done">完了</button><button class="sc" data-sc="stopped">止まった</button>
-<button class="sc" data-sc="auto">▶ 自動で一巡</button><span class="muted" id="chosen"></span></div>
-<div id="ideas"></div>
-
-<script>
 /* 進行表示の 5 つの型（業務ツールの型）。製品画面と比較ページの両方で使う。
    window.PV = { views, state, use(name), mount(canvas), render() }
    state: {phases:[...段名], cur:番号, mode:'ai'|'human'|'ask'|'done'|'stopped'|'idle', label, cost:{spent,budget}, human:[段番号], stops:[段番号], log:[...]} */
@@ -138,22 +102,3 @@ try{const v=localStorage.getItem('qa-progress-view');if(v&&PV.views[v])PV.curren
 PV.mount=function(canvas,fixedView){const x=canvas.getContext('2d');const size=()=>{const r=canvas.getBoundingClientRect();canvas.width=Math.max(1,r.width*devicePixelRatio);canvas.height=Math.max(1,r.height*devicePixelRatio);x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)};size();new ResizeObserver(size).observe(canvas);PV.canvases.push({canvas,x,fixedView});if(!PV._loop){PV._loop=true;requestAnimationFrame(PV._frame)}};
 let last=0;PV._frame=function(ts){const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;PV.canvases=PV.canvases.filter(c=>c.canvas.isConnected);PV.canvases.forEach(({canvas,x,fixedView})=>{const r=canvas.getBoundingClientRect();if(!r.width)return;x.clearRect(0,0,r.width,r.height);x.textBaseline='alphabetic';x.globalAlpha=1;x.setLineDash([]);x.shadowBlur=0;const v=PV.views[fixedView||PV.current];if(v)v.draw(x,r.width,r.height,ts,dt)});requestAnimationFrame(PV._frame)};
 })();
-
-</script>
-<script>
-const IDEAS=[['workflow','案 1 ワークフロー画面','参考: n8n / Power Automate','段を箱でつなぐ。今どこか・どこで止まるかが一目。複数タスクは苦手'],
-['pipeline','案 2 パイプライン＋ログ','参考: GitHub Actions / GitLab CI','段の並びと実行ログ。何をしているかを文字で追える。エンジニア向け'],
-['swimlane','案 3 スイムレーン工程図','参考: BPMN / 業務フロー図','AI／あなた／システムのレーン。誰の番かが分かる。監査・説明向け'],
-['kanban','案 4 かんばん','参考: Jira / Trello','タスクを列で管理。複数タスクをまとめて見る。1 タスクの中身は薄い'],
-['timeline','案 5 タイムライン＋根拠','参考: Devin / Cursor Agent','時系列と根拠パネル。決定の記録を見返す。全体像は上の帯だけ']];
-const LABEL={ai:'',human:'直して OK',ask:'延滞中の利用者は新規貸出できますか？',done:'',stopped:'予算超過 $5.00'};
-document.getElementById('ideas').innerHTML=IDEAS.map(([k,t,r,c])=>`<section class="idea" id="i-${k}"><header><h3>${t}</h3><span class="ref">${r}</span><button class="pick primary" data-v="${k}">この型にする</button></header><canvas data-v="${k}" role="img" aria-label="${t}"></canvas><p class="cmp">${c}</p></section>`).join('');
-document.querySelectorAll('canvas[data-v]').forEach(c=>PV.mount(c,c.dataset.v));
-function setScene(m){PV.state.mode=m;PV.state.label=LABEL[m];PV.state.cur=m==='done'?9:m==='ask'?3:4;PV.state.cost.spent=m==='stopped'?5:m==='done'?3.2:1.6;document.querySelectorAll('.sc').forEach(b=>b.classList.toggle('on',b.dataset.sc===m))}
-let auto=null;document.querySelectorAll('.sc').forEach(b=>b.onclick=()=>{clearInterval(auto);if(b.dataset.sc==='auto'){const seq=['ai','human','ai','ask','ai','done'];let i=0;setScene(seq[0]);b.classList.add('on');auto=setInterval(()=>{i=(i+1)%seq.length;setScene(seq[i]);b.classList.add('on')},2200)}else setScene(b.dataset.sc)});
-function mark(){document.querySelectorAll('.idea').forEach(s=>s.classList.toggle('chosen',s.id==='i-'+PV.current));document.getElementById('chosen').innerHTML=`今の型: <b class="ok">${PV.views[PV.current].name}</b>`}
-document.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{PV.use(b.dataset.v);mark();b.textContent='✔ 台帳の画面に反映しました';setTimeout(()=>b.textContent='この型にする',1800)});
-setScene('ai');mark();
-</script>
-</body>
-</html>

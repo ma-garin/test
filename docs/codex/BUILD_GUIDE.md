@@ -32,7 +32,7 @@ RUN_ALL は §1〜§5 を Codex が自分で回す（verify → commit → 次�
 python -m venv venv
 venv\Scripts\pip install -e .[dev]
 venv\Scripts\python scripts\verify.py            :: 末尾 ALL GREEN
-start.bat                                          :: ブラウザが開く。「変更を伝えて始める」で 1 件動かす
+start.bat                                          :: 初回は「使い方」の画面が開く。「図書館デモを動かす」で 1 件動かす
 ```
 
 ここまでで LLM も API キーも不要。動かなければ Python が 3.11 未満。
