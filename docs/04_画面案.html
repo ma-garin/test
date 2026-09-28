@@ -98,45 +98,45 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 
 <!-- s2 -->
 <section class="screen" id="s2" hidden>
-  <h2>2 AI の下書きを直して OK — 「テストの設計」で止まったところ</h2>
-  <p class="why">左が AI の案（直接書き換えられる）。右が根拠と、ファイルにどう書かれるか。直したら OK。納得できなければ差し戻し。</p>
-  <div class="banner">⏸ あなたの番です — T-0042「貸出上限を 5 冊から 3 冊に変更」テストの設計。AI は止まっています（お金はかかっていません）</div>
-  <div class="pipe" id="pipe2"></div>
-  <div class="split">
-    <div>
-      <div class="draft"><table>
-        <tr><th>ID</th><th>何を確かめる</th><th>手順</th><th>期待する結果（直せます）</th><th>根拠</th></tr>
-        <tr><td class="mono">ST-013</td><td>4 冊目は借りられない</td><td>3 冊借りた状態で貸出</td><td contenteditable="true">「貸出上限（3 冊）に達しています」と出て、借りられない</td><td><span class="chip ai">spec.md §4</span></td></tr>
-        <tr><td class="mono">ST-014</td><td>3 冊目は借りられる</td><td>2 冊借りた状態で貸出</td><td contenteditable="true">一覧が 3 件になる</td><td><span class="chip ai">spec.md §4</span></td></tr>
-        <tr><td class="mono">ST-015</td><td>返したらまた借りられる</td><td>3 冊 → 1 冊返却 → 貸出</td><td contenteditable="true">借りられる。一覧は 3 件</td><td><span class="chip ai">spec.md §4, §6</span></td></tr>
-        <tr><td class="mono">UT-020</td><td>上限の数字そのもの</td><td>自動テスト</td><td contenteditable="true">3 で OK、4 で NG</td><td><span class="chip ai">app.js 定数</span></td></tr>
-        <tr><td class="mono">ST-005</td><td><s>5 冊目は借りられない</s></td><td colspan="2"><span class="chip stop">古いので失効</span> 新しい ST-013 に置き換え</td><td><span class="chip ai">根拠の版が古い</span></td></tr>
-      </table></div>
-      <div class="actions">
-        <input id="who" value="yuki" aria-label="確認する人" style="max-width:120px">
-        <button class="primary">直した内容で OK（次へ進む）</button>
-        <button>差し戻す（理由を書く）</button>
-        <button>質問する</button>
-      </div>
-      <p class="note">OK すると、この表が作業用の枝 <span class="mono">qa-sentinel/T-0042</span> に保存され、AI が次の段（テストの準備）を始めます。本線はまだ変わりません。</p>
-    </div>
-    <div style="display:grid;gap:12px">
-      <div class="card"><h3>AI がこう考えた理由</h3><ul class="ev">
+  <h2>2 AI の下書きを直して OK</h2>
+  <p class="why">まず要点だけ。気になる行を開くと、手順と根拠が出る。直したら OK。</p>
+  <div class="banner">⏸ あなたの番です — T-0042「貸出上限を 5 冊から 3 冊に変更」／ テストの設計 ／ ここまで $1.90（上限 $5.00）</div>
+  <p style="margin:0 0 10px;font-size:14px"><b>AI がテストを 4 件作り、古い 1 件（ST-005）を失効にしました。</b> <span class="note">根拠は 4 件（仕様 spec.md §4・§6、影響チェック、古い版の検出）。決めていないことが 1 つあります。</span></p>
+  <div class="draft"><table>
+    <tr><th style="width:70px">ID</th><th>何を確かめる</th><th>期待する結果（直せます）</th><th style="width:60px"></th></tr>
+    <tr><td class="mono">ST-013</td><td>4 冊目は借りられない</td><td contenteditable="true">「貸出上限（3 冊）に達しています」と出て、借りられない</td><td><details><summary class="note">詳細</summary></details></td></tr>
+    <tr class="det" hidden><td></td><td colspan="3" class="note">手順: 3 冊借りた状態で貸出 ／ 根拠: spec.md §4「貸出上限は 3 冊」</td></tr>
+    <tr><td class="mono">ST-014</td><td>3 冊目は借りられる</td><td contenteditable="true">一覧が 3 件になる</td><td><details><summary class="note">詳細</summary></details></td></tr>
+    <tr class="det" hidden><td></td><td colspan="3" class="note">手順: 2 冊借りた状態で貸出 ／ 根拠: spec.md §4</td></tr>
+    <tr><td class="mono">ST-015</td><td>返したらまた借りられる</td><td contenteditable="true">借りられる。一覧は 3 件</td><td><details><summary class="note">詳細</summary></details></td></tr>
+    <tr class="det" hidden><td></td><td colspan="3" class="note">手順: 3 冊 → 1 冊返却 → 貸出 ／ 根拠: spec.md §4, §6「返却で枠が戻る」</td></tr>
+    <tr><td class="mono">UT-020</td><td>上限の数字そのもの（自動）</td><td contenteditable="true">3 で OK、4 で NG</td><td><details><summary class="note">詳細</summary></details></td></tr>
+    <tr class="det" hidden><td></td><td colspan="3" class="note">手順: 自動テスト ／ 根拠: app.js の上限定数</td></tr>
+    <tr><td class="mono">ST-005</td><td><s>5 冊目は借りられない</s></td><td><span class="chip stop">古いので失効</span> 新しい ST-013 に置き換え</td><td><details><summary class="note">詳細</summary></details></td></tr>
+    <tr class="det" hidden><td></td><td colspan="3" class="note">根拠: このテストの元になった仕様の版が今と違う（5 冊前提）。削除はせず「失効」の印だけ付ける</td></tr>
+  </table></div>
+  <div class="card" style="margin-top:10px;border-color:var(--human)"><b style="font-size:13px">AI が決められなかったこと（1 件）</b><p class="note" style="margin:4px 0 6px">上限に達したとき、予約画面に案内しますか？ 仕様に書いてありません。</p><div class="actions" style="margin:0"><input id="ans" placeholder="例: 案内しない。メッセージだけ" style="flex:1;min-width:200px"><button>これで答える</button></div></div>
+  <div class="actions">
+    <button class="primary">OK（次へ進む）</button>
+    <button>差し戻す</button>
+    <span class="note">確認する人: <b>yuki</b>（記録に残ります）</span>
+  </div>
+  <details style="margin-top:10px"><summary class="note">AI がこう考えた理由と、ファイルにどう書かれるか（開く）</summary>
+    <div class="split" style="margin-top:8px">
+      <div class="card"><h3>理由</h3><ul class="ev">
         <li><span class="k">仕様</span><span>spec.md §4「貸出上限は 3 冊」、§6「返却で枠が戻る」</span></li>
         <li><span class="k">影響</span><span>trace-check --impact REQ-F-003 → BD-002, DD-004, UT-011, ST-005（exit 0）</span></li>
-        <li><span class="k">古い案</span><span>ST-005 は「5 冊」前提。根拠の版が現在と違う（C7 suspect）</span></li>
-        <li><span class="k">決めていない</span><span>上限到達時に予約へ誘導するかは仕様に無い → 「質問する」で聞けます</span></li>
+        <li><span class="k">古い案</span><span>ST-005 は「5 冊」前提。根拠の版が現在と違う</span></li>
       </ul></div>
-      <div class="card"><h3>ファイルにはこう書かれます（案）</h3>
-<pre class="diff"><span class="d">- ST-005,…,5 冊目は借りられない,…,,ST-005@a1b2c3d,</span>
-<span class="a">+ ST-005,…,5 冊目は借りられない,…,,ST-005@a1b2c3d,失効(ST-013)</span>
-<span class="a">+ ST-013,一般,貸出,…,4 冊目は借りられない,…,High,,,,,REQ-F-003@9f8e7d6,</span>
-<span class="a">+ ST-014,一般,貸出,…,3 冊目は借りられる,…,High,,,,,REQ-F-003@9f8e7d6,</span>
-<span class="a">+ ST-015,一般,貸出,…,返却後の再貸出,…,Medium,,,,,REQ-F-003@9f8e7d6,</span></pre>
-      <p class="note" style="margin:6px 0 0">system_test_cases.csv と追跡表。削除はしない（失効の印だけ）</p></div>
-      <div class="card"><h3>お金</h3><div class="cost"><span>ここまで <b>$1.90</b></span><span>上限 <b>$5.00</b></span><div class="prog"><i style="width:38%"></i></div></div></div>
+      <div class="card"><h3>ファイル（案）</h3>
+<pre class="diff"><span class="d">- ST-005,…,5 冊目は借りられない,…,</span>
+<span class="a">+ ST-005,…,5 冊目は借りられない,…,失効(ST-013)</span>
+<span class="a">+ ST-013,…,4 冊目は借りられない,…,REQ-F-003@9f8e7d6</span>
+<span class="a">+ ST-014,…,3 冊目は借りられる,…,REQ-F-003@9f8e7d6</span>
+<span class="a">+ ST-015,…,返却後の再貸出,…,REQ-F-003@9f8e7d6</span></pre>
+      <p class="note" style="margin:6px 0 0">作業用の枝 qa-sentinel/T-0042 に保存。OK で本線へ</p></div>
     </div>
-  </div>
+  </details>
 </section>
 
 <!-- s3 -->
@@ -154,7 +154,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
   </table></div>
   <div class="actions" style="margin-top:10px"><div class="prog"><i style="width:75%"></i></div><span class="note">3 / 4 件</span></div>
   <div style="margin-top:10px"><b style="font-size:13px">できなかったとき、何が見えましたか？（見たままを書く。原因の推測は AI がやります）</b><textarea id="obs" rows="2" style="width:100%;box-sizing:border-box;margin-top:4px">ST-014: 3 冊目の「借りる」ボタンが押せなかった（灰色）。</textarea></div>
-  <div class="actions"><input id="who3" value="yuki" style="max-width:120px" aria-label="入力した人"><button class="primary">AI に渡す（原因の整理へ）</button><button>下書き保存</button><span class="note">AI はアプリ本体を直しません。「原因と直し方の案」を出すだけです</span></div>
+  <div class="actions"><input id="who3" value="yuki" style="max-width:120px" aria-label="入力した人"><button class="primary">AI に渡す（原因の整理へ）</button><button>下書き保存</button></div>
 </section>
 
 <!-- s4 -->
@@ -223,7 +223,7 @@ $('preset').onchange=e=>{const v=e.target.value;const set=(q,arr)=>{document.que
  if(v==='M7'){document.querySelector('input[name=q1][value=swap]').checked=true;set(0,'all');}
  preview();};
 preview();
-renderPipe($('pipe2'),'test-design',3);renderPipe($('pipe3'),'test-execution',5);
+document.querySelectorAll('#s2 details').forEach(d=>{if(d.closest('tr'))d.addEventListener('toggle',()=>{d.closest('tr').nextElementSibling.hidden=!d.open;});});renderPipe($('pipe3'),'test-execution',5);
 document.querySelectorAll('#inbox li').forEach(li=>li.onclick=()=>{document.querySelectorAll('#inbox li').forEach(x=>x.classList.toggle('sel',x===li));const b=document.querySelector(`.tabs button[data-tab="${{ok:'s2',run:'s3',q:'s2'}[li.dataset.k]}"]`);if(b)b.click();});
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));['s1','s2','s3','s4','s5'].forEach(id=>$(id).hidden=id!==b.dataset.tab);try{localStorage.setItem('qa-gui2-tab',b.dataset.tab)}catch(e){}});
 try{const t=localStorage.getItem('qa-gui2-tab');if(t){const b=document.querySelector(`.tabs button[data-tab="${t}"]`);if(b)b.click();}}catch(e){}
