@@ -15,6 +15,8 @@
 | `docs/05_協業モデル.md` | AI が下書き・人が直して確定。安全策 4 つ、開始時の 4 問、プリセット M1〜M8、状態 review/handoff |
 | `docs/06_ループ設計.md` | ループエンジニアリング: 7 つのループの終了条件・上限・脱出先、8 つの技法、止まる条件の優先順位 |
 | `.claude/skills/fanout-review-fix/` | 開発の段取りスキル（Sonnet 並列下書き → Opus レビュー → 本人修正 → Haiku git） |
+| `docs/07_使い方.md` | **初めての人向け**: start.bat → 画面で「始める」→ やることリストを片づける |
+| `start.bat` / `start.sh` | ダブルクリックで準備・起動・ブラウザを開く |
 | `docs/codex/RUN_ALL.md` | **一言で全部作る指示書**（Codex に「RUN_ALL.md に従え」と貼るだけ。T01〜T07 → 図書館デモ → 実機 → PR） |
 | `demo/library-loan/` | 図書館デモ（単一 HTML）＋ kit のスクリプト・工程文書・ケース表を同梱。`run_gate` が呼ぶ実体 |
 | `docs/codex/BUILD_GUIDE.md` | **Codex 環境で何をどの順にやれば構築できるか**（準備→実装 T01〜T07→道具の配布→実機確認 T08→運用） |
@@ -23,7 +25,12 @@
 | `projects/` | プロジェクトごとの環境情報（`env.md`）と設定（`config.toml`） |
 | `scripts/verify.py` | 検証ゲート（唯一の実装。`verify.sh` は薄い呼び出し）。末尾 `ALL GREEN` で合格 |
 
-## すぐ試す（MVP。LLM は使わない）
+## 初めての人はこれだけ
+
+Windows: `start.bat` をダブルクリック（macOS/Linux: `./start.sh`）→ ブラウザが開く → 「変更を伝えて始める」。詳しくは `docs/07_使い方.md`。
+黒い画面なら `qa-sentinel` と打つだけで番号メニュー。
+
+## コマンドで試す（MVP。LLM は使わない）
 
 ```bash
 python3 -m venv venv && venv/bin/pip install -e .[dev]

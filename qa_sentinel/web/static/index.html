@@ -29,18 +29,27 @@ button{cursor:pointer}button.primary{background:var(--ink);color:var(--bg);borde
 </style>
 </head>
 <body>
-<h1>qa-sentinel 台帳 <span class="muted">tasks/*.json を 5 秒ごとに再読</span></h1>
+<h1>qa-sentinel <span class="muted">AI が下書き、あなたが直して OK</span></h1>
+<details id="start" open><summary style="cursor:pointer;font-weight:600">変更を伝えて始める</summary>
+<div class="form" style="display:grid;grid-template-columns:1fr;gap:8px">
+  <label>何が変わりましたか（1 文）<br><input id="r-nl" style="width:100%;box-sizing:border-box" placeholder="例: 貸出上限を 5 冊から 3 冊に変更"></label>
+  <label>どこまで AI にやらせますか<br><select id="r-mode"><option value="M2">準備まで AI、テスト実行は自分（いつもの使い方）</option><option value="M1">全部 AI（最後だけ確認）</option><option value="M3">段ごとに毎回確認</option><option value="M4">設計まで AI</option><option value="M6">古いテストの入れ替えだけ AI</option><option value="M7">自分で作って AI に見てもらう</option></select></label>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><label>だれが確認しますか <input id="r-by" placeholder="あなたの名前"></label><label>いくらまで（USD） <input id="r-budget" value="5" style="width:70px"></label><label>プロジェクト <input id="r-project" value="library-loan"></label></div>
+  <div><button class="primary" id="r-go">始める</button> <span class="muted" id="r-msg"></span></div>
+</div></details>
+<h2 style="font-size:14px;margin:14px 0 6px">やることリスト <span class="muted">あなたの番のものが上に来ます。5 秒ごとに更新</span></h2>
 <table><thead><tr><th>タスク</th><th>プロジェクト</th><th>モード</th><th>段</th><th>状態</th><th>予算</th><th>確認者</th><th>理由</th></tr></thead><tbody id="rows"></tbody></table>
 <div id="detail" hidden></div>
 <script>
 let meta=null,cur=null;
-const WHO={review:'確定待ち',handoff:'手渡し',blocked:'回答待ち',paused:'承認待ち',running:'AI 実行中',done:'完了',stopped:'停止',queued:'待機'};
+const WHO={review:'あなた: 直して OK',handoff:'あなた: 自分でやる',blocked:'あなた: 質問に答える',paused:'あなた: 最終承認',running:'AI が作業中',done:'完了',stopped:'止まった',queued:'待機'};
+const MINE=new Set(['review','handoff','blocked','paused','stopped']);
 async function j(u,o){const r=await fetch(u,o);return r.json()}
 function pill(s){return `<span class="pill ${s}">${WHO[s]||s}</span>`}
 function post(u,body){return fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)}).then(r=>r.json())}
 async function load(){
   meta=meta||await j('/api/meta');
-  const ts=await j('/api/tasks');
+  const ts=(await j('/api/tasks')).sort((a,b)=>(MINE.has(b.status)?1:0)-(MINE.has(a.status)?1:0));
   document.getElementById('rows').innerHTML=ts.map(t=>`<tr data-task="${t.task}"><td>${t.task}</td><td>${t.project}</td><td>${t.mode}</td><td>${meta.labels[t.phase]||t.phase}</td><td>${pill(t.status)}</td><td>$${(t.session.spent_usd||0).toFixed(2)} / ${(t.plan.budget_usd||t.session.budget_usd||0).toFixed(2)}</td><td>${t.plan.reviewer||''}</td><td>${t.reason||''}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">タスクなし。CLI: qa-sentinel run --project library-loan --nl "..."</td></tr>';
   document.querySelectorAll('tr[data-task]').forEach(r=>r.onclick=()=>show(r.dataset.task));
   if(cur)show(cur);
@@ -70,6 +79,7 @@ async function show(id){
   if(g('ans'))g('ans').onclick=async()=>{await post('/api/answer',{task:id,by:val('by'),text:val('note')});load();};
   if(g('ap'))g('ap').onclick=async()=>{await post('/api/approve',{task:id,by:val('by')});load();};
 }
+document.getElementById('r-go').onclick=async()=>{const g=id=>document.getElementById(id).value;const m=document.getElementById('r-msg');m.textContent='…';const r=await post('/api/run',{project:g('r-project'),nl:g('r-nl'),mode:g('r-mode'),reviewer:g('r-by'),budget:g('r-budget')});m.textContent=r.error?('エラー: '+r.error):(r.task+' を始めました');if(!r.error){document.getElementById('start').open=false;cur=r.task;}load();};
 load();setInterval(load,5000);
 </script>
 </body>

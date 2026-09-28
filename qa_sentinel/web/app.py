@@ -1,6 +1,6 @@
 """台帳の Web 表示。標準ライブラリだけ。
 GET  /  /api/meta  /api/tasks  /api/tasks/<id>
-POST /api/review (task, by, ok=1|0, note)  /api/submit (task, by, file, note)  /api/answer (task, by, text)  /api/approve (task, by)
+POST /api/run (project, nl, mode, reviewer, budget)  /api/review (task, by, ok=1|0, note)  /api/submit (task, by, file, note)  /api/answer (task, by, text)  /api/approve (task, by)
 ランタイムは環境変数 QA_SENTINEL_RUNTIME（mock|managed、既定 mock）。
 """
 from __future__ import annotations
@@ -12,8 +12,10 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from ..core.ledger import Ledger
-from ..core.orchestrator import answer, approve, review, submit
-from ..core.plan import PRESETS
+from ..core.orchestrator import answer, approve, review, run_event, submit
+from ..core.plan import PRESETS, Plan
+from ..core.project import load_project
+from ..triggers import nl as nl_trigger
 from ..core.state import GATES, PHASE_LABELS, PHASES
 
 _STATIC = Path(__file__).parent / "static"
@@ -27,7 +29,7 @@ def _runtime():
     return MockRuntime()
 
 
-def make_handler(ledger: Ledger, runtime=None):
+def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
     class H(BaseHTTPRequestHandler):
         def _json(self, obj, code=200):
             b = json.dumps(obj, ensure_ascii=False).encode()
@@ -64,6 +66,11 @@ def make_handler(ledger: Ledger, runtime=None):
             q = {k: v[0] for k, v in parse_qs(self.rfile.read(n).decode()).items()}
             rt = runtime or _runtime()
             try:
+                if u.path == "/api/run":
+                    project = load_project(q["project"], projects_dir)
+                    plan = Plan.from_preset(q.get("mode", "M2"), q.get("reviewer", ""), float(q.get("budget", project.budget_usd)))
+                    t = run_event(nl_trigger.from_text(q["project"], q.get("nl", "")), rt, ledger, project, plan=plan)
+                    return self._json(t.to_dict())
                 task, by = q["task"], q.get("by", "")
                 if u.path == "/api/review":
                     t = review(task, by, q.get("ok", "1") == "1", ledger, rt, note=q.get("note", ""))

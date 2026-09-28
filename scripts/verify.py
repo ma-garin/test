@@ -74,7 +74,7 @@ def main() -> None:
 
     step("4. 文書の存在")
     for f in ("docs/00_概要.md", "docs/01_設計仕様.md", "docs/02_フロー.html", "docs/codex/README.md",
-              "docs/05_協業モデル.md", "docs/codex/RUN_ALL.md", "projects/_template/env.md"):
+              "docs/05_協業モデル.md", "docs/07_使い方.md", "start.bat", "start.sh", "docs/codex/RUN_ALL.md", "projects/_template/env.md"):
         if not (ROOT / f).is_file():
             fail(f"missing {f}")
 
