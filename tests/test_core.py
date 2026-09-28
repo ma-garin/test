@@ -150,10 +150,10 @@ def test_cli_run_with_preset_status_review_approve(ws, capsys):
     assert main(base + ["run", "--project", "library-loan", "--nl", "貸出上限を 3 冊に", "--mode", "M1", "--reviewer", "qa", "--budget", "3"]) == 0
     out = capsys.readouterr().out
     assert "mode M1" in out and "確定待ち" in out
-    assert main(base + ["status", "T-0001", "--json"]) == 0
+    assert main(base + ["show", "T-0001", "--json"]) == 0
     d = json.loads(capsys.readouterr().out)
     assert d["plan"]["reviewer"] == "qa" and d["plan"]["budget_usd"] == 3.0
-    assert main(base + ["review", "T-0001", "--by", "qa", "--ok"]) == 0
+    assert main(base + ["ok", "T-0001", "--by", "qa", "-m", "確認した"]) == 0
     assert "承認待ち" in capsys.readouterr().out
     assert main(base + ["approve", "T-0001", "--by", "qa"]) == 0
     assert "done" in capsys.readouterr().out

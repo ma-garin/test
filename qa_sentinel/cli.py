@@ -1,4 +1,4 @@
-"""qa-sentinel CLI。run（4 問）/ status / review / submit / results / answer / approve / web。"""
+"""qa-sentinel CLI。run（4 問）/ status / show / ok / reject / results / answer / approve / web。"""
 from __future__ import annotations
 
 import argparse
@@ -87,26 +87,22 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--mock-block-at")
     r.add_argument("--mock-stop-at")
 
-    s = sub.add_parser("status", help="台帳を表示")
-    s.add_argument("task", nargs="?")
-    s.add_argument("--json", action="store_true")
+    sub.add_parser("status", help="タスク一覧（今あなたの番のものが分かる）")
 
-    for name, help_ in (("review", "段の出口で確定（--ok）または差し戻し（--reject）"), ("submit", "人が下書きした段を渡す"),
-                        ("answer", "確認待ちに回答"), ("approve", "最終承認（人だけ）")):
+    for name, help_ in (("ok", "AI の下書きを確定して次へ"), ("reject", "差し戻す（同じ段を AI がやり直す）"),
+                        ("results", "自分でやった段の結果や成果物を渡す"), ("answer", "AI の質問に答える"), ("approve", "最終承認（人だけ）")):
         a = sub.add_parser(name, help=help_)
         a.add_argument("task")
-        a.add_argument("--by", required=True, help="人の名前")
+        a.add_argument("--by", required=True, help="人の名前（記録に残る）")
+        a.add_argument("-m", "--note", default="", help="直した点・理由・観察")
         a.add_argument("--runtime", default="mock", choices=["mock", "managed"])
-        if name == "review":
-            m = a.add_mutually_exclusive_group(required=True)
-            m.add_argument("--ok", action="store_true")
-            m.add_argument("--reject", metavar="理由")
-            a.add_argument("--note", default="")
-        if name == "submit":
+        if name == "results":
             a.add_argument("--file", default="", help="成果物のパス")
-            a.add_argument("--note", default="")
         if name == "answer":
-            a.add_argument("--text", required=True)
+            a.add_argument("text", help="回答")
+    sh = sub.add_parser("show", help="1 タスクの詳細（履歴・決定・根拠）")
+    sh.add_argument("task")
+    sh.add_argument("--json", action="store_true")
 
     v = sub.add_parser("web", help="台帳の Web 表示")
     v.add_argument("--port", type=int, default=8790)
@@ -122,22 +118,25 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  mode {plan.mode}  AI 下書き {len(plan.draft)}/{len(PHASES)} 段  止まる出口 {', '.join(plan.stop_at)}  確認 {plan.reviewer}  予算 ${plan.budget_usd:.2f}")
             print(_fmt(run_event(ev, _runtime(args.runtime, args), ledger, project, plan=plan)))
         elif args.cmd == "status":
-            if args.task:
-                t = ledger.load(args.task)
-                if args.json:
-                    print(json.dumps(t.to_dict(), ensure_ascii=False, indent=2))
-                else:
-                    print(_fmt(t))
-                    for h in t.history:
-                        print(f"  {h['at']}  {h['phase']:<20} {h['status']:<8} {h.get('reason') or ''}")
-                    for d in t.decisions:
-                        print(f"  決定 {d['by']:<10} {d['kind']:<8} {d['phase']:<20} {d.get('note') or ''}")
+            for t in ledger.list():
+                print(_fmt(t))
+        elif args.cmd == "show":
+            t = ledger.load(args.task)
+            if args.json:
+                print(json.dumps(t.to_dict(), ensure_ascii=False, indent=2))
             else:
-                for t in ledger.list():
-                    print(_fmt(t))
-        elif args.cmd == "review":
-            print(_fmt(review(args.task, args.by, args.ok, ledger, _runtime(args.runtime, args), note=args.note or (args.reject or ""))))
-        elif args.cmd == "submit":
+                print(_fmt(t))
+                for ph, ev in t.evidence.items():
+                    print(f"  根拠 {ph:<20} " + " / ".join(ev))
+                for h in t.history:
+                    print(f"  {h['at']}  {h['phase']:<20} {h['status']:<8} {h.get('reason') or ''}")
+                for d in t.decisions:
+                    print(f"  決定 {d['by']:<10} {d['kind']:<8} {d['phase']:<20} {d.get('note') or ''}")
+        elif args.cmd == "ok":
+            print(_fmt(review(args.task, args.by, True, ledger, _runtime(args.runtime, args), note=args.note)))
+        elif args.cmd == "reject":
+            print(_fmt(review(args.task, args.by, False, ledger, _runtime(args.runtime, args), note=args.note)))
+        elif args.cmd == "results":
             print(_fmt(submit(args.task, args.by, ledger, _runtime(args.runtime, args), artifact=args.file, note=args.note)))
         elif args.cmd == "answer":
             print(_fmt(answer(args.task, args.by, args.text, ledger, _runtime(args.runtime, args))))

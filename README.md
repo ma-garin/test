@@ -24,8 +24,9 @@
 python3 -m venv venv && venv/bin/pip install -e .[dev]
 venv/bin/qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更"   # 開始時に 4 問（--mode M2 で省略可）
 venv/bin/qa-sentinel status                                                              # 台帳一覧（確定待ち／手渡し／回答待ち／承認待ち）
-venv/bin/qa-sentinel review T-0001 --by yuki --ok                                        # 段の出口で確定（--reject "理由" で差し戻し）
-venv/bin/qa-sentinel submit T-0001 --by yuki --file results.csv                          # 人が下書きした段を渡す
+venv/bin/qa-sentinel ok T-0001 --by yuki -m "ST-014 を直した"                            # AI の下書きを確定して次へ（reject で差し戻し）
+venv/bin/qa-sentinel results T-0001 --by yuki --file results.csv                         # 自分でやった段の結果を渡す
+venv/bin/qa-sentinel show T-0001                                                         # 履歴・根拠・誰が決めたか
 venv/bin/qa-sentinel approve T-0001 --by yuki                                            # 最終承認
 venv/bin/qa-sentinel web --port 8790                                                     # http://127.0.0.1:8790/ で同じ台帳を見る
 bash scripts/verify.sh
