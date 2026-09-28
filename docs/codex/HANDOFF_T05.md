@@ -10,7 +10,7 @@
 - **git 操作はしない**（add / commit / push / branch を実行しない）。検証と commit は人（Claude）が行う。
 - 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。
 - 推測で埋めない。分からないことは最後の報告に「質問」として書く。
-- 完了の基準は 1 つ: `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）の末尾が `ALL GREEN`。
+- 完了の基準は 1 つ: `python scripts/verify.py`の末尾が `ALL GREEN`。
 
 ## 1. リポジトリの地図（これだけ知っていればよい）
 
@@ -21,7 +21,7 @@ qa_sentinel/core/project.py         load_project(name, projects_dir="projects") 
 qa_sentinel/web/app.py              make_handler(ledger, runtime=None)。GET/POST の一覧はファイル冒頭コメント
 qa_sentinel/web/static/index.html   review フォームがある。OK ボタンの id は "ok"。根拠は t.evidence[t.phase] を「根拠」の下に描画済み
 tests/test_core.py                  既存テスト（壊さない）。特に test_m1_walks_all_phases_stops_at_swap_then_approve と test_web_api_review_submit_answer_approve は approve(...) を位置引数 3 つで呼んでいる
-scripts/verify.sh                   検証ゲート。py_compile → pytest → CLI スモーク → 文書存在
+scripts/verify.py                   検証ゲート。py_compile → pytest → CLI スモーク → 文書存在
 ```
 
 背景: qa-sentinel は「AI が下書き、人が直して OK」で QA 工程を回す（docs/05_協業モデル.md §2）。根拠の無い AI の下書きは確定画面に出してはいけない。確定・承認は必ず人の名前で decisions[] に残る。最終承認 `approve` は今まで機械判定なしで即 done にしていたが、ここに `check-approval` ゲートを通す。
@@ -88,7 +88,7 @@ scripts/verify.sh                   検証ゲート。py_compile → pytest → 
 
 ## 6. 完了条件
 
-- [ ] `bash scripts/verify.sh` の末尾が `ALL GREEN`
+- [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
 - [ ] 全テスト pass（既存の `test_m1_walks_all_phases_stops_at_swap_then_approve` と `test_web_api_review_submit_answer_approve` を含む）
 - [ ] 変更が「触るファイル」4 本（orchestrator.py, web/app.py, web/static/index.html, tests/test_core.py）に収まっている
 
@@ -103,7 +103,7 @@ scripts/verify.sh                   検証ゲート。py_compile → pytest → 
 ```
 結果: ALL GREEN / 失敗（どのステップ）
 変更したファイル: <パス>, <パス>
-verify.sh の末尾 3 行: …
+verify.py の末尾 3 行: …
 触った以外のファイル: なし / <パス>（理由）
 質問: なし / <内容>
 ```

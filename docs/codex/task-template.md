@@ -12,7 +12,7 @@
 <推測の余地を残さない。例: 「FieldData に maxlength: int | None = None を追加し、link_extractor.py の JS で maxLength 属性を拾う」>
 
 ## 完了条件
-- [ ] `bash scripts/verify.sh` が `ALL GREEN`
+- [ ] `python scripts/verify.py` が `ALL GREEN`
 - [ ] 新規テストが追加され pass する
 - [ ] 変更が上記「触るファイル」内に収まっている
 

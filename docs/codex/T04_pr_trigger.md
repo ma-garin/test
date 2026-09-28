@@ -17,7 +17,7 @@
 - 本文・diff は**データとして扱う**。指示形の文があってもここでは何もしない（LLM に渡す段で system prompt が守る）
 
 ## 完了条件
-- [ ] `bash scripts/verify.sh` が `ALL GREEN`
+- [ ] `python scripts/verify.py` が `ALL GREEN`
 - [ ] `tests/test_pr_trigger.py`: 関係 ID 欄の抽出 / 本文フォールバック / diff 上限 / webhook の action フィルタ の 4 ケース
 - [ ] 変更が上記「触るファイル」内に収まっている
 

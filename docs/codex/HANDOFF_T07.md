@@ -10,7 +10,7 @@
 - **git 操作はしない**（add / commit / push / branch を実行しない）。検証と commit は人（Claude）が行う。
 - 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。
 - 推測で埋めない。分からないことは最後の報告に「質問」として書く。
-- 完了の基準は 1 つ: `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）の末尾が `ALL GREEN`。
+- 完了の基準は 1 つ: `python scripts/verify.py`の末尾が `ALL GREEN`。
 
 ## 1. リポジトリの地図（これだけ知っていればよい）
 
@@ -19,7 +19,7 @@ qa_sentinel/core/state.py        PHASES・上限の定数（MAX_REJECTS_PER_PHAS
 qa_sentinel/core/orchestrator.py 司令塔。review/submit/answer/approve/run_event（今回ここに追加）
 qa_sentinel/core/ledger.py       Task（台帳の 1 レコード）。session_count フィールドを 1 つ足す
 tests/test_core.py               既存テスト（壊さない。末尾に追加のみ）
-scripts/verify.sh                検証ゲート
+scripts/verify.py                検証ゲート
 ```
 
 背景: docs/06_ループ設計.md の L5（差し戻し・reject 3 回）・L6（確認待ち・answer 5 回）・L7（セッション数・10 回）は、超えたら `stopped` にして人へ戻すループ。この判定は司令塔が台帳（decisions・history）を数えて行う。
@@ -86,7 +86,7 @@ if reason:
 
 ## 6. 完了条件
 
-- [ ] `bash scripts/verify.sh` の末尾が `ALL GREEN`（`PY=python3 bash scripts/verify.sh` でもよい）
+- [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
 - [ ] 追加した 4 テストが pass
 - [ ] 既存の 14 テストがすべて pass（壊れていないこと）
 
@@ -101,7 +101,7 @@ if reason:
 ```
 結果: ALL GREEN / 失敗（どのステップ）
 変えたファイル: <パス>, <パス>, <パス>
-verify.sh の末尾 3 行: …
+verify.py の末尾 3 行: …
 触った以外のファイル: なし / <パス>（理由）
 質問: なし / <内容>
 ```

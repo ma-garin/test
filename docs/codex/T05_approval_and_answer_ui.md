@@ -15,7 +15,7 @@
 - 人の名前（`by`）が空の送信は 400（既存の振る舞い）。AI が埋めない旨の文言は残す
 
 ## 完了条件
-- [ ] `bash scripts/verify.sh` が `ALL GREEN`
+- [ ] `python scripts/verify.py` が `ALL GREEN`
 - [ ] `tests/test_core.py` に approve の gate NG ケースと `/api/answer` の 1 ケースが追加され pass
 - [ ] 変更が上記「触るファイル」内に収まっている
 

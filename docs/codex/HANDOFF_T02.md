@@ -10,7 +10,7 @@
 - **git 操作はしない**（add / commit / push / branch を実行しない）。検証と commit は人（Claude）が行う。
 - 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。
 - 推測で埋めない。分からないことは最後の報告に「質問」として書く。
-- 完了の基準は 1 つ: `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）の末尾が `ALL GREEN`。
+- 完了の基準は 1 つ: `python scripts/verify.py`の末尾が `ALL GREEN`。
 
 ## 1. リポジトリの地図（これだけ知っていればよい）
 
@@ -22,7 +22,7 @@ qa_sentinel/core/ledger.py            Task（task.branch）。今回は触らな
 qa_sentinel/core/event.py             ChangeEvent。今回は触らない
 qa_sentinel/core/gates.py             run_gate(name, args, project, cwd=".", timeout=600) -> GateResult（T01 提供）
 qa_sentinel/agent/system_prompt.md    Managed Agents の system prompt（今回は触らない）
-scripts/verify.sh                     検証ゲート
+scripts/verify.py                     検証ゲート
 ```
 
 背景: 各段の終了条件は `run_gate`（exit code）が機械判定し、LLM に解釈させない。Managed Agents は 1 イベント = 1 セッションで段を進める側。予算超過・終了は `stopped` として人へ渡る。
@@ -80,7 +80,7 @@ SDK は `anthropic`（`pip install -e .[managed]`）。名前を推測しない�
 
 ## 6. 完了条件
 
-- [ ] `bash scripts/verify.sh` の末尾が `ALL GREEN`
+- [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
 - [ ] `python3 -m pytest -q tests/test_managed_runtime.py` が 4 passed
 - [ ] 変更が「触るファイル」3 本に収まっている（`runtime/managed_agents.py`, `agent/register.py`, `tests/test_managed_runtime.py`）
 
@@ -96,7 +96,7 @@ SDK は `anthropic`（`pip install -e .[managed]`）。名前を推測しない�
 ```
 結果: ALL GREEN / 失敗（どのステップ）
 作ったファイル: <パス>, <パス>
-verify.sh の末尾 3 行: …
+verify.py の末尾 3 行: …
 触った以外のファイル: なし / <パス>（理由）
 質問: なし / <内容>
 ```

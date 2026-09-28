@@ -1,6 +1,6 @@
 # Codex への指示書 — T08: Managed Agents 実機確認（予算 $1 で 1 段だけ回す）
 
-このファイル 1 枚で完結する。T01〜T07 が終わり `verify.sh` が ALL GREEN のあとに行う。
+このファイル 1 枚で完結する。T01〜T07 が終わり `verify.py` が ALL GREEN のあとに行う。
 
 ---
 
@@ -91,7 +91,7 @@ qa-sentinel show T-0002
 
 - [ ] 4-3 と 4-4 の期待をすべて満たす
 - [ ] `docs/codex/LIVE_CHECK_RESULT.md` に 4-1〜4-5 の出力（鍵を除く）と §5 の表の結果がある
-- [ ] `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）が `ALL GREEN`（修正した場合）
+- [ ] `python scripts/verify.py`が `ALL GREEN`（修正した場合）
 - [ ] 使った金額の合計を報告に書く
 
 ## 7. スコープ外（やらないこと）

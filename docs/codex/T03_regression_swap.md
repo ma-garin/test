@@ -17,7 +17,7 @@
 - 決定論的。LLM を呼ばない
 
 ## 完了条件
-- [ ] `bash scripts/verify.sh` が `ALL GREEN`
+- [ ] `python scripts/verify.py` が `ALL GREEN`
 - [ ] `tests/test_swap.py`: 失効と追記 / 追跡表の更新 / gate NG で戻る / 旧 CSV（列不足）の 4 ケース
 - [ ] 変更が上記「触るファイル」内に収まっている
 

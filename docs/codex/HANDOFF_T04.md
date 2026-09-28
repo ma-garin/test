@@ -10,7 +10,7 @@
 - **git 操作はしない**（add / commit / push / branch を実行しない）。検証と commit は人（Claude）が行う。
 - 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。
 - 推測で埋めない。分からないことは最後の報告に「質問」として書く。
-- 完了の基準は 1 つ: `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）の末尾が `ALL GREEN`。
+- 完了の基準は 1 つ: `python scripts/verify.py`の末尾が `ALL GREEN`。
 
 ## 1. リポジトリの地図（これだけ知っていればよい）
 
@@ -19,7 +19,7 @@ qa_sentinel/core/event.py        ChangeEvent（id, project, source, text, change
 qa_sentinel/triggers/nl.py       extract_ids(text) — ID 表記の正規表現抽出。今回そのまま再利用する
 qa_sentinel/cli.py               run サブコマンド。--nl / --event が排他グループ
 projects/library-loan/config.toml  [triggers.pr] に repo（GitHub の owner/repo）がある
-scripts/verify.sh                検証ゲート。py_compile → pytest → CLI スモーク → 文書存在
+scripts/verify.py                検証ゲート。py_compile → pytest → CLI スモーク → 文書存在
 ```
 
 背景: qa-sentinel は「AI が下書き、人が直して OK」で QA 工程を回す。ChangeEvent はすべてのトリガーが作る共通の入力で、LLM を使わずに作る。T04 は GitHub の PR（本文・diff）から ChangeEvent を作るトリガーを追加する。
@@ -85,7 +85,7 @@ def from_webhook(project: str, payload: dict) -> ChangeEvent | None: ...
 
 ## 6. 完了条件
 
-- [ ] `bash scripts/verify.sh` の末尾が `ALL GREEN`
+- [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
 - [ ] `python3 -m pytest -q tests/test_pr_trigger.py` が 4 passed
 - [ ] 変更が「触るファイル」3 本（`qa_sentinel/triggers/pr.py`、`qa_sentinel/cli.py` の `--pr` 追加部分のみ、`tests/test_pr_trigger.py`）に収まっている（`git status --short` で確認してよい。add はしない）
 
@@ -99,7 +99,7 @@ def from_webhook(project: str, payload: dict) -> ChangeEvent | None: ...
 ```
 結果: ALL GREEN / 失敗（どのステップ）
 作ったファイル: <パス>, <パス>
-verify.sh の末尾 3 行: …
+verify.py の末尾 3 行: …
 触った以外のファイル: なし / <パス>（理由）
 質問: なし / <内容>
 ```

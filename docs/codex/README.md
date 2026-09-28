@@ -7,7 +7,7 @@
 | Claude | 設計・タスク分割・レビュー・最終確認・commit |
 | Codex | 指示書の範囲内の実装（ファイル編集まで）。git 操作はしない |
 
-手順: `task-template.md` の型で書かれた T01〜T06 を 1 つずつ渡す。**渡すときは `HANDOFF_<番号>.md`（地図・指示・守ること・報告の形を 1 枚にしたもの）を使う。** 最初は `HANDOFF_T01.md`。完了条件は常に `bash scripts/verify.sh` が `ALL GREEN`。
+手順: `task-template.md` の型で書かれた T01〜T06 を 1 つずつ渡す。**渡すときは `HANDOFF_<番号>.md`（地図・指示・守ること・報告の形を 1 枚にしたもの）を使う。** 最初は `HANDOFF_T01.md`。完了条件は常に `python scripts/verify.py` が `ALL GREEN`。
 指示書に無いファイルを触らない。仕様の根拠は `docs/01_設計仕様.md` と `docs/05_協業モデル.md`（AI は作業ブランチにだけ書く・製品コードは提案まで・根拠を必ず付ける）。SDK の呼び出し形は同 §6 と、必要なら公式ドキュメント（Managed Agents）を読む。
 
 | # | タスク | 依存 |

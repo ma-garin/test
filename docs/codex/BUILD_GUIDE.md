@@ -15,9 +15,9 @@ RUN_ALL は §1〜§5 を Codex が自分で回す（verify → commit → 次�
 ## 0-b. 全体像
 
 ```
-[準備 §1]  clone → venv → verify.sh ALL GREEN（MVP が動くことを確認。LLM なし）
+[準備 §1]  clone → venv → verify.py ALL GREEN（MVP が動くことを確認。LLM なし）
 [実装 §2]  HANDOFF_T01 → T03 → T02 → T04 → T05 → T06 → T07 を 1 本ずつ Codex に貼る
-           各回: Codex が実装 → verify.sh ALL GREEN → 人（または Claude）が diff を見て commit
+           各回: Codex が実装 → verify.py ALL GREEN → 人（または Claude）が diff を見て commit
 [道具 §3]  （同梱済み）demo/library-loan/scripts/ に kit のスクリプト、docs/ に工程文書・ケース表
 [実機 §4]  HANDOFF_T08 で Managed Agents に接続し、予算 $1 で 1 段だけ回す
 [運用 §5]  自分のプロジェクトの env.md / config.toml を書き、4 問で始める
@@ -30,7 +30,7 @@ RUN_ALL は §1〜§5 を Codex が自分で回す（verify → commit → 次�
 ```bash
 git clone https://github.com/ma-garin/test qa-sentinel && cd qa-sentinel
 python3 -m venv venv && venv/bin/pip install -e .[dev]
-PY=venv/bin/python bash scripts/verify.sh        # 末尾 ALL GREEN
+venv/bin/python scripts/verify.py        # 末尾 ALL GREEN
 venv/bin/qa-sentinel run --project library-loan --nl "貸出上限を 3 冊に" --mode M2 --reviewer <あなたの名前>
 venv/bin/qa-sentinel status                        # 確定待ち が 1 行出れば MVP は動いている
 ```
@@ -45,7 +45,7 @@ venv/bin/qa-sentinel status                        # 確定待ち が 1 行出�
 
 1. `docs/codex/HANDOFF_Tnn.md` の全文を Codex のプロンプトに貼る（`codex exec` でも同じ。作業ディレクトリはリポジトリ直下）
 2. Codex は「触るファイル」だけを編集し、最後に §8 の 5 行報告を返す
-3. あなた（または Claude）が `PY=venv/bin/python bash scripts/verify.sh` を実行し ALL GREEN を確認
+3. あなた（または Claude）が `venv/bin/python scripts/verify.py` を実行し ALL GREEN を確認
 4. `git diff` を読む。指示書の「触るファイル」の外に変更があれば戻す
 5. `git add <パス>` → `git commit` → `git push`（Codex には git をさせない）
 

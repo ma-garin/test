@@ -10,7 +10,7 @@
 - **git 操作はしない**（add / commit / push / branch を実行しない）。検証と commit は人（Claude）が行う。
 - 「触るファイル」以外を編集しない。編集したくなったら、理由を最後の報告に書いて止まる。
 - 推測で埋めない。分からないことは最後の報告に「質問」として書く。
-- 完了の基準は 1 つ: `bash scripts/verify.sh`（Windows: `python scripts\verify.py`）の末尾が `ALL GREEN`。
+- 完了の基準は 1 つ: `python scripts/verify.py`の末尾が `ALL GREEN`。
 
 ## 1. リポジトリの地図（これだけ知っていればよい）
 
@@ -18,7 +18,7 @@
 qa_sentinel/core/gates.py        run_gate(name, args, project, cwd=".", timeout=600) -> GateResult（T01 で完成済み。今回は使うだけ）
 qa_sentinel/core/project.py      projects/<name>/config.toml を読む。Project.config["project"] に cases_csv・lifecycle_dir・branch がある
 projects/library-loan/config.toml [project] に lifecycle_dir・cases_csv・branch がある
-scripts/verify.sh                検証ゲート。py_compile → pytest → CLI スモーク → 文書存在
+scripts/verify.py                検証ゲート。py_compile → pytest → CLI スモーク → 文書存在
 tests/test_core.py, tests/test_gates.py 既存テスト（壊さない）
 ```
 
@@ -89,7 +89,7 @@ def swap(project: Project, impact_ids: list[str], new_cases: list[dict], cwd: st
 
 ## 6. 完了条件
 
-- [ ] `bash scripts/verify.sh` の末尾が `ALL GREEN`
+- [ ] `python scripts/verify.py` の末尾が `ALL GREEN`
 - [ ] `python3 -m pytest -q tests/test_swap.py` が 4 passed
 - [ ] 変更が「触るファイル」内（`qa_sentinel/core/swap.py`, `tests/test_swap.py`, `tests/fixtures/swap/*`）に収まっている（`git status --short` で確認してよい。add はしない）
 
@@ -104,7 +104,7 @@ def swap(project: Project, impact_ids: list[str], new_cases: list[dict], cwd: st
 ```
 結果: ALL GREEN / 失敗（どのステップ）
 作ったファイル: <パス>, <パス>
-verify.sh の末尾 3 行: …
+verify.py の末尾 3 行: …
 触った以外のファイル: なし / <パス>（理由）
 質問: なし / <内容>
 ```

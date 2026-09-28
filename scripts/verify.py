@@ -1,5 +1,5 @@
-"""qa-sentinel 検証ゲート（Python 版。Windows の cmd から `python scripts\\verify.py` で動く）。
-verify.sh と同じ検査: py_compile → pytest → CLI スモーク → 文書の存在 → デモ同梱物。
+"""qa-sentinel 検証ゲート（唯一の実装。verify.sh はこれを呼ぶだけ）。
+検査: py_compile → pytest → CLI スモーク → 文書の存在 → デモ同梱物。
 終了コード 0 かつ末尾 "ALL GREEN" のときだけ合格。bash が無い環境ではデモの .sh 検査を「未検査」として通す。
 """
 from __future__ import annotations
@@ -25,9 +25,9 @@ def fail(msg: str) -> None:
     sys.exit(1)
 
 
-def run(args: list[str], cwd: Path = ROOT, stdin_null: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                          stdin=subprocess.DEVNULL if stdin_null else None)
+def run(args: list[str], cwd: Path = ROOT, capture: bool = True) -> subprocess.CompletedProcess:
+    return subprocess.run(args, cwd=cwd, capture_output=capture, text=True, encoding="utf-8", errors="replace",
+                          stdin=subprocess.DEVNULL)
 
 
 def cli(tasks: Path, *args: str) -> str:
@@ -46,8 +46,7 @@ def main() -> None:
         fail("compile")
 
     step("2. pytest")
-    r = subprocess.run([PY, "-m", "pytest", "-q", "tests"], cwd=ROOT)
-    if r.returncode != 0:
+    if run([PY, "-m", "pytest", "-q", "tests"], capture=False).returncode != 0:
         fail("pytest")
 
     step("3. CLI スモーク（mock）")
