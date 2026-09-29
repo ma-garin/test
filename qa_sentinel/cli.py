@@ -149,13 +149,13 @@ def main(argv: list[str] | None = None) -> int:
                 for d in t.decisions:
                     print(f"  決定 {d['by']:<10} {d['kind']:<8} {d['phase']:<20} {d.get('note') or ''}")
         elif args.cmd == "ok":
-            print(_fmt(review(args.task, args.by, True, ledger, _runtime(args.runtime, args), note=args.note)))
+            print(_fmt(review(args.task, args.by, True, ledger, _runtime(args.runtime, args), note=args.note, projects_dir=args.projects)))
         elif args.cmd == "reject":
-            print(_fmt(review(args.task, args.by, False, ledger, _runtime(args.runtime, args), note=args.note)))
+            print(_fmt(review(args.task, args.by, False, ledger, _runtime(args.runtime, args), note=args.note, projects_dir=args.projects)))
         elif args.cmd == "results":
-            print(_fmt(submit(args.task, args.by, ledger, _runtime(args.runtime, args), artifact=args.file, note=args.note)))
+            print(_fmt(submit(args.task, args.by, ledger, _runtime(args.runtime, args), artifact=args.file, note=args.note, projects_dir=args.projects)))
         elif args.cmd == "answer":
-            print(_fmt(answer(args.task, args.by, args.text, ledger, _runtime(args.runtime, args))))
+            print(_fmt(answer(args.task, args.by, args.text, ledger, _runtime(args.runtime, args), projects_dir=args.projects)))
         elif args.cmd == "approve":
             print(_fmt(approve(args.task, args.by, ledger)))
         elif args.cmd == "web":
