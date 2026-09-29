@@ -13,7 +13,7 @@ from .core.plan import PRESETS, Plan, draft_until
 from .core.project import load_project
 from .core.state import PHASE_LABELS, PHASES
 from .runtime.mock import MockRuntime
-from .triggers import nl
+from .triggers import nl, pr
 
 _LAST = ".last-plan.json"  # 4 問の既定値（前回の選択）を台帳ディレクトリに置く
 
@@ -78,6 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     g = r.add_mutually_exclusive_group(required=True)
     g.add_argument("--nl", help="自然言語の変更指示")
     g.add_argument("--event", help="ChangeEvent の JSON ファイル")
+    g.add_argument("--pr", type=int, help="PR 番号")
     r.add_argument("--mode", choices=list(PRESETS), help="プリセット（4 問を飛ばす）")
     r.add_argument("--draft-until", help="この段まで AI が下書き（段名）")
     r.add_argument("--stop-at", help="出口で止まる段（カンマ区切り、または all）")
@@ -110,6 +111,14 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("--budget", type=float, default=5.0)
     d.add_argument("--runtime", default="mock", choices=["mock", "managed"])
 
+    w = sub.add_parser("watch", help="トラッカーを見張り、更新を検知したときだけ run_event に渡す（LLM なしのポーラー）")
+    w.add_argument("--project", required=True)
+    w.add_argument("--once", action="store_true", help="1 回だけポーリングして終わる")
+    w.add_argument("--runtime", default="mock", choices=["mock", "managed"])
+    w.add_argument("--mode", required=True, choices=list(PRESETS), help="プリセット")
+    w.add_argument("--reviewer", required=True, help="だれが確認するか")
+    w.add_argument("--budget", type=float, help="予算 USD")
+
     v = sub.add_parser("web", help="台帳の Web 表示")
     v.add_argument("--port", type=int, default=8790)
     v.add_argument("--host", default="127.0.0.1")
@@ -122,7 +131,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.cmd == "run":
             project = load_project(args.project, args.projects)
-            ev = nl.from_text(args.project, args.nl) if args.nl else ChangeEvent.from_dict(json.load(open(args.event, encoding="utf-8")))
+            if args.pr is not None:
+                ev = pr.from_github(args.project, project.config["triggers"]["pr"]["repo"], args.pr)
+            elif args.nl:
+                ev = nl.from_text(args.project, args.nl)
+            else:
+                ev = ChangeEvent.from_dict(json.load(open(args.event, encoding="utf-8")))
             plan = build_plan(args, ledger, project)
             print(f"  mode {plan.mode}  AI 下書き {len(plan.draft)}/{len(PHASES)} 段  止まる出口 {', '.join(plan.stop_at)}  確認 {plan.reviewer}  予算 ${plan.budget_usd:.2f}")
             print(_fmt(run_event(ev, _runtime(args.runtime, args), ledger, project, plan=plan)))
@@ -157,7 +171,27 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "answer":
             print(_fmt(answer(args.task, args.by, args.text, ledger, _runtime(args.runtime, args), projects_dir=args.projects)))
         elif args.cmd == "approve":
-            print(_fmt(approve(args.task, args.by, ledger)))
+            print(_fmt(approve(args.task, args.by, ledger, projects_dir=args.projects)))
+        elif args.cmd == "watch":
+            import time
+            from .triggers import tracker
+            project = load_project(args.project, args.projects)
+            state = tracker.TrackerState.load(args.tasks, args.project)
+            budget = args.budget or project.budget_usd
+            while True:
+                try:
+                    events = tracker.poll_once(project, state)
+                    if not events:
+                        print("polled: 0 events")
+                    for ev in events:
+                        plan = Plan.from_preset(args.mode, args.reviewer, budget)
+                        state.sessions_started += 1
+                        print(_fmt(run_event(ev, _runtime(args.runtime, args), ledger, project, plan=plan)))
+                finally:
+                    state.save(args.tasks, args.project)
+                if args.once:
+                    break
+                time.sleep(float(project.config.get("triggers", {}).get("tracker", {}).get("poll_minutes", 10)) * 60)
         elif args.cmd == "web":
             from .web.app import serve
             serve(ledger, args.host, args.port, args.projects)

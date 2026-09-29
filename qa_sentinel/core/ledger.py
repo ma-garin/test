@@ -34,6 +34,7 @@ class Task:
     decisions: list[dict] = field(default_factory=list)  # 人の確定・回答・承認（名前つき）
     nl: str = ""                                        # 変更の一文（画面の見出し）
     draft: dict = field(default_factory=dict)         # 段 → 下書きの中身（ケース表・手順・文）。無ければ artifacts のパスを見る
+    session_count: int = 0                              # runtime.start() を呼んだ回数（L7 の上限判定）
     created_at: str = field(default_factory=_now)
     updated_at: str = field(default_factory=_now)
 

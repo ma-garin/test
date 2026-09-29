@@ -10,7 +10,7 @@ import pytest
 from qa_sentinel.cli import main
 from qa_sentinel.core.event import ChangeEvent
 from qa_sentinel.core.ledger import Ledger, Task
-from qa_sentinel.core.orchestrator import answer, approve, review, run_event, submit
+from qa_sentinel.core.orchestrator import check_limits, answer, approve, review, run_event, submit
 from qa_sentinel.core.plan import PRESETS, Plan, draft_until
 from qa_sentinel.core.project import load_project
 from qa_sentinel.core.state import PHASES, next_phase, phases_from
@@ -274,3 +274,103 @@ def test_cli_demo_and_menu_item_5(ws, capsys, monkeypatch):
     monkeypatch.setattr("builtins.input", lambda *_: next(answers))
     assert main(["--tasks", str(ws / "tasks"), "--projects", str(ws / "projects")]) == 0
     assert "T-0002" in capsys.readouterr().out
+
+
+def test_limits_reject_3_times_stops(tmp_path):
+    led = Ledger(tmp_path / "tasks"); rt = MockRuntime()
+    t = _run(led, plan=Plan.from_preset("M4", "yuki", 5.0), rt=rt)
+    assert (t.phase, t.status) == ("test-design", "review")
+    for i in range(3):
+        t = review(t.task, "yuki", False, led, rt, note=f"r{i}")
+    assert t.status == "stopped" and t.reason.startswith("rejects_exceeded:test-design")
+
+
+def test_limits_answer_5_times_stops(tmp_path):
+    led = Ledger(tmp_path / "tasks"); rt = MockRuntime(blocked_at="test-design")
+    t = _run(led, plan=M1, rt=rt)
+    assert t.status == "blocked"
+    for i in range(5):
+        t = answer(t.task, "yuki", f"a{i}", led, rt)
+    assert t.status == "stopped" and t.reason.startswith("questions_exceeded")
+
+
+def test_limits_session_count_10_stops_before_start(tmp_path):
+    led = Ledger(tmp_path / "tasks"); rt = MockRuntime()
+    task = Task(task=led.new_id(), project="library-loan", event="e", plan=M1.to_dict(), session_count=10)
+    led.save(task)
+    t = run_event(nl.from_text("library-loan", "x"), rt, led, _project(), task=task)
+    assert t.status == "stopped" and t.reason.startswith("sessions_exceeded") and rt._n == 0
+
+
+def test_limits_do_not_touch_normal_flow(tmp_path):
+    led = Ledger(tmp_path / "tasks"); rt = MockRuntime()
+    t = _run(led, plan=M1, rt=rt)
+    t = review(t.task, "yuki", True, led, rt)
+    t = approve(t.task, "yuki", led)
+    assert t.status == "done" and t.session_count == 1 and check_limits(t) is None
+    assert any(h.get("session") for h in t.history)
+
+
+def test_approve_gate_missing_script_passes_and_ng_blocks(tmp_path, monkeypatch):
+    from qa_sentinel.core import gates
+    led = Ledger(tmp_path / "tasks"); rt = MockRuntime()
+    t = _run(led, plan=M1, rt=rt); t = review(t.task, "yuki", True, led, rt)
+    from qa_sentinel.core import project as projmod
+    real = projmod.load_project
+    def with_gate(name, d="projects"):
+        p = real(name, d); p.config["project"]["approval_gate"] = "check-approval"; return p
+    monkeypatch.setattr("qa_sentinel.core.orchestrator.load_project", with_gate)
+    monkeypatch.setattr(gates, "run_gate", lambda *a, **k: gates.GateResult("check-approval", 1, False, "approver 未記入"))
+    with pytest.raises(ValueError, match="check-approval NG"):
+        approve(t.task, "yuki", led, projects_dir=str(Path(__file__).parent.parent / "projects"))
+    assert led.load(t.task).status == "paused"
+    monkeypatch.setattr(gates, "run_gate", lambda *a, **k: gates.GateResult("check-approval", 127, False, "missing", skipped=True))
+    t = approve(t.task, "yuki", led, projects_dir=str(Path(__file__).parent.parent / "projects"))
+    assert t.status == "done" and t.decisions[-1]["gate"] == "missing"
+    t2 = _run(led, plan=M1, rt=rt); t2 = review(t2.task, "yuki", True, led, rt)
+    assert approve(t2.task, "yuki", led, gate=False).decisions[-1].get("gate") is None
+    monkeypatch.setattr("qa_sentinel.core.orchestrator.load_project", real)
+    t3 = _run(led, plan=M1, rt=rt); t3 = review(t3.task, "yuki", True, led, rt)
+    assert approve(t3.task, "yuki", led, projects_dir=str(Path(__file__).parent.parent / "projects")).decisions[-1]["gate"] == "skipped(config)"
+
+
+def test_web_diff_endpoint_never_raises(ws):
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+
+    from qa_sentinel.web.app import make_handler
+
+    led = Ledger(ws / "tasks"); _run(led)
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(led, MockRuntime(), projects_dir=str(ws / "projects")))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        u = f"http://127.0.0.1:{srv.server_address[1]}"
+        d = json.loads(urllib.request.urlopen(u + "/api/tasks/T-0001/diff").read())
+        assert set(d) == {"stat", "diff"}
+        try:
+            urllib.request.urlopen(u + "/api/tasks/T-9999/diff"); assert False
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        srv.shutdown()
+
+
+def test_swap_applied_at_regression_swap_when_enabled(tmp_path):
+    import shutil as _sh
+    root = Path(__file__).parent.parent
+    work = tmp_path / "work"; _sh.copytree(root / "demo" / "library-loan", work / "demo" / "library-loan")
+    _sh.copytree(root / "projects", work / "projects")
+    cfg = work / "projects" / "library-loan" / "config.toml"
+    cfg.write_text(cfg.read_text().replace("apply_swap = false", "apply_swap = true"))
+    led = Ledger(work / "tasks"); rt = MockRuntime()
+    import os
+    old = os.getcwd(); os.chdir(work)
+    try:
+        pr = load_project("library-loan", work / "projects")
+        t = run_event(nl.from_text("library-loan", "貸出上限を 5 冊から 3 冊に変更 REQ-F-003"), rt, led, pr, plan=Plan.from_preset("M1", "yuki", 5.0))
+    finally:
+        os.chdir(old)
+    assert t.phase == "regression-swap" and any(e.startswith("swap: ok") for e in t.evidence["regression-swap"])
+    csv_text = (work / "demo" / "library-loan" / "docs" / "test" / "system_test_cases.csv").read_text(encoding="utf-8")
+    assert "失効(" in csv_text and len(t.cases["added"]) >= 3

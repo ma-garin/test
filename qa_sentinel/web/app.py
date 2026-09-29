@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -30,6 +31,18 @@ def _runtime():
         return ManagedAgentsRuntime()
     from ..runtime.mock import MockRuntime
     return MockRuntime()
+
+
+def _git_diff(branch: str) -> dict:
+    """作業ブランチと本線の差分。git が無い・ブランチが無い・失敗はすべて {stat: None, diff: None}（例外を外に出さない）。"""
+    try:
+        stat = subprocess.run(["git", "diff", "--stat", f"main...{branch}"], cwd=".", capture_output=True, text=True, timeout=10)
+        body = subprocess.run(["git", "diff", f"main...{branch}"], cwd=".", capture_output=True, text=True, timeout=10)
+    except (FileNotFoundError, subprocess.SubprocessError, OSError):
+        return {"stat": None, "diff": None}
+    if stat.returncode != 0 or body.returncode != 0 or not branch:
+        return {"stat": None, "diff": None}
+    return {"stat": stat.stdout, "diff": body.stdout[: 200 * 1024]}
 
 
 def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
@@ -61,6 +74,12 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
                 self._json({"phases": list(PHASES), "labels": PHASE_LABELS, "gates": GATES, "presets": PRESETS})
             elif u.path == "/api/tasks":
                 self._json([t.to_dict() for t in ledger.list()])
+            elif u.path.startswith("/api/tasks/") and u.path.endswith("/diff"):
+                try:
+                    task = ledger.load(u.path.split("/")[3])
+                except FileNotFoundError:
+                    return self._json({"error": "not found"}, 404)
+                self._json(_git_diff(task.branch))
             elif u.path.startswith("/api/tasks/"):
                 try:
                     self._json(ledger.load(u.path.rsplit("/", 1)[1]).to_dict())
@@ -93,7 +112,7 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
                 elif u.path == "/api/answer":
                     t = answer(task, by, q.get("text", ""), ledger, rt, projects_dir=projects_dir)
                 elif u.path == "/api/approve":
-                    t = approve(task, by, ledger)
+                    t = approve(task, by, ledger, projects_dir=projects_dir)
                 else:
                     return self._json({"error": "not found"}, 404)
                 self._json(t.to_dict())
