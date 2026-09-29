@@ -15,6 +15,19 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _replace(src: Path, dst: Path, tries: int = 5) -> None:
+    """os.replace。Windows で別プロセスが読んでいる最中は PermissionError になるので短く待って再試行。"""
+    import time
+    for i in range(tries):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if i == tries - 1:
+                raise
+            time.sleep(0.05 * (i + 1))
+
+
 @dataclass
 class Task:
     task: str
@@ -72,7 +85,7 @@ class Ledger:
         p = self._path(t.task)
         tmp = p.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(t.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(tmp, p)  # 途中で落ちても壊れた JSON を残さない
+        _replace(tmp, p)  # 途中で落ちても壊れた JSON を残さない
         return p
 
     def load(self, task_id: str) -> Task:

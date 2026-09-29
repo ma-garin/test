@@ -58,7 +58,8 @@ class TrackerState:
         p.parent.mkdir(parents=True, exist_ok=True)
         tmp = p.with_name(p.name + ".tmp")  # *.json.tmp → os.replace（Ledger.save と同じ）
         tmp.write_text(json.dumps(asdict(self), ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(tmp, p)
+        from ..core.ledger import _replace
+        _replace(tmp, p)
 
 
 def _default_fetch(url: str, headers: dict) -> dict:

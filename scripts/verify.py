@@ -27,7 +27,7 @@ def fail(msg: str) -> None:
 
 def run(args: list[str], cwd: Path = ROOT, capture: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(args, cwd=cwd, capture_output=capture, text=True, encoding="utf-8", errors="replace",
-                          stdin=subprocess.DEVNULL)
+                          stdin=subprocess.DEVNULL, env={**os.environ, "PYTHONIOENCODING": "utf-8"})
 
 
 def cli(tasks: Path, *args: str) -> str:

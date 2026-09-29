@@ -117,7 +117,7 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
                 else:
                     return self._json({"error": "not found"}, 404)
                 self._json(t.to_dict())
-            except (KeyError, ValueError, FileNotFoundError) as e:
+            except (KeyError, ValueError, FileNotFoundError, OSError) as e:
                 self._json({"error": str(e)}, 400)
 
         def log_message(self, *a):

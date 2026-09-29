@@ -5,7 +5,7 @@ rem qa-sentinel を始める（Windows）。ダブルクリックで: 初回は�
 cd /d "%~dp0"
 if not exist venv\Scripts\python.exe (
   echo 初回の準備をしています（1〜2 分）...
-  python -m venv venv || (echo Python 3.11 以上を入れてください & pause & exit /b 1)
+  py -3 -m venv venv 2>nul || python -m venv venv || (echo Python 3.11 以上を入れてください（python.org。インストール時に「Add to PATH」を ON） & pause & exit /b 1)
   venv\Scripts\pip install -q -e .[dev]
 )
 set URL=http://127.0.0.1:8790/

@@ -362,7 +362,7 @@ def test_swap_applied_at_regression_swap_when_enabled(tmp_path):
     work = tmp_path / "work"; _sh.copytree(root / "demo" / "library-loan", work / "demo" / "library-loan")
     _sh.copytree(root / "projects", work / "projects")
     cfg = work / "projects" / "library-loan" / "config.toml"
-    cfg.write_text(cfg.read_text().replace("apply_swap = false", "apply_swap = true"))
+    cfg.write_text(cfg.read_text(encoding="utf-8").replace("apply_swap = false", "apply_swap = true"), encoding="utf-8")
     led = Ledger(work / "tasks"); rt = MockRuntime()
     import os
     old = os.getcwd(); os.chdir(work)
