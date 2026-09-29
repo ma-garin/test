@@ -1,4 +1,6 @@
 @echo off
+chcp 65001 >nul
+rem このファイルは UTF-8。日本語の echo を正しく出すため上でコードページを切り替える
 rem qa-sentinel を始める（Windows）。ダブルクリックで: 初回は準備 → 画面を起動 → ブラウザを開く
 cd /d "%~dp0"
 if not exist venv\Scripts\python.exe (
@@ -7,7 +9,7 @@ if not exist venv\Scripts\python.exe (
   venv\Scripts\pip install -q -e .[dev]
 )
 set URL=http://127.0.0.1:8790/
-if not exist tasks set URL=http://127.0.0.1:8790/guide
+dir /b tasks\*.json >nul 2>&1 || set URL=http://127.0.0.1:8790/guide
 rem 画面が立ち上がってからブラウザを開く（初回は使い方の画面）
 start "" /min cmd /c "timeout /t 2 >nul & start "" %URL%"
 venv\Scripts\python -m qa_sentinel.cli web --port 8790
