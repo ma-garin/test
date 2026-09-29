@@ -20,13 +20,6 @@ main{max-width:1100px}
 .toolbar{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;margin:var(--space-2) 0 var(--space-3);position:sticky;top:0;background:var(--color-bg);padding:var(--space-2) 0;z-index:var(--z-sticky)}
 .seg{flex-wrap:wrap}
 .seg .sc{display:inline-flex;align-items:center;gap:var(--space-1)}
-.idea-list{display:flex;flex-direction:column;gap:var(--space-4)}
-.idea-head{display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}
-.idea-head h3{margin:0}
-.idea .pick{margin-left:auto}
-.idea.chosen{border-color:var(--color-low)}
-.idea canvas{display:block;width:100%;height:260px;margin:var(--space-2) 0}
-.idea p{margin:0}
 </style>
 </head>
 <body>
@@ -37,7 +30,6 @@ main{max-width:1100px}
 <a href="#setup" aria-current="true">導入</a>
 <a href="#demo">デモ</a>
 <a href="#use">自分のプロジェクトで使う</a>
-<a href="#views">進行表示の型</a>
 <a href="#trouble">困ったら</a>
 </nav>
 </aside>
@@ -75,17 +67,7 @@ main{max-width:1100px}
 
 </section>
 
-<section id="views"><h2>4. 進行表示の型を選ぶ（5 つ）</h2>
-<p class="muted measure">同じ台帳を 5 つの業務ツールの型で描きます。下のボタンで場面を切り替え、気に入った型の「この型にする」を押すと台帳の画面がその型になります（このブラウザに保存）。</p>
-<div class="toolbar"><span class="muted">場面:</span>
-<div class="seg" role="group" aria-label="場面の切り替え">
-<button type="button" class="sc active" data-sc="ai">AI が作業中</button><button type="button" class="sc" data-sc="human">あなたの番</button><button type="button" class="sc" data-sc="ask">AI から質問</button><button type="button" class="sc" data-sc="done">完了</button><button type="button" class="sc" data-sc="stopped">止まった</button>
-<button type="button" class="sc" data-sc="auto"><span data-icon="play" data-icon-size="18" aria-hidden="true"></span>自動で一巡</button></div><span class="muted" id="chosen" aria-live="polite"></span></div>
-<div id="ideas" class="idea-list"></div>
-
-</section>
-
-<section id="trouble"><h2>5. 困ったら</h2>
+<section id="trouble"><h2>4. 困ったら</h2>
 <div class="table-wrap"><table class="table"><thead><tr><th>症状</th><th>対処</th></tr></thead><tbody>
 <tr><td><code>start.bat</code> で「Python 3.11 以上を入れてください」</td><td>python.org から 3.11 以上を入れて、もう一度</td></tr>
 <tr><td>画面が開かない</td><td>ブラウザで <code>http://127.0.0.1:8790/</code></td></tr>
@@ -96,22 +78,8 @@ main{max-width:1100px}
 </main>
 </div>
 
-<script src="/static/progress-views.js"></script>
 <script src="/static/ds/icons.js"></script>
 <script>
-const IDEAS=[['workflow','案 1 ワークフロー画面','参考: n8n / Power Automate','段を箱でつなぐ。今どこか・どこで止まるかが一目。複数タスクは苦手'],
-['pipeline','案 2 パイプライン＋ログ','参考: GitHub Actions / GitLab CI','段の並びと実行ログ。何をしているかを文字で追える。エンジニア向け'],
-['swimlane','案 3 スイムレーン工程図','参考: BPMN / 業務フロー図','AI／あなた／システムのレーン。誰の番かが分かる。監査・説明向け'],
-['kanban','案 4 かんばん','参考: Jira / Trello','タスクを列で管理。複数タスクをまとめて見る。1 タスクの中身は薄い'],
-['timeline','案 5 タイムライン＋根拠','参考: Devin / Cursor Agent','時系列と根拠パネル。決定の記録を見返す。全体像は上の帯だけ']];
-const LABEL={ai:'',human:'直して OK',ask:'延滞中の利用者は新規貸出できますか？',done:'',stopped:'予算超過 $5.00'};
-document.getElementById('ideas').innerHTML=IDEAS.map(([k,t,r,c])=>`<section class="card idea" id="i-${k}"><div class="idea-head"><h3>${t}</h3><span class="muted">${r}</span><button type="button" class="btn pick" data-v="${k}">この型にする</button></div><canvas data-v="${k}" role="img" aria-label="${t}"></canvas><p class="muted">${c}</p></section>`).join('');
-document.querySelectorAll('canvas[data-v]').forEach(c=>PV.mount(c,c.dataset.v));
-function setScene(m){PV.state.mode=m;PV.state.label=LABEL[m];PV.state.cur=m==='done'?9:m==='ask'?3:4;PV.state.cost.spent=m==='stopped'?5:m==='done'?3.2:1.6;document.querySelectorAll('.sc').forEach(b=>b.classList.toggle('active',b.dataset.sc===m))}
-let auto=null;document.querySelectorAll('.sc').forEach(b=>b.onclick=()=>{clearInterval(auto);if(b.dataset.sc==='auto'){const seq=['ai','human','ai','ask','ai','done'];let i=0;setScene(seq[0]);b.classList.add('active');auto=setInterval(()=>{i=(i+1)%seq.length;setScene(seq[i]);b.classList.add('active')},2200)}else setScene(b.dataset.sc)});
-function mark(){document.querySelectorAll('.idea').forEach(s=>s.classList.toggle('chosen',s.id==='i-'+PV.current));document.getElementById('chosen').innerHTML=`今の型: <span class="badge badge-low">${PV.views[PV.current].name}</span>`}
-document.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{PV.use(b.dataset.v);mark();b.textContent='台帳の画面に反映しました';setTimeout(()=>b.textContent='この型にする',1800)});
-setScene('ai');mark();
 const navLinks=[...document.querySelectorAll('.sidenav a')];
 function spy(){let cur=navLinks[0];navLinks.forEach(a=>{const t=document.querySelector(a.getAttribute('href'));if(t&&t.getBoundingClientRect().top<=window.innerHeight/3)cur=a});navLinks.forEach(a=>{if(a===cur)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current')})}
 window.addEventListener('scroll',spy,{passive:true});spy();

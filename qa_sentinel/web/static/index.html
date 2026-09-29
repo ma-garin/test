@@ -27,16 +27,32 @@
 .cost-bar { min-width: 90px; }
 .cost-bar .score-fill.warn { background: var(--color-high); } .cost-bar .score-fill.over { background: var(--color-critical); }
 
-.detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-4); align-items: start; }
-.detail-main, .detail-side { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+/* PC 専用・縦スクロールなし: 本文は画面高に収め、表と下書きだけカード内でスクロール */
+html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはスクロールしない */
+.app { height: 100dvh; } .app-body { min-height: 0; flex: 1 1 auto; } .maincol { min-height: 0; }
+.app-content { overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+#v-list, #v-detail { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: var(--space-3); }
+.kpi-row { margin-bottom: 0; } .filter-row { margin-bottom: 0; }
+.list-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: var(--space-3) var(--space-4); }
+.list-card .table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.detail-grid { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: var(--space-3); flex: 1 1 auto; min-height: 0; }
+.detail-main, .detail-side { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; }
+.flow-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: var(--space-3) var(--space-4); }
+.side-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.side-row .card { padding: var(--space-3) var(--space-4); } .side-row .card > h2 { font-size: var(--text-md); }
+.tabs-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: var(--space-3) var(--space-4); }
+.tabs-card .card-head { margin-bottom: var(--space-2); }
 .action-card .field { margin-top: var(--space-2); }
+.action-card .fields { display: grid; grid-template-columns: 200px 1fr; gap: var(--space-3); }
+.action-card .textarea { min-height: var(--tap-min); }
+.action-card > div { flex: 1; min-width: 0; }
 .action-card .actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
 .action-card .lead { margin: 0 0 var(--space-2); font-size: var(--text-lg); font-weight: 700; display: flex; align-items: center; gap: var(--space-2); }
-.flowc { display: block; width: 100%; height: 270px; }
+.flowc { display: block; width: 100%; flex: 1 1 auto; min-height: 160px; }
 .card-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
 .card-head h2 { margin: 0; font-size: var(--text-lg); }
 .card-head .spacer { flex: 1; }
-.tabbody { min-height: 120px; }
+.tabbody { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .cases td.id { font-family: var(--font-mono); white-space: nowrap; }
 .cases tr.retired td { color: var(--color-text-disabled); text-decoration: line-through; }
 .cases tr.new td { background: var(--color-low-bg); }
@@ -62,14 +78,11 @@
 .help-note { font-size: var(--text-sm); color: var(--color-text-secondary); margin: var(--space-2) 0 0; }
 .icon-inline { display: inline-flex; vertical-align: -3px; }   /* 3px: 文字の基線合わせ token-exempt */
 
-@media (max-width: 1366px) { .detail-grid { grid-template-columns: minmax(0, 1fr) 300px; } }
-@media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } .seg { overflow-x: auto; max-width: 100%; } .seg > button { white-space: nowrap; } .app-topbar .search { display: none; } .modes { grid-template-columns: 1fr; } .row2 { grid-template-columns: 1fr; } .app-globalbar .field-inline { display: none; } }
 </style>
 </head>
 <body>
 <div class="app" id="app">
   <header class="app-globalbar">
-    <button class="btn btn--ghost" id="menu" type="button" aria-label="メニューを開く"><span data-icon="grid-view" data-icon-size="18" aria-hidden="true"></span></button>
     <span class="brand-mark" aria-hidden="true">QS</span><span class="brand">qa-sentinel</span>
     <span class="muted label-text">AI が下書き、あなたが直して確定する</span>
     <span class="spacer"></span>
@@ -106,7 +119,7 @@
             <div class="seg" id="flt"><button type="button" data-f="mine" class="active">あなたの番</button><button type="button" data-f="ai">AI 作業中</button><button type="button" data-f="done">完了</button><button type="button" data-f="stopped">止まった</button><button type="button" data-f="all">すべて</button></div>
             <span class="muted" id="lst-sub">あなたの番のものが上に来ます。5 秒ごとに更新</span>
           </div>
-          <div class="card">
+          <div class="card list-card">
             <div class="table-wrap"><table class="table"><thead><tr><th>タスク</th><th>進み具合</th><th>状態</th><th>確認者</th><th>予算</th><th>理由・次にすること</th></tr></thead><tbody id="rows"></tbody></table></div>
             <div class="empty-state" id="welcome" hidden>
               <span class="empty-state-icon" data-icon="lightbulb" data-icon-size="28" aria-hidden="true"></span>
@@ -156,7 +169,6 @@ const SEV={review:'high',handoff:'high',paused:'high',blocked:'critical',stopped
 const NEXT={review:'下書きを見て確定か差し戻し',handoff:'自分でやって結果を渡す',blocked:'質問に答えると再開',paused:'名前を入れて承認',running:'待つだけ（止まったら受信箱に出ます）',done:'',stopped:'進め方を変えて始め直す',queued:''};
 const MODES={M1:['全部 AI','最後の承認だけあなた'],M2:['準備まで AI、実行は自分','いつもの使い方。設計と入替の出口で確認'],M3:['段ごとに毎回確認','9 段すべての出口で止まる'],M4:['設計まで AI','実装から先は自分でやる'],M5:['実行と分析だけ AI','設計はあなた、動かすのは AI'],M6:['古いテストの入れ替えだけ AI','手作業の後始末を AI に'],M7:['自分で作って AI に見てもらう','あなたが下書き、AI がレビュー'],M8:['ペア','一段ごとに交互に']};
 const FL=[['test-plan','計画'],['test-analysis','基本設計'],['test-strategy','詳細設計'],['test-design','設計'],['test-implementation','準備'],['test-execution','実行'],['defect-analysis','原因'],['test-completion','報告'],['regression-swap','入替'],['final','承認']];
-const VIEW_HELP={workflow:'段を箱でつなぐ。今どこか・どこで止まるかが一目',pipeline:'段の並びと実行ログ。何をしているかを文字で追う',swimlane:'AI／あなた／システムのレーン。誰の番かが分かる',kanban:'列で管理。複数タスクをまとめて見る',timeline:'時系列と根拠。決定の記録を見返す'};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ico=(n,s=16)=>`<span class="icon-inline" data-icon="${n}" data-icon-size="${s}" aria-hidden="true"></span>`;
@@ -174,7 +186,6 @@ try{$('me').value=localStorage.getItem('qa-name')||''}catch(e){}
 $('me').addEventListener('change',()=>{try{localStorage.setItem('qa-name',me())}catch(e){}});
 $('theme').addEventListener('click',()=>{const r=document.documentElement;const dark=r.dataset.theme==='dark'||(!r.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('qa-theme',r.dataset.theme)}catch(e){}});
 try{const th=localStorage.getItem('qa-theme');if(th)document.documentElement.dataset.theme=th}catch(e){}
-$('menu').addEventListener('click',()=>$('sidebar').classList.toggle('open'));
 $('collapse').addEventListener('click',()=>$('sidebar').classList.toggle('collapsed'));
 
 /* ===================== list ===================== */
@@ -221,24 +232,24 @@ async function show(id,silent){
   const [s,b]=money(t),pct=b?Math.min(100,s/b*100):0;const ev=t.evidence[t.phase]||[];
   const nm=`<div class="field"><label for="by">あなたの名前</label><input class="input" id="by" value="${esc(t.plan.reviewer||me())}"></div>`;
   let act='';
-  if(t.status==='review'){const noEv=!ev.length;act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} の下書きができました</p><p class="muted">下書き（下の「下書き」）を見て、直した点を書いて確定します。納得できなければ差し戻すと、同じ段を AI がやり直します。</p>${noEv?'<div class="banner-err">根拠なし: AI の下書きに根拠が付いていないため確定できません。差し戻してください。</div>':''}${nm}<div class="field"><label for="note">直した点・差し戻しの理由</label><textarea class="textarea" id="note" rows="2"></textarea></div><div class="actions"><button class="btn" id="ok" type="button" ${noEv?'disabled':''}>${ico('check-circle')}確定して次の段へ</button><button class="btn" id="rej" type="button">${ico('refresh')}差し戻す</button></div></div></div>`}
-  else if(t.status==='handoff')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} はあなたがやります</p><p class="muted">AI が用意した手順（下の「下書き」）で自分でやり、成果物のパスと見たままを入れて渡します。推測は書きません。</p>${nm}<div class="field"><label for="file">成果物のパス</label><input class="input" id="file" placeholder="例: results/T-0001.csv"></div><div class="field"><label for="note">見たまま</label><textarea class="textarea" id="note" rows="2" placeholder="例: 12 件 PASS、1 件 FAIL: ST-014 の期待値が違う"></textarea></div><div class="actions"><button class="btn" id="sub" type="button">${ico('arrow-forward')}結果を渡して次の段へ</button></div></div></div>`;
-  else if(t.status==='blocked')act=`<div class="callout callout--critical action-card"><div><p class="lead">${ico('help',20)}AI から質問</p><p>${esc(t.reason||'')}</p>${nm}<div class="field"><label for="note">回答（仕様として決めたこと）</label><textarea class="textarea" id="note" rows="2"></textarea></div><div class="actions"><button class="btn" id="ans" type="button">${ico('play')}回答して再開する</button></div></div></div>`;
+  if(t.status==='review'){const noEv=!ev.length;act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} の下書きができました</p><p class="muted">下書き（下の「下書き」）を見て、直した点を書いて確定します。納得できなければ差し戻すと、同じ段を AI がやり直します。</p>${noEv?'<div class="banner-err">根拠なし: AI の下書きに根拠が付いていないため確定できません。差し戻してください。</div>':''}<div class="fields">${nm}<div class="field"><label for="note">直した点・差し戻しの理由</label><textarea class="textarea" id="note" rows="1"></textarea></div></div><div class="actions"><button class="btn" id="ok" type="button" ${noEv?'disabled':''}>${ico('check-circle')}確定して次の段へ</button><button class="btn" id="rej" type="button">${ico('refresh')}差し戻す</button></div></div></div>`}
+  else if(t.status==='handoff')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} はあなたがやります</p><p class="muted">AI が用意した手順（下の「下書き」）で自分でやり、成果物のパスと見たままを入れて渡します。推測は書きません。</p><div class="fields">${nm}<div class="field"><label for="file">成果物のパス</label><input class="input" id="file" placeholder="例: results/T-0001.csv"></div></div><div class="field"><label for="note">見たまま</label><textarea class="textarea" id="note" rows="1" placeholder="例: 12 件 PASS、1 件 FAIL: ST-014 の期待値が違う"></textarea></div><div class="actions"><button class="btn" id="sub" type="button">${ico('arrow-forward')}結果を渡して次の段へ</button></div></div></div>`;
+  else if(t.status==='blocked')act=`<div class="callout callout--critical action-card"><div><p class="lead">${ico('help',20)}AI から質問</p><p>${esc(t.reason||'')}</p><div class="fields">${nm}<div class="field"><label for="note">回答（仕様として決めたこと）</label><textarea class="textarea" id="note" rows="1"></textarea></div></div><div class="actions"><button class="btn" id="ans" type="button">${ico('play')}回答して再開する</button></div></div></div>`;
   else if(t.status==='paused')act=`<div class="callout callout--low action-card"><div><p class="lead">${ico('check-circle',20)}最終承認 — すべての段が終わりました</p><p class="muted">追加 ${t.cases.added.length} 件・失効 ${t.cases.retired.length} 件。AI は承認欄を埋めません。あなたの名前で記録されます。</p>${nm}<div class="actions"><button class="btn" id="ap" type="button">${ico('check-circle')}承認する</button></div></div></div>`;
   else if(t.status==='running')act=`<div class="callout callout--info action-card"><div><p class="lead"><span class="spin">${ico('progress-activity',20)}</span>AI が ${label(t.phase)} を作業中</p><p class="muted">止まる出口: ${(t.plan.stop_at||[]).map(label).join('・')||'最後だけ'}。あなたの番になると受信箱に出ます。</p></div></div>`;
   else if(t.status==='stopped')act=`<div class="callout callout--critical action-card"><div><p class="lead">${ico('stop',20)}止まりました</p><p>${esc(t.reason||'')}</p><p class="muted">台帳は残っています。進め方（モード・予算）を変えて始め直せます。</p><div class="actions"><button class="btn" id="redo" type="button">${ico('refresh')}同じ変更で始め直す</button></div></div></div>`;
   else if(t.status==='done')act=`<div class="callout callout--low action-card"><div><p class="lead">${ico('check-circle',20)}完了</p><dl class="kv"><dt>追加したケース</dt><dd>${t.cases.added.join(', ')||'-'}</dd><dt>失効したケース</dt><dd>${t.cases.retired.join(', ')||'-'}</dd><dt>あなたが決めた回数</dt><dd>${t.decisions.length}</dd><dt>作業ブランチ</dt><dd class="mono">${esc(t.branch||'-')}</dd></dl></div></div>`;
   const cost=`<div class="card"><h2>費用</h2><div class="score-card"><span class="score-value">$${s.toFixed(2)} <span class="muted score-label">/ 上限 $${b.toFixed(2)}</span></span><div class="score-bar cost-bar"><span class="score-fill ${pct>=100?'over':pct>75?'warn':''}" style="width:${pct}%"></span></div><span class="score-label">${t.session.ended?'AI は待機中（費用は増えません）':'セッション実行中'} · 決定 ${t.decisions.length} 回 · <span class="mono">${esc(t.session.id||'-')}</span></span></div></div>`;
-  const plan=`<div class="card"><h2>進め方 <span class="badge badge-new">${t.mode}</span></h2><dl class="kv"><dt>AI が下書き</dt><dd>${(t.plan.draft||[]).length} / ${meta.phases.length} 段</dd><dt>止まる出口</dt><dd>${(t.plan.stop_at||[]).map(label).join('・')||'最後だけ'}</dd><dt>あなたがやる段</dt><dd>${meta.phases.filter(p=>!(t.plan.draft||[]).includes(p)).map(label).join('・')||'なし'}</dd><dt>確認者</dt><dd>${esc(t.plan.reviewer||'-')}</dd><dt>影響</dt><dd>${t.impact.join(', ')||'-'}</dd><dt>作業ブランチ</dt><dd class="mono">${esc(t.branch||'-')}</dd></dl></div>`;
+  const plan=`<div class="card"><h2>進め方 <span class="badge badge-new">${t.mode}</span></h2><dl class="kv"><dt>AI が下書き</dt><dd>${(t.plan.draft||[]).length} / ${meta.phases.length} 段</dd><dt>止まる出口</dt><dd>${(t.plan.stop_at||[]).map(label).join('・')||'最後だけ'}</dd><dt>あなたがやる段</dt><dd>${meta.phases.filter(p=>!(t.plan.draft||[]).includes(p)).map(label).join('・')||'なし'}</dd><dt>影響</dt><dd>${t.impact.join(', ')||'-'}</dd></dl></div>`;
   if(first||!d.querySelector('#flow-canvas')){
     d.innerHTML=`<div class="filter-row">${badge(t)}<span class="muted">${esc(t.project)} · event <span class="mono">${esc(t.event)}</span></span></div>
     <div class="detail-grid"><div class="detail-main">
       <div id="act"></div>
-      <div class="card"><div class="card-head"><h2>進行</h2><span class="spacer"></span><div class="seg" id="view-sel" role="group" aria-label="表示の型"></div></div><canvas id="flow-canvas" class="flowc" role="img" aria-label="進行表示"></canvas><p class="help-note" id="view-help"></p></div>
-      <div class="card"><div class="card-head"><div class="seg" id="tabs" role="tablist"><button type="button" role="tab" data-t="draft">下書き</button><button type="button" role="tab" data-t="ev">根拠と差分</button><button type="button" role="tab" data-t="log">記録</button></div></div><div class="tabbody" id="tabbody"></div></div>
-    </div><div class="detail-side" id="side"></div></div>`;
-    const c=$('flow-canvas');PV.mount(c);const sel=$('view-sel');sel.innerHTML=Object.entries(PV.views).map(([k,v])=>`<button type="button" data-v="${k}" class="${k===PV.current?'active':''}">${v.name}</button>`).join('');
-    sel.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{PV.use(b.dataset.v);sel.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));$('view-help').textContent=VIEW_HELP[b.dataset.v]}));$('view-help').textContent=VIEW_HELP[PV.current];
+      <div class="card flow-card"><div class="card-head"><h2>進行（AI／あなた／システムのレーン）</h2></div><canvas id="flow-canvas" class="flowc" role="img" aria-label="進行表示: 各段が AI・あなた・システムのどのレーンにあるか"></canvas></div>
+    </div><div class="detail-side"><div class="side-row" id="side"></div>
+      <div class="card tabs-card"><div class="card-head"><div class="seg" id="tabs" role="tablist"><button type="button" role="tab" data-t="draft">下書き</button><button type="button" role="tab" data-t="ev">根拠と差分</button><button type="button" role="tab" data-t="log">記録</button></div></div><div class="tabbody" id="tabbody"></div></div>
+    </div></div>`;
+    PV.mount($('flow-canvas'));
     d.querySelectorAll('#tabs button').forEach(b=>{b.classList.toggle('active',b.dataset.t===tab);b.setAttribute('aria-selected',String(b.dataset.t===tab));b.addEventListener('click',()=>{tab=b.dataset.t;d.querySelectorAll('#tabs button').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b))});renderTab(t)})});
   }
   $('act').innerHTML=act;$('side').innerHTML=cost+plan;
