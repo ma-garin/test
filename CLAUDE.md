@@ -6,7 +6,7 @@
 - 状況報告は「項目／状態／次」の表 1 つ。変更報告は Before/After 表 1 つ
 - 残タスクがあるうちは「終わった」と言わない。残りを表に出す
 - 質問は閉じた形（選択肢＋推奨＋影響・コスト・リスク各 1 句）。専門用語は平易に言い換える
-- **実測は `python scripts/clock.py` の出力を貼る以外に書かない。** 着手時に `clock.py start "<作業名>" --est N`、完了時に `clock.py end --cp "X→Y"`。出力に無い数字・時刻を報告に書いたら捏造とみなす。計測できなかったときは「未計測」。時刻はすべて JST
+- **実測は `python scripts/clock.py` の出力を貼る以外に書かない。** 着手時に `clock.py start "<作業名>" --est N`、完了時に `clock.py end --cp "X→Y"`。出力に無い数字・時刻を報告に書いたら捏造とみなし、Stop hook `scripts/report_gate.py` が終了を拒否する（保守者が settings.json に登録）。計測できなかったときは「未計測」。時刻はすべて JST
 
 ## 作業
 

@@ -37,6 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("start"); s.add_argument("name"); s.add_argument("--est", type=int, help="見積（分）")
     e = sub.add_parser("end"); e.add_argument("--cp", default="", help="CP往復 見積→実績（例 12→14）")
     sub.add_parser("show")
+    v = sub.add_parser("verify", help="報告文（stdin）の『実測:』行が計測記録と一致するか。不一致なら exit 2"); v.add_argument("--text", help="stdin の代わり")
     a = ap.parse_args(argv)
     d = _load()
     now = datetime.now(timezone.utc)
@@ -56,9 +57,17 @@ def main(argv: list[str] | None = None) -> int:
             line += f" / CP往復: {a.cp}"
         if est and not (0.67 <= mins / est <= 1.5):
             line += f" ※比 {mins / est:.2f}: 原因を 1 行添える"
-        d["done"].append({**o, "end": now.isoformat(), "mins": mins}); d["open"] = None
+        d["done"].append({**o, "end": now.isoformat(), "mins": mins, "line": line}); d["open"] = None
         _save(d)
         print(line)
+    elif a.cmd == "verify":
+        text = a.text if a.text is not None else sys.stdin.read()
+        recorded = {r.get("line", "") for r in d["done"]}
+        bad = [ln.strip() for ln in text.splitlines() if "実測:" in ln and "未計測" not in ln and not any(rec and rec in ln for rec in recorded)]
+        if bad:
+            print("実測の行が計測記録（clock.py end の出力）と一致しない:\n  " + "\n  ".join(bad) + "\n→ clock.py end の出力をそのまま貼るか、「実測: 未計測」と書く")
+            return 2
+        print("実測の行は計測記録と一致（または未記載）")
     else:
         for r in d["done"][-20:]:
             print(f"{_fmt(r['start'])}→{_fmt(r['end'])} JST  {r['mins']:>3} 分  見積 {r.get('est') or '-'}  {r['name']}")
