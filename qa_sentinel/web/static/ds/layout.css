@@ -1,0 +1,104 @@
+/* layout.css — AIDD Design System の骨格（実物）
+ * 規律: skills/design-system/SKILL.md「骨格」／ 値: templates/tokens.css
+ * 前提: templates/tokens.css を先に読み込む。直値は幅・高さ・ブレークポイントのみ（token-exempt）。
+ *
+ *   ┌─────────────────────────────┐
+ *   │ .app-globalbar（横いっぱい）   │  製品全体に効くもの（製品名・テナント・ユーザーメニュー）
+ *   ├───────┬─────────────────────┤
+ *   │ .side │ .app-topbar         │  今どこにいるか（パンくず・ページタイトル・主操作1つ）
+ *   │ bar   ├─────────────────────┤
+ *   │       │ .app-content        │  中身。ここだけスクロール
+ *   └───────┴─────────────────────┘
+ *
+ * 2 種類の骨格を持つ:
+ *   A) .app（globalbar + sidebar + topbar + content）… 管理画面・SaaS 型。既定
+ *   B) .layout-2pane（sidenav + main）… 軽量ツール。サイドバーが常に見えていなくてよい場合
+ */
+
+/* ── A) app 骨格 ── */
+.app { display: grid; grid-template-rows: auto 1fr; grid-template-columns: minmax(0, 1fr); min-height: 100dvh; }
+.app > * { min-width: 0; }   /* グリッド項目の min-width:auto を切る。globalbar の nowrap な中身が画面幅を押し広げない */
+.app-globalbar {
+  display: flex; align-items: center; gap: var(--space-4);
+  height: 44px; padding: 0 var(--space-4);
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm); white-space: nowrap; overflow: hidden;   /* 高さ固定なので折り返さない */
+}
+.app-globalbar > * { flex: 0 1 auto; min-width: 0; }
+.app-globalbar .spacer { flex: 1 1 0; }
+.app-globalbar .brand { font-weight: 700; color: var(--color-text); }
+.app-globalbar .spacer { flex: 1; }
+
+.app-body { display: flex; min-height: 0; }
+
+.sidebar {
+  flex: 0 0 240px; width: 240px; min-height: 0;
+  display: flex; flex-direction: column;
+  background: var(--color-surface); border-right: 1px solid var(--color-border);
+  position: sticky; top: 0; height: calc(100dvh - 44px); overflow-y: auto;   /* 本文と別にスクロール */
+  transition: width var(--motion-normal), flex-basis var(--motion-normal);
+}
+.sidebar-head { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-divider); }
+.sidebar nav { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2); }   /* 2px: 項目間のヘアライン token-exempt */
+.sidebar nav a {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 0 var(--space-3); min-height: 40px; border-radius: var(--radius-sm);
+  color: var(--color-text); text-decoration: none; font-size: var(--text-base);
+  border-left: 3px solid transparent;   /* カレントは色・背景・帯の複数で示す（色だけにしない） */
+}
+.sidebar nav a:hover { background: var(--color-surface-2); }
+.sidebar nav a[aria-current="page"] { background: var(--color-primary-light); color: var(--color-primary-dark); border-left-color: var(--color-primary); font-weight: 600; }
+.sidebar nav a .icon { flex: none; }
+.sidebar.collapsed { flex-basis: 72px; width: 72px; }
+.sidebar.collapsed .label-text, .sidebar.collapsed .sidebar-head .brand { display: none; }
+.sidebar.collapsed nav a { justify-content: center; padding: 0; }
+
+.maincol { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.app-topbar {
+  display: flex; align-items: center; gap: var(--space-4);
+  min-height: 56px; flex: 0 0 auto; padding: var(--space-2) var(--space-6);
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+  position: sticky; top: 0; z-index: var(--z-sticky);
+}
+.app-topbar h1 { margin: 0; font-size: var(--text-xl); font-weight: 700; line-height: var(--leading-tight); }
+.app-topbar .breadcrumb { display: flex; gap: var(--space-2); font-size: var(--text-sm); line-height: var(--leading-tight); color: var(--color-text-secondary); }
+.app-topbar .btn { white-space: nowrap; }
+.app-topbar .breadcrumb a { color: inherit; }
+.app-topbar .spacer { flex: 1; }
+.app-content { flex: 1 1 auto; overflow: auto; padding: var(--space-6); background: var(--color-bg); }
+.app-content > .measure { max-width: var(--text-measure); }
+
+/* 表側（利用者の作業）と裏側（設定）で地の色を変える */
+.app.is-settings .app-content { background: var(--color-surface-3); }
+
+/* ── B) 2ペイン（軽量ツール） ── */
+.layout-2pane { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.sidenav { background: var(--color-surface-2); border-right: 1px solid var(--color-border); padding: var(--space-4); position: sticky; top: 0; height: 100dvh; overflow-y: auto; }
+.layout-2pane > main { padding: var(--space-6); min-width: 0; }
+
+/* ── KPI 列・フィルタ行（管理画面の定型） ── */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+.filter-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); }
+.chip { display: inline-flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-3); min-height: 28px; border-radius: var(--radius-full); background: var(--color-surface-2); border: 1px solid var(--color-border); font-size: var(--text-sm); }
+.chip .x { cursor: pointer; color: var(--color-text-secondary); }
+
+/* ── レスポンシブ（キット統一の検証幅: 360×820 / 768 / 1366×768 / 1920×1080） ── */
+@media (max-width: 1366px) {
+  .sidebar { flex-basis: 200px; width: 200px; }
+  .app-content { padding: var(--space-4); }
+}
+@media (max-width: 768px) {
+  .sidebar { position: fixed; left: 0; top: 44px; z-index: var(--z-dropdown); transform: translateX(-100%); transition: transform var(--motion-normal); box-shadow: var(--shadow-pop); }
+  .sidebar.open { transform: none; }
+  .app-topbar { padding: var(--space-2) var(--space-4); }
+  .app-globalbar .label-text { display: none; }   /* 狭幅ではアイコンだけ */
+  .layout-2pane { grid-template-columns: 1fr; }
+  .sidenav { display: none; }   /* ハンバーガーで開閉 */
+}
+@media (max-width: 480px) {
+  .app-topbar .breadcrumb { display: none; }   /* 見出しと主操作を優先。パンくずはサイドバーで代替 */
+}
+@media (max-width: 360px) {
+  .app-topbar h1 { font-size: var(--text-lg); }
+  .card-grid, .kpi-row { grid-template-columns: 1fr; }
+}

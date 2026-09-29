@@ -3,73 +3,101 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>qa-sentinel 使い方</title>
+<link rel="stylesheet" href="/static/ds/tokens.css">
+<link rel="stylesheet" href="/static/ds/components.css">
+<link rel="stylesheet" href="/static/ds/layout.css">
 <style>
-:root{--bg:#f5f7fa;--panel:#fff;--ink:#1b2230;--muted:#5b6675;--line:#c9d2de;--accent:#d97706;--ok:#15803d;--llm:#1d4ed8;--node:#eef2f7}
-@media (prefers-color-scheme:dark){:root{--bg:#0f141b;--panel:#171e28;--ink:#e6ebf2;--muted:#9aa7b8;--line:#2c3a4d;--node:#1f2937;--llm:#8ab4ff;--ok:#4ade80;--accent:#f5a524;color-scheme:dark}}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.7 "IBM Plex Sans JP",system-ui,sans-serif;padding:16px;max-width:1100px;margin-inline:auto}
-h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:26px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
-.muted{color:var(--muted);font-size:12.5px}
-table{border-collapse:collapse;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:13px}
-th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted);font-weight:500;font-size:12px}
-code{background:var(--node);padding:1px 5px;border-radius:4px;font-size:12.5px}pre{background:var(--node);padding:8px 12px;border-radius:6px;font-size:12.5px;overflow:auto}
-.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:8px 0}
-.step{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}.step b{display:block;margin-bottom:4px}.step .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--bg);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
-button,select{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);cursor:pointer}button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 12px;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:2}
-.toolbar .sc{padding:4px 10px;border-radius:999px}.toolbar .sc.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.idea{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 14px}
-.idea header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.idea header h3{margin:0;font-size:15px}.idea header .ref{font-size:12px;color:var(--muted)}
-.idea canvas{display:block;width:100%;height:260px;margin:8px 0}
-.idea .pick{margin-left:auto}.idea.chosen{border-color:var(--ok);box-shadow:0 0 0 2px rgba(21,128,61,.18)}.idea .cmp{font-size:12.5px;color:var(--muted);margin:0}
-.ok{color:var(--ok)}
+h1{font-size:var(--text-xl);margin:0 0 var(--space-1)}
+h2{font-size:var(--text-md);margin:var(--space-8) 0 var(--space-2);padding-bottom:var(--space-1);border-bottom:1px solid var(--color-border)}
+h3{font-size:var(--text-md);margin:0 0 var(--space-2)}
+main{max-width:1100px}
+.sidenav h2{font-size:var(--text-sm);color:var(--color-text-secondary);border:0;margin:0 0 var(--space-2);padding:0}
+.sidenav nav{display:flex;flex-direction:column;gap:var(--space-1)}
+.sidenav a{display:flex;align-items:center;padding:0 var(--space-3);border-radius:var(--radius-sm);border-left:3px solid transparent;color:var(--color-text);text-decoration:none}
+.sidenav a:hover{background:var(--color-surface)}
+.sidenav a[aria-current]{background:var(--color-primary-light);color:var(--color-primary-dark);border-left-color:var(--color-primary);font-weight:600}
+.table-wrap{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+.toolbar{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center;margin:var(--space-2) 0 var(--space-3);position:sticky;top:0;background:var(--color-bg);padding:var(--space-2) 0;z-index:var(--z-sticky)}
+.seg{flex-wrap:wrap}
+.seg .sc{display:inline-flex;align-items:center;gap:var(--space-1)}
+.idea-list{display:flex;flex-direction:column;gap:var(--space-4)}
+.idea-head{display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}
+.idea-head h3{margin:0}
+.idea .pick{margin-left:auto}
+.idea.chosen{border-color:var(--color-low)}
+.idea canvas{display:block;width:100%;height:260px;margin:var(--space-2) 0}
+.idea p{margin:0}
 </style>
 </head>
 <body>
-<h1>qa-sentinel の使い方 <span class="muted">AI がテストの下書きを作り、あなたが直して OK を押す道具</span></h1>
-<p class="muted">この画面は起動時に自動で開きます。台帳の画面は <a href="/" target="_blank">こちら</a>。</p>
+<div class="layout-2pane">
+<aside class="sidenav">
+<h2>目次</h2>
+<nav aria-label="このページの目次">
+<a href="#setup" aria-current="true">導入</a>
+<a href="#demo">デモ</a>
+<a href="#use">自分のプロジェクトで使う</a>
+<a href="#views">進行表示の型</a>
+<a href="#trouble">困ったら</a>
+</nav>
+</aside>
+<main>
+<h1>qa-sentinel の使い方</h1>
+<p class="muted">AI がテストの下書きを作り、あなたが直して OK を押す道具。この画面は起動時に自動で開きます。台帳の画面は <a href="/" target="_blank" rel="noopener">こちら</a>。</p>
 
-<h2 id="setup">1. 導入（3 ステップ）</h2>
-<div class="steps">
-<div class="step"><b><span class="n">1</span>zip を取る</b>GitHub の <code>Code → Download ZIP</code> を解凍。Windows 11・Python 3.11 以上だけあればよい（git・bash は不要）</div>
-<div class="step"><b><span class="n">2</span>Codex に 1 文</b>解凍したフォルダで cmd を開き Codex（gpt-6-sol, high）を起動して貼る:<pre>docs/codex/RUN_ALL.md に従って、止まらずに最後までやれ。OS は Windows 11、シェルは cmd、git は無い。</pre>終わると <code>scripts\verify.py</code> の末尾が <code>ALL GREEN</code></div>
-<div class="step"><b><span class="n">3</span>start.bat をダブルクリック</b>初回だけ 1〜2 分。ブラウザにこの画面と台帳の画面が開く。閉じたいときは黒い画面を閉じる（macOS/Linux は <code>./start.sh</code>）</div>
-</div>
+<section id="setup"><h2>1. 導入（3 ステップ）</h2>
+<div class="card-grid">
+<div class="card"><h3><span class="badge badge-new">1</span> zip を取る</h3>GitHub の <code>Code → Download ZIP</code> を解凍。Windows 11・Python 3.11 以上だけあればよい（git・bash は不要）</div>
+<div class="card"><h3><span class="badge badge-new">2</span> Codex に 1 文</h3>解凍したフォルダで cmd を開き Codex（gpt-6-sol, high）を起動して貼る:<pre>docs/codex/RUN_ALL.md に従って、止まらずに最後までやれ。OS は Windows 11、シェルは cmd、git は無い。</pre>終わると <code>scripts\verify.py</code> の末尾が <code>ALL GREEN</code></div>
+<div class="card"><h3><span class="badge badge-new">3</span> start.bat をダブルクリック</h3>初回だけ 1〜2 分。ブラウザにこの画面と台帳の画面が開く。閉じたいときは黒い画面を閉じる（macOS/Linux は <code>./start.sh</code>）</div>
+</div></section>
 
-<h2 id="demo">2. まずデモ（図書館システム・3 分）</h2>
-<p>同梱の図書貸出システム（<code>demo/library-loan</code>）に「貸出上限を 5 冊から 3 冊に変更」という変更を伝え、AI が計画〜準備を下書きし、あなたが直して OK し、実行はあなたがやり、最後に承認するまでを通します。mock なのでお金はかかりません。</p>
-<table><thead><tr><th>画面（GUI）</th><th>黒い画面（CLI）</th></tr></thead><tbody>
+<section id="demo"><h2>2. まずデモ（図書館システム・3 分）</h2>
+<p class="measure">同梱の図書貸出システム（<code>demo/library-loan</code>）に「貸出上限を 5 冊から 3 冊に変更」という変更を伝え、AI が計画〜準備を下書きし、あなたが直して OK し、実行はあなたがやり、最後に承認するまでを通します。mock なのでお金はかかりません。</p>
+<div class="table-wrap"><table class="table"><thead><tr><th>画面（GUI）</th><th>黒い画面（CLI）</th></tr></thead><tbody>
 <tr><td>台帳の画面の <b>「図書館デモを動かす」</b> を押す（タスクが無いときに出ます）</td><td><code>qa-sentinel demo --by あなたの名前</code><br>または <code>qa-sentinel</code> → <code>5</code></td></tr>
 <tr><td>やることリストの行をクリック → 下書きを見て <b>OK</b></td><td><code>qa-sentinel show T-0001</code> → <code>qa-sentinel ok T-0001 --by 名前</code></td></tr>
 <tr><td>「実行」はあなたの番。結果を書いて <b>渡す</b></td><td><code>qa-sentinel results T-0001 --by 名前 -m "全部 PASS"</code></td></tr>
 <tr><td>報告・入替を OK → <b>承認</b></td><td><code>qa-sentinel ok …</code> → <code>qa-sentinel approve T-0001 --by 名前</code></td></tr>
-</tbody></table>
-<p class="muted">GUI と CLI は同じ台帳（<code>tasks/</code>）を見ています。片方で進めた結果はもう片方にも出ます。</p>
+</tbody></table></div>
+<p class="muted measure">GUI と CLI は同じ台帳（<code>tasks/</code>）を見ています。片方で進めた結果はもう片方にも出ます。</p>
 
-<h2 id="use">3. 自分のプロジェクトで使う</h2>
-<table><thead><tr><th>やること</th><th>どこで</th></tr></thead><tbody>
+</section>
+
+<section id="use"><h2>3. 自分のプロジェクトで使う</h2>
+<div class="table-wrap"><table class="table"><thead><tr><th>やること</th><th>どこで</th></tr></thead><tbody>
 <tr><td>環境情報を書く（URL・起動手順・削除禁止・触ってよいソース）</td><td><code>projects/_template</code> を写して <code>projects/&lt;名前&gt;/env.md</code> を埋める</td></tr>
 <tr><td>変更を 1 文で伝え、4 つの質問に答える（どこまで AI／どこで止まる／だれが見る／いくらまで）</td><td>画面の「変更を伝えて始める」／<code>qa-sentinel run --project &lt;名前&gt; --nl "…"</code></td></tr>
 <tr><td>自分の番を片づける（直して OK・自分でやって渡す・質問に答える・承認）</td><td>やることリスト／<code>qa-sentinel</code> のメニュー 2</td></tr>
 <tr><td>本物の AI で動かす（鍵を入れる）</td><td><code>pip install -e .[managed]</code> → <code>set ANTHROPIC_API_KEY=…</code> → <code>python -m qa_sentinel.agent.register --project &lt;名前&gt;</code>（1 回）→ <code>set QA_SENTINEL_RUNTIME=managed</code> で start.bat。詳しくは 07 §5</td></tr>
-</tbody></table>
-<p class="muted">守られること: AI は作業ブランチにしか書かない。製品コードは案を出すだけ。予算は画面に出て上限で止まる。OK・回答・承認はあなたの名前で記録され、AI は承認欄を埋めない。</p>
+</tbody></table></div>
+<p class="muted measure">守られること: AI は作業ブランチにしか書かない。製品コードは案を出すだけ。予算は画面に出て上限で止まる。OK・回答・承認はあなたの名前で記録され、AI は承認欄を埋めない。</p>
 
-<h2 id="views">4. 進行表示の型を選ぶ（5 つ）</h2>
-<p class="muted">同じ台帳を 5 つの業務ツールの型で描きます。下のボタンで場面を切り替え、気に入った型の「この型にする」を押すと台帳の画面がその型になります（このブラウザに保存）。</p>
+</section>
+
+<section id="views"><h2>4. 進行表示の型を選ぶ（5 つ）</h2>
+<p class="muted measure">同じ台帳を 5 つの業務ツールの型で描きます。下のボタンで場面を切り替え、気に入った型の「この型にする」を押すと台帳の画面がその型になります（このブラウザに保存）。</p>
 <div class="toolbar"><span class="muted">場面:</span>
-<button class="sc on" data-sc="ai">AI が作業中</button><button class="sc" data-sc="human">あなたの番</button><button class="sc" data-sc="ask">AI から質問</button><button class="sc" data-sc="done">完了</button><button class="sc" data-sc="stopped">止まった</button>
-<button class="sc" data-sc="auto">▶ 自動で一巡</button><span class="muted" id="chosen"></span></div>
-<div id="ideas"></div>
+<div class="seg" role="group" aria-label="場面の切り替え">
+<button type="button" class="sc active" data-sc="ai">AI が作業中</button><button type="button" class="sc" data-sc="human">あなたの番</button><button type="button" class="sc" data-sc="ask">AI から質問</button><button type="button" class="sc" data-sc="done">完了</button><button type="button" class="sc" data-sc="stopped">止まった</button>
+<button type="button" class="sc" data-sc="auto"><span data-icon="play" data-icon-size="18" aria-hidden="true"></span>自動で一巡</button></div><span class="muted" id="chosen" aria-live="polite"></span></div>
+<div id="ideas" class="idea-list"></div>
 
-<h2 id="trouble">5. 困ったら</h2>
-<table><thead><tr><th>症状</th><th>対処</th></tr></thead><tbody>
+</section>
+
+<section id="trouble"><h2>5. 困ったら</h2>
+<div class="table-wrap"><table class="table"><thead><tr><th>症状</th><th>対処</th></tr></thead><tbody>
 <tr><td><code>start.bat</code> で「Python 3.11 以上を入れてください」</td><td>python.org から 3.11 以上を入れて、もう一度</td></tr>
 <tr><td>画面が開かない</td><td>ブラウザで <code>http://127.0.0.1:8790/</code></td></tr>
 <tr><td>「env.md がない」</td><td><code>projects/&lt;名前&gt;/env.md</code> が未記入</td></tr>
 <tr><td>デモをやり直したい</td><td><code>tasks/</code> フォルダを消して起動し直す</td></tr>
-</tbody></table>
+</tbody></table></div>
+</section>
+</main>
+</div>
 
 <script src="/static/progress-views.js"></script>
+<script src="/static/ds/icons.js"></script>
 <script>
 const IDEAS=[['workflow','案 1 ワークフロー画面','参考: n8n / Power Automate','段を箱でつなぐ。今どこか・どこで止まるかが一目。複数タスクは苦手'],
 ['pipeline','案 2 パイプライン＋ログ','参考: GitHub Actions / GitLab CI','段の並びと実行ログ。何をしているかを文字で追える。エンジニア向け'],
@@ -77,13 +105,16 @@ const IDEAS=[['workflow','案 1 ワークフロー画面','参考: n8n / Power A
 ['kanban','案 4 かんばん','参考: Jira / Trello','タスクを列で管理。複数タスクをまとめて見る。1 タスクの中身は薄い'],
 ['timeline','案 5 タイムライン＋根拠','参考: Devin / Cursor Agent','時系列と根拠パネル。決定の記録を見返す。全体像は上の帯だけ']];
 const LABEL={ai:'',human:'直して OK',ask:'延滞中の利用者は新規貸出できますか？',done:'',stopped:'予算超過 $5.00'};
-document.getElementById('ideas').innerHTML=IDEAS.map(([k,t,r,c])=>`<section class="idea" id="i-${k}"><header><h3>${t}</h3><span class="ref">${r}</span><button class="pick primary" data-v="${k}">この型にする</button></header><canvas data-v="${k}" role="img" aria-label="${t}"></canvas><p class="cmp">${c}</p></section>`).join('');
+document.getElementById('ideas').innerHTML=IDEAS.map(([k,t,r,c])=>`<section class="card idea" id="i-${k}"><div class="idea-head"><h3>${t}</h3><span class="muted">${r}</span><button type="button" class="btn pick" data-v="${k}">この型にする</button></div><canvas data-v="${k}" role="img" aria-label="${t}"></canvas><p class="muted">${c}</p></section>`).join('');
 document.querySelectorAll('canvas[data-v]').forEach(c=>PV.mount(c,c.dataset.v));
-function setScene(m){PV.state.mode=m;PV.state.label=LABEL[m];PV.state.cur=m==='done'?9:m==='ask'?3:4;PV.state.cost.spent=m==='stopped'?5:m==='done'?3.2:1.6;document.querySelectorAll('.sc').forEach(b=>b.classList.toggle('on',b.dataset.sc===m))}
-let auto=null;document.querySelectorAll('.sc').forEach(b=>b.onclick=()=>{clearInterval(auto);if(b.dataset.sc==='auto'){const seq=['ai','human','ai','ask','ai','done'];let i=0;setScene(seq[0]);b.classList.add('on');auto=setInterval(()=>{i=(i+1)%seq.length;setScene(seq[i]);b.classList.add('on')},2200)}else setScene(b.dataset.sc)});
-function mark(){document.querySelectorAll('.idea').forEach(s=>s.classList.toggle('chosen',s.id==='i-'+PV.current));document.getElementById('chosen').innerHTML=`今の型: <b class="ok">${PV.views[PV.current].name}</b>`}
-document.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{PV.use(b.dataset.v);mark();b.textContent='✔ 台帳の画面に反映しました';setTimeout(()=>b.textContent='この型にする',1800)});
+function setScene(m){PV.state.mode=m;PV.state.label=LABEL[m];PV.state.cur=m==='done'?9:m==='ask'?3:4;PV.state.cost.spent=m==='stopped'?5:m==='done'?3.2:1.6;document.querySelectorAll('.sc').forEach(b=>b.classList.toggle('active',b.dataset.sc===m))}
+let auto=null;document.querySelectorAll('.sc').forEach(b=>b.onclick=()=>{clearInterval(auto);if(b.dataset.sc==='auto'){const seq=['ai','human','ai','ask','ai','done'];let i=0;setScene(seq[0]);b.classList.add('active');auto=setInterval(()=>{i=(i+1)%seq.length;setScene(seq[i]);b.classList.add('active')},2200)}else setScene(b.dataset.sc)});
+function mark(){document.querySelectorAll('.idea').forEach(s=>s.classList.toggle('chosen',s.id==='i-'+PV.current));document.getElementById('chosen').innerHTML=`今の型: <span class="badge badge-low">${PV.views[PV.current].name}</span>`}
+document.querySelectorAll('.pick').forEach(b=>b.onclick=()=>{PV.use(b.dataset.v);mark();b.textContent='台帳の画面に反映しました';setTimeout(()=>b.textContent='この型にする',1800)});
 setScene('ai');mark();
+const navLinks=[...document.querySelectorAll('.sidenav a')];
+function spy(){let cur=navLinks[0];navLinks.forEach(a=>{const t=document.querySelector(a.getAttribute('href'));if(t&&t.getBoundingClientRect().top<=window.innerHeight/3)cur=a});navLinks.forEach(a=>{if(a===cur)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current')})}
+window.addEventListener('scroll',spy,{passive:true});spy();
 </script>
 </body>
 </html>

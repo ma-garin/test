@@ -1,0 +1,176 @@
+/* components.css — AIDD Design System の部品（実物）
+ * 規律: skills/design-system/SKILL.md ／ 部品の使い分けと落とし穴: skills/design-system/references/components.md ／ 値: templates/tokens.css
+ * 前提: templates/tokens.css を先に読み込む。ここに直値は書かない（var(--*) のみ。例外は token-exempt コメント付き）。
+ * 含まない: トースト・確認ダイアログ（templates/components/feedback.js が自己注入する）
+ * 空状態は静的マークアップ用に持つ。クラス名は feedback.js の Feedback.emptyState() と同じにしてあり、併用しても競合しない
+ * 骨格（globalbar / sidebar / topbar / content）は templates/ui/layout.css。
+ * 使い方: 単一 HTML は <style> に貼る。React/Flask/Django は tokens.css の次に読み込む（templates/ui/README.md）。
+ * 検証: scripts/check-design.sh（直値・未定義トークン・CDN・alert() を機械判定）
+ */
+
+/* ── ボタン（塗りは1画面に1つ。ラベルは動作名） ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  padding: 0 var(--space-4); min-height: var(--tap-min);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  background: var(--color-surface); color: var(--color-text);
+  font: inherit; font-weight: 600; line-height: 1; cursor: pointer; text-decoration: none;
+  transition: background var(--motion-fast), border-color var(--motion-fast);
+}
+.btn:hover { background: var(--color-surface-2); }
+.btn:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.btn--primary { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-on-primary); }
+.btn--primary:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); }
+.btn--ghost { background: transparent; border-color: transparent; }
+.btn--ghost:hover { background: var(--color-surface-2); }
+.btn--danger { color: var(--color-critical); border-color: var(--color-critical-border); }
+.btn--danger:hover { background: var(--color-critical-bg); }
+.btn--danger.btn--primary { background: var(--color-critical); border-color: var(--color-critical); color: var(--color-on-primary); }
+.btn[aria-busy="true"] { pointer-events: none; opacity: .7; }  /* 二重送信対策は disabled でなく aria-busy（値欠落を防ぐ） */
+
+/* ── 入力 ── */
+.input, .select, .textarea {
+  font: inherit; color: var(--color-text); background: var(--color-surface);
+  padding: var(--space-2) var(--space-3); min-height: var(--tap-min);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+}
+.input:focus, .select:focus, .textarea:focus { outline: 2px solid var(--color-primary); outline-offset: 0; border-color: var(--color-border-strong); }
+.input::placeholder, .textarea::placeholder { color: var(--color-text-disabled); }
+.input.err { border-color: var(--color-critical); box-shadow: 0 0 0 3px var(--color-critical-bg); }
+.field { display: flex; flex-direction: column; gap: var(--space-1); }
+.field > label { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.field-err-text { display: flex; align-items: center; gap: var(--space-1); color: var(--color-critical); font-size: var(--text-xs); margin-top: var(--space-1); }
+.banner-err {
+  display: flex; gap: var(--space-2); align-items: flex-start;
+  background: var(--color-critical-bg); border: 1px solid var(--color-critical); border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--color-critical);
+}
+
+/* ── バッジ（severity / status。文字色＋淡い背景＋同系ボーダー） ── */
+.badge {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  padding: 2px var(--space-2);  /* 2px: 天地の余白は 4px 刻みより細かい（ピルの高さを抑える） token-exempt */
+  border-radius: var(--radius-full); border: 1px solid transparent;
+  font-size: var(--text-xs); font-weight: 700; line-height: 1.4; white-space: nowrap;
+}
+.badge-critical { color: var(--color-critical);    background: var(--color-critical-bg); border-color: var(--color-critical-border); }
+.badge-high     { color: var(--color-high);        background: var(--color-high-bg);     border-color: var(--color-high-border); }
+.badge-medium   { color: var(--color-medium-text); background: var(--color-medium-bg);   border-color: var(--color-medium-border); }
+.badge-low      { color: var(--color-low);         background: var(--color-low-bg);      border-color: var(--color-low-border); }
+.badge-info     { color: var(--color-info);        background: var(--color-info-bg);     border-color: var(--color-info-border); }
+.badge-new      { color: var(--color-primary);     background: var(--color-primary-light); }
+
+/* ── カード ── */
+.card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); padding: var(--space-6); box-shadow: var(--shadow-sm);
+}
+.card > h2, .card > h3 { margin: 0 0 var(--space-2); font-size: var(--text-lg); }
+.card .meta { color: var(--color-text-secondary); font-size: var(--text-sm); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-4); }
+
+/* ── スコアカード（ISO 25010 用） ── */
+.score-card { display: flex; flex-direction: column; gap: var(--space-1); }
+.score-value { font-family: var(--font-mono); font-size: var(--text-2xl); font-weight: 700; line-height: 1; }
+.score-label { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.score-bar { height: 6px; border-radius: var(--radius-full); background: var(--color-surface-2); overflow: hidden; }
+.score-fill { display: block; height: 100%; background: var(--color-primary); }  /* display:block — span で塗ると寸法が無視される */
+
+/* ── KPI カード（管理画面の最上段） ── */
+.kpi { display: flex; flex-direction: column; gap: var(--space-1); }
+.kpi-label { font-size: var(--text-xs); color: var(--color-text-secondary); text-transform: none; }
+.kpi-value { font-family: var(--font-mono); font-size: var(--text-2xl); font-weight: 700; line-height: 1.1; }
+.kpi-delta { font-size: var(--text-sm); color: var(--color-text-secondary); }
+.kpi-delta.up { color: var(--color-low); }
+.kpi-delta.down { color: var(--color-critical); }
+
+/* ── テーブル（罫線は横線のみ。数値は右揃え等幅。狭幅は .table-wrap で横スクロール） ── */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.table th { background: var(--color-surface-3); text-align: left; font-weight: 600; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-border-strong); }
+.table td { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-divider); vertical-align: top; }
+.table tbody tr:hover { background: var(--color-surface-3); }
+.table .num { text-align: right; font-family: var(--font-mono); }
+.table .th-row { display: inline-flex; align-items: center; gap: var(--space-1); }
+
+/* 列フィルタ（列見出しのアイコン → ポップオーバー） */
+.col-filter-btn { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; min-width: 0; min-height: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-disabled); cursor: pointer; }
+.col-filter-btn.is-active { color: var(--color-primary-dark); background: var(--color-primary-light); }
+.col-pop { display: none; position: absolute; z-index: var(--z-dropdown); width: 176px; padding: var(--space-2); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); }
+.col-pop.open { display: block; }
+
+/* ページネーション（現在範囲/総数を併記。表示件数を変えたら 1 ページ目へ） */
+.pagebar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border); font-size: var(--text-sm); }
+.pager { display: inline-flex; gap: var(--space-1); }
+.pager .page { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 var(--space-2); border-radius: var(--radius-sm); color: var(--color-text); cursor: pointer; }
+.pager .page:hover { background: var(--color-surface-2); }
+.pager .page.active { background: var(--color-primary); color: var(--color-on-primary); font-weight: 700; }
+
+/* ── トグル（2値）／セグメント（3値以上の相互排他） ── */
+.toggle { display: inline-block; width: 44px; height: 26px; border-radius: var(--radius-full); background: var(--color-border); position: relative; cursor: pointer; transition: background var(--motion-fast); }
+.toggle.on { background: var(--color-primary); }
+.toggle > i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--color-knob); box-shadow: var(--shadow-sm); transition: left var(--motion-fast); }
+.toggle.on > i { left: 21px; }
+.seg { display: inline-flex; background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 3px; gap: 3px; }
+.seg > span, .seg > button { padding: var(--space-1) var(--space-3); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font: inherit; font-size: var(--text-sm); cursor: pointer; min-height: 0; min-width: 0; }
+.seg > .active { background: var(--color-surface); color: var(--color-primary-dark); box-shadow: var(--shadow-sm); }
+
+/* ── 情報ツールチップ（本当に説明が要る項目だけ。ホバーで表示。画面端では .edge-left） ── */
+.info-ic {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; position: relative; cursor: help;
+  background: var(--color-surface-2); color: var(--color-text-disabled);
+  font-size: var(--text-xs); font-weight: 600; border: 1px solid var(--color-border);
+}
+.info-ic .tooltip {
+  display: none; position: absolute; z-index: var(--z-dropdown); top: 130%; left: 50%; transform: translateX(-50%); width: 220px;
+  background: var(--color-tooltip-bg); color: var(--color-tooltip-text);
+  font-size: var(--text-xs); font-weight: 400; line-height: 1.55; padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm); box-shadow: var(--shadow-pop); text-align: left; white-space: normal;
+}
+.info-ic:hover .tooltip, .info-ic:focus-visible .tooltip, .info-ic.open .tooltip { display: block; }
+.info-ic.edge-left .tooltip { left: 0; transform: none; }   /* サイドバー内など左端では中央揃えだと画面外に切れる */
+.info-ic.edge-right .tooltip { left: auto; right: 0; transform: none; }
+
+/* ── モーダル（開閉3経路: 開くボタン / .modal-close / backdrop クリック。同時に開くのは1つ） ── */
+.modal-backdrop { position: fixed; inset: 0; z-index: var(--z-modal); background: var(--color-scrim); display: none; align-items: center; justify-content: center; padding: var(--space-5); }
+.modal-backdrop.open { display: flex; }
+.modal { width: 480px; max-width: 100%; background: var(--color-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); overflow: hidden; }
+.modal.sm { width: 380px; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border); }
+.modal-head h2, .modal-head h3 { margin: 0; font-size: var(--text-lg); }
+.modal-head .modal-close { border: 0; background: transparent; color: var(--color-text-secondary); font-size: var(--text-lg); cursor: pointer; border-radius: var(--radius-sm); }
+.modal-head .modal-close:hover { background: var(--color-surface-2); }
+.modal-body { padding: var(--space-5); }
+.modal-foot { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-4) var(--space-5); border-top: 1px solid var(--color-border); background: var(--color-surface-2); }
+
+/* ── 通知／リッチポップオーバー（右上のアイコンから開くので右揃え） ── */
+.notif-pop { display: none; position: absolute; top: 46px; right: 0; z-index: var(--z-dropdown); width: 328px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); overflow: hidden; }
+.notif-pop.open { display: block; }
+.notif-item { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-divider); font-size: var(--text-sm); }
+.notif-item.unread { background: var(--color-primary-light); }   /* 未読は背景の濃淡だけ。バッジを乱用しない */
+
+/* ── 空状態（枠だけ残さない。用途で文言とボタンを変える。JS 併用時は Feedback.emptyState() が同じクラス名で生成） ── */
+.empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-3); padding: var(--space-12) var(--space-6); color: var(--color-text-secondary); }
+.empty-state h4, .empty-state-title { margin: 0; color: var(--color-text); font-size: var(--text-md); font-weight: 600; }
+.empty-state p, .empty-state-description { margin: 0; font-size: var(--text-sm); max-width: var(--text-measure); }
+.empty-ic, .empty-state-icon { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--color-surface-2); color: var(--color-text-disabled); }
+
+/* ── コールアウト（本文内のエラー・注意。alert() を使わない） ── */
+.callout { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-border); border-left-width: 4px; border-radius: var(--radius-md); background: var(--color-surface); font-size: var(--text-sm); }
+.callout--critical { border-left-color: var(--color-critical); background: var(--color-critical-bg); }
+.callout--high     { border-left-color: var(--color-high);     background: var(--color-high-bg); }
+.callout--info     { border-left-color: var(--color-info);     background: var(--color-info-bg); }
+.callout--low      { border-left-color: var(--color-low);      background: var(--color-low-bg); }
+
+/* ── スケルトン（読み込み中のテーブル行） ── */
+.skeleton { display: block; height: 1em; border-radius: var(--radius-sm); background: var(--color-surface-2); animation: skeleton-pulse var(--motion-loop) ease-in-out infinite; }
+@keyframes skeleton-pulse { 50% { opacity: .5; } }
+
+/* ── ユーティリティ ── */
+[hidden] { display: none !important; }   /* display:flex/grid の部品でも hidden 属性を効かせる（.field-err-text 等が消えなかった実不具合） */
+.mono { font-family: var(--font-mono); }
+.muted { color: var(--color-text-secondary); }
+.measure { max-width: var(--text-measure); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
