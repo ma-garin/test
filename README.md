@@ -21,6 +21,7 @@
 | `docs/12_完成GUI.html` | 完成形の GUI がこの 1 枚で動く（サーバーなし・台帳はページ内・見本 4 件入り）。`python scripts/build_gui_standalone.py` で製品の index.html から生成 |
 | `docs/08_進行表示の設計.md` | 画面の動き（アニメーション）の設計。参考にした事例（Devin・Copilot・Actions・Temporal・Vercel・HAX）と採用 |
 | `docs/07_使い方.md` | **初めての人向け**: start.bat → 使い方画面 → 図書館デモ → やることリストを片づける（同じ内容が `/guide` で自動表示） |
+| `incidents/` | インシデントの記録簿（`LOG.md`）と報告書（`INC-nnnn_*.md`）。再発防止は仕組みで担保し、検証してから対応済みにする |
 | `start.bat` / `start.sh` | ダブルクリックで準備・起動・ブラウザを開く |
 | `docs/codex/RUN_ALL.md` | Codex 環境での**検証と実機確認の指示書**（T01〜T09 はこの環境で実装済み。Codex は verify → デモ一巡 → 鍵があれば T08） |
 | `demo/library-loan/` | 図書館デモ（単一 HTML）＋ kit のスクリプト・工程文書・ケース表を同梱。`run_gate` が呼ぶ実体 |
