@@ -259,6 +259,13 @@ def test_web_static_guide_and_demo(ws):
         srv.shutdown()
 
 
+def test_resume_uses_projects_dir_from_other_cwd(ws, monkeypatch, tmp_path):
+    other = tmp_path / "elsewhere"; other.mkdir(); monkeypatch.chdir(other)
+    assert main(["--tasks", str(ws / "tasks"), "--projects", str(ws / "projects"), "demo", "--by", "qa"]) == 0
+    assert main(["--tasks", str(ws / "tasks"), "--projects", str(ws / "projects"), "ok", "T-0001", "--by", "qa"]) == 0
+    assert Ledger(ws / "tasks").load("T-0001").status == "handoff"
+
+
 def test_cli_demo_and_menu_item_5(ws, capsys, monkeypatch):
     assert main(["--tasks", str(ws / "tasks"), "--projects", str(ws / "projects"), "demo", "--by", "qa"]) == 0
     out = capsys.readouterr().out

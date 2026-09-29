@@ -87,11 +87,11 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
                     return self._json(t.to_dict())
                 task, by = q["task"], q.get("by", "")
                 if u.path == "/api/review":
-                    t = review(task, by, q.get("ok", "1") == "1", ledger, rt, note=q.get("note", ""))
+                    t = review(task, by, q.get("ok", "1") == "1", ledger, rt, note=q.get("note", ""), projects_dir=projects_dir)
                 elif u.path == "/api/submit":
-                    t = submit(task, by, ledger, rt, artifact=q.get("file", ""), note=q.get("note", ""))
+                    t = submit(task, by, ledger, rt, artifact=q.get("file", ""), note=q.get("note", ""), projects_dir=projects_dir)
                 elif u.path == "/api/answer":
-                    t = answer(task, by, q.get("text", ""), ledger, rt)
+                    t = answer(task, by, q.get("text", ""), ledger, rt, projects_dir=projects_dir)
                 elif u.path == "/api/approve":
                     t = approve(task, by, ledger)
                 else:

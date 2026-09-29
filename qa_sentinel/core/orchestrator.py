@@ -22,8 +22,8 @@ def _end(runtime: Runtime, handle, task: Task) -> None:
 
 
 def run_event(event: ChangeEvent, runtime: Runtime, ledger: Ledger, project: Project | None = None,
-              task: Task | None = None, plan: Plan | None = None) -> Task:
-    project = project or load_project(event.project)
+              task: Task | None = None, plan: Plan | None = None, projects_dir: str = "projects") -> Task:
+    project = project or load_project(event.project, projects_dir)
     if task is None:
         if plan is None:
             raise ValueError("新しいタスクには Plan（4 問の答え）が要る")
@@ -78,16 +78,17 @@ def run_event(event: ChangeEvent, runtime: Runtime, ledger: Ledger, project: Pro
     return task
 
 
-def _continue(task: Task, from_phase: str | None, text: str, ledger: Ledger, runtime: Runtime, source: str = "approval") -> Task:
+def _continue(task: Task, from_phase: str | None, text: str, ledger: Ledger, runtime: Runtime, source: str = "approval",
+              projects_dir: str = "projects") -> Task:
     if from_phase is None:
         task.record("waiting_human", "paused", reason="最終承認は人だけ。AI は approver を埋めない")
         ledger.save(task)
         return task
     ev = ChangeEvent(id=f"{task.event}_{len(task.decisions)}", project=task.project, source=source, text=text, resume_from=from_phase)
-    return run_event(ev, runtime, ledger, task=task)
+    return run_event(ev, runtime, ledger, task=task, projects_dir=projects_dir)
 
 
-def review(task_id: str, by: str, ok: bool, ledger: Ledger, runtime: Runtime, note: str = "") -> Task:
+def review(task_id: str, by: str, ok: bool, ledger: Ledger, runtime: Runtime, note: str = "", projects_dir: str = "projects") -> Task:
     """段の出口での確定（ok）または差し戻し（同じ段を AI がやり直す）。"""
     task = ledger.load(task_id)
     if task.status != "review":
@@ -96,11 +97,11 @@ def review(task_id: str, by: str, ok: bool, ledger: Ledger, runtime: Runtime, no
         raise ValueError("確定者の名前が要る")
     task.decisions.append({"at": task.updated_at, "by": by, "kind": "confirm" if ok else "reject", "phase": task.phase, "note": note})
     if ok:
-        return _continue(task, next_phase(task.phase), note, ledger, runtime)
-    return _continue(task, task.phase, f"差し戻し: {note}", ledger, runtime)
+        return _continue(task, next_phase(task.phase), note, ledger, runtime, projects_dir=projects_dir)
+    return _continue(task, task.phase, f"差し戻し: {note}", ledger, runtime, projects_dir=projects_dir)
 
 
-def submit(task_id: str, by: str, ledger: Ledger, runtime: Runtime, artifact: str = "", note: str = "") -> Task:
+def submit(task_id: str, by: str, ledger: Ledger, runtime: Runtime, artifact: str = "", note: str = "", projects_dir: str = "projects") -> Task:
     """人が下書きした段の成果物を渡す（handoff → 次の段）。"""
     task = ledger.load(task_id)
     if task.status != "handoff":
@@ -111,10 +112,10 @@ def submit(task_id: str, by: str, ledger: Ledger, runtime: Runtime, artifact: st
     if artifact:
         task.artifacts[task.phase] = artifact
     task.record(task.phase, "done", reason=f"{by} が下書き")
-    return _continue(task, next_phase(task.phase), note, ledger, runtime)
+    return _continue(task, next_phase(task.phase), note, ledger, runtime, projects_dir=projects_dir)
 
 
-def answer(task_id: str, by: str, text: str, ledger: Ledger, runtime: Runtime) -> Task:
+def answer(task_id: str, by: str, text: str, ledger: Ledger, runtime: Runtime, projects_dir: str = "projects") -> Task:
     """確認待ち（blocked）への回答。止まった段から continue。"""
     task = ledger.load(task_id)
     if task.status != "blocked":
@@ -122,7 +123,7 @@ def answer(task_id: str, by: str, text: str, ledger: Ledger, runtime: Runtime) -
     if not by:
         raise ValueError("回答者の名前が要る")
     task.decisions.append({"at": task.updated_at, "by": by, "kind": "answer", "phase": task.phase, "note": text})
-    return _continue(task, task.phase, text, ledger, runtime)
+    return _continue(task, task.phase, text, ledger, runtime, projects_dir=projects_dir)
 
 
 def approve(task_id: str, by: str, ledger: Ledger) -> Task:
