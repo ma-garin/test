@@ -17,6 +17,7 @@
 | `.claude/skills/fanout-review-fix/` | 開発の段取りスキル（Sonnet 並列下書き → Opus レビュー → 本人修正 → Haiku git） |
 | `docs/09_アニメ5案.html` | 進行表示 5 型の比較（ワークフロー・パイプライン・スイムレーン・かんばん・タイムライン）。製品画面と同じ JS |
 | `docs/10_シナリオ確認.html` | 図書館デモを一巡した実画面 7 枚。各段で「あなたがすること／本物と仮／Codex 後・鍵後に変わること」 |
+| `docs/11_GUI受け入れ確認.html` | Codex の zip を受け取ったとき GUI がこうなっていれば OK、のチェックリスト（8 項目）と増える 3 点の模型 |
 | `docs/08_進行表示の設計.md` | 画面の動き（アニメーション）の設計。参考にした事例（Devin・Copilot・Actions・Temporal・Vercel・HAX）と採用 |
 | `docs/07_使い方.md` | **初めての人向け**: start.bat → 使い方画面 → 図書館デモ → やることリストを片づける（同じ内容が `/guide` で自動表示） |
 | `start.bat` / `start.sh` | ダブルクリックで準備・起動・ブラウザを開く |
