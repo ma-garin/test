@@ -28,7 +28,7 @@ def run_event(event: ChangeEvent, runtime: Runtime, ledger: Ledger, project: Pro
         if plan is None:
             raise ValueError("新しいタスクには Plan（4 問の答え）が要る")
         task = Task(task=ledger.new_id(), project=event.project, event=event.id, plan=plan.to_dict(), mode=plan.mode,
-                    branch=f"qa-sentinel/{ledger.new_id()}")
+                    branch=f"qa-sentinel/{ledger.new_id()}", nl=event.text)
         task.branch = f"qa-sentinel/{task.task}"
         ledger.save(task)
     plan = plan or Plan(**task.plan)
@@ -59,6 +59,8 @@ def run_event(event: ChangeEvent, runtime: Runtime, ledger: Ledger, project: Pro
         task.artifacts.update(r.artifacts)
         if r.evidence:
             task.evidence[phase] = list(r.evidence)
+        if r.draft:
+            task.draft[phase] = r.draft
         if r.outcome != "ok":
             _end(runtime, handle, task)
             task.record(phase, "blocked" if r.outcome == "blocked" else "stopped", reason=r.reason)

@@ -32,6 +32,8 @@ class Task:
     branch: str = ""                                    # AI が書き込む作業ブランチ
     evidence: dict = field(default_factory=dict)      # 段 → 根拠の一覧
     decisions: list[dict] = field(default_factory=list)  # 人の確定・回答・承認（名前つき）
+    nl: str = ""                                        # 変更の一文（画面の見出し）
+    draft: dict = field(default_factory=dict)         # 段 → 下書きの中身（ケース表・手順・文）。無ければ artifacts のパスを見る
     created_at: str = field(default_factory=_now)
     updated_at: str = field(default_factory=_now)
 
@@ -71,7 +73,7 @@ class Ledger:
 
     def load(self, task_id: str) -> Task:
         d = json.loads(self._path(task_id).read_text(encoding="utf-8"))
-        return Task(**d)
+        return Task(**{k: v for k, v in d.items() if k in Task.__dataclass_fields__})
 
     def list(self) -> list[Task]:
         return sorted((self.load(p.stem) for p in self.root.glob("T-*.json")), key=lambda t: t.task)
