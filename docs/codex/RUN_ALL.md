@@ -74,9 +74,9 @@ Web も 1 回起動して確認（`start /b venv\Scripts\qa-sentinel web --port 
 
 - `README.md` の「すぐ試す」を、§3 で実際に通したコマンド列に更新（動かなかったものは書かない）
 - 人に渡す zip の使い方は `start.bat` → 初回は使い方の画面（`/guide`）が自動で開く。ここは変えない
-- `docs/codex/DEMO_RESULT.md` と（あれば）`LIVE_CHECK_RESULT.md` を commit
+- `docs/codex/DEMO_RESULT.md` と（あれば）`LIVE_CHECK_RESULT.md` をフォルダに残す（commit は人が行う）
 - `venv\Scripts\python scripts\verify.py` 最終 ALL GREEN
-- PR を作る（できなければブランチ名を報告）
+- フォルダごと zip にして人に渡す（`venv` と `__pycache__` は入れない）。PR は人と Claude が作る
 
 ## 6. 止まる条件（これ以外では止まらない）
 

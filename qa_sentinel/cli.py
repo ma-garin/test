@@ -50,12 +50,12 @@ def build_plan(args, ledger: Ledger, project) -> Plan:
         pass
     cfg = project.config.get("session", {})
     if args.mode:
-        plan = Plan.from_preset(args.mode, args.reviewer or last.get("reviewer") or _ask("だれが確認しますか", last.get("reviewer", os.environ.get("USER", ""))),
+        plan = Plan.from_preset(args.mode, args.reviewer or last.get("reviewer") or _ask("だれが確認しますか", last.get("reviewer", (os.environ.get("USER") or os.environ.get("USERNAME", "")))),
                                 args.budget or last.get("budget_usd") or float(cfg.get("budget_usd", 5.0)))
     else:
         until = args.draft_until or _ask("どの段まで AI が下書きしますか（段名。全部なら Enter）", last.get("draft_until", "") or "")
         stop = args.stop_at or _ask("どの段の出口で止まって確認しますか（カンマ区切り。全部なら all）", ",".join(last.get("stop_at", ["regression-swap"])))
-        reviewer = args.reviewer or _ask("だれが確認しますか", last.get("reviewer", os.environ.get("USER", "")))
+        reviewer = args.reviewer or _ask("だれが確認しますか", last.get("reviewer", (os.environ.get("USER") or os.environ.get("USERNAME", ""))))
         budget = args.budget or float(_ask("このタスクの予算（USD）", str(last.get("budget_usd", cfg.get("budget_usd", 5.0)))))
         stop_at = list(PHASES) if stop.strip() == "all" else [s.strip() for s in stop.split(",") if s.strip()]
         plan = Plan(draft=draft_until(until or None), stop_at=stop_at, reviewer=reviewer, budget_usd=float(budget), mode="custom")
@@ -67,7 +67,17 @@ def build_plan(args, ledger: Ledger, project) -> Plan:
     return plan
 
 
+def _utf8_console() -> None:
+    """Windows の cmd（cp932）でも日本語と記号を出せるようにする。失敗しても続ける。"""
+    for s in (sys.stdout, sys.stderr):
+        try:
+            s.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _utf8_console()
     p = argparse.ArgumentParser(prog="qa-sentinel")
     p.add_argument("--tasks", default="tasks", help="台帳ディレクトリ")
     p.add_argument("--projects", default="projects")

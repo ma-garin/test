@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import os
 import io
 import re
 import shutil
@@ -53,7 +54,8 @@ def _section_hash(cwd: Path, req_id: str) -> str:
     if not script.exists():
         return ""
     lifecycle = project_lifecycle_dir(cwd)
-    proc = subprocess.run([sys.executable, str(script), "hash", lifecycle, req_id], capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(cwd))
+    proc = subprocess.run([sys.executable, str(script), "hash", lifecycle, req_id], capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(cwd),
+                          env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     out = proc.stdout.strip().splitlines()
     return out[0].split("@", 1)[1] if proc.returncode == 0 and out and "@" in out[0] else ""
 

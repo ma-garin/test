@@ -271,6 +271,11 @@ def _opt(args: list[str], name: str) -> tuple[list[str], str | None]:
 
 
 def main(argv: list[str]) -> int:
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
     args, mopt = _opt(argv[1:], "--matrix")
     if len(args) < 2 or args[0] not in ("hash", "check", "impact", "refresh"):
         print(__doc__.split("使い方:")[1].split("終了コード")[0].rstrip(), file=sys.stderr)

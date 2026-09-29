@@ -616,6 +616,11 @@ def append_history(path: Path, by_level, today: date) -> str:
 # ---- main -----------------------------------------------------------------------------------
 
 def main() -> int:
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
     ap = argparse.ArgumentParser(description="テスト工程のメトリクス")
     ap.add_argument("--root", default=".")
     ap.add_argument("--level", choices=LEVELS)

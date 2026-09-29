@@ -175,7 +175,7 @@ def phase_hash(root: Path, covers: list[str]) -> str:
     script = Path(__file__).with_name("phase-hash.py")
     if not covers:
         return "empty"
-    p = subprocess.run([sys.executable, str(script), *covers], cwd=root, capture_output=True, text=True)
+    p = subprocess.run([sys.executable, str(script), *covers], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace")
     return p.stdout.strip() or "error"
 
 
@@ -338,7 +338,7 @@ def req_lint(root: Path) -> tuple[int, list[str]] | None:
     script = Path(__file__).with_name("req-lint.py")
     if not script.is_file():
         return 2, [f"req-lint.py が {script.parent} に無い（export-project.sh で check_approval.py と一緒に配る）"]
-    p = subprocess.run([sys.executable, str(script), str(req)], cwd=root, capture_output=True, text=True)
+    p = subprocess.run([sys.executable, str(script), str(req)], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace")
     lines = [l.strip() for l in p.stdout.splitlines() if l.strip().startswith("NG ")]
     if p.returncode not in (0, 1):
         return 2, [f"req-lint.py が失敗した（exit {p.returncode}）: {(p.stderr or p.stdout).strip()[:120]}"]
@@ -352,6 +352,11 @@ def exit_code(r: Result) -> int:
 
 
 def main() -> int:
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
     ap = argparse.ArgumentParser(description="工程承認記録の機械検査")
     ap.add_argument("--root", default=".")
     ap.add_argument("--phase", type=int, default=None, help="この工程の承認状態だけを判定する")

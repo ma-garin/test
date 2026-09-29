@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import os
 import re
 import subprocess
 import sys
@@ -80,7 +81,8 @@ def run_gate(name: str, args: list[str], project: Project, cwd: str | Path = "."
     if not script.exists():
         return GateResult(name, 127, False, f"missing: {script}", skipped=True)
     try:
-        proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
+        proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     except FileNotFoundError:
         return GateResult(name, 127, False, f"missing: {script}", skipped=True)
     except subprocess.TimeoutExpired:

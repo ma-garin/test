@@ -20,7 +20,7 @@ build-backend = "setuptools.build_meta"
 include = ["qa_sentinel*"]
 
 [tool.setuptools.package-data]
-"qa_sentinel.web" = ["static/*.html"]
+"qa_sentinel.web" = ["static/*.html", "static/*.js"]
 "qa_sentinel.agent" = ["*.md"]
 
 [tool.pytest.ini_options]
