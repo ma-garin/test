@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>qa-sentinel 台帳</title>
-<!-- デザイン: yuki-aidd-kit AIDD Design System（ds/ は写し。画面側の CSS は var(--*) だけ） 読み込み順: tokens → components → layout -->
+<!-- デザイン: yuki-aidd-kit AIDD Design System（ds/ は写し。画面側の CSS は var(--*) だけ） 読み込み順: tokens → components → layout
+     画面は 3 つだけ: 1 伝える → 2 待つ／答える → 3 受け取る。工程図・金額・根拠・記録は「詳細」に畳む -->
 <link rel="stylesheet" href="/static/ds/tokens.css">
 <link rel="stylesheet" href="/static/ds/components.css">
 <link rel="stylesheet" href="/static/ds/layout.css">
@@ -12,148 +13,97 @@
 .app-globalbar .brand-mark { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--color-primary); color: var(--color-on-primary); font-size: var(--text-xs); font-weight: 700; }
 .app-globalbar .field-inline { display: flex; align-items: center; gap: var(--space-2); }
 .app-globalbar .field-inline .input { min-height: 36px; width: 180px; }   /* 高さ固定の帯に収める（token-exempt: 帯の高さ 44px に合わせた入力高） */
-.sidebar nav a .count { margin-left: auto; }
-.sidebar-foot { margin-top: auto; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-divider); font-size: var(--text-xs); color: var(--color-text-secondary); }
-.app-topbar .search { width: 260px; }
-.app-topbar .breadcrumb button { border: 0; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; min-height: 0; min-width: 0; }
-.app-topbar .breadcrumb button:hover, .app-topbar .breadcrumb button:focus-visible { text-decoration: underline; }
-
-.table .task-link { color: var(--color-text); font-weight: 600; text-decoration: none; }
-.table .task-link:hover, .table .task-link:focus-visible { text-decoration: underline; }
-.table .sub { display: block; color: var(--color-text-secondary); max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mini { display: flex; gap: 2px; }   /* 2px: 段の間のヘアライン token-exempt */
-.mini i { width: 9px; height: 6px; border-radius: var(--radius-sm); background: var(--color-border); }
-.mini i.done { background: var(--color-low); } .mini i.cur-h { background: var(--color-high); } .mini i.cur-a { background: var(--color-primary); }
-.cost-bar { min-width: 90px; }
-.cost-bar .score-fill.warn { background: var(--color-high); } .cost-bar .score-fill.over { background: var(--color-critical); }
-
-/* PC 専用・縦スクロールなし: 本文は画面高に収め、表と下書きだけカード内でスクロール */
 html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはスクロールしない */
 .app { height: 100dvh; } .app-body { min-height: 0; flex: 1 1 auto; } .maincol { min-height: 0; }
-.app-content { overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
-#v-list, #v-detail { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: var(--space-3); }
-.kpi-row { margin-bottom: 0; } .filter-row { margin-bottom: 0; }
-.list-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: var(--space-3) var(--space-4); }
-.list-card .table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
-.detail-grid { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: var(--space-3); flex: 1 1 auto; min-height: 0; }
-.detail-main, .detail-side { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; min-height: 0; }
-.flow-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: var(--space-3) var(--space-4); }
-.side-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-.side-row .card { padding: var(--space-3) var(--space-4); } .side-row .card > h2 { font-size: var(--text-md); }
-.tabs-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: var(--space-3) var(--space-4); }
-.tabs-card .card-head { margin-bottom: var(--space-2); }
-.action-card .field { margin-top: var(--space-2); }
-.action-card .fields { display: grid; grid-template-columns: 200px 1fr; gap: var(--space-3); }
-.action-card .textarea { min-height: var(--tap-min); }
-.action-card > div { flex: 1; min-width: 0; }
-.action-card .actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
-.action-card .lead { margin: 0 0 var(--space-2); font-size: var(--text-lg); font-weight: 700; display: flex; align-items: center; gap: var(--space-2); }
-.flowc { display: block; width: 100%; flex: 1 1 auto; min-height: 160px; }
-.card-head { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
-.card-head h2 { margin: 0; font-size: var(--text-lg); }
-.card-head .spacer { flex: 1; }
-.tabbody { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.app-content { overflow: hidden; display: flex; flex-direction: column; min-height: 0; align-items: center; }
+.col { width: 100%; max-width: 960px; display: flex; flex-direction: column; gap: var(--space-3); flex: 1 1 auto; min-height: 0; }
+.scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.card { padding: var(--space-4) var(--space-5); }
+.card > h2 { margin: 0 0 var(--space-2); font-size: var(--text-lg); }
+.ask .row { display: flex; gap: var(--space-3); align-items: flex-start; }
+.ask .textarea { flex: 1; min-height: 72px; font-size: var(--text-md); }
+.ask .btn--primary { min-height: 72px; padding: 0 var(--space-6); font-size: var(--text-md); }
+.ask .sub { display: flex; gap: var(--space-4); align-items: center; margin-top: var(--space-2); flex-wrap: wrap; }
+.adv { margin-top: var(--space-3); } .adv > summary { cursor: pointer; }
+.adv .grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: var(--space-3); margin-top: var(--space-3); }
+.now-item { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-2) 0; border-top: 1px solid var(--color-divider); }
+.now-item:first-child { border-top: 0; } .now-item > div { flex: 1; min-width: 0; }
+.now-item .t { font-weight: 600; } .now-item .s { color: var(--color-text-secondary); font-size: var(--text-sm); }
+.head { display: flex; align-items: center; gap: var(--space-3); }
+.head h1 { margin: 0; font-size: var(--text-xl); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act { border-left: 4px solid var(--color-high); }
+.act.ai { border-left-color: var(--color-primary); } .act.bad { border-left-color: var(--color-critical); } .act.ok { border-left-color: var(--color-low); }
+.act .lead { margin: 0 0 var(--space-2); font-size: var(--text-lg); font-weight: 700; display: flex; align-items: center; gap: var(--space-2); }
+.act .q { font-size: var(--text-md); font-weight: 600; margin: 0 0 var(--space-2); }
+.act .fields { display: flex; gap: var(--space-3); align-items: flex-start; margin-top: var(--space-2); }
+.act .fields .textarea, .act .fields .input { flex: 1; min-height: var(--tap-min); }
+.act .actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+.body { display: flex; flex-direction: column; min-height: 0; }
+.body .table-wrap { overflow: auto; }
 .cases td.id { font-family: var(--font-mono); white-space: nowrap; }
 .cases tr.retired td { color: var(--color-text-disabled); text-decoration: line-through; }
 .cases tr.new td { background: var(--color-low-bg); }
+.cases th, .cases td { vertical-align: top; }
+.cases .wide { min-width: 200px; }
+.out { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-3); }
+.out .card { padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.out .card b { font-size: var(--text-md); } .out .card .muted { flex: 1; font-size: var(--text-sm); }
+details.more { flex: 0 0 auto; } details.more > summary { cursor: pointer; padding: var(--space-2) 0; color: var(--color-text-secondary); }
+details.more[open] { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-top: var(--space-2); }
+.more-grid .full { grid-column: 1 / -1; }
+.flowc { display: block; width: 100%; height: 190px; }
 .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-1) var(--space-3); font-size: var(--text-sm); margin: 0; }
 .kv dt { color: var(--color-text-secondary); } .kv dd { margin: 0; }
 .tl { list-style: none; margin: 0; padding: 0; }
-.tl li { display: grid; grid-template-columns: 52px 14px 1fr; gap: var(--space-2); padding: var(--space-1) 0; font-size: var(--text-sm); align-items: start; }
+.tl li { display: grid; grid-template-columns: 52px 1fr; gap: var(--space-2); padding: var(--space-1) 0; font-size: var(--text-sm); }
 .tl .tm { color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--text-xs); }
-.tl .dot { width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--color-border); margin-top: var(--space-1); }
-.tl .dot.a { background: var(--color-primary); } .tl .dot.h { background: var(--color-high); } .tl .dot.d { background: var(--color-low); } .tl .dot.b { background: var(--color-critical); }
 .ev { padding-left: var(--space-5); margin: var(--space-1) 0; font-size: var(--text-sm); }
 .spin { display: inline-flex; animation: spin var(--motion-spin) linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-.modes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
-.mode { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; padding: var(--space-2) var(--space-3); min-height: var(--tap-min); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; cursor: pointer; }   /* 2px: 行間のヘアライン token-exempt */
-.mode:hover, .mode:focus-visible { background: var(--color-surface-2); }
-.mode[aria-pressed="true"] { border-color: var(--color-primary); background: var(--color-primary-light); color: var(--color-primary-dark); }
-.mode b { font-size: var(--text-sm); } .mode span { font-size: var(--text-xs); color: var(--color-text-secondary); }
-.modal.wide { width: 620px; }
-.modal-body .field + .field { margin-top: var(--space-4); }
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-.help-note { font-size: var(--text-sm); color: var(--color-text-secondary); margin: var(--space-2) 0 0; }
+.help-note { font-size: var(--text-sm); color: var(--color-text-secondary); margin: 0 0 var(--space-2); }
 .icon-inline { display: inline-flex; vertical-align: -3px; }   /* 3px: 文字の基線合わせ token-exempt */
-
+.linkbtn { border: 0; background: none; padding: 0; color: var(--color-primary); font: inherit; cursor: pointer; text-decoration: underline; min-height: 0; }
+.linkbtn:hover, .linkbtn:focus-visible { color: var(--color-primary-dark); }
 </style>
 </head>
 <body>
 <div class="app" id="app">
   <header class="app-globalbar">
     <span class="brand-mark" aria-hidden="true">QS</span><span class="brand">qa-sentinel</span>
-    <span class="muted label-text">AI が下書き、あなたが直して確定する</span>
+    <span class="muted label-text">変わったことを 1 文で伝えると、AI がテストを作り直す</span>
     <span class="spacer"></span>
     <span class="field-inline"><label for="me" class="muted">あなたの名前</label><input class="input" id="me" placeholder="例: 藤曲" autocomplete="name"></span>
-    <span class="badge badge-info" id="rt">mock（費用なし）</span>
+    <span class="badge badge-info" id="rt" title="練習モード。表示の金額は仮で、請求されません">練習モード（請求なし）</span>
+    <a class="btn btn--ghost" href="/guide" target="_blank" rel="noopener">使い方</a>
     <button class="btn btn--ghost" id="theme" type="button" aria-label="テーマを切り替える（システム・ライト・ダーク）"><span class="label-text" id="theme-label">テーマ: システム</span></button>
   </header>
   <div class="app-body">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-head"><span class="brand">メニュー</span><button class="btn btn--ghost" id="collapse" type="button" aria-label="サイドバーを折りたたむ"><span data-icon="arrow-back" data-icon-size="16" aria-hidden="true"></span></button></div>
-      <nav aria-label="主要">
-        <a href="#inbox" data-nav="inbox" aria-current="page"><span class="icon" data-icon="checklist" data-icon-size="18" aria-hidden="true"></span><span class="label-text">受信箱</span><span class="badge badge-high count" id="n-inbox" hidden>0</span></a>
-        <a href="#all" data-nav="all"><span class="icon" data-icon="table-view" data-icon-size="18" aria-hidden="true"></span><span class="label-text">すべてのタスク</span></a>
-        <a href="/guide" target="_blank" rel="noopener"><span class="icon" data-icon="help" data-icon-size="18" aria-hidden="true"></span><span class="label-text">使い方</span></a>
-      </nav>
-    </aside>
     <div class="maincol">
-      <header class="app-topbar">
-        <div><div class="breadcrumb" id="crumb"><span>受信箱</span></div><h1 id="ttl">受信箱</h1></div>
-        <span class="spacer"></span>
-        <input class="input search" id="q" placeholder="タスク ID・変更内容で絞り込む" aria-label="タスクを絞り込む">
-        <button class="btn btn--primary" id="b-new" type="button"><span data-icon="add" data-icon-size="16" aria-hidden="true"></span>変更を伝える</button>
-      </header>
       <main class="app-content">
-        <section id="v-list">
-          <div class="kpi-row">
-            <div class="card kpi"><span class="kpi-label">あなたの番</span><span class="kpi-value" id="k-hum">0</span><span class="kpi-delta">確定・手渡し・回答・承認</span></div>
-            <div class="card kpi"><span class="kpi-label">AI が作業中</span><span class="kpi-value" id="k-ai">0</span><span class="kpi-delta">待つだけ</span></div>
-            <div class="card kpi"><span class="kpi-label">完了</span><span class="kpi-value" id="k-done">0</span><span class="kpi-delta">承認済み</span></div>
-            <div class="card kpi"><span class="kpi-label">使った金額 / 上限の合計</span><span class="kpi-value" id="k-cost">$0.00</span><span class="kpi-delta" id="k-budget">/ $0.00</span></div>
+        <section id="v-list" class="col">
+          <div class="card ask">
+            <h2>何が変わりましたか</h2>
+            <div class="row"><textarea class="textarea" id="nl" rows="2" placeholder="例: 貸出上限を 5 冊から 3 冊に変更" aria-label="何が変わったか"></textarea><button class="btn btn--primary" id="go" type="button"><span data-icon="play" data-icon-size="18" aria-hidden="true"></span>AI に任せる</button></div>
+            <div class="sub"><span class="muted">AI が影響を調べてテストを作り直し、あなたは止まったところで OK するだけ。</span><button class="linkbtn" id="demo-go" type="button">まず例のデモで見る（請求なし）</button></div>
+            <details class="adv"><summary class="muted">詳しい設定（ふつうは変えなくてよい）</summary>
+              <div class="grid">
+                <div class="field"><label for="r-mode">AI にどこまで任せるか</label><select class="input" id="r-mode"></select></div>
+                <div class="field"><label for="r-budget">AI に使ってよい上限（USD）</label><input class="input" id="r-budget" type="number" min="0" step="0.5" value="5"></div>
+                <div class="field"><label for="r-project">対象プロジェクト</label><input class="input" id="r-project" value="library-loan"></div>
+              </div>
+              <p class="help-note" id="r-preview"></p>
+            </details>
+            <div class="banner-err" id="r-err" hidden></div>
           </div>
-          <div class="filter-row" role="group" aria-label="絞り込み">
-            <div class="seg" id="flt"><button type="button" data-f="mine" class="active">あなたの番</button><button type="button" data-f="ai">AI 作業中</button><button type="button" data-f="done">完了</button><button type="button" data-f="stopped">止まった</button><button type="button" data-f="all">すべて</button></div>
-            <span class="muted" id="lst-sub">あなたの番のものが上に来ます。5 秒ごとに更新</span>
-          </div>
-          <div class="card list-card">
-            <div class="table-wrap"><table class="table"><thead><tr><th>タスク</th><th>進み具合</th><th>状態</th><th>確認者</th><th>予算</th><th>理由・次にすること</th></tr></thead><tbody id="rows"></tbody></table></div>
-            <div class="empty-state" id="welcome" hidden>
-              <span class="empty-state-icon" data-icon="lightbulb" data-icon-size="28" aria-hidden="true"></span>
-              <p class="empty-state-title">まず図書館デモを 3 分</p>
-              <p class="empty-state-description">同梱の図書貸出システムに「貸出上限を 5 冊から 3 冊に変更」を伝え、AI の下書き → あなたの確定 → 実行 → 承認まで一巡します。費用はかかりません。</p>
-              <button class="btn" id="demo-go" type="button"><span data-icon="play" data-icon-size="16" aria-hidden="true"></span>図書館デモを動かす</button>
-            </div>
-            <div class="empty-state" id="nomatch" hidden>
-              <span class="empty-state-icon" data-icon="search-off" data-icon-size="28" aria-hidden="true"></span>
-              <p class="empty-state-title">条件に一致するタスクがありません</p>
-              <p class="empty-state-description">絞り込みを解除するか、別の語で探してください。</p>
-              <button class="btn btn--ghost" id="clear-flt" type="button">絞り込みを解除する</button>
-            </div>
+          <div class="card scroll" id="now" hidden>
+            <h2>いま進んでいるもの</h2>
+            <div id="now-body"></div>
           </div>
         </section>
-        <section id="v-detail" hidden></section>
+        <section id="v-detail" class="col" hidden></section>
       </main>
     </div>
-  </div>
-</div>
-
-<div class="modal-backdrop" id="ovl" role="dialog" aria-modal="true" aria-labelledby="m-ttl">
-  <div class="modal wide">
-    <div class="modal-head"><h2 id="m-ttl">変更の内容</h2><button class="modal-close" type="button" aria-label="閉じる"><span data-icon="close" data-icon-size="18" aria-hidden="true"></span></button></div>
-    <div class="modal-body">
-      <div class="field"><label for="r-nl">何が変わりましたか</label><textarea class="textarea" id="r-nl" rows="3" placeholder="例: 貸出上限を 5 冊から 3 冊に変更（仕様 ID があれば REQ-F-003 のように書く）"></textarea></div>
-      <div class="field"><span class="muted" id="modes-l">どこまで AI にやらせますか</span><div class="modes" id="modes" role="group" aria-labelledby="modes-l"></div><p class="help-note" id="r-preview"></p></div>
-      <div class="row2">
-        <div class="field"><label for="r-by">だれが確認しますか</label><input class="input" id="r-by" placeholder="あなたの名前"></div>
-        <div class="field"><label for="r-budget">いくらまで使ってよいですか（USD）</label><input class="input" id="r-budget" type="number" min="0" step="0.5" value="5"></div>
-      </div>
-      <div class="field"><label for="r-project">プロジェクト</label><input class="input" id="r-project" value="library-loan"></div>
-      <div class="banner-err" id="r-err" hidden></div>
-    </div>
-    <div class="modal-foot"><button class="btn modal-close" type="button">やめる</button><button class="btn btn--primary" id="r-go" type="button">下書きを始める</button></div>
   </div>
 </div>
 
@@ -162,13 +112,14 @@ html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはス�
 <script src="/static/progress-views.js"></script>
 <script>
 /* ===================== state ===================== */
-let meta=null,tasks=[],cur=null,filter='mine',tab='draft',mode='M2';
+let meta=null,tasks=[],cur=null;
 const MINE=new Set(['review','handoff','blocked','paused']);
-const WHO={review:'あなた: 直して確定',handoff:'あなた: 自分でやる',blocked:'あなた: 質問に答える',paused:'あなた: 最終承認',running:'AI が作業中',done:'完了',stopped:'止まった',queued:'待機'};
+const WHO={review:'あなたが OK する番',handoff:'あなたがテストする番',blocked:'AI の質問に答える番',paused:'最後の承認をする番',running:'AI が作業中（待つだけ）',done:'完了',stopped:'止まっています',queued:'準備中'};
+const NEXT={review:'AI の下書きを見て OK する',handoff:'手順どおりにテストして、結果を渡す',blocked:'AI の質問に答える',paused:'内容を見て承認する',running:'待つだけ',done:'成果物を受け取る',stopped:'始め直す',queued:''};
 const SEV={review:'high',handoff:'high',paused:'high',blocked:'high',stopped:'critical',running:'info',done:'low',queued:'info'};
-let lastList='inbox';
-const NEXT={review:'下書きを見て確定か差し戻し',handoff:'自分でやって結果を渡す',blocked:'質問に答えると再開',paused:'名前を入れて承認',running:'待つだけ（止まったら受信箱に出ます）',done:'',stopped:'進め方を変えて始め直す',queued:''};
-const MODES={M1:['全部 AI','最後の承認だけあなた'],M2:['準備まで AI、実行は自分','いつもの使い方。設計と入替の出口で確認'],M3:['段ごとに毎回確認','9 段すべての出口で止まる'],M4:['設計まで AI','実装から先は自分でやる'],M5:['実行と分析だけ AI','設計はあなた、動かすのは AI'],M6:['古いテストの入れ替えだけ AI','手作業の後始末を AI に'],M7:['自分で作って AI に見てもらう','あなたが下書き、AI がレビュー'],M8:['ペア','一段ごとに交互に']};
+const LABEL_PLAIN={'test-plan':'影響の洗い出し','test-analysis':'確かめることの整理','test-strategy':'確かめ方の整理','test-design':'テストの表づくり','test-implementation':'テストの準備','test-execution':'テストの実行','defect-analysis':'失敗の原因分け','test-completion':'結果のまとめ','regression-swap':'古いテストの入れ替え','waiting_human':'最後の承認','done':'完了'};
+const REASON_PLAIN=r=>String(r||'').replace(/^rejects_exceeded:(\S+)/,(m,p)=>`「${LABEL_PLAIN[p]||p}」を 3 回やり直したので止めました`).replace(/^questions_exceeded/,'AI の質問が 5 件を超えたので止めました').replace(/^sessions_exceeded/,'AI の起動が 10 回を超えたので止めました').replace(/^budget_reached/,'上限の金額に達しました').replace(/^not_converged/,'テストが収束しなかったので止めました').replace(/^swap_ng:.*/,'古いテストの入れ替えで検査に通らず、元に戻しました').replace(/^swap_error:.*/,'古いテストの入れ替えに失敗しました').replace(/ — 進め方を見直してください（docs\/06 §3）/,'');
+const MODES={M1:'全部 AI（最後の承認だけあなた）',M2:'準備まで AI、実行はあなた（おすすめ）',M3:'段ごとに毎回確認',M4:'設計まで AI、実装から先はあなた',M5:'実行と分析だけ AI',M6:'古いテストの入れ替えだけ AI',M7:'あなたが作って AI に見てもらう',M8:'一段ごとに交互'};
 const FL=[['test-plan','計画'],['test-analysis','基本設計'],['test-strategy','詳細設計'],['test-design','設計'],['test-implementation','準備'],['test-execution','実行'],['defect-analysis','原因'],['test-completion','報告'],['regression-swap','入替'],['final','承認']];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -176,141 +127,119 @@ const ico=(n,s=16)=>`<span class="icon-inline" data-icon="${n}" data-icon-size="
 const paintIcons=root=>{if(window.Icons&&window.Icons.render)window.Icons.render(root||document);};
 async function j(u){return (await fetch(u)).json()}
 function post(u,body){return fetch(u,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)}).then(r=>r.json())}
-const label=p=>meta&&meta.labels[p]||p;
+const label=p=>LABEL_PLAIN[p]||(meta&&meta.labels[p])||p;
 const money=t=>[t.session&&t.session.spent_usd||0,t.plan&&t.plan.budget_usd||t.session&&t.session.budget_usd||0];
 const isHum=t=>MINE.has(t.status);
 const me=()=>$('me').value.trim();
 const badge=t=>`<span class="badge badge-${SEV[t.status]||'info'}">${WHO[t.status]||t.status}</span>`;
 const fail=(msg,detail,retry)=>window.Feedback?Feedback.error(msg,{detail,action:{label:retry?'もう一度送る':'読み直す',onClick:()=>(retry||load)()}}):console.error(msg,detail);
-let loadErrShown=false;
 const ok=msg=>window.Feedback?Feedback.ok(msg):null;
+let loadErrShown=false;
 try{$('me').value=localStorage.getItem('qa-name')||''}catch(e){}
 $('me').addEventListener('change',()=>{try{localStorage.setItem('qa-name',me())}catch(e){}});
 const THEMES=[['','システム'],['light','ライト'],['dark','ダーク']];
 function applyTheme(v){const r=document.documentElement;if(v)r.dataset.theme=v;else delete r.dataset.theme;try{v?localStorage.setItem('qa-theme',v):localStorage.removeItem('qa-theme')}catch(e){}const lb=$('theme-label');if(lb)lb.textContent='テーマ: '+(THEMES.find(x=>x[0]===v)||THEMES[0])[1]}
-$('theme').addEventListener('click',()=>{const cur=document.documentElement.dataset.theme||'';const i=THEMES.findIndex(x=>x[0]===cur);applyTheme(THEMES[(i+1)%THEMES.length][0])});
+$('theme').addEventListener('click',()=>{const c=document.documentElement.dataset.theme||'';const i=THEMES.findIndex(x=>x[0]===c);applyTheme(THEMES[(i+1)%THEMES.length][0])});
 try{applyTheme(localStorage.getItem('qa-theme')||'')}catch(e){}
-$('collapse').addEventListener('click',()=>$('sidebar').classList.toggle('collapsed'));
+const dl=(name,text,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+text],{type}));a.download=name;a.click();ok(name+' を保存しました')};
 
-/* ===================== list ===================== */
+/* ===================== 画面 1: 伝える ===================== */
 async function load(){
   try{
     if(!meta){meta=await j('/api/meta');buildModes();}
     tasks=(await j('/api/tasks')).sort((a,b)=>(isHum(b)?1:0)-(isHum(a)?1:0)||(b.updated_at||'').localeCompare(a.updated_at||''));
   }catch(e){if(!loadErrShown){loadErrShown=true;fail('台帳を読めませんでした',String(e));}return;}
   loadErrShown=false;
-  const hum=tasks.filter(isHum).length,ai=tasks.filter(t=>t.status==='running').length,done=tasks.filter(t=>t.status==='done').length;
-  $('n-inbox').textContent=hum;$('n-inbox').hidden=!hum;$('k-hum').textContent=hum;$('k-ai').textContent=ai;$('k-done').textContent=done;
-  const sp=tasks.reduce((s,t)=>s+money(t)[0],0),bu=tasks.reduce((s,t)=>s+money(t)[1],0);$('k-cost').textContent=`$${sp.toFixed(2)}`;$('k-budget').textContent=`/ $${bu.toFixed(2)}`;
-  renderRows();
-  PV.state.others=tasks.filter(x=>x.task!==cur).slice(0,4).map(x=>({cur:idxOf(x),title:x.task+' '+(x.project||''),mode:modeOf(x),meta:`${x.plan.reviewer||''} · $${money(x)[0].toFixed(2)} / ${money(x)[1].toFixed(2)}`}));
+  const live=tasks.filter(t=>t.status!=='done').concat(tasks.filter(t=>t.status==='done'));
+  $('now').hidden=!live.length;
+  $('now-body').innerHTML=live.map(t=>`<div class="now-item"><div><div class="t">${esc(t.nl||t.project)} <span class="muted">${t.task}</span></div><div class="s">${WHO[t.status]||t.status}${NEXT[t.status]?' — '+NEXT[t.status]:''}${t.status==='stopped'?'（'+esc(REASON_PLAIN(t.reason))+'）':''}</div></div>${badge(t)}<a class="btn ${isHum(t)||t.status==='done'?'btn--primary':''}" href="#task/${t.task}">${t.status==='done'?'受け取る':isHum(t)?'開く':'様子を見る'}</a></div>`).join('');
+  paintIcons($('v-list'));
   if(cur)show(cur,true);
 }
-function renderRows(){
-  const q=$('q').value.trim().toLowerCase();
-  const list=tasks.filter(t=>({mine:isHum(t)||t.status==='stopped',ai:t.status==='running'||t.status==='queued',done:t.status==='done',stopped:t.status==='stopped',all:true})[filter]).filter(t=>!q||(t.task+' '+(t.nl||'')+' '+(t.project||'')).toLowerCase().includes(q));
-  $('rows').innerHTML=list.map(t=>{const [s,b]=money(t),pct=b?Math.min(100,s/b*100):0;const ph=t.phase==='waiting_human'||t.phase==='done'?'final':t.phase,i=FL.findIndex(x=>x[0]===ph);
-    const mini=FL.map((x,k)=>`<i class="${t.status==='done'||k<i?'done':k===i?(isHum(t)?'cur-h':t.status==='running'?'cur-a':''):''}"></i>`).join('');
-    return `<tr><td><a class="task-link" href="#task/${t.task}">${t.task}</a> <span class="muted">${esc(t.project)} · ${t.mode}</span><span class="sub" title="${esc(t.nl||'')}">${esc(t.nl||'')}</span></td>
-    <td><div class="mini" aria-label="${label(t.phase)}">${mini}</div><span class="muted">${label(t.phase)}</span></td><td>${badge(t)}</td><td>${esc(t.plan.reviewer||'')}</td>
-    <td><div class="score-bar cost-bar"><span class="score-fill ${pct>=100?'over':pct>75?'warn':''}" style="width:${pct}%"></span></div><span class="muted num">$${s.toFixed(2)} / ${b.toFixed(2)}</span></td><td>${esc(t.reason||NEXT[t.status]||'')}</td></tr>`}).join('');
-  $('welcome').hidden=tasks.length>0;$('nomatch').hidden=!(tasks.length>0&&list.length===0);
-  paintIcons($('v-list'));
-}
-$('q').addEventListener('input',renderRows);
-$('clear-flt').addEventListener('click',()=>{$('q').value='';setFilter('all')});
-function setFilter(f){filter=f;document.querySelectorAll('#flt button').forEach(x=>x.classList.toggle('active',x.dataset.f===f));renderRows()}
-document.querySelectorAll('#flt button').forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.f)));
-function nav(n){document.querySelectorAll('.sidebar nav a[data-nav]').forEach(a=>{if(a.dataset.nav===n)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
-  lastList=n;setFilter(n==='inbox'?'mine':'all');$('ttl').textContent=n==='inbox'?'受信箱':'すべてのタスク';$('crumb').innerHTML=`<span>${n==='inbox'?'受信箱':'すべてのタスク'}</span>`;cur=null;$('v-detail').hidden=true;$('v-list').hidden=false;$('b-new').classList.add('btn--primary')}
-function route(){const h=location.hash;if(h.startsWith('#task/'))show(h.slice(6));else nav(h==='#all'?'all':'inbox')}
-window.addEventListener('hashchange',route);
-
-/* ===================== detail ===================== */
-const idxOf=t=>Math.max(0,FL.findIndex(x=>x[0]===(t.phase==='waiting_human'||t.phase==='done'?'final':t.phase)));
-const modeOf=t=>t.status==='done'?'done':t.status==='blocked'?'ask':isHum(t)?'human':t.status==='running'?'ai':t.status==='stopped'?'stopped':'idle';
-async function show(id,silent){
-  let t;try{t=await j('/api/tasks/'+id);}catch(e){fail('タスクを読めませんでした',String(e));return}
-  if(t.error){fail('タスクが見つかりません',id);location.hash='#inbox';return}
-  const first=cur!==id;cur=id;$('v-list').hidden=true;const d=$('v-detail');d.hidden=false;
-  $('ttl').textContent=t.nl||t.project;$('crumb').innerHTML=`<button type="button" id="crumb-back">${lastList==='all'?'すべてのタスク':'受信箱'}</button><span>/</span><span>${t.task}</span><span>/</span><span>${label(t.phase)}</span>`;$('crumb-back').addEventListener('click',()=>{location.hash=lastList==='all'?'#all':'#inbox'});$('b-new').classList.remove('btn--primary');
-  const [s,b]=money(t),pct=b?Math.min(100,s/b*100):0;const ev=t.evidence[t.phase]||[];
-  const nm=`<div class="field"><label for="by">あなたの名前</label><input class="input" id="by" value="${esc(t.plan.reviewer||me())}"></div>`;
-  let act='';
-  if(t.status==='review'){const noEv=!ev.length;act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} の下書きができました</p><p class="muted">下書き（下の「下書き」）を見て、直した点を書いて確定します。納得できなければ差し戻すと、同じ段を AI がやり直します。</p>${noEv?'<div class="banner-err">根拠なし: AI の下書きに根拠が付いていないため確定できません。差し戻してください。</div>':''}<div class="fields">${nm}<div class="field"><label for="note">直した点・差し戻しの理由</label><textarea class="textarea" id="note" rows="1"></textarea></div></div><div class="actions"><button class="btn btn--primary" id="ok" type="button" data-noev="${noEv?'1':''}">${ico('check-circle')}確定して次の段へ</button><button class="btn" id="rej" type="button">${ico('arrow-back')}差し戻す</button></div></div></div>`}
-  else if(t.status==='handoff')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} はあなたがやります</p><p class="muted">AI が用意した手順（下の「下書き」）で自分でやり、成果物のパスと見たままを入れて渡します。推測は書きません。</p><div class="fields">${nm}<div class="field"><label for="file">成果物のパス</label><input class="input" id="file" placeholder="例: results/T-0001.csv"></div></div><div class="field"><label for="note">見たまま</label><textarea class="textarea" id="note" rows="1" placeholder="例: 12 件 PASS、1 件 FAIL: ST-014 の期待値が違う"></textarea></div><div class="actions"><button class="btn btn--primary" id="sub" type="button">${ico('arrow-forward')}結果を渡して次の段へ</button></div></div></div>`;
-  else if(t.status==='blocked')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('help',20)}AI から質問</p><p>${esc(t.reason||'')}</p><div class="fields">${nm}<div class="field"><label for="note">回答（仕様として決めたこと）</label><textarea class="textarea" id="note" rows="1"></textarea></div></div><div class="actions"><button class="btn btn--primary" id="ans" type="button">${ico('play')}回答して再開する</button></div></div></div>`;
-  else if(t.status==='paused')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('check-circle',20)}最終承認 — すべての段が終わりました</p><p class="muted">追加 ${t.cases.added.length} 件・失効 ${t.cases.retired.length} 件。AI は承認欄を埋めません。あなたの名前で記録されます。</p>${nm}<div class="actions"><button class="btn btn--primary" id="ap" type="button">${ico('check-circle')}承認する</button></div></div></div>`;
-  else if(t.status==='running')act=`<div class="callout callout--info action-card"><div><p class="lead"><span class="spin">${ico('progress-activity',20)}</span>AI が ${label(t.phase)} を作業中</p><p class="muted">止まる出口: ${(t.plan.stop_at||[]).map(label).join('・')||'最後だけ'}。あなたの番になると受信箱に出ます。</p></div></div>`;
-  else if(t.status==='stopped')act=`<div class="callout callout--critical action-card"><div><p class="lead">${ico('stop',20)}止まりました</p><p>${esc(t.reason||'')}</p><p class="muted">台帳は残っています。進め方（モード・予算）を変えて始め直せます。</p><div class="actions"><button class="btn btn--primary" id="redo" type="button">${ico('refresh')}同じ変更で始め直す</button></div></div></div>`;
-  else if(t.status==='done')act=`<div class="callout callout--low action-card"><div><p class="lead">${ico('check-circle',20)}完了</p><dl class="kv"><dt>追加したケース</dt><dd>${t.cases.added.join(', ')||'-'}</dd><dt>失効したケース</dt><dd>${t.cases.retired.join(', ')||'-'}</dd><dt>あなたが決めた回数</dt><dd>${t.decisions.length}</dd><dt>作業ブランチ</dt><dd class="mono">${esc(t.branch||'-')}</dd></dl></div></div>`;
-  const cost=`<div class="card"><h2>費用</h2><div class="score-card"><span class="score-value">$${s.toFixed(2)} <span class="muted score-label">/ 上限 $${b.toFixed(2)}</span></span><div class="score-bar cost-bar"><span class="score-fill ${pct>=100?'over':pct>75?'warn':''}" style="width:${pct}%"></span></div><span class="score-label">${t.session.ended?'AI は待機中（費用は増えません）':'セッション実行中'} · 決定 ${t.decisions.length} 回 · <span class="mono">${esc(t.session.id||'-')}</span></span></div></div>`;
-  const plan=`<div class="card"><h2>進め方 <span class="badge badge-new">${t.mode}</span></h2><dl class="kv"><dt>AI が下書き</dt><dd>${(t.plan.draft||[]).length} / ${meta.phases.length} 段</dd><dt>止まる出口</dt><dd>${(t.plan.stop_at||[]).map(label).join('・')||'最後だけ'}</dd><dt>あなたがやる段</dt><dd>${meta.phases.filter(p=>!(t.plan.draft||[]).includes(p)).map(label).join('・')||'なし'}</dd><dt>影響</dt><dd>${t.impact.join(', ')||'-'}</dd></dl></div>`;
-  if(first||!d.querySelector('#flow-canvas')){
-    d.innerHTML=`<div class="filter-row">${badge(t)}<span class="muted">${esc(t.project)} · event <span class="mono">${esc(t.event)}</span></span></div>
-    <div class="detail-grid"><div class="detail-main">
-      <div id="act"></div>
-      <div class="card flow-card"><div class="card-head"><h2>進行（AI／あなた／システムのレーン）</h2></div><canvas id="flow-canvas" class="flowc" role="img" aria-label="進行表示: 各段が AI・あなた・システムのどのレーンにあるか"></canvas></div>
-    </div><div class="detail-side"><div class="side-row" id="side"></div>
-      <div class="card tabs-card"><div class="card-head"><div class="seg" id="tabs" role="tablist"><button type="button" role="tab" data-t="draft">下書き</button><button type="button" role="tab" data-t="ev">根拠と差分</button><button type="button" role="tab" data-t="log">記録</button></div></div><div class="tabbody" id="tabbody"></div></div>
-    </div></div>`;
-    PV.mount($('flow-canvas'));
-    d.querySelectorAll('#tabs button').forEach(b=>{b.classList.toggle('active',b.dataset.t===tab);b.setAttribute('aria-selected',String(b.dataset.t===tab));b.addEventListener('click',()=>{tab=b.dataset.t;d.querySelectorAll('#tabs button').forEach(x=>{x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b))});renderTab(t)})});
-  }
-  $('act').innerHTML=act;$('side').innerHTML=cost+plan;
-  renderTab(t);setFlow(t);paintIcons(d);
-  const val=id=>$(id)?$(id).value:'';const need=()=>{if(!val('by')){fail('あなたの名前を入れてください','確定・回答・承認は名前つきで記録されます');$('by').focus();return false}return true};
-  const done=async(r,msg,errMsg,retry)=>{if(r.error){fail(errMsg,r.error,retry);return}ok(msg);await load();show(id,true)};
-  const wire=(bid,fn,errMsg)=>{const el=$(bid);if(!el)return;const run=async()=>{if(!need())return;if(el.dataset.noev){fail('根拠が無いので確定できません','AI の下書きに根拠が付いていません',()=>$('rej').click());return}el.setAttribute('aria-busy','true');const t0=el.textContent;el.textContent='処理中…';try{await fn(run)}catch(e){fail(errMsg,String(e),run)}finally{el.removeAttribute('aria-busy');el.textContent=t0}};el.addEventListener('click',run)};
-  wire('ok',async(run)=>done(await post('/api/review',{task:id,by:val('by'),ok:'1',note:val('note')}),'次の段へ進めました','確定できませんでした',run),'確定を送れませんでした');
-  wire('rej',async(run)=>done(await post('/api/review',{task:id,by:val('by'),ok:'0',note:val('note')}),'差し戻しました。AI がやり直します','差し戻せませんでした',run),'差し戻しを送れませんでした');
-  wire('sub',async(run)=>done(await post('/api/submit',{task:id,by:val('by'),file:val('file'),note:val('note')}),'受け取りました','渡せませんでした',run),'結果を送れませんでした');
-  wire('ans',async(run)=>done(await post('/api/answer',{task:id,by:val('by'),text:val('note')}),'回答を記録し、再開しました','回答を送れませんでした',run),'回答を送れませんでした');
-  wire('ap',async(run)=>done(await post('/api/approve',{task:id,by:val('by')}),'承認しました','承認できませんでした',run),'承認を送れませんでした');
-  if($('redo'))$('redo').addEventListener('click',()=>{openModal();$('r-nl').value=t.nl||'';$('r-project').value=t.project});
-  if(!silent&&isHum(t))$('act').scrollIntoView({block:'nearest'});
-}
-function setFlow(t){const S=PV.state;S.phases=FL.map(x=>x[1]);S.cur=idxOf(t);S.title=`${t.task} ${t.nl||t.project}`;S.mode=modeOf(t);
-  S.label={review:'直して確定',handoff:'自分でやって渡す',paused:'最終承認',blocked:(t.reason||'質問').replace(/^確認待ち:\s*/,''),stopped:t.reason||''}[t.status]||'';
-  const [s,b]=money(t);S.cost={spent:s,budget:b};S.stops=(t.plan.stop_at||[]).map(p=>FL.findIndex(x=>x[0]===p)).filter(i=>i>=0);
-  S.human=meta.phases.filter(p=>t.plan.draft&&!t.plan.draft.includes(p)).map(p=>FL.findIndex(x=>x[0]===p)).filter(i=>i>=0);
-  S.log=[...t.history].reverse().slice(0,4).map(h=>`${h.at.slice(11,16)} ${label(h.phase)} ${WHO[h.status]||h.status}`);S.who=t.plan.reviewer||'';S.evidence=t.evidence[t.phase]||[]}
-function renderTab(t){const el=$('tabbody');if(!el)return;
-  if(tab==='draft'){const ph=t.phase,dr=t.draft&&t.draft[ph];
-    if(dr&&dr.cases){el.innerHTML=`<p class="help-note">${esc(dr.title||label(ph))} — 緑は追加、取り消し線は失効。直したい所は作業ブランチのファイル <span class="mono">${esc(dr.path||'')}</span> を直してから確定します。</p><div class="table-wrap"><table class="table cases"><thead><tr><th>ID</th><th>対象</th><th>目的</th><th>手順</th><th>期待される結果</th><th>重要度</th><th>根拠の版</th></tr></thead><tbody>${dr.cases.map(c=>`<tr class="${c.state||''}"><td class="id">${esc(c.id)}</td><td>${esc(c.target)}</td><td>${esc(c.purpose)}</td><td>${esc(c.steps)}</td><td>${esc(c.expected)}</td><td><span class="badge badge-${({Critical:'critical',High:'high',Medium:'medium',Low:'low'})[c.sev]||'info'}">${esc(c.sev)}</span></td><td class="mono">${esc(c.basis)}</td></tr>`).join('')}</tbody></table></div>`}
-    else if(dr&&dr.text){el.innerHTML=`<p class="help-note">${esc(dr.title||label(ph))}${dr.path?' · '+esc(dr.path):''}</p><pre>${esc(dr.text)}</pre>`}
-    else if(dr&&dr.steps){el.innerHTML=`<p class="help-note">${esc(dr.title||'手順')}</p><ol>${dr.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`}
-    else{const a=t.artifacts[ph]||t.artifacts.plan;el.innerHTML=`<div class="callout callout--info">この段の下書きは作業ブランチ <span class="mono">${esc(t.branch||'')}</span> にあります${a?`: <span class="mono">${esc(a)}</span>`:''}。${t.status==='review'?'ファイルを直してから確定してください。':''}</div>`}}
-  else if(tab==='ev'){const evs=meta.phases.filter(p=>t.evidence[p]).map(p=>`<details ${p===t.phase?'open':''}><summary>${label(p)}（${t.evidence[p].length} 件）</summary><ul class="ev">${t.evidence[p].map(e=>`<li>${esc(e)}</li>`).join('')}</ul></details>`).join('')||'<p class="muted">まだ根拠がありません</p>';
-    el.innerHTML=`<p class="help-note">根拠 — 段ごとの機械判定（gate）の結果と参照した仕様</p>${evs}<p class="help-note">差分 — 作業ブランチ <span class="mono">${esc(t.branch||'')}</span> と本線</p><div id="diff" class="muted">読み込んでいます…</div>`;
-    j('/api/tasks/'+t.task+'/diff').then(dd=>{const x=$('diff');if(!x)return;x.innerHTML=dd&&dd.stat?`<pre>${esc(dd.stat)}</pre><details><summary>差分本文</summary><pre>${esc(dd.diff||'')}</pre></details>`:'差分なし（git が無い環境、またはまだ書き込みなし）'}).catch(()=>{const x=$('diff');if(x)x.textContent='差分を取得できませんでした'})}
-  else{const rows=[...t.history.map(h=>({at:h.at,k:['review','handoff','blocked','paused'].includes(h.status)?'h':h.status==='stopped'?'b':h.status==='done'?'d':'a',txt:`<b>${label(h.phase)}</b> — ${WHO[h.status]||h.status}${h.reason?' · '+esc(h.reason):''}`})),
-      ...t.decisions.map(x=>({at:x.at,k:'h',txt:`<b>${esc(x.by)}</b> が ${({confirm:'確定',reject:'差し戻し',submit:'結果を渡した',answer:'回答',approve:'承認'})[x.kind]||x.kind}（${label(x.phase)}）${x.note?' · '+esc(x.note):''}${x.artifact?' · '+esc(x.artifact):''}`}))].sort((a,b)=>b.at.localeCompare(a.at));
-    el.innerHTML=`<ul class="tl">${rows.map(r=>`<li><span class="tm">${r.at.slice(5,16).replace('T',' ')}</span><span class="dot ${r.k}"></span><span>${r.txt}</span></li>`).join('')}</ul>`}}
-
-/* ===================== modal（開閉 3 経路: 開くボタン / .modal-close / backdrop） ===================== */
-function buildModes(){$('modes').innerHTML=Object.keys(meta.presets).map(k=>`<button type="button" class="mode" data-m="${k}" aria-pressed="${k===mode}"><b>${k} ${MODES[k]?MODES[k][0]:''}</b><span>${MODES[k]?MODES[k][1]:''}</span></button>`).join('');
-  document.querySelectorAll('.mode').forEach(m=>m.addEventListener('click',()=>{mode=m.dataset.m;document.querySelectorAll('.mode').forEach(x=>x.setAttribute('aria-pressed',String(x===m)));preview()}));preview()}
-function preview(){const p=meta.presets[mode];if(!p)return;$('r-preview').textContent=`この設定だと: AI が下書きする段 ${p.draft.length} / ${meta.phases.length}（${p.draft.length?label(p.draft[p.draft.length-1])+' まで':'なし'}）。止まって確認する出口: ${p.stop_at.map(label).join('・')||'最後だけ'}。あなたがやる段: ${meta.phases.filter(x=>!p.draft.includes(x)).map(label).join('・')||'なし'}`}
-function openModal(){$('r-by').value=$('r-by').value||me();$('r-err').hidden=true;$('ovl').classList.add('open');setTimeout(()=>$('r-nl').focus(),50)}
-function closeModal(){$('ovl').classList.remove('open')}
-$('b-new').addEventListener('click',openModal);
-document.querySelectorAll('.modal-close').forEach(b=>b.addEventListener('click',closeModal));
-$('ovl').addEventListener('click',e=>{if(e.target===$('ovl'))closeModal()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
-$('r-go').addEventListener('click',async()=>{const err=$('r-err');const nl=$('r-nl').value.trim(),by=$('r-by').value.trim();
-  if(!nl||!by){err.textContent=!nl?'変更の内容を書いてください。何が変わったかが無いと影響分析ができません。':'確認する人の名前が要ります。確定・承認はこの名前で記録されます。';err.hidden=false;return}
-  const b=$('r-go');b.setAttribute('aria-busy','true');b.textContent='AI が下書きを始めています…';
-  try{const r=await post('/api/run',{project:$('r-project').value,nl,mode,reviewer:by,budget:$('r-budget').value});
+function buildModes(){const s=$('r-mode');s.innerHTML=Object.keys(meta.presets).map(k=>`<option value="${k}" ${k==='M2'?'selected':''}>${k} ${MODES[k]||''}</option>`).join('');s.addEventListener('change',preview);preview()}
+function preview(){const m=$('r-mode').value,p=meta.presets[m];if(!p)return;$('r-preview').textContent=`止まってあなたに聞く段: ${p.stop_at.map(label).join('・')||'最後だけ'}。あなたがやる段: ${meta.phases.filter(x=>!p.draft.includes(x)).map(label).join('・')||'なし'}`}
+$('go').addEventListener('click',async()=>{const err=$('r-err');const nl=$('nl').value.trim(),by=me();
+  if(!nl){err.textContent='何が変わったかを 1 文で書いてください。';err.hidden=false;$('nl').focus();return}
+  if(!by){err.textContent='右上の「あなたの名前」を入れてください。OK や承認はこの名前で記録されます。';err.hidden=false;$('me').focus();return}
+  err.hidden=true;const b=$('go');b.setAttribute('aria-busy','true');b.textContent='AI が調べています…';
+  try{const r=await post('/api/run',{project:$('r-project').value,nl,mode:$('r-mode').value,reviewer:by,budget:$('r-budget').value});
     if(r.error){err.textContent='始められませんでした: '+r.error;err.hidden=false;return}
-    closeModal();$('r-nl').value='';ok(r.task+' の下書きを始めました');await load();location.hash='#task/'+r.task}
-  catch(e){err.textContent='送れませんでした: '+e+'。画面を起動し直してからもう一度送ってください。';err.hidden=false}
-  finally{b.removeAttribute('aria-busy');b.textContent='下書きを始める'}});
-const startDemo=async()=>{const b=$('demo-go');b.setAttribute('aria-busy','true');const t0=b.textContent;b.textContent='AI が下書き中…';
+    $('nl').value='';ok(r.task+' を始めました');await load();location.hash='#task/'+r.task}
+  catch(e){err.textContent='送れませんでした: '+e+'。画面を起動し直してからもう一度。';err.hidden=false}
+  finally{b.removeAttribute('aria-busy');b.innerHTML=ico('play',18)+'AI に任せる';paintIcons(b)}});
+const startDemo=async()=>{const b=$('demo-go');b.setAttribute('aria-busy','true');const t0=b.textContent;b.textContent='AI が調べています…';
   try{const r=await post('/api/demo',{by:me()||'demo'});if(r.error){fail('デモを始められませんでした',r.error,startDemo);return}ok(r.task+' を始めました。あなたの番です');await load();location.hash='#task/'+r.task}
   catch(e){fail('デモを送れませんでした',String(e),startDemo)}
   finally{b.removeAttribute('aria-busy');b.textContent=t0}};
 $('demo-go').addEventListener('click',startDemo);
+function nav(){cur=null;$('v-detail').hidden=true;$('v-list').hidden=false}
+function route(){const h=location.hash;if(h.startsWith('#task/'))show(h.slice(6));else nav()}
+window.addEventListener('hashchange',route);
+
+/* ===================== 画面 2・3: 待つ／答える・受け取る ===================== */
+const idxOf=t=>Math.max(0,FL.findIndex(x=>x[0]===(t.phase==='waiting_human'||t.phase==='done'?'final':t.phase)));
+const modeOf=t=>t.status==='done'?'done':t.status==='blocked'?'ask':isHum(t)?'human':t.status==='running'?'ai':t.status==='stopped'?'stopped':'idle';
+const casesOf=t=>{const d=t.draft&&t.draft['test-design'];return d&&d.cases?d.cases:[]};
+const csvOf=t=>['テストID,対象,目的,手順,期待される結果,重要度,根拠の版,状態',...casesOf(t).map(c=>[c.id,c.target,c.purpose,c.steps,c.expected,c.sev,c.basis,c.state==='retired'?'失効':'追加'].map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(','))].join('\r\n');
+const stepsOf=t=>{const d=t.draft&&t.draft['test-implementation'];return d&&d.steps?d.steps:[]};
+const reportOf=t=>[`# 完了報告 ${t.task}`,'',`変更: ${t.nl||''}`,`プロジェクト: ${t.project}`,`影響: ${t.impact.join(', ')||'-'}`,`追加したテスト: ${t.cases.added.join(', ')||'なし'}`,`入れ替えた古いテスト: ${t.cases.retired.join(', ')||'なし'}`,`AI に使った金額: $${money(t)[0].toFixed(2)} / 上限 $${money(t)[1].toFixed(2)}`,'',`## 判断の記録`,...t.decisions.map(x=>`- ${x.at.slice(0,16).replace('T',' ')} ${x.by}: ${({confirm:'確定',reject:'差し戻し',submit:'結果を渡した',answer:'回答',approve:'承認'})[x.kind]||x.kind}（${label(x.phase)}）${x.note?' — '+x.note:''}`),'',`## 根拠`,...meta.phases.filter(p=>t.evidence[p]).flatMap(p=>[`### ${label(p)}`,...t.evidence[p].map(e=>`- ${e}`)]),'',`成果物: ${Object.values(t.artifacts||{}).join(', ')||'-'}（作業ブランチ ${t.branch||'-'}）`].join('\n');
+function casesTable(t,note){const rows=casesOf(t);if(!rows.length)return '';
+  return `<p class="help-note">${note||''}<span class="badge badge-new">追加</span> は新しいテスト、取り消し線は入れ替えで外す古いテスト</p><div class="table-wrap"><table class="table cases"><thead><tr><th>ID</th><th>対象</th><th class="wide">手順</th><th class="wide">期待される結果</th><th>重要度</th></tr></thead><tbody>${rows.map(c=>`<tr class="${c.state||''}"><td class="id">${esc(c.id)}</td><td>${esc(c.target)}<br><span class="muted">${esc(c.purpose)}</span></td><td>${esc(c.steps)}</td><td>${esc(c.expected)}</td><td><span class="badge badge-${({Critical:'critical',High:'high',Medium:'medium',Low:'low'})[c.sev]||'info'}">${esc(c.sev)}</span></td></tr>`).join('')}</tbody></table></div>`}
+function draftOf(t){const D=t.draft||{},ph=t.phase,dr=D[ph];
+  if(dr&&dr.cases)return casesTable(t,`${esc(dr.title||label(ph))} — `);
+  if(dr&&dr.steps)return `<p class="help-note">${esc(dr.title||'手順')}</p><ol>${dr.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>`;
+  if(dr&&dr.text)return `<p class="help-note">${esc(dr.title||label(ph))}</p><pre>${esc(dr.text)}</pre>`;
+  const a=t.artifacts[ph]||t.artifacts.plan;return `<div class="callout callout--info">この段の下書きはファイルにあります${a?`: <span class="mono">${esc(a)}</span>`:''}（作業ブランチ <span class="mono">${esc(t.branch||'')}</span>）</div>`}
+async function show(id,silent){
+  let t;try{t=await j('/api/tasks/'+id);}catch(e){fail('タスクを読めませんでした',String(e));return}
+  if(t.error){fail('タスクが見つかりません',id);location.hash='';return}
+  const first=cur!==id;cur=id;$('v-list').hidden=true;const d=$('v-detail');d.hidden=false;
+  const who=me()||t.plan.reviewer||'';
+  const ph=label(t.phase);let act='',body='',cls='';
+  if(t.status==='review'){act=`<p class="lead">${ico('person',20)}AI が「${ph}」を作りました。下を見て、良ければ OK</p><div class="fields"><textarea class="textarea" id="note" rows="1" placeholder="直したい点があれば書く（やり直しの理由になります）"></textarea></div><div class="actions"><button class="btn btn--primary" id="ok" type="button">${ico('check-circle')}OK（次へ進める）</button><button class="btn" id="rej" type="button">${ico('arrow-back')}やり直してもらう</button></div>`;body=draftOf(t)}
+  else if(t.status==='handoff'){act=`<p class="lead">${ico('person',20)}「${ph}」はあなたの番です。下の手順でテストして、結果を渡す</p><div class="fields"><textarea class="textarea" id="note" rows="1" placeholder="結果（例: 12 件 PASS、1 件 FAIL: ST-014 の期待値が違う）"></textarea><input class="input" id="file" placeholder="結果ファイル（あれば。例: results/${esc(t.task)}.csv）"></div><div class="actions"><button class="btn btn--primary" id="sub" type="button">${ico('arrow-forward')}結果を渡す</button></div>`;
+    const st=stepsOf(t);body=(st.length?`<p class="help-note">プロジェクトのフォルダでコマンドプロンプトを開いて実行</p><ol>${st.map(x=>`<li>${esc(x.replace('<task>',t.task))}</li>`).join('')}</ol>`:'')+casesTable(t,'確かめるテスト — ')}
+  else if(t.status==='blocked'){act=`<p class="lead">${ico('help',20)}AI からの質問。答えると続きが進みます</p><p class="q">${esc(REASON_PLAIN(t.reason).replace(/^確認待ち:\s*/,''))}</p><div class="fields"><textarea class="textarea" id="note" rows="1" placeholder="答え"></textarea></div><div class="actions"><button class="btn btn--primary" id="ans" type="button">${ico('play')}答える</button></div>`;body=draftOf(t)}
+  else if(t.status==='paused'){cls='ok';act=`<p class="lead">${ico('check-circle',20)}AI の作業は終わりました。下の表を見て、問題なければ承認</p><p class="muted">追加 ${t.cases.added.length} 件・入れ替え ${t.cases.retired.length} 件。承認はあなたの名前で記録されます（AI は承認できません）。</p><div class="actions"><button class="btn btn--primary" id="ap" type="button">${ico('check-circle')}承認する</button></div>`;body=casesTable(t)}
+  else if(t.status==='running'){cls='ai';act=`<p class="lead"><span class="spin">${ico('progress-activity',20)}</span>AI が「${ph}」を作っています。待つだけ</p><p class="muted">終わると、ここに「あなたがすること」が出ます。画面は自動で更新されます。</p>`;body=draftOf(t)}
+  else if(t.status==='stopped'){cls='bad';act=`<p class="lead">${ico('circle-alert',20)}止まりました</p><p class="q">${esc(REASON_PLAIN(t.reason))}</p><p class="muted">これまでの記録は残っています。始め直すと、進め方や上限金額を変えられます。</p><div class="actions"><button class="btn btn--primary" id="redo" type="button">${ico('refresh')}始め直す</button></div>`;body=draftOf(t)}
+  else if(t.status==='done'){cls='ok';act=`<p class="lead">${ico('check-circle',20)}完了。成果物を受け取ってください</p><div class="out"><div class="card"><b>テストの表</b><span class="muted">追加 ${t.cases.added.length} 件・入れ替え ${t.cases.retired.length} 件（CSV）</span><button class="btn btn--primary" id="dl-csv" type="button">${ico('download')}保存</button></div><div class="card"><b>実行手順</b><span class="muted">テストの動かし方（テキスト）</span><button class="btn" id="dl-steps" type="button">${ico('download')}保存</button></div><div class="card"><b>完了報告</b><span class="muted">影響・判断の記録・根拠（Markdown）</span><button class="btn" id="dl-rep" type="button">${ico('download')}保存</button></div></div>`;body=casesTable(t)}
+  else{cls='ai';act=`<p class="lead">${ico('progress-activity',20)}準備中</p>`}
+  if(first||!d.querySelector('#act')){
+    d.innerHTML=`<div class="head"><a class="btn btn--ghost" href="#">${ico('arrow-back')}戻る</a><h1 id="ttl"></h1><span id="d-badge"></span></div>
+      <div class="card act" id="act"></div>
+      <div class="card body scroll" id="body"></div>
+      <details class="more" id="more"><summary>詳細（どこまで進んだか・AI に使った金額・なぜそう判断したか・記録）</summary><div class="more-grid" id="more-body"></div></details>`;
+    $('more').addEventListener('toggle',()=>{if($('more').open)renderMore(t)});
+  }
+  $('ttl').textContent=t.nl||t.project;$('d-badge').innerHTML=badge(t);
+  const a=$('act');a.className='card act '+cls;a.innerHTML=act;$('body').innerHTML=body||'<p class="muted">まだ見せるものはありません</p>';$('body').hidden=!body;
+  setFlow(t);if($('more').open)renderMore(t);paintIcons(d);
+  const val=id=>$(id)?$(id).value:'';const need=()=>{if(!who){fail('右上の「あなたの名前」を入れてください','OK・回答・承認は名前つきで記録されます');$('me').focus();return false}return true};
+  const done=async(r,msg,errMsg,retry)=>{if(r.error){fail(errMsg,r.error,retry);return}ok(msg);await load();show(id,true)};
+  const wire=(bid,fn,errMsg)=>{const el=$(bid);if(!el)return;const run=async()=>{if(!need())return;el.setAttribute('aria-busy','true');const t0=el.innerHTML;el.textContent='処理中…';try{await fn(run)}catch(e){fail(errMsg,String(e),run)}finally{el.removeAttribute('aria-busy');el.innerHTML=t0;paintIcons(el)}};el.addEventListener('click',run)};
+  wire('ok',async(run)=>done(await post('/api/review',{task:id,by:who,ok:'1',note:val('note')}),'次へ進めました','OK を送れませんでした',run),'OK を送れませんでした');
+  wire('rej',async(run)=>done(await post('/api/review',{task:id,by:who,ok:'0',note:val('note')}),'AI がやり直します','やり直しを送れませんでした',run),'やり直しを送れませんでした');
+  wire('sub',async(run)=>done(await post('/api/submit',{task:id,by:who,file:val('file'),note:val('note')}),'結果を受け取りました','結果を送れませんでした',run),'結果を送れませんでした');
+  wire('ans',async(run)=>done(await post('/api/answer',{task:id,by:who,text:val('note')}),'答えを記録し、再開しました','答えを送れませんでした',run),'答えを送れませんでした');
+  wire('ap',async(run)=>done(await post('/api/approve',{task:id,by:who}),'承認しました','承認できませんでした',run),'承認できませんでした');
+  if($('redo'))$('redo').addEventListener('click',()=>{location.hash='';$('nl').value=t.nl||'';$('r-project').value=t.project;$('nl').focus()});
+  if($('dl-csv'))$('dl-csv').addEventListener('click',()=>dl(`${t.task}_テストの表.csv`,csvOf(t),'text/csv'));
+  if($('dl-steps'))$('dl-steps').addEventListener('click',()=>dl(`${t.task}_実行手順.txt`,stepsOf(t).map((x,i)=>`${i+1}. ${x.replace('<task>',t.task)}`).join('\n')||'（手順なし）','text/plain'));
+  if($('dl-rep'))$('dl-rep').addEventListener('click',()=>dl(`${t.task}_完了報告.md`,reportOf(t),'text/markdown'));
+}
+function setFlow(t){const S=PV.state;S.phases=FL.map(x=>x[1]);S.cur=idxOf(t);S.title=`${t.task} ${t.nl||t.project}`;S.mode=modeOf(t);
+  S.label={review:'OK する',handoff:'テストして渡す',paused:'承認',blocked:'質問に答える',stopped:REASON_PLAIN(t.reason)}[t.status]||'';
+  const [s,b]=money(t);S.cost={spent:s,budget:b};S.stops=(t.plan.stop_at||[]).map(p=>FL.findIndex(x=>x[0]===p)).filter(i=>i>=0);
+  S.human=meta.phases.filter(p=>t.plan.draft&&!t.plan.draft.includes(p)).map(p=>FL.findIndex(x=>x[0]===p)).filter(i=>i>=0);
+  S.log=[];S.who=t.plan.reviewer||'';S.evidence=t.evidence[t.phase]||[]}
+function renderMore(t){const el=$('more-body');const [s,b]=money(t),pct=b?Math.min(100,s/b*100):0;const span=a=>!a.length?'なし':a.length<=3?a.join('・'):`${a[0]} 〜 ${a[a.length-1]}（${a.length} 段）`;
+  el.innerHTML=`<div class="card full"><h2>どこまで進んだか</h2><p class="help-note">上の段は AI、真ん中はあなた、下は自動検査。色の付いた箱がいまの位置</p><canvas id="flow-canvas" class="flowc" role="img" aria-label="進み具合"></canvas></div>
+    <div class="card"><h2>AI に使った金額（累計）</h2><div class="score-card"><span class="score-value">$${s.toFixed(2)} <span class="muted score-label">/ 上限 $${b.toFixed(2)}</span></span><div class="score-bar"><span class="score-fill" style="width:${pct}%"></span></div><span class="score-label">${t.session.ended?'いま AI は動いていません':'AI が動いています'}${$('rt').textContent.startsWith('練習')?'。練習モードの金額は仮で、請求されません':''}</span></div>
+      <h2>AI に任せる範囲</h2><dl class="kv"><dt>AI がやる</dt><dd>${span((t.plan.draft||[]).map(label))}</dd><dt>あなたがやる</dt><dd>${span(meta.phases.filter(p=>!(t.plan.draft||[]).includes(p)).map(label))}</dd><dt>止まって聞く</dt><dd>${span((t.plan.stop_at||[]).map(label))}</dd><dt>影響</dt><dd>${esc(t.impact.join(', ')||'-')}</dd><dt>作業ブランチ</dt><dd class="mono">${esc(t.branch||'-')}</dd></dl></div>
+    <div class="card"><h2>なぜそう判断したか</h2>${meta.phases.filter(p=>t.evidence[p]).map(p=>`<details ${p===t.phase?'open':''}><summary>${label(p)}（${t.evidence[p].length} 件）</summary><ul class="ev">${t.evidence[p].map(e=>`<li>${esc(e)}</li>`).join('')}</ul></details>`).join('')||'<p class="muted">まだ根拠がありません</p>'}
+      <h2>記録</h2><ul class="tl">${[...t.history.map(h=>({at:h.at,txt:`${label(h.phase)} — ${WHO[h.status]||h.status}${h.reason?' · '+esc(REASON_PLAIN(h.reason)):''}`})),...t.decisions.map(x=>({at:x.at,txt:`<b>${esc(x.by)}</b> が ${({confirm:'OK',reject:'やり直し',submit:'結果を渡した',answer:'回答',approve:'承認'})[x.kind]||x.kind}（${label(x.phase)}）${x.note?' · '+esc(x.note):''}`}))].sort((a,b)=>b.at.localeCompare(a.at)).map(r=>`<li><span class="tm">${r.at.slice(5,16).replace('T',' ')}</span><span>${r.txt}</span></li>`).join('')}</ul></div>`;
+  PV.mount($('flow-canvas'));paintIcons(el)}
 paintIcons(document);
 load().then(route);setInterval(()=>{if(!document.hidden)load()},5000);
 </script>
