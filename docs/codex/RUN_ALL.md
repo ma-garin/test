@@ -40,19 +40,9 @@ venv\Scripts\python scripts\verify.py            :: 末尾 ALL GREEN（MVP が�
 
 kit のスクリプトのうち `.sh` は動かない（bash なし）。Python 版を使う: `test_metrics.py`・`check_approval.py`・`pw-spec-lint.py`・`section_hash.py`。`trace_check.py` は **T09** で作る（それまで trace-check は「未検査」）。`test-weaken-check.py` は git が要るので常に「未検査」。
 
-## 2. 実装（T01 → T09 → T03 → T02 → T04 → T05 → T06 → T07）
+## 2. 実装（済み。読むだけ）
 
-各 `docs/codex/HANDOFF_Tnn.md` を **上から順に読んで実装** する。1 本ごとに:
-
-```bat
-venv\Scripts\python scripts\verify.py            :: 末尾 ALL GREEN
-echo Tnn DONE >> docs\codex\PROGRESS.md
-```
-
-- HANDOFF の「触るファイル」の外は触らない。触らないと通らないときは、最小の変更にして §7 に書く。
-- HANDOFF に「Claude が行う」「人が用意」とある項目は、**あなたがやる**（このファイルの権限が優先）。ただし T08（実機）は今回やらない。
-- T02 の `run_gate` は `demo/library-loan/scripts/` の実体を呼ぶ。`cwd` は `project.config["project"]["subdir"]`（`demo/library-loan`）を渡す（HANDOFF_T02 §4 のとおり）。
-- T09（`trace_check.py`）は T01 の直後にやる。T03 の gate が使う。
+T01〜T07・T09 は **この zip に実装済み**（`docs/codex/PROGRESS.md`）。Codex が書くコードは無い。`verify.py` が ALL GREEN でなければ、落ちたテスト名と出力を §7 に書いて止まる（直そうとしない）。
 
 ## 3. デモを通す（mock ランタイムで一気通貫。鍵不要）
 
@@ -76,9 +66,9 @@ set Q=venv\Scripts\qa-sentinel
 
 Web も 1 回起動して確認（`start /b venv\Scripts\qa-sentinel web --port 8790` → `curl -s http://127.0.0.1:8790/api/tasks` が台帳を返す → ブラウザで `http://127.0.0.1:8790/guide`（使い方）と `http://127.0.0.1:8790/`（台帳。タスクが無いと「図書館デモを動かす」ボタンが出る。詳細の「表示の型」で 5 つの進行表示が切り替わる）を開く → その cmd を閉じて止める）。
 
-## 4. 実機確認（今回はやらない）
+## 4. 実機確認（鍵があるときだけ）
 
-Managed Agents への実接続（`HANDOFF_T08_live_check.md`）は **今回は飛ばす**（人の判断: mock まで）。§7 に「T08: 未実行（指示）」と書く。鍵を探しに行かない。
+環境変数 `ANTHROPIC_API_KEY` が **設定されていれば** `HANDOFF_T08_live_check.md` を行う（予算 $1 で 1 段）。設定されていなければ飛ばし、§7 に「T08: 未実行（鍵なし）」と書く。鍵を探しに行かない・聞かない。
 
 ## 5. 仕上げ
 

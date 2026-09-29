@@ -69,7 +69,7 @@ class TrackerState:
 - 設定エラーは `state.polls` を増やす前、かつ try/except の外で判定・送出する（後述の「fetch/parse エラー」と混同しない）。
 
 **種別ごとの URL 組み立て**（`kind` で分岐、設定エラーの判定を通過した後）:
-  - `jira`: `GET <base_url>/rest/api/2/search?jql=<query> AND updated >= "<last_seen>"`
+  - `jira`: `GET <base_url>/rest/api/2/search?jql=<query> AND updated >= "<last_seen を yyyy/MM/dd HH:mm に直したもの>"`（JQL は ISO 8601 を受け付けない）
   - `confluence`: `GET <base_url>/rest/api/content/search?cql=lastmodified >= "<last_seen>"`
   - `redmine`: `GET <base_url>/issues.json?updated_on=>=<last_seen>`（`credential_ref` が `"env:<VAR>"` のとき、ヘッダは `Authorization: Bearer <os.environ[VAR]>`）。
 - **fetch の注入**: 実 HTTP 呼び出しは行わず、`fetch(url: str, headers: dict) -> dict`（JSON 相当の dict を返す関数）を引数で受け取る。`fetch=None` の場合のデフォルト実装は `urllib.request` などで良いが、テストは必ず `fetch` を注入するので、デフォルト実装の実際の疎通は検証しない。

@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -19,6 +21,7 @@ from ..triggers import nl as nl_trigger
 from ..core.state import GATES, PHASE_LABELS, PHASES
 
 _STATIC = Path(__file__).parent / "static"
+_TASK_ID = re.compile(r"^T-\d{4,}$")
 _MIME = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8"}
 DEMO_NL = "貸出上限を 5 冊から 3 冊に変更"
 DEMO_PROJECT = "library-loan"
@@ -30,6 +33,18 @@ def _runtime():
         return ManagedAgentsRuntime()
     from ..runtime.mock import MockRuntime
     return MockRuntime()
+
+
+def _git_diff(branch: str) -> dict:
+    """作業ブランチと本線の差分。git が無い・ブランチが無い・失敗はすべて {stat: None, diff: None}（例外を外に出さない）。"""
+    try:
+        stat = subprocess.run(["git", "diff", "--stat", f"main...{branch}"], cwd=".", capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
+        body = subprocess.run(["git", "diff", f"main...{branch}"], cwd=".", capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10)
+    except Exception:  # noqa: BLE001 - git 無し・ブランチ無し・文字コード等、何が起きても画面を落とさない
+        return {"stat": None, "diff": None}
+    if stat.returncode != 0 or body.returncode != 0 or not branch:
+        return {"stat": None, "diff": None}
+    return {"stat": stat.stdout, "diff": body.stdout[: 200 * 1024]}
 
 
 def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
@@ -62,10 +77,15 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
             elif u.path == "/api/tasks":
                 self._json([t.to_dict() for t in ledger.list()])
             elif u.path.startswith("/api/tasks/"):
+                parts = u.path.split("/")[3:]
+                tid = parts[0] if parts else ""
+                if not _TASK_ID.match(tid) or len(parts) > 2 or (len(parts) == 2 and parts[1] != "diff"):
+                    return self._json({"error": "not found"}, 404)
                 try:
-                    self._json(ledger.load(u.path.rsplit("/", 1)[1]).to_dict())
-                except FileNotFoundError:
-                    self._json({"error": "not found"}, 404)
+                    task = ledger.load(tid)
+                except (FileNotFoundError, ValueError, TypeError):
+                    return self._json({"error": "not found"}, 404)
+                self._json(_git_diff(task.branch) if len(parts) == 2 else task.to_dict())
             else:
                 self._json({"error": "not found"}, 404)
 
@@ -93,7 +113,7 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
                 elif u.path == "/api/answer":
                     t = answer(task, by, q.get("text", ""), ledger, rt, projects_dir=projects_dir)
                 elif u.path == "/api/approve":
-                    t = approve(task, by, ledger)
+                    t = approve(task, by, ledger, projects_dir=projects_dir)
                 else:
                     return self._json({"error": "not found"}, 404)
                 self._json(t.to_dict())

@@ -5,6 +5,8 @@ branch = "main"
 subdir = "demo/library-loan"
 lifecycle_dir = "docs/lifecycle"
 cases_csv = "docs/test/system_test_cases.csv"
+apply_swap = false   # true: 入替段で cases_csv を実際に書き換える（失効は消さず「失効(新ID)」）。false: 記録だけ
+approval_gate = ""   # デモは工程承認記録を持たないので空（機械判定なし）。使うなら "check-approval"
 test_cmd = "npx playwright test"
 
 [triggers]

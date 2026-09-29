@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import os
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -34,6 +35,7 @@ class Task:
     decisions: list[dict] = field(default_factory=list)  # 人の確定・回答・承認（名前つき）
     nl: str = ""                                        # 変更の一文（画面の見出し）
     draft: dict = field(default_factory=dict)         # 段 → 下書きの中身（ケース表・手順・文）。無ければ artifacts のパスを見る
+    session_count: int = 0                              # runtime.start() を呼んだ回数（L7 の上限判定）
     created_at: str = field(default_factory=_now)
     updated_at: str = field(default_factory=_now)
 
@@ -56,6 +58,8 @@ class Ledger:
         self.root.mkdir(parents=True, exist_ok=True)
 
     def _path(self, task_id: str) -> Path:
+        if not re.match(r"^T-\d{4,}$", task_id):  # URL や引数から来た ID で tasks/ の外に出ない
+            raise FileNotFoundError(f"task id が不正: {task_id!r}")
         return self.root / f"{task_id}.json"
 
     def new_id(self) -> str:

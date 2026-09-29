@@ -1,7 +1,7 @@
 # qa-sentinel — 変更駆動 QA エージェント（枠組み・MVP・Codex 指示書）
 
-開発中の CUD（追加・変更・削除）を起点に、影響分析 → テスト計画〜完了報告 → リグレッション差し替えを自律的に回すエージェントの**設計文書と MVP**。
-本実装は `docs/codex/` の指示書に沿って Codex が行う（役割分担は `docs/codex/README.md`）。
+開発中の CUD（追加・変更・削除）を起点に、影響分析 → テスト計画〜完了報告 → リグレッション差し替えを自律的に回すエージェント。
+**mock で全部動く**（鍵なし）。**鍵（ANTHROPIC_API_KEY）を入れると本物の AI（Managed Agents）で動く**（下の「本番で動かす」）。Codex 環境ではそのまま zip を解凍して `RUN_ALL.md` の検証と実機確認だけを行う。
 
 ## 中身
 
@@ -22,11 +22,11 @@
 | `docs/08_進行表示の設計.md` | 画面の動き（アニメーション）の設計。参考にした事例（Devin・Copilot・Actions・Temporal・Vercel・HAX）と採用 |
 | `docs/07_使い方.md` | **初めての人向け**: start.bat → 使い方画面 → 図書館デモ → やることリストを片づける（同じ内容が `/guide` で自動表示） |
 | `start.bat` / `start.sh` | ダブルクリックで準備・起動・ブラウザを開く |
-| `docs/codex/RUN_ALL.md` | **一言で全部作る指示書**（Codex に「RUN_ALL.md に従え」と貼るだけ。T01〜T07 → 図書館デモ → 実機 → PR） |
+| `docs/codex/RUN_ALL.md` | Codex 環境での**検証と実機確認の指示書**（T01〜T09 はこの環境で実装済み。Codex は verify → デモ一巡 → 鍵があれば T08） |
 | `demo/library-loan/` | 図書館デモ（単一 HTML）＋ kit のスクリプト・工程文書・ケース表を同梱。`run_gate` が呼ぶ実体 |
 | `docs/codex/BUILD_GUIDE.md` | **Codex 環境で何をどの順にやれば構築できるか**（準備→実装 T01〜T07→道具の配布→実機確認 T08→運用） |
 | `docs/codex/` | Codex 向け指示書 HANDOFF_T01〜T08 と雛形 |
-| `qa_sentinel/` | MVP（台帳・状態機械・モックランタイム・CLI・Web） |
+| `qa_sentinel/` | 本体。`core/`（台帳・状態機械・orchestrator・gates・swap）、`runtime/`（mock と Managed Agents）、`triggers/`（nl・pr・tracker）、`agent/`（登録と system prompt）、`web/`（画面）、`cli.py`・`menu.py` |
 | `projects/` | プロジェクトごとの環境情報（`env.md`）と設定（`config.toml`） |
 | `scripts/verify.py` | 検証ゲート（唯一の実装。`verify.sh` は薄い呼び出し）。末尾 `ALL GREEN` で合格 |
 
@@ -35,7 +35,20 @@
 Windows: `start.bat` をダブルクリック（macOS/Linux: `./start.sh`）→ 初回は「使い方」の画面が自動で開く → 台帳の画面の「図書館デモを動かす」。詳しくは `docs/07_使い方.md`。
 黒い画面なら `qa-sentinel demo --by 名前`、または `qa-sentinel` と打つだけで番号メニュー（5 がデモ）。進行表示は 5 つの型（ワークフロー／パイプライン／スイムレーン／かんばん／タイムライン）から画面で選べる。
 
-## コマンドで試す（MVP。LLM は使わない）
+## 本番で動かす（鍵あり: Managed Agents）
+
+```bat
+venv\Scripts\pip install -e .[managed]                       :: anthropic SDK
+set ANTHROPIC_API_KEY=sk-ant-...                              :: 必須（ファイルに書かない）
+set GITHUB_TOKEN=ghp_...                                      :: 任意。無いとリポジトリを積まずに動く
+venv\Scripts\python -m qa_sentinel.agent.register --project library-loan   :: 1 回だけ。環境とエージェントを登録して agent.toml を書く
+venv\Scripts\qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --runtime managed
+set QA_SENTINEL_RUNTIME=managed && start.bat                  :: 画面も本物で
+```
+
+守られること: 予算は `sessions.create` の budget（セント単位）で上限が効く。終了条件は `run_gate` ツールでホストが判定し、LLM は exit code を解釈しない。根拠の無い下書きは確定画面に出ない。承認は人だけ。
+
+## コマンドで試す（mock。LLM は使わない）
 
 ```bash
 python3 -m venv venv && venv/bin/pip install -e .[dev]

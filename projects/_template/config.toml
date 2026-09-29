@@ -4,6 +4,8 @@ repo = "owner/repo"
 branch = "main"
 lifecycle_dir = "docs/lifecycle"
 cases_csv = "docs/quality/system_test_cases.csv"
+apply_swap = true   # true: 入替段で cases_csv を実際に書き換える（失効は消さず「失効(新ID)」）。false: 記録だけ
+approval_gate = "check-approval"   # 承認時に走らせる終了条件（kit の check_approval.py）。空なら機械判定なし
 test_cmd = "python3 -m pytest -q"
 
 [triggers]
@@ -21,7 +23,7 @@ kind = "jira"            # jira | confluence | redmine
 base_url = "https://jira.example.com"
 query = "project = PROJ AND updated >= -1d"
 poll_minutes = 10
-credential_ref = "vault:jira-token"
+credential_ref = "env:JIRA_TOKEN"
 
 [session]
 budget_usd = 5.0

@@ -50,7 +50,7 @@ button,select{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(
 <tr><td>環境情報を書く（URL・起動手順・削除禁止・触ってよいソース）</td><td><code>projects/_template</code> を写して <code>projects/&lt;名前&gt;/env.md</code> を埋める</td></tr>
 <tr><td>変更を 1 文で伝え、4 つの質問に答える（どこまで AI／どこで止まる／だれが見る／いくらまで）</td><td>画面の「変更を伝えて始める」／<code>qa-sentinel run --project &lt;名前&gt; --nl "…"</code></td></tr>
 <tr><td>自分の番を片づける（直して OK・自分でやって渡す・質問に答える・承認）</td><td>やることリスト／<code>qa-sentinel</code> のメニュー 2</td></tr>
-<tr><td>本物の AI を有効にする（今は mock）</td><td><code>docs/codex/HANDOFF_T08.md</code> に従い鍵を入れ <code>--runtime managed</code></td></tr>
+<tr><td>本物の AI で動かす（鍵を入れる）</td><td><code>pip install -e .[managed]</code> → <code>set ANTHROPIC_API_KEY=…</code> → <code>python -m qa_sentinel.agent.register --project &lt;名前&gt;</code>（1 回）→ <code>set QA_SENTINEL_RUNTIME=managed</code> で start.bat。詳しくは 07 §5</td></tr>
 </tbody></table>
 <p class="muted">守られること: AI は作業ブランチにしか書かない。製品コードは案を出すだけ。予算は画面に出て上限で止まる。OK・回答・承認はあなたの名前で記録され、AI は承認欄を埋めない。</p>
 
