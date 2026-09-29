@@ -65,7 +65,9 @@ def run_event(event: ChangeEvent, runtime: Runtime, ledger: Ledger, project: Pro
         if r.draft:
             task.draft[phase] = r.draft
         if r.outcome == "ok":
-            _apply_swap(task, phase, project)
+            swap_reason = _apply_swap(task, phase, project)
+            if swap_reason:
+                r.outcome, r.reason = "blocked", swap_reason
         if r.outcome != "ok":
             _end(runtime, handle, task)
             task.record(phase, "blocked" if r.outcome == "blocked" else "stopped", reason=r.reason)
@@ -100,22 +102,29 @@ def _project_cwd(project: Project) -> str:
     return str(project.config.get("project", {}).get("subdir") or ".")
 
 
-def _apply_swap(task: Task, phase: str, project: Project) -> None:
-    """regression-swap 段の下書き（新ケース行）を実際の CSV に反映する（失効は削除しない）。config [project].apply_swap が false なら記録だけ。"""
+def _apply_swap(task: Task, phase: str, project: Project) -> str | None:
+    """regression-swap 段の下書き（新ケース行）を実際の CSV に反映する（失効は削除しない）。
+    config [project].apply_swap が false なら何もしない。失敗（gate NG・例外）は理由を返し、呼び元が blocked にする。"""
     if phase != "regression-swap" or not project.config.get("project", {}).get("apply_swap", False):
-        return
+        return None
     cases = [c for c in (task.draft.get("test-design") or {}).get("cases", []) if c.get("state") == "new"]
     if not cases:
-        return
+        return None
     from .swap import swap
     new_rows = [{"対象機能": c.get("target", ""), "テスト目的": c.get("purpose", ""), "手順": c.get("steps", ""), "期待される結果": c.get("expected", ""),
                  "severity": c.get("sev", ""), "根拠の版": c.get("basis", ""), "req_id": (c.get("basis") or "").split("@")[0] or None,
                  "prefix": (c.get("id") or "ST").split("-")[0]} for c in cases]
-    r = swap(project, [i for i in task.impact if i.startswith("REQ")] or task.impact, new_rows, cwd=_project_cwd(project))
+    try:
+        r = swap(project, [i for i in task.impact if i.startswith("REQ")] or task.impact, new_rows, cwd=_project_cwd(project))
+    except Exception as e:  # noqa: BLE001 - CSV や追跡表が無い等。台帳に残して人へ戻す
+        task.evidence.setdefault(phase, []).append(f"swap: 失敗 {type(e).__name__}: {e}")
+        return f"swap_error: {type(e).__name__}"
     task.evidence.setdefault(phase, []).append(f"swap: {'ok' if r.ok else 'NG'} 失効 {len(r.retired)} 追加 {len(r.added)}" + (f" ({r.reason})" if r.reason else ""))
-    if r.ok:
-        task.cases["added"] = sorted(set(task.cases["added"]) | set(r.added))
-        task.cases["retired"] = sorted(set(task.cases["retired"]) | set(r.retired))
+    if not r.ok:
+        return f"swap_ng: {r.reason or 'gate NG'}（CSV は元に戻した）"
+    task.cases["added"] = sorted(set(task.cases["added"]) | set(r.added))
+    task.cases["retired"] = sorted(set(task.cases["retired"]) | set(r.retired))
+    return None
 
 
 def check_limits(task: Task) -> str | None:

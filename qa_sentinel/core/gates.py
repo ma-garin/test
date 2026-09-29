@@ -80,7 +80,7 @@ def run_gate(name: str, args: list[str], project: Project, cwd: str | Path = "."
     if not script.exists():
         return GateResult(name, 127, False, f"missing: {script}", skipped=True)
     try:
-        proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
+        proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
     except FileNotFoundError:
         return GateResult(name, 127, False, f"missing: {script}", skipped=True)
     except subprocess.TimeoutExpired:

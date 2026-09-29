@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import os
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -57,6 +58,8 @@ class Ledger:
         self.root.mkdir(parents=True, exist_ok=True)
 
     def _path(self, task_id: str) -> Path:
+        if not re.match(r"^T-\d{4,}$", task_id):  # URL や引数から来た ID で tasks/ の外に出ない
+            raise FileNotFoundError(f"task id が不正: {task_id!r}")
         return self.root / f"{task_id}.json"
 
     def new_id(self) -> str:

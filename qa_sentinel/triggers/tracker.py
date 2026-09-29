@@ -21,6 +21,15 @@ _DIRECT = "direct モードの担当（未割当（別タスク））"
 _KINDS = ("jira", "confluence", "redmine")
 
 
+def _jql_time(iso: str) -> str:
+    """ISO 8601（UTC）→ JQL/CQL の "yyyy/MM/dd HH:mm"。解釈できなければそのまま。"""
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(iso.replace("Z", "+00:00")).strftime("%Y/%m/%d %H:%M")
+    except ValueError:
+        return iso
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -98,10 +107,10 @@ def poll_once(project: Project, state: TrackerState, fetch=None) -> list[ChangeE
         raise ValueError(f"unknown tracker kind: {kind}")
 
     since = state.last_seen
-    if kind == "jira":
-        url = f"{base}/rest/api/2/search?jql=" + quote(f'{query} AND updated >= "{since}"')
-    elif kind == "confluence":
-        url = f"{base}/rest/api/content/search?cql=" + quote(f'lastmodified >= "{since}"')
+    if kind == "jira":  # JQL の日時は "yyyy/MM/dd HH:mm"（ISO 8601 は 400）
+        url = f"{base}/rest/api/2/search?jql=" + quote(f'{query} AND updated >= "{_jql_time(since)}"')
+    elif kind == "confluence":  # CQL も同じ書式
+        url = f"{base}/rest/api/content/search?cql=" + quote(f'lastmodified >= "{_jql_time(since)}"')
     else:
         url = f"{base}/issues.json?updated_on=" + quote(f">={since}", safe=">=:")
 

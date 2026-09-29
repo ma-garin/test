@@ -374,3 +374,35 @@ def test_swap_applied_at_regression_swap_when_enabled(tmp_path):
     assert t.phase == "regression-swap" and any(e.startswith("swap: ok") for e in t.evidence["regression-swap"])
     csv_text = (work / "demo" / "library-loan" / "docs" / "test" / "system_test_cases.csv").read_text(encoding="utf-8")
     assert "失効(" in csv_text and len(t.cases["added"]) >= 3
+
+
+def test_swap_failure_blocks_instead_of_done(tmp_path, monkeypatch):
+    from qa_sentinel.core import project as projmod
+    real = projmod.load_project
+    pr = real("library-loan", str(Path(__file__).parent.parent / "projects"))
+    pr.config["project"]["apply_swap"] = True
+    monkeypatch.setattr("qa_sentinel.core.swap.swap", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError("csv")))
+    led = Ledger(tmp_path / "tasks"); rt = MockRuntime()
+    t = run_event(nl.from_text("library-loan", "x"), rt, led, pr, plan=M1)
+    assert (t.phase, t.status) == ("regression-swap", "blocked") and t.reason.startswith("swap_error") and t.session["ended"]
+
+
+def test_web_rejects_bad_task_ids(ws):
+    import threading
+    import urllib.request
+    from http.server import ThreadingHTTPServer
+
+    from qa_sentinel.web.app import make_handler
+
+    led = Ledger(ws / "tasks"); _run(led)
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(led, MockRuntime()))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        u = f"http://127.0.0.1:{srv.server_address[1]}"
+        for bad in ("/api/tasks/..%2F..%2Fx", "/api/tasks/T-0001/other", "/api/tasks/abc", "/api/tasks/T-0001/diff/x"):
+            try:
+                urllib.request.urlopen(u + bad); assert False, bad
+            except urllib.error.HTTPError as e:
+                assert e.code == 404, bad
+    finally:
+        srv.shutdown()

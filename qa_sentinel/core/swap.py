@@ -53,7 +53,7 @@ def _section_hash(cwd: Path, req_id: str) -> str:
     if not script.exists():
         return ""
     lifecycle = project_lifecycle_dir(cwd)
-    proc = subprocess.run([sys.executable, str(script), "hash", lifecycle, req_id], capture_output=True, text=True, cwd=str(cwd))
+    proc = subprocess.run([sys.executable, str(script), "hash", lifecycle, req_id], capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(cwd))
     out = proc.stdout.strip().splitlines()
     return out[0].split("@", 1)[1] if proc.returncode == 0 and out and "@" in out[0] else ""
 
