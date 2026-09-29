@@ -1,7 +1,7 @@
 """台帳の Web 表示。標準ライブラリだけ。
 GET  /  /guide  /static/<file>  /api/meta  /api/tasks  /api/tasks/<id>
 POST /api/run (project, nl, mode, reviewer, budget)  /api/demo (by, budget)  /api/review (task, by, ok=1|0, note)  /api/submit (task, by, file, note)  /api/answer (task, by, text)  /api/approve (task, by)
-ランタイムは環境変数 QA_SENTINEL_RUNTIME（mock|managed、既定 mock）。
+ランタイムは環境変数 QA_SENTINEL_RUNTIME（mock|managed|ollama、既定 mock）。
 """
 from __future__ import annotations
 
@@ -28,9 +28,13 @@ DEMO_PROJECT = "library-loan"
 
 
 def _runtime():
-    if os.environ.get("QA_SENTINEL_RUNTIME", "mock") == "managed":
+    name = os.environ.get("QA_SENTINEL_RUNTIME", "mock")
+    if name == "managed":
         from ..runtime.managed_agents import ManagedAgentsRuntime
         return ManagedAgentsRuntime()
+    if name == "ollama":
+        from ..runtime.ollama import OllamaRuntime
+        return OllamaRuntime()
     from ..runtime.mock import MockRuntime
     return MockRuntime()
 

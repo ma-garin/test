@@ -24,6 +24,9 @@ def _runtime(name: str, args):
     if name == "managed":
         from .runtime.managed_agents import ManagedAgentsRuntime
         return ManagedAgentsRuntime()
+    if name == "ollama":
+        from .runtime.ollama import OllamaRuntime
+        return OllamaRuntime()
     raise SystemExit(f"unknown runtime: {name}")
 
 
@@ -94,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--stop-at", help="出口で止まる段（カンマ区切り、または all）")
     r.add_argument("--reviewer", help="だれが確認するか")
     r.add_argument("--budget", type=float, help="予算 USD")
-    r.add_argument("--runtime", default="mock", choices=["mock", "managed"])
+    r.add_argument("--runtime", default="mock", choices=["mock", "managed", "ollama"])
     r.add_argument("--mock-block-at")
     r.add_argument("--mock-stop-at")
 
@@ -106,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         a.add_argument("task")
         a.add_argument("--by", required=True, help="人の名前（記録に残る）")
         a.add_argument("-m", "--note", default="", help="直した点・理由・観察")
-        a.add_argument("--runtime", default="mock", choices=["mock", "managed"])
+        a.add_argument("--runtime", default="mock", choices=["mock", "managed", "ollama"])
         if name == "results":
             a.add_argument("--file", default="", help="成果物のパス")
         if name == "answer":
@@ -119,12 +122,12 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("--by", default="demo", help="あなたの名前（既定 demo）")
     d.add_argument("--mode", default="M2", choices=list(PRESETS))
     d.add_argument("--budget", type=float, default=5.0)
-    d.add_argument("--runtime", default="mock", choices=["mock", "managed"])
+    d.add_argument("--runtime", default="mock", choices=["mock", "managed", "ollama"])
 
     w = sub.add_parser("watch", help="トラッカーを見張り、更新を検知したときだけ run_event に渡す（LLM なしのポーラー）")
     w.add_argument("--project", required=True)
     w.add_argument("--once", action="store_true", help="1 回だけポーリングして終わる")
-    w.add_argument("--runtime", default="mock", choices=["mock", "managed"])
+    w.add_argument("--runtime", default="mock", choices=["mock", "managed", "ollama"])
     w.add_argument("--mode", required=True, choices=list(PRESETS), help="プリセット")
     w.add_argument("--reviewer", required=True, help="だれが確認するか")
     w.add_argument("--budget", type=float, help="予算 USD")

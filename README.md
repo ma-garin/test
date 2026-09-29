@@ -49,6 +49,16 @@ set QA_SENTINEL_RUNTIME=managed && start.bat                  :: 画面も本物
 
 守られること: 予算は `sessions.create` の budget（セント単位）で上限が効く。終了条件は `run_gate` ツールでホストが判定し、LLM は exit code を解釈しない。根拠の無い下書きは確定画面に出ない。承認は人だけ。
 
+## ローカル LLM で動かす（Ollama。鍵不要）
+
+```bat
+ollama pull qwen2.5:14b                                      :: ツール呼び出しに対応したモデル（環境変数 OLLAMA_MODEL で変更）
+venv\Scripts\qa-sentinel run --project library-loan --nl "貸出上限を 5 冊から 3 冊に変更" --runtime ollama
+set QA_SENTINEL_RUNTIME=ollama && start.bat                   :: 画面も Ollama で
+```
+
+サンドボックスは無い。書き込みは対象フォルダの `docs/`・`tests/`・`.qa-sentinel/` の下だけで、製品コードは `fix_proposal.md` に案を書く。上限は金額でなくトークン（`config.toml` の `[session] max_tokens`、既定 200000）。
+
 ## コマンドで試す（mock。LLM は使わない）
 
 ```bash
