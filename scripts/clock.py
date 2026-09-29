@@ -1,4 +1,5 @@
-"""作業時間の計測（捏造防止）。実測はこの出力を貼る以外に書かない。
+"""作業時間の補助計測。**報告の根拠にはしない**（AI が書き換えられるため）。実測の根拠は GitHub の PR merged_at（CLAUDE.md）。
+verify は報告文の「実測:」行が規定の形かを検査する（Stop hook から呼ばれる）。
 
   python scripts/clock.py start "<作業名>" [--est 25]   # 着手を記録（JST）
   python scripts/clock.py end [--cp "12→14"]            # 完了。「見積 / 実測 / CP往復」の行を出す
@@ -62,12 +63,14 @@ def main(argv: list[str] | None = None) -> int:
         print(line)
     elif a.cmd == "verify":
         text = a.text if a.text is not None else sys.stdin.read()
-        recorded = {r.get("line", "") for r in d["done"]}
-        bad = [ln.strip() for ln in text.splitlines() if "実測:" in ln and "未計測" not in ln and not any(rec and rec in ln for rec in recorded)]
+        import re
+        ok_form = re.compile(r"実測:\s*\d+分（PR #\d+ マージ \d{2}:\d{2} → PR #\d+ マージ \d{2}:\d{2} JST、GitHub 時刻）")
+        bad = [ln.strip() for ln in text.splitlines() if "実測:" in ln and "未計測" not in ln and not ok_form.search(ln)]
         if bad:
-            print("実測の行が計測記録（clock.py end の出力）と一致しない:\n  " + "\n  ".join(bad) + "\n→ clock.py end の出力をそのまま貼るか、「実測: 未計測」と書く")
+            print("実測の行が規定の形（GitHub 時刻・PR 番号つき）ではない:\n  " + "\n  ".join(bad)
+                  + "\n→ 『実測: N分（PR #a マージ HH:MM → PR #b マージ HH:MM JST、GitHub 時刻）』か『実測: 未計測』にする")
             return 2
-        print("実測の行は計測記録と一致（または未記載）")
+        print("実測の行は規定の形（または未記載）")
     else:
         for r in d["done"][-20:]:
             print(f"{_fmt(r['start'])}→{_fmt(r['end'])} JST  {r['mins']:>3} 分  見積 {r.get('est') or '-'}  {r['name']}")
