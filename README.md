@@ -57,7 +57,7 @@ venv\Scripts\qa-sentinel run --project library-loan --nl "貸出上限を 5 冊�
 set QA_SENTINEL_RUNTIME=ollama && start.bat                   :: 画面も Ollama で
 ```
 
-サンドボックスは無い。書き込みは対象フォルダの `docs/`・`tests/`・`.qa-sentinel/` の下だけで、製品コードは `fix_proposal.md` に案を書く。上限は金額でなくトークン（`config.toml` の `[session] max_tokens`、既定 200000）。
+**実機未確認**（クラウド環境は ollama.com / registry.ollama.ai が組織方針で遮断。`docs/codex/OLLAMA_CHECK_RESULT.md`）。偽 HTTP のテスト 3 本のみ通過。サンドボックスは無い。書き込みは対象フォルダの `docs/`・`tests/`・`.qa-sentinel/` の下だけで、製品コードは `fix_proposal.md` に案を書く。上限は金額でなくトークン（`config.toml` の `[session] max_tokens`、既定 200000）。
 
 ## コマンドで試す（mock。LLM は使わない）
 
