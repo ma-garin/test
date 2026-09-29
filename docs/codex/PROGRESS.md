@@ -9,3 +9,4 @@ T05 DONE approve の機械判定（config [project].approval_gate）・GET /api/
 T06 DONE triggers/tracker.py・watch（LLM を使わない監視）
 T07 DONE check_limits（差し戻し 3／質問 5／セッション 10）
 T08 未実行（鍵なし。ANTHROPIC_API_KEY があれば RUN_ALL §4）
+T10 DONE runtime/ollama.py（ローカル LLM）。実機は未確認（OLLAMA_CHECK_RESULT.md: egress 遮断）
