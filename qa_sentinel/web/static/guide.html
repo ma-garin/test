@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="/static/ds/tokens.css">
 <link rel="stylesheet" href="/static/ds/components.css">
 <link rel="stylesheet" href="/static/ds/layout.css">
+<script>try{const t=localStorage.getItem('qa-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
 <style>
 h1{font-size:var(--text-xl);margin:0 0 var(--space-1)}
 h2{font-size:var(--text-md);margin:var(--space-8) 0 var(--space-2);padding-bottom:var(--space-1);border-bottom:1px solid var(--color-border)}
@@ -35,22 +36,22 @@ main{max-width:1100px}
 </aside>
 <main>
 <h1>qa-sentinel の使い方</h1>
-<p class="muted">AI がテストの下書きを作り、あなたが直して OK を押す道具。この画面は起動時に自動で開きます。台帳の画面は <a href="/" target="_blank" rel="noopener">こちら</a>。</p>
+<p class="muted">AI がテストの下書きを作り、あなたが直して確定する道具。この画面は起動時に自動で開きます。台帳の画面は <a href="/" target="_blank" rel="noopener">こちら</a>。</p>
 
 <section id="setup"><h2>1. 導入（3 ステップ）</h2>
 <div class="card-grid">
-<div class="card"><h3><span class="badge badge-new">1</span> zip を取る</h3>GitHub の <code>Code → Download ZIP</code> を解凍。Windows 11・Python 3.11 以上だけあればよい（git・bash は不要）</div>
+<div class="card"><h3><span class="badge badge-new">1</span> ZIP の入手</h3>GitHub の <code>Code → Download ZIP</code> を解凍。Windows 11・Python 3.11 以上だけあればよい（git・bash は不要）</div>
 <div class="card"><h3><span class="badge badge-new">2</span> Codex に 1 文</h3>解凍したフォルダで cmd を開き Codex（gpt-6-sol, high）を起動して貼る:<pre>docs/codex/RUN_ALL.md に従って、止まらずに最後までやれ。OS は Windows 11、シェルは cmd、git は無い。</pre>終わると <code>scripts\verify.py</code> の末尾が <code>ALL GREEN</code></div>
-<div class="card"><h3><span class="badge badge-new">3</span> start.bat をダブルクリック</h3>初回だけ 1〜2 分。ブラウザにこの画面と台帳の画面が開く。閉じたいときは黒い画面を閉じる（macOS/Linux は <code>./start.sh</code>）</div>
+<div class="card"><h3><span class="badge badge-new">3</span> 起動（start.bat）</h3>初回だけ 1〜2 分。ブラウザにこの画面と台帳の画面が開く。閉じたいときは黒い画面を閉じる（macOS/Linux は <code>./start.sh</code>）</div>
 </div></section>
 
 <section id="demo"><h2>2. まずデモ（図書館システム・3 分）</h2>
-<p class="measure">同梱の図書貸出システム（<code>demo/library-loan</code>）に「貸出上限を 5 冊から 3 冊に変更」という変更を伝え、AI が計画〜準備を下書きし、あなたが直して OK し、実行はあなたがやり、最後に承認するまでを通します。mock なのでお金はかかりません。</p>
+<p class="measure">同梱の図書貸出システム（<code>demo/library-loan</code>）に「貸出上限を 5 冊から 3 冊に変更」という変更を伝え、AI が計画〜準備を下書きし、あなたが直して確定し、実行はあなたがやり、最後に承認するまでを通します。mock なのでお金はかかりません。</p>
 <div class="table-wrap"><table class="table"><thead><tr><th>画面（GUI）</th><th>黒い画面（CLI）</th></tr></thead><tbody>
 <tr><td>台帳の画面の <b>「図書館デモを動かす」</b> を押す（タスクが無いときに出ます）</td><td><code>qa-sentinel demo --by あなたの名前</code><br>または <code>qa-sentinel</code> → <code>5</code></td></tr>
-<tr><td>やることリストの行をクリック → 下書きを見て <b>OK</b></td><td><code>qa-sentinel show T-0001</code> → <code>qa-sentinel ok T-0001 --by 名前</code></td></tr>
-<tr><td>「実行」はあなたの番。結果を書いて <b>渡す</b></td><td><code>qa-sentinel results T-0001 --by 名前 -m "全部 PASS"</code></td></tr>
-<tr><td>報告・入替を OK → <b>承認</b></td><td><code>qa-sentinel ok …</code> → <code>qa-sentinel approve T-0001 --by 名前</code></td></tr>
+<tr><td>受信箱の行をクリック → 下書きを見て <b>確定して次の段へ</b></td><td><code>qa-sentinel show T-0001</code> → <code>qa-sentinel ok T-0001 --by 名前</code></td></tr>
+<tr><td>「実行」はあなたの番。結果を書いて <b>結果を渡して次の段へ</b></td><td><code>qa-sentinel results T-0001 --by 名前 -m "全部 PASS"</code></td></tr>
+<tr><td>報告・入替を確定 → <b>承認する</b></td><td><code>qa-sentinel ok …</code> → <code>qa-sentinel approve T-0001 --by 名前</code></td></tr>
 </tbody></table></div>
 <p class="muted measure">GUI と CLI は同じ台帳（<code>tasks/</code>）を見ています。片方で進めた結果はもう片方にも出ます。</p>
 
@@ -59,11 +60,11 @@ main{max-width:1100px}
 <section id="use"><h2>3. 自分のプロジェクトで使う</h2>
 <div class="table-wrap"><table class="table"><thead><tr><th>やること</th><th>どこで</th></tr></thead><tbody>
 <tr><td>環境情報を書く（URL・起動手順・削除禁止・触ってよいソース）</td><td><code>projects/_template</code> を写して <code>projects/&lt;名前&gt;/env.md</code> を埋める</td></tr>
-<tr><td>変更を 1 文で伝え、4 つの質問に答える（どこまで AI／どこで止まる／だれが見る／いくらまで）</td><td>画面の「変更を伝えて始める」／<code>qa-sentinel run --project &lt;名前&gt; --nl "…"</code></td></tr>
-<tr><td>自分の番を片づける（直して OK・自分でやって渡す・質問に答える・承認）</td><td>やることリスト／<code>qa-sentinel</code> のメニュー 2</td></tr>
+<tr><td>変更を 1 文で伝え、4 つの質問に答える（どこまで AI／どこで止まる／だれが見る／いくらまで）</td><td>画面の「変更を伝える」／<code>qa-sentinel run --project &lt;名前&gt; --nl "…"</code></td></tr>
+<tr><td>自分の番を片づける（直して確定・自分でやって渡す・質問に答える・承認）</td><td>受信箱／<code>qa-sentinel</code> のメニュー 2</td></tr>
 <tr><td>本物の AI で動かす（鍵を入れる）</td><td><code>pip install -e .[managed]</code> → <code>set ANTHROPIC_API_KEY=…</code> → <code>python -m qa_sentinel.agent.register --project &lt;名前&gt;</code>（1 回）→ <code>set QA_SENTINEL_RUNTIME=managed</code> で start.bat。詳しくは 07 §5</td></tr>
 </tbody></table></div>
-<p class="muted measure">守られること: AI は作業ブランチにしか書かない。製品コードは案を出すだけ。予算は画面に出て上限で止まる。OK・回答・承認はあなたの名前で記録され、AI は承認欄を埋めない。</p>
+<p class="muted measure">守られること: AI は作業ブランチにしか書かない。製品コードは案を出すだけ。予算は画面に出て上限で止まる。確定・回答・承認はあなたの名前で記録され、AI は承認欄を埋めない。</p>
 
 </section>
 
