@@ -88,7 +88,7 @@ html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはス�
     <span class="spacer"></span>
     <span class="field-inline"><label for="me" class="muted">あなたの名前</label><input class="input" id="me" placeholder="例: 藤曲" autocomplete="name"></span>
     <span class="badge badge-info" id="rt">mock（費用なし）</span>
-    <button class="btn btn--ghost" id="theme" type="button" aria-label="テーマを切り替える"><span data-icon="settings" data-icon-size="16" aria-hidden="true"></span><span class="label-text">テーマ</span></button>
+    <button class="btn btn--ghost" id="theme" type="button" aria-label="テーマを切り替える（システム・ライト・ダーク）"><span class="label-text" id="theme-label">テーマ: システム</span></button>
   </header>
   <div class="app-body">
     <aside class="sidebar" id="sidebar">
@@ -98,7 +98,6 @@ html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはス�
         <a href="#all" data-nav="all"><span class="icon" data-icon="table-view" data-icon-size="18" aria-hidden="true"></span><span class="label-text">すべてのタスク</span></a>
         <a href="/guide" target="_blank" rel="noopener"><span class="icon" data-icon="help" data-icon-size="18" aria-hidden="true"></span><span class="label-text">使い方</span></a>
       </nav>
-      <div class="sidebar-foot label-text">OK・回答・承認はあなたの名前で記録されます。AI は承認欄を埋めません。</div>
     </aside>
     <div class="maincol">
       <header class="app-topbar">
@@ -130,6 +129,7 @@ html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはス�
             <div class="empty-state" id="nomatch" hidden>
               <span class="empty-state-icon" data-icon="search-off" data-icon-size="28" aria-hidden="true"></span>
               <p class="empty-state-title">条件に一致するタスクがありません</p>
+              <p class="empty-state-description">絞り込みを解除するか、別の語で探してください。</p>
               <button class="btn btn--ghost" id="clear-flt" type="button">絞り込みを解除する</button>
             </div>
           </div>
@@ -142,7 +142,7 @@ html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはス�
 
 <div class="modal-backdrop" id="ovl" role="dialog" aria-modal="true" aria-labelledby="m-ttl">
   <div class="modal wide">
-    <div class="modal-head"><h2 id="m-ttl">変更を伝える</h2><button class="modal-close" type="button" aria-label="閉じる"><span data-icon="close" data-icon-size="18" aria-hidden="true"></span></button></div>
+    <div class="modal-head"><h2 id="m-ttl">変更の内容</h2><button class="modal-close" type="button" aria-label="閉じる"><span data-icon="close" data-icon-size="18" aria-hidden="true"></span></button></div>
     <div class="modal-body">
       <div class="field"><label for="r-nl">何が変わりましたか</label><textarea class="textarea" id="r-nl" rows="3" placeholder="例: 貸出上限を 5 冊から 3 冊に変更（仕様 ID があれば REQ-F-003 のように書く）"></textarea></div>
       <div class="field"><span class="muted" id="modes-l">どこまで AI にやらせますか</span><div class="modes" id="modes" role="group" aria-labelledby="modes-l"></div><p class="help-note" id="r-preview"></p></div>
@@ -165,7 +165,8 @@ html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはス�
 let meta=null,tasks=[],cur=null,filter='mine',tab='draft',mode='M2';
 const MINE=new Set(['review','handoff','blocked','paused']);
 const WHO={review:'あなた: 直して確定',handoff:'あなた: 自分でやる',blocked:'あなた: 質問に答える',paused:'あなた: 最終承認',running:'AI が作業中',done:'完了',stopped:'止まった',queued:'待機'};
-const SEV={review:'high',handoff:'high',paused:'high',blocked:'critical',stopped:'critical',running:'info',done:'low',queued:'medium'};
+const SEV={review:'high',handoff:'high',paused:'high',blocked:'high',stopped:'critical',running:'info',done:'low',queued:'info'};
+let lastList='inbox';
 const NEXT={review:'下書きを見て確定か差し戻し',handoff:'自分でやって結果を渡す',blocked:'質問に答えると再開',paused:'名前を入れて承認',running:'待つだけ（止まったら受信箱に出ます）',done:'',stopped:'進め方を変えて始め直す',queued:''};
 const MODES={M1:['全部 AI','最後の承認だけあなた'],M2:['準備まで AI、実行は自分','いつもの使い方。設計と入替の出口で確認'],M3:['段ごとに毎回確認','9 段すべての出口で止まる'],M4:['設計まで AI','実装から先は自分でやる'],M5:['実行と分析だけ AI','設計はあなた、動かすのは AI'],M6:['古いテストの入れ替えだけ AI','手作業の後始末を AI に'],M7:['自分で作って AI に見てもらう','あなたが下書き、AI がレビュー'],M8:['ペア','一段ごとに交互に']};
 const FL=[['test-plan','計画'],['test-analysis','基本設計'],['test-strategy','詳細設計'],['test-design','設計'],['test-implementation','準備'],['test-execution','実行'],['defect-analysis','原因'],['test-completion','報告'],['regression-swap','入替'],['final','承認']];
@@ -180,12 +181,15 @@ const money=t=>[t.session&&t.session.spent_usd||0,t.plan&&t.plan.budget_usd||t.s
 const isHum=t=>MINE.has(t.status);
 const me=()=>$('me').value.trim();
 const badge=t=>`<span class="badge badge-${SEV[t.status]||'info'}">${WHO[t.status]||t.status}</span>`;
-const fail=(msg,detail)=>window.Feedback?Feedback.error(msg,{detail,action:{label:'もう一度試す',onClick:()=>load()}}):console.error(msg,detail);
+const fail=(msg,detail,retry)=>window.Feedback?Feedback.error(msg,{detail,action:{label:retry?'もう一度送る':'読み直す',onClick:()=>(retry||load)()}}):console.error(msg,detail);
+let loadErrShown=false;
 const ok=msg=>window.Feedback?Feedback.ok(msg):null;
 try{$('me').value=localStorage.getItem('qa-name')||''}catch(e){}
 $('me').addEventListener('change',()=>{try{localStorage.setItem('qa-name',me())}catch(e){}});
-$('theme').addEventListener('click',()=>{const r=document.documentElement;const dark=r.dataset.theme==='dark'||(!r.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);r.dataset.theme=dark?'light':'dark';try{localStorage.setItem('qa-theme',r.dataset.theme)}catch(e){}});
-try{const th=localStorage.getItem('qa-theme');if(th)document.documentElement.dataset.theme=th}catch(e){}
+const THEMES=[['','システム'],['light','ライト'],['dark','ダーク']];
+function applyTheme(v){const r=document.documentElement;if(v)r.dataset.theme=v;else delete r.dataset.theme;try{v?localStorage.setItem('qa-theme',v):localStorage.removeItem('qa-theme')}catch(e){}const lb=$('theme-label');if(lb)lb.textContent='テーマ: '+(THEMES.find(x=>x[0]===v)||THEMES[0])[1]}
+$('theme').addEventListener('click',()=>{const cur=document.documentElement.dataset.theme||'';const i=THEMES.findIndex(x=>x[0]===cur);applyTheme(THEMES[(i+1)%THEMES.length][0])});
+try{applyTheme(localStorage.getItem('qa-theme')||'')}catch(e){}
 $('collapse').addEventListener('click',()=>$('sidebar').classList.toggle('collapsed'));
 
 /* ===================== list ===================== */
@@ -193,7 +197,8 @@ async function load(){
   try{
     if(!meta){meta=await j('/api/meta');buildModes();}
     tasks=(await j('/api/tasks')).sort((a,b)=>(isHum(b)?1:0)-(isHum(a)?1:0)||(b.updated_at||'').localeCompare(a.updated_at||''));
-  }catch(e){fail('台帳を読めませんでした',String(e));return;}
+  }catch(e){if(!loadErrShown){loadErrShown=true;fail('台帳を読めませんでした',String(e));}return;}
+  loadErrShown=false;
   const hum=tasks.filter(isHum).length,ai=tasks.filter(t=>t.status==='running').length,done=tasks.filter(t=>t.status==='done').length;
   $('n-inbox').textContent=hum;$('n-inbox').hidden=!hum;$('k-hum').textContent=hum;$('k-ai').textContent=ai;$('k-done').textContent=done;
   const sp=tasks.reduce((s,t)=>s+money(t)[0],0),bu=tasks.reduce((s,t)=>s+money(t)[1],0);$('k-cost').textContent=`$${sp.toFixed(2)}`;$('k-budget').textContent=`/ $${bu.toFixed(2)}`;
@@ -217,7 +222,7 @@ $('clear-flt').addEventListener('click',()=>{$('q').value='';setFilter('all')});
 function setFilter(f){filter=f;document.querySelectorAll('#flt button').forEach(x=>x.classList.toggle('active',x.dataset.f===f));renderRows()}
 document.querySelectorAll('#flt button').forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.f)));
 function nav(n){document.querySelectorAll('.sidebar nav a[data-nav]').forEach(a=>{if(a.dataset.nav===n)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
-  setFilter(n==='inbox'?'mine':'all');$('ttl').textContent=n==='inbox'?'受信箱':'すべてのタスク';$('crumb').innerHTML=`<span>${n==='inbox'?'受信箱':'すべてのタスク'}</span>`;cur=null;$('v-detail').hidden=true;$('v-list').hidden=false;$('sidebar').classList.remove('open')}
+  lastList=n;setFilter(n==='inbox'?'mine':'all');$('ttl').textContent=n==='inbox'?'受信箱':'すべてのタスク';$('crumb').innerHTML=`<span>${n==='inbox'?'受信箱':'すべてのタスク'}</span>`;cur=null;$('v-detail').hidden=true;$('v-list').hidden=false;$('b-new').classList.add('btn--primary')}
 function route(){const h=location.hash;if(h.startsWith('#task/'))show(h.slice(6));else nav(h==='#all'?'all':'inbox')}
 window.addEventListener('hashchange',route);
 
@@ -228,16 +233,16 @@ async function show(id,silent){
   let t;try{t=await j('/api/tasks/'+id);}catch(e){fail('タスクを読めませんでした',String(e));return}
   if(t.error){fail('タスクが見つかりません',id);location.hash='#inbox';return}
   const first=cur!==id;cur=id;$('v-list').hidden=true;const d=$('v-detail');d.hidden=false;
-  $('ttl').textContent=`${t.task} ${t.nl||''}`;$('crumb').innerHTML=`<button type="button" id="crumb-back">受信箱</button><span>/</span><span>${t.task}</span>`;$('crumb-back').addEventListener('click',()=>{location.hash='#inbox'});
+  $('ttl').textContent=t.nl||t.project;$('crumb').innerHTML=`<button type="button" id="crumb-back">${lastList==='all'?'すべてのタスク':'受信箱'}</button><span>/</span><span>${t.task}</span><span>/</span><span>${label(t.phase)}</span>`;$('crumb-back').addEventListener('click',()=>{location.hash=lastList==='all'?'#all':'#inbox'});$('b-new').classList.remove('btn--primary');
   const [s,b]=money(t),pct=b?Math.min(100,s/b*100):0;const ev=t.evidence[t.phase]||[];
   const nm=`<div class="field"><label for="by">あなたの名前</label><input class="input" id="by" value="${esc(t.plan.reviewer||me())}"></div>`;
   let act='';
-  if(t.status==='review'){const noEv=!ev.length;act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} の下書きができました</p><p class="muted">下書き（下の「下書き」）を見て、直した点を書いて確定します。納得できなければ差し戻すと、同じ段を AI がやり直します。</p>${noEv?'<div class="banner-err">根拠なし: AI の下書きに根拠が付いていないため確定できません。差し戻してください。</div>':''}<div class="fields">${nm}<div class="field"><label for="note">直した点・差し戻しの理由</label><textarea class="textarea" id="note" rows="1"></textarea></div></div><div class="actions"><button class="btn" id="ok" type="button" ${noEv?'disabled':''}>${ico('check-circle')}確定して次の段へ</button><button class="btn" id="rej" type="button">${ico('refresh')}差し戻す</button></div></div></div>`}
-  else if(t.status==='handoff')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} はあなたがやります</p><p class="muted">AI が用意した手順（下の「下書き」）で自分でやり、成果物のパスと見たままを入れて渡します。推測は書きません。</p><div class="fields">${nm}<div class="field"><label for="file">成果物のパス</label><input class="input" id="file" placeholder="例: results/T-0001.csv"></div></div><div class="field"><label for="note">見たまま</label><textarea class="textarea" id="note" rows="1" placeholder="例: 12 件 PASS、1 件 FAIL: ST-014 の期待値が違う"></textarea></div><div class="actions"><button class="btn" id="sub" type="button">${ico('arrow-forward')}結果を渡して次の段へ</button></div></div></div>`;
-  else if(t.status==='blocked')act=`<div class="callout callout--critical action-card"><div><p class="lead">${ico('help',20)}AI から質問</p><p>${esc(t.reason||'')}</p><div class="fields">${nm}<div class="field"><label for="note">回答（仕様として決めたこと）</label><textarea class="textarea" id="note" rows="1"></textarea></div></div><div class="actions"><button class="btn" id="ans" type="button">${ico('play')}回答して再開する</button></div></div></div>`;
-  else if(t.status==='paused')act=`<div class="callout callout--low action-card"><div><p class="lead">${ico('check-circle',20)}最終承認 — すべての段が終わりました</p><p class="muted">追加 ${t.cases.added.length} 件・失効 ${t.cases.retired.length} 件。AI は承認欄を埋めません。あなたの名前で記録されます。</p>${nm}<div class="actions"><button class="btn" id="ap" type="button">${ico('check-circle')}承認する</button></div></div></div>`;
+  if(t.status==='review'){const noEv=!ev.length;act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} の下書きができました</p><p class="muted">下書き（下の「下書き」）を見て、直した点を書いて確定します。納得できなければ差し戻すと、同じ段を AI がやり直します。</p>${noEv?'<div class="banner-err">根拠なし: AI の下書きに根拠が付いていないため確定できません。差し戻してください。</div>':''}<div class="fields">${nm}<div class="field"><label for="note">直した点・差し戻しの理由</label><textarea class="textarea" id="note" rows="1"></textarea></div></div><div class="actions"><button class="btn btn--primary" id="ok" type="button" data-noev="${noEv?'1':''}">${ico('check-circle')}確定して次の段へ</button><button class="btn" id="rej" type="button">${ico('arrow-back')}差し戻す</button></div></div></div>`}
+  else if(t.status==='handoff')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('person',20)}あなたの番 — ${label(t.phase)} はあなたがやります</p><p class="muted">AI が用意した手順（下の「下書き」）で自分でやり、成果物のパスと見たままを入れて渡します。推測は書きません。</p><div class="fields">${nm}<div class="field"><label for="file">成果物のパス</label><input class="input" id="file" placeholder="例: results/T-0001.csv"></div></div><div class="field"><label for="note">見たまま</label><textarea class="textarea" id="note" rows="1" placeholder="例: 12 件 PASS、1 件 FAIL: ST-014 の期待値が違う"></textarea></div><div class="actions"><button class="btn btn--primary" id="sub" type="button">${ico('arrow-forward')}結果を渡して次の段へ</button></div></div></div>`;
+  else if(t.status==='blocked')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('help',20)}AI から質問</p><p>${esc(t.reason||'')}</p><div class="fields">${nm}<div class="field"><label for="note">回答（仕様として決めたこと）</label><textarea class="textarea" id="note" rows="1"></textarea></div></div><div class="actions"><button class="btn btn--primary" id="ans" type="button">${ico('play')}回答して再開する</button></div></div></div>`;
+  else if(t.status==='paused')act=`<div class="callout callout--high action-card"><div><p class="lead">${ico('check-circle',20)}最終承認 — すべての段が終わりました</p><p class="muted">追加 ${t.cases.added.length} 件・失効 ${t.cases.retired.length} 件。AI は承認欄を埋めません。あなたの名前で記録されます。</p>${nm}<div class="actions"><button class="btn btn--primary" id="ap" type="button">${ico('check-circle')}承認する</button></div></div></div>`;
   else if(t.status==='running')act=`<div class="callout callout--info action-card"><div><p class="lead"><span class="spin">${ico('progress-activity',20)}</span>AI が ${label(t.phase)} を作業中</p><p class="muted">止まる出口: ${(t.plan.stop_at||[]).map(label).join('・')||'最後だけ'}。あなたの番になると受信箱に出ます。</p></div></div>`;
-  else if(t.status==='stopped')act=`<div class="callout callout--critical action-card"><div><p class="lead">${ico('stop',20)}止まりました</p><p>${esc(t.reason||'')}</p><p class="muted">台帳は残っています。進め方（モード・予算）を変えて始め直せます。</p><div class="actions"><button class="btn" id="redo" type="button">${ico('refresh')}同じ変更で始め直す</button></div></div></div>`;
+  else if(t.status==='stopped')act=`<div class="callout callout--critical action-card"><div><p class="lead">${ico('stop',20)}止まりました</p><p>${esc(t.reason||'')}</p><p class="muted">台帳は残っています。進め方（モード・予算）を変えて始め直せます。</p><div class="actions"><button class="btn btn--primary" id="redo" type="button">${ico('refresh')}同じ変更で始め直す</button></div></div></div>`;
   else if(t.status==='done')act=`<div class="callout callout--low action-card"><div><p class="lead">${ico('check-circle',20)}完了</p><dl class="kv"><dt>追加したケース</dt><dd>${t.cases.added.join(', ')||'-'}</dd><dt>失効したケース</dt><dd>${t.cases.retired.join(', ')||'-'}</dd><dt>あなたが決めた回数</dt><dd>${t.decisions.length}</dd><dt>作業ブランチ</dt><dd class="mono">${esc(t.branch||'-')}</dd></dl></div></div>`;
   const cost=`<div class="card"><h2>費用</h2><div class="score-card"><span class="score-value">$${s.toFixed(2)} <span class="muted score-label">/ 上限 $${b.toFixed(2)}</span></span><div class="score-bar cost-bar"><span class="score-fill ${pct>=100?'over':pct>75?'warn':''}" style="width:${pct}%"></span></div><span class="score-label">${t.session.ended?'AI は待機中（費用は増えません）':'セッション実行中'} · 決定 ${t.decisions.length} 回 · <span class="mono">${esc(t.session.id||'-')}</span></span></div></div>`;
   const plan=`<div class="card"><h2>進め方 <span class="badge badge-new">${t.mode}</span></h2><dl class="kv"><dt>AI が下書き</dt><dd>${(t.plan.draft||[]).length} / ${meta.phases.length} 段</dd><dt>止まる出口</dt><dd>${(t.plan.stop_at||[]).map(label).join('・')||'最後だけ'}</dd><dt>あなたがやる段</dt><dd>${meta.phases.filter(p=>!(t.plan.draft||[]).includes(p)).map(label).join('・')||'なし'}</dd><dt>影響</dt><dd>${t.impact.join(', ')||'-'}</dd></dl></div>`;
@@ -255,13 +260,13 @@ async function show(id,silent){
   $('act').innerHTML=act;$('side').innerHTML=cost+plan;
   renderTab(t);setFlow(t);paintIcons(d);
   const val=id=>$(id)?$(id).value:'';const need=()=>{if(!val('by')){fail('あなたの名前を入れてください','確定・回答・承認は名前つきで記録されます');$('by').focus();return false}return true};
-  const done=async(r,msg)=>{if(r.error){fail('できませんでした',r.error);return}ok(msg);await load();show(id,true)};
-  const wire=(bid,fn)=>{const el=$(bid);if(!el)return;el.addEventListener('click',async()=>{if(!need())return;el.setAttribute('aria-busy','true');const t0=el.textContent;el.textContent='処理中…';try{await fn()}finally{el.removeAttribute('aria-busy');el.textContent=t0}})};
-  wire('ok',async()=>done(await post('/api/review',{task:id,by:val('by'),ok:'1',note:val('note')}),'次の段へ進めました'));
-  wire('rej',async()=>done(await post('/api/review',{task:id,by:val('by'),ok:'0',note:val('note')}),'差し戻しました。AI がやり直します'));
-  wire('sub',async()=>done(await post('/api/submit',{task:id,by:val('by'),file:val('file'),note:val('note')}),'受け取りました'));
-  wire('ans',async()=>done(await post('/api/answer',{task:id,by:val('by'),text:val('note')}),'回答を記録し、再開しました'));
-  wire('ap',async()=>done(await post('/api/approve',{task:id,by:val('by')}),'承認しました'));
+  const done=async(r,msg,errMsg,retry)=>{if(r.error){fail(errMsg,r.error,retry);return}ok(msg);await load();show(id,true)};
+  const wire=(bid,fn,errMsg)=>{const el=$(bid);if(!el)return;const run=async()=>{if(!need())return;if(el.dataset.noev){fail('根拠が無いので確定できません','AI の下書きに根拠が付いていません',()=>$('rej').click());return}el.setAttribute('aria-busy','true');const t0=el.textContent;el.textContent='処理中…';try{await fn(run)}catch(e){fail(errMsg,String(e),run)}finally{el.removeAttribute('aria-busy');el.textContent=t0}};el.addEventListener('click',run)};
+  wire('ok',async(run)=>done(await post('/api/review',{task:id,by:val('by'),ok:'1',note:val('note')}),'次の段へ進めました','確定できませんでした',run),'確定を送れませんでした');
+  wire('rej',async(run)=>done(await post('/api/review',{task:id,by:val('by'),ok:'0',note:val('note')}),'差し戻しました。AI がやり直します','差し戻せませんでした',run),'差し戻しを送れませんでした');
+  wire('sub',async(run)=>done(await post('/api/submit',{task:id,by:val('by'),file:val('file'),note:val('note')}),'受け取りました','渡せませんでした',run),'結果を送れませんでした');
+  wire('ans',async(run)=>done(await post('/api/answer',{task:id,by:val('by'),text:val('note')}),'回答を記録し、再開しました','回答を送れませんでした',run),'回答を送れませんでした');
+  wire('ap',async(run)=>done(await post('/api/approve',{task:id,by:val('by')}),'承認しました','承認できませんでした',run),'承認を送れませんでした');
   if($('redo'))$('redo').addEventListener('click',()=>{openModal();$('r-nl').value=t.nl||'';$('r-project').value=t.project});
   if(!silent&&isHum(t))$('act').scrollIntoView({block:'nearest'});
 }
@@ -299,10 +304,13 @@ $('r-go').addEventListener('click',async()=>{const err=$('r-err');const nl=$('r-
   try{const r=await post('/api/run',{project:$('r-project').value,nl,mode,reviewer:by,budget:$('r-budget').value});
     if(r.error){err.textContent='始められませんでした: '+r.error;err.hidden=false;return}
     closeModal();$('r-nl').value='';ok(r.task+' の下書きを始めました');await load();location.hash='#task/'+r.task}
+  catch(e){err.textContent='送れませんでした: '+e+'。画面を起動し直してからもう一度送ってください。';err.hidden=false}
   finally{b.removeAttribute('aria-busy');b.textContent='下書きを始める'}});
-$('demo-go').addEventListener('click',async()=>{const b=$('demo-go');b.setAttribute('aria-busy','true');const t0=b.textContent;b.textContent='AI が下書き中…';
-  try{const r=await post('/api/demo',{by:me()||'demo'});if(r.error){fail('デモを始められませんでした',r.error);return}ok(r.task+' を始めました。あなたの番です');await load();location.hash='#task/'+r.task}
-  finally{b.removeAttribute('aria-busy');b.textContent=t0}});
+const startDemo=async()=>{const b=$('demo-go');b.setAttribute('aria-busy','true');const t0=b.textContent;b.textContent='AI が下書き中…';
+  try{const r=await post('/api/demo',{by:me()||'demo'});if(r.error){fail('デモを始められませんでした',r.error,startDemo);return}ok(r.task+' を始めました。あなたの番です');await load();location.hash='#task/'+r.task}
+  catch(e){fail('デモを送れませんでした',String(e),startDemo)}
+  finally{b.removeAttribute('aria-busy');b.textContent=t0}};
+$('demo-go').addEventListener('click',startDemo);
 paintIcons(document);
 load().then(route);setInterval(()=>{if(!document.hidden)load()},5000);
 </script>
