@@ -14,3 +14,4 @@
 - 検証は `python scripts/verify.py` の末尾 `ALL GREEN`
 - 3 本以上の同型ファイルは `.claude/skills/fanout-review-fix/` の段取り（Sonnet 並列 → Opus レビュー → 本人修正 → Haiku git）
 - 自己ウェイク・定期実行・CI は作らない
+- 規約違反や誤報告が分かったら `incidents/LOG.md` に 1 行足し、`incidents/TEMPLATE.md` から報告書を起こす。再発防止は「気をつける」ではなく、違反者の判断を経ない仕組みを入れて検証する
