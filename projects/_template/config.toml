@@ -26,5 +26,7 @@ poll_minutes = 10
 credential_ref = "env:JIRA_TOKEN"
 
 [session]
+ollama_model = "qwen2.5:14b"   # --runtime ollama のときのモデル（環境変数 OLLAMA_MODEL が優先）
+max_tokens = 200000            # ollama の上限（トークン）。managed は budget_usd
 budget_usd = 5.0
 model = "claude-opus-5"
