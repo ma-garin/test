@@ -68,7 +68,8 @@ def make_handler(ledger: Ledger, runtime=None, projects_dir: str = "projects"):
                 static = u.path[len("/static/"):]
             if static is not None:
                 f = _STATIC / static
-                if "/" in static or ".." in static or not f.is_file() or f.suffix not in _MIME:
+                ok = ".." not in static and static.count("/") <= 1 and (("/" not in static) or static.startswith("ds/"))
+                if not ok or not f.is_file() or f.suffix not in _MIME:
                     return self._json({"error": "not found"}, 404)
                 b = f.read_bytes()
                 self.send_response(200)

@@ -246,7 +246,7 @@ def test_web_static_guide_and_demo(ws):
         assert "window.PV" in get("/static/progress-views.js").read().decode()
         assert get("/static/progress-views.js").headers["Content-Type"].startswith("text/javascript")
         assert "図書館デモを動かす" in get("/").read().decode()
-        assert "この型にする" in get("/guide").read().decode()
+        assert "使い方" in get("/guide").read().decode()
         for bad in ("/static/../pyproject.toml", "/static/nope.js", "/static/app.py"):
             try:
                 get(bad)

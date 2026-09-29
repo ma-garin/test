@@ -52,6 +52,11 @@ def main() -> None:
     sim = (ROOT / "scripts" / "gui_sim.js").read_text(encoding="utf-8")
     sim = sim.replace("__META__", json.dumps(meta, ensure_ascii=False)).replace("__SEED__", json.dumps(tasks, ensure_ascii=False)).replace("__DRAFTS__", json.dumps(drafts, ensure_ascii=False))
     out = idx.replace("<title>qa-sentinel 台帳</title>", "<title>qa-sentinel（サーバーなしで動く完成形）</title>")
+    ds = static / "ds"  # 単一 HTML の規約: 外部分割しない → デザインシステムの出荷物をインライン化
+    for name in ("tokens.css", "components.css", "layout.css"):
+        out = out.replace(f'<link rel="stylesheet" href="/static/ds/{name}">', "<style>\n" + (ds / name).read_text(encoding="utf-8") + "\n</style>")
+    for name in ("icons.js", "feedback.js"):
+        out = out.replace(f'<script src="/static/ds/{name}"></script>', "<script>\n" + (ds / name).read_text(encoding="utf-8") + "\n</script>")
     out = out.replace('<script src="/static/progress-views.js"></script>', "<script>\n" + js + "\n</script>\n<script>\n" + sim + "\n</script>")
     out = out.replace('href="/guide"', 'href="07_使い方.md"')
     out = out.replace('<button class="nav on" data-nav="inbox">', '<div class="note small" style="margin:0 0 10px">サーバーなしの完成形。台帳はこのページ内（再読込で見本に戻る）。本物は start.bat で同じ画面</div>\n  <button class="nav on" data-nav="inbox">', 1)
