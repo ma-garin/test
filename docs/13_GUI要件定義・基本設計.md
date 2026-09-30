@@ -95,9 +95,9 @@
 ---
 
 
-要件は第 1 部。実装は `qa_sentinel/web/static/index.html`（単一 HTML）・`progress-views.js`（工程図）・`ds/`（デザインシステムの写し）。サーバーは `qa_sentinel/web/app.py`。
-
 ## 第 2 部 基本設計
+
+要件は第 1 部。実装は `qa_sentinel/web/static/index.html`（単一 HTML）・`progress-views.js`（工程図）・`ds/`（デザインシステムの写し）。サーバーは `qa_sentinel/web/app.py`。
 
 ## 2.1 構成
 
