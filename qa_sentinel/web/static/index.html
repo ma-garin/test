@@ -13,6 +13,7 @@
 .app-globalbar .brand-mark { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-sm); background: var(--color-primary); color: var(--color-on-primary); font-size: var(--text-xs); font-weight: 700; }
 .app-globalbar .field-inline { display: flex; align-items: center; gap: var(--space-2); }
 .app-globalbar .field-inline .input { min-height: 36px; width: 180px; }   /* 高さ固定の帯に収める（token-exempt: 帯の高さ 44px に合わせた入力高） */
+.sidebar nav a .count { margin-left: auto; }
 html, body { height: 100%; overflow: hidden; }   /* PC 専用: ページはスクロールしない */
 .app { height: 100dvh; } .app-body { min-height: 0; flex: 1 1 auto; } .maincol { min-height: 0; }
 .app-content { overflow: hidden; display: flex; flex-direction: column; min-height: 0; align-items: center; }
@@ -75,10 +76,17 @@ details.more[open] { flex: 1 1 auto; min-height: 0; overflow: auto; }
     <span class="spacer"></span>
     <span class="field-inline"><label for="me" class="muted">あなたの名前</label><input class="input" id="me" placeholder="例: 藤曲" autocomplete="name"></span>
     <span class="badge badge-info" id="rt" title="練習モード。表示の金額は仮で、請求されません">練習モード（請求なし）</span>
-    <a class="btn btn--ghost" href="/guide" target="_blank" rel="noopener">使い方</a>
     <button class="btn btn--ghost" id="theme" type="button" aria-label="テーマを切り替える（システム・ライト・ダーク）"><span class="label-text" id="theme-label">テーマ: システム</span></button>
   </header>
   <div class="app-body">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head"><span class="brand">メニュー</span><button class="btn btn--ghost" id="collapse" type="button" aria-label="サイドバーを折りたたむ"><span data-icon="arrow-back" data-icon-size="16" aria-hidden="true"></span></button></div>
+      <nav aria-label="主要">
+        <a href="#" data-nav="live" aria-current="page"><span class="icon" data-icon="checklist" data-icon-size="18" aria-hidden="true"></span><span class="label-text">伝える・進んでいるもの</span><span class="badge badge-high count" id="n-mine" hidden>0</span></a>
+        <a href="#done" data-nav="done"><span class="icon" data-icon="download" data-icon-size="18" aria-hidden="true"></span><span class="label-text">完了して受け取る</span></a>
+        <a href="/guide" target="_blank" rel="noopener"><span class="icon" data-icon="help" data-icon-size="18" aria-hidden="true"></span><span class="label-text">使い方</span></a>
+      </nav>
+    </aside>
     <div class="maincol">
       <main class="app-content">
         <section id="v-list" class="col">
@@ -112,7 +120,7 @@ details.more[open] { flex: 1 1 auto; min-height: 0; overflow: auto; }
 <script src="/static/progress-views.js"></script>
 <script>
 /* ===================== state ===================== */
-let meta=null,tasks=[],cur=null;
+let meta=null,tasks=[],cur=null,view='live';
 const MINE=new Set(['review','handoff','blocked','paused']);
 const WHO={review:'あなたが OK する番',handoff:'あなたがテストする番',blocked:'AI の質問に答える番',paused:'最後の承認をする番',running:'AI が作業中（待つだけ）',done:'完了',stopped:'止まっています',queued:'準備中'};
 const NEXT={review:'AI の下書きを見て OK する',handoff:'手順どおりにテストして、結果を渡す',blocked:'AI の質問に答える',paused:'内容を見て承認する',running:'待つだけ',done:'成果物を受け取る',stopped:'始め直す',queued:''};
@@ -150,8 +158,9 @@ async function load(){
     tasks=(await j('/api/tasks')).sort((a,b)=>(isHum(b)?1:0)-(isHum(a)?1:0)||(b.updated_at||'').localeCompare(a.updated_at||''));
   }catch(e){if(!loadErrShown){loadErrShown=true;fail('台帳を読めませんでした',String(e));}return;}
   loadErrShown=false;
-  const live=tasks.filter(t=>t.status!=='done').concat(tasks.filter(t=>t.status==='done'));
-  $('now').hidden=!live.length;
+  const live=view==='done'?tasks.filter(t=>t.status==='done'):tasks.filter(t=>t.status!=='done');
+  $('n-mine').textContent=tasks.filter(isHum).length;$('n-mine').hidden=!tasks.filter(isHum).length;
+  $('now').hidden=!live.length;$('now').querySelector('h2').textContent=view==='done'?'完了したもの（成果物を受け取る）':'いま進んでいるもの';document.querySelector('#v-list .ask').hidden=view==='done';
   $('now-body').innerHTML=live.map(t=>`<div class="now-item"><div><div class="t">${esc(t.nl||t.project)} <span class="muted">${t.task}</span></div><div class="s">${WHO[t.status]||t.status}${NEXT[t.status]?' — '+NEXT[t.status]:''}${t.status==='stopped'?'（'+esc(REASON_PLAIN(t.reason))+'）':''}</div></div>${badge(t)}<a class="btn ${isHum(t)||t.status==='done'?'btn--primary':''}" href="#task/${t.task}">${t.status==='done'?'受け取る':isHum(t)?'開く':'様子を見る'}</a></div>`).join('');
   paintIcons($('v-list'));
   if(cur)show(cur,true);
@@ -172,8 +181,9 @@ const startDemo=async()=>{const b=$('demo-go');b.setAttribute('aria-busy','true'
   catch(e){fail('デモを送れませんでした',String(e),startDemo)}
   finally{b.removeAttribute('aria-busy');b.textContent=t0}};
 $('demo-go').addEventListener('click',startDemo);
-function nav(){cur=null;$('v-detail').hidden=true;$('v-list').hidden=false}
-function route(){const h=location.hash;if(h.startsWith('#task/'))show(h.slice(6));else nav()}
+function nav(v){cur=null;view=v;$('v-detail').hidden=true;$('v-list').hidden=false;document.querySelectorAll('#sidebar nav a[data-nav]').forEach(a=>{if(a.dataset.nav===v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});load()}
+function route(){const h=location.hash;if(h.startsWith('#task/'))show(h.slice(6));else nav(h==='#done'?'done':'live')}
+$('collapse').addEventListener('click',()=>$('sidebar').classList.toggle('collapsed'));
 window.addEventListener('hashchange',route);
 
 /* ===================== 画面 2・3: 待つ／答える・受け取る ===================== */
@@ -206,7 +216,7 @@ async function show(id,silent){
   else if(t.status==='done'){cls='ok';act=`<p class="lead">${ico('check-circle',20)}完了。成果物を受け取ってください</p><div class="out"><div class="card"><b>テストの表</b><span class="muted">追加 ${t.cases.added.length} 件・入れ替え ${t.cases.retired.length} 件（CSV）</span><button class="btn btn--primary" id="dl-csv" type="button">${ico('download')}保存</button></div><div class="card"><b>実行手順</b><span class="muted">テストの動かし方（テキスト）</span><button class="btn" id="dl-steps" type="button">${ico('download')}保存</button></div><div class="card"><b>完了報告</b><span class="muted">影響・判断の記録・根拠（Markdown）</span><button class="btn" id="dl-rep" type="button">${ico('download')}保存</button></div></div>`;body=casesTable(t)}
   else{cls='ai';act=`<p class="lead">${ico('progress-activity',20)}準備中</p>`}
   if(first||!d.querySelector('#act')){
-    d.innerHTML=`<div class="head"><a class="btn btn--ghost" href="#">${ico('arrow-back')}戻る</a><h1 id="ttl"></h1><span id="d-badge"></span></div>
+    d.innerHTML=`<div class="head"><a class="btn btn--ghost" href="${view==='done'?'#done':'#'}">${ico('arrow-back')}戻る</a><h1 id="ttl"></h1><span id="d-badge"></span></div>
       <div class="card act" id="act"></div>
       <div class="card body scroll" id="body"></div>
       <details class="more" id="more"><summary>詳細（どこまで進んだか・AI に使った金額・なぜそう判断したか・記録）</summary><div class="more-grid" id="more-body"></div></details>`;
@@ -241,7 +251,7 @@ function renderMore(t){const el=$('more-body');const [s,b]=money(t),pct=b?Math.m
       <h2>記録</h2><ul class="tl">${[...t.history.map(h=>({at:h.at,txt:`${label(h.phase)} — ${WHO[h.status]||h.status}${h.reason?' · '+esc(REASON_PLAIN(h.reason)):''}`})),...t.decisions.map(x=>({at:x.at,txt:`<b>${esc(x.by)}</b> が ${({confirm:'OK',reject:'やり直し',submit:'結果を渡した',answer:'回答',approve:'承認'})[x.kind]||x.kind}（${label(x.phase)}）${x.note?' · '+esc(x.note):''}`}))].sort((a,b)=>b.at.localeCompare(a.at)).map(r=>`<li><span class="tm">${r.at.slice(5,16).replace('T',' ')}</span><span>${r.txt}</span></li>`).join('')}</ul></div>`;
   PV.mount($('flow-canvas'));paintIcons(el)}
 paintIcons(document);
-load().then(route);setInterval(()=>{if(!document.hidden)load()},5000);
+route();setInterval(()=>{if(!document.hidden)load()},5000);
 </script>
 </body>
 </html>
